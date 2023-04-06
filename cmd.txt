@@ -1,0 +1,63 @@
+mkdir -p cmd/server
+touch cmd/server/main.go
+
+mkdir -p config
+touch config/dev.yaml
+touch config/prod.yaml
+touch config/test.yaml
+
+mkdir -p internal/app/auth
+mkdir -p internal/app/user
+touch internal/app/auth/auth.go
+touch internal/app/user/user.go
+
+mkdir -p internal/domain/entities
+mkdir -p internal/domain/repositories
+mkdir -p internal/domain/services
+touch internal/domain/entities/entity.go
+touch internal/domain/repositories/repository.go
+touch internal/domain/services/service.go
+
+mkdir -p internal/infrastructure/database
+mkdir -p internal/infrastructure/email
+mkdir -p internal/infrastructure/http
+mkdir -p internal/infrastructure/messaging
+touch internal/infrastructure/database/database.go
+touch internal/infrastructure/email/email.go
+touch internal/infrastructure/http/http.go
+touch internal/infrastructure/messaging/messaging.go
+
+mkdir -p internal/interfaces/rest/controllers
+mkdir -p internal/interfaces/rest/middlewares
+mkdir -p internal/interfaces/rest/requests
+mkdir -p internal/interfaces/rest/responses
+touch internal/interfaces/rest/controllers/controller.go
+touch internal/interfaces/rest/middlewares/middleware.go
+touch internal/interfaces/rest/requests/request.go
+touch internal/interfaces/rest/responses/response.go
+
+mkdir -p internal/interfaces/grpc/controllers
+mkdir -p internal/interfaces/grpc/middlewares
+mkdir -p internal/interfaces/grpc/requests
+mkdir -p internal/interfaces/grpc/responses
+touch internal/interfaces/grpc/controllers/controller.go
+touch internal/interfaces/grpc/middlewares/middleware.go
+touch internal/interfaces/grpc/requests/request.go
+touch internal/interfaces/grpc/responses/response.go
+
+mkdir -p pkg/config
+mkdir -p pkg/errors
+mkdir -p pkg/logger
+mkdir -p pkg/utils
+touch pkg/config/config.go
+touch pkg/errors/errors.go
+touch pkg/logger/logger.go
+touch pkg/utils/utils.go
+
+mkdir -p scripts/migrations
+mkdir -p scripts/seeds
+
+mkdir -p test/integration
+mkdir -p test/unit
+
+touch README.md
