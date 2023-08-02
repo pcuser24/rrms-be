@@ -1,0 +1,22 @@
+version: '3.7'
+services:
+  postgresd:
+    container_name: rrmsdb
+    image: postgres:13.4
+    ports:
+      - 32755:5432
+    environment:
+      POSTGRES_USER: dchinhpl
+      POSTGRES_PASSWORD: dchinhpl
+      POSTGRES_DB: rrms
+      DATABASE_HOST: 127.0.0.1
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - intranet
+networks:
+  intranet:
+    name: rrms_network
