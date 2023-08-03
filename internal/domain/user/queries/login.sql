@@ -1,0 +1,1 @@
+SELECT email, password FROM users where email = :email AND password = :password
