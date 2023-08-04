@@ -6,17 +6,20 @@ import (
 
 	fiber "github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
+	"github.com/gofiber/fiber/v2/middleware/logger"
 	rcv "github.com/gofiber/fiber/v2/middleware/recover"
 )
 
 type Server interface {
 	Start(port uint16) error
 	GetFibApp() *fiber.App
+	GetApiRoute() fiber.Router
 	Shutdown() error
 }
 
 type server struct {
-	fib *fiber.App
+	fib      *fiber.App
+	apiRoute fiber.Router
 }
 
 func NewServer(conf fiber.Config) Server {
@@ -53,6 +56,9 @@ func NewServer(conf fiber.Config) Server {
 func (s *server) init() Server {
 	s.fib.Use(rcv.New())
 	s.fib.Use(cors.New())
+	s.fib.Use(logger.New())
+
+	s.apiRoute = s.fib.Group("/api")
 
 	return s
 }
@@ -63,6 +69,10 @@ func (s *server) Start(port uint16) error {
 
 func (s *server) GetFibApp() *fiber.App {
 	return s.fib
+}
+
+func (s *server) GetApiRoute() fiber.Router {
+	return s.apiRoute
 }
 
 func (s *server) Shutdown() error {

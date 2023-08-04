@@ -13,7 +13,7 @@ import (
 )
 
 type Adapter interface {
-	RegisterServer(appHttp *fiber.App)
+	RegisterServer(route fiber.Router)
 }
 
 type adapter struct {
@@ -26,8 +26,8 @@ func NewAdapter(service AuthService) Adapter {
 	}
 }
 
-func (a *adapter) RegisterServer(appHttp *fiber.App) {
-	authRoute := appHttp.Group("/auth")
+func (a *adapter) RegisterServer(router fiber.Router) {
+	authRoute := router.Group("/auth")
 
 	credentialGroup := authRoute.Group("/credential")
 	credentialGroup.Post("/register", a.credentialRegisterHandle())
@@ -77,7 +77,7 @@ func (a *adapter) credentialRegisterHandle() fiber.Handler {
 		return ctx.JSON(fiber.Map{
 			"accessToken": res.AccessToken,
 			"accessExp":   res.AccessPayload.ExpiredAt,
-			"user":        res.User,
+			"user":        res.User.ToUserResponse(),
 		})
 	}
 }
@@ -107,7 +107,7 @@ func (a *adapter) credentialLoginHandle() fiber.Handler {
 		return ctx.JSON(fiber.Map{
 			"accessToken": res.AccessToken,
 			"accessExp":   res.AccessPayload.ExpiredAt,
-			"user":        res.User,
+			"user":        res.User.ToUserResponse(),
 		})
 	}
 }

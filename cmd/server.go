@@ -13,6 +13,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/user2410/rrms-backend/internal/domain/auth"
+	"github.com/user2410/rrms-backend/internal/domain/unit"
 	db "github.com/user2410/rrms-backend/internal/infrastructure/database"
 	"github.com/user2410/rrms-backend/internal/infrastructure/http"
 	"github.com/user2410/rrms-backend/internal/utils/token"
@@ -100,10 +101,12 @@ func (c *serverCommand) setup(cmd *cobra.Command, args []string) {
 		ReadTimeout:  1 * time.Second,
 		WriteTimeout: 1 * time.Second,
 	})
-	userRepo := auth.NewUserRepo(dao)
-	userService := auth.NewUserService(userRepo, tokenMaker, c.config.AccessTokenTTL)
-	userAdapter := auth.NewAdapter(userService)
-	userAdapter.RegisterServer(c.httpServer.GetFibApp())
+	authRepo := auth.NewUserRepo(dao)
+	authService := auth.NewUserService(authRepo, tokenMaker, c.config.AccessTokenTTL)
+	auth.NewAdapter(authService).RegisterServer(c.httpServer.GetApiRoute())
+	unitRepo := unit.NewRepo(dao)
+	unitService := unit.NewService(unitRepo)
+	unit.NewAdapter(unitService).RegisterServer(c.httpServer.GetApiRoute(), tokenMaker)
 }
 
 func (c *serverCommand) run(cmd *cobra.Command, args []string) {
