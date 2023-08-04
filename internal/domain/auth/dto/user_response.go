@@ -4,6 +4,7 @@ import (
 	"time"
 )
 
+// UserModel without password
 type UserResponse struct {
 	ID        string    `json:"id"`
 	Email     string    `json:"email"`

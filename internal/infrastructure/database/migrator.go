@@ -1,6 +1,7 @@
 package database
 
 import (
+	"database/sql"
 	"errors"
 	"fmt"
 
@@ -18,12 +19,12 @@ type migrator struct {
 	m *migrate.Migrate
 }
 
-func NewMigrator(conn DAO, migrationDir string) (Migrator, error) {
-	if conn == nil {
+func NewMigrator(instance *sql.DB, migrationDir string) (Migrator, error) {
+	if instance == nil {
 		return nil, fmt.Errorf("the database connection passed in is invalid")
 	}
 	dbConf := &postgres.Config{}
-	dbIns, err := postgres.WithInstance(conn.GetDB().DB, dbConf)
+	dbIns, err := postgres.WithInstance(instance, dbConf)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create a database instance from the connection: %w", err)
 	}

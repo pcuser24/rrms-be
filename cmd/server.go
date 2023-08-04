@@ -12,7 +12,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"github.com/user2410/rrms-backend/internal/domain/user"
+	"github.com/user2410/rrms-backend/internal/domain/auth"
 	db "github.com/user2410/rrms-backend/internal/infrastructure/database"
 	"github.com/user2410/rrms-backend/internal/infrastructure/http"
 	"github.com/user2410/rrms-backend/internal/utils/token"
@@ -73,13 +73,10 @@ func newServerConfig(cmd *cobra.Command) *ServerConfig {
 }
 
 func (c *serverCommand) setup(cmd *cobra.Command, args []string) {
-	var err error
-
 	// setup database
-	dao := db.NewDao(c.config.DatabaseURL)
-	if dao == nil {
-		log.Println("Error while initializing database connection")
-		return
+	dao, err := db.NewDAO(c.config.DatabaseURL)
+	if err != nil {
+		log.Fatal("Error while initializing database connection: ", err)
 	}
 	c.dao = dao
 
@@ -103,9 +100,9 @@ func (c *serverCommand) setup(cmd *cobra.Command, args []string) {
 		ReadTimeout:  1 * time.Second,
 		WriteTimeout: 1 * time.Second,
 	})
-	userRepo := user.NewUserRepo(dao)
-	userService := user.NewUserService(userRepo, tokenMaker, c.config.AccessTokenTTL)
-	userAdapter := user.NewAdapter(userService)
+	userRepo := auth.NewUserRepo(dao)
+	userService := auth.NewUserService(userRepo, tokenMaker, c.config.AccessTokenTTL)
+	userAdapter := auth.NewAdapter(userService)
 	userAdapter.RegisterServer(c.httpServer.GetFibApp())
 }
 

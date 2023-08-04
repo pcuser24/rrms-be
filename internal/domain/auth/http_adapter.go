@@ -1,4 +1,4 @@
-package user
+package auth
 
 import (
 	"fmt"
@@ -6,8 +6,8 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
-	"github.com/lib/pq"
-	"github.com/user2410/rrms-backend/internal/domain/user/dto"
+	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/user2410/rrms-backend/internal/domain/auth/dto"
 	"github.com/user2410/rrms-backend/internal/interfaces/rest/responses"
 	"github.com/user2410/rrms-backend/internal/utils"
 )
@@ -17,10 +17,10 @@ type Adapter interface {
 }
 
 type adapter struct {
-	service UserService
+	service AuthService
 }
 
-func NewAdapter(service UserService) Adapter {
+func NewAdapter(service AuthService) Adapter {
 	return &adapter{
 		service: service,
 	}
@@ -62,10 +62,10 @@ func (a *adapter) credentialRegisterHandle() fiber.Handler {
 			return utils.GetFibValidationError(errs)
 		}
 
-		res, err := a.service.RegisterUser(payload)
+		res, err := a.service.RegisterUser(&payload)
 		if err != nil {
 			// check if error is database error
-			if dbErr, ok := err.(*pq.Error); ok {
+			if dbErr, ok := err.(*pgconn.PgError); ok {
 				responses.DBErrorResponse(ctx, dbErr)
 				return nil
 			}
@@ -95,7 +95,7 @@ func (a *adapter) credentialLoginHandle() fiber.Handler {
 		res, err := a.service.Login(&payload)
 		if err != nil {
 			// check if error is database error
-			if dbErr, ok := err.(*pq.Error); ok {
+			if dbErr, ok := err.(*pgconn.PgError); ok {
 				responses.DBErrorResponse(ctx, dbErr)
 				return nil
 			}

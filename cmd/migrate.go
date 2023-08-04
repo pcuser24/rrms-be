@@ -43,12 +43,15 @@ func (c *migrateCommand) run(cmd *cobra.Command, args []string) {
 }
 
 func initMigrator(c *migrateConfig) (db.Migrator, error) {
-	dao := db.NewDao(c.DatabaseURL)
+	dao, err := db.NewDAO(c.DatabaseURL)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create the database connection: %w", err)
+	}
 	mDir, err := filepath.Abs(c.DBMigrationDir)
 	if err != nil {
 		return nil, fmt.Errorf("failed to resolve the migration directory: %w", err)
 	}
-	m, err := db.NewMigrator(dao, mDir)
+	m, err := db.NewMigrator(dao.GetConn(), mDir)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create the migration manager: %w", err)
 	}
