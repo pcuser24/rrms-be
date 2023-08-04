@@ -2,13 +2,16 @@ package user
 
 import (
 	"database/sql"
+
+	"github.com/google/uuid"
 	"github.com/user2410/rrms-backend/internal/domain/user/model"
 	"github.com/user2410/rrms-backend/internal/domain/user/queries"
-	"github.com/user2410/rrms-backend/internal/infrastructure/repositories/db"
+	db "github.com/user2410/rrms-backend/internal/infrastructure/database"
 )
 
 type UserRepo interface {
 	GetUserByEmail(email string) (*model.UserModel, error)
+	GetUserById(id uuid.UUID) (*model.UserModel, error)
 	Login(email string, password string) (*model.UserModel, error)
 	InsertUser(user *model.UserModel) (*model.UserModel, error)
 }
@@ -82,4 +85,24 @@ func (u *userRepo) InsertUser(user *model.UserModel) (*model.UserModel, error) {
 		return _userDB.ToUserModel(), nil
 	}
 	return user, nil
+}
+
+func (u *userRepo) GetUserById(id uuid.UUID) (*model.UserModel, error) {
+	rows, err := u.dao.NamedQuery(queries.GetUserByIdSQL, map[string]interface{}{
+		"id": id,
+	})
+
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		u := model.UserDb{}
+		if err = rows.StructScan(&u); err != nil {
+			return nil, err
+		}
+		return u.ToUserModel(), nil
+	}
+	return nil, nil
 }

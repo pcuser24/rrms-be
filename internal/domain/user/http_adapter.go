@@ -1,143 +1,219 @@
 package user
 
 import (
-	"github.com/gofiber/fiber/v2"
-	"github.com/golang-jwt/jwt/v4"
-	"github.com/user2410/rrms-backend/internal/bjwt"
-	"github.com/user2410/rrms-backend/internal/domain/user/model"
-	appHttp "github.com/user2410/rrms-backend/internal/infrastructure/http"
-	"github.com/user2410/rrms-backend/pkg/utils/types"
-	"golang.org/x/crypto/bcrypt"
-	"log"
+	"fmt"
 	"net/http"
-	"time"
+
+	"github.com/gofiber/fiber/v2"
+	"github.com/google/uuid"
+	"github.com/lib/pq"
+	"github.com/user2410/rrms-backend/internal/domain/user/dto"
+	"github.com/user2410/rrms-backend/internal/interfaces/rest/responses"
+	"github.com/user2410/rrms-backend/internal/utils"
 )
 
 type Adapter interface {
-	RegisterServer(server appHttp.Server)
+	RegisterServer(appHttp *fiber.App)
 }
 
 type adapter struct {
 	service UserService
-	server  appHttp.Server
-	bj      bjwt.BJwt
 }
 
-func NewAdapter(service UserService, bj bjwt.BJwt) Adapter {
+func NewAdapter(service UserService) Adapter {
 	return &adapter{
 		service: service,
-		bj:      bj,
 	}
 }
 
-func (a *adapter) RegisterServer(server appHttp.Server) {
-	a.server = server
-	a.server.GetAuthRouter().Post("/register", a.getRegisterHandle())
-	a.server.GetAuthRouter().Post("/login", a.getLoginHandle())
-	a.server.GetApiRouter().Post("/get-user-by-token", a.getUserFromTokenHandle())
+func (a *adapter) RegisterServer(appHttp *fiber.App) {
+	authRoute := appHttp.Group("/auth")
+
+	credentialGroup := authRoute.Group("/credential")
+	credentialGroup.Post("/register", a.credentialRegisterHandle())
+	credentialGroup.Post("/login", a.credentialLoginHandle())
+
+	bffGroup := authRoute.Group("/bff")
+	bffUserGroup := bffGroup.Group("/user")
+	bffUserGroup.Post("/create", a.bffCreateUser())
+	bffUserGroup.Get("/get-by-id/:id", a.bffGetUserById())
+	bffUserGroup.Get("/get-by-email/:email", a.bffGetUserByEmail())
+	bffUserGroup.Get("/get-by-account/:id", a.bffGetUserByAccount())
+	bffUserGroup.Patch("/update/:id", a.bffUpdateUser())
+	bffUserGroup.Delete("/delete/:id", a.bffDeleteUser())
+	bffGroup.Patch("link-account", a.bffLinkAccount())
+	bffGroup.Patch("unlink-account", a.bffUnlinkAccount())
+	bffSessionGroup := bffGroup.Group("/session")
+	bffSessionGroup.Post("/create", a.bffCreateSession())
+	bffSessionGroup.Get("/user/:token", a.bffGetSessionAndUser())
+	bffSessionGroup.Patch("/update", a.bffUpdateSession())
+	bffSessionGroup.Delete("/delete/:token", a.bffDeleteSession())
+	bffGroup.Post("/create-verification-token", a.bffCreateVerificationToken())
+	bffGroup.Put("/use-verification-token", a.bffUseVerificationToken())
 }
 
-func (a *adapter) getRegisterHandle() fiber.Handler {
-	return func(c *fiber.Ctx) error {
-		payload := struct {
-			Email    string `json:"email"`
-			Password string `json:"password"`
-		}{}
-		if err := c.BodyParser(&payload); err != nil {
-			log.Println(err.Error())
-			return c.SendStatus(http.StatusBadRequest)
+func (a *adapter) credentialRegisterHandle() fiber.Handler {
+	return func(ctx *fiber.Ctx) error {
+		var payload dto.RegisterUser
+		if err := ctx.BodyParser(&payload); err != nil {
+			return fiber.NewError(http.StatusBadRequest)
 		}
-		user, err := a.service.GetUserByEmail(payload.Email)
+		if errs := utils.ValidateStruct(payload); len(errs) > 0 && errs[0].Error {
+			return utils.GetFibValidationError(errs)
+		}
+
+		res, err := a.service.RegisterUser(payload)
 		if err != nil {
-			return c.Status(http.StatusUnauthorized).SendString("Wrong username & password " + err.Error())
-		}
-		if user == nil {
-			hash, _ := hashPassword(payload.Password)
-			user = &model.UserModel{
-				Email:    &payload.Email,
-				Password: types.Ptr[string](hash),
+			// check if error is database error
+			if dbErr, ok := err.(*pq.Error); ok {
+				responses.DBErrorResponse(ctx, dbErr)
+				return nil
 			}
-			user, err = a.service.InsertUser(user)
-			if err != nil {
-				return c.Status(http.StatusBadRequest).JSON(fiber.Map{
-					"code":    http.StatusBadRequest,
-					"message": err.Error(),
-				})
+
+			ctx.Status(http.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
+			return nil
+		}
+
+		return ctx.JSON(fiber.Map{
+			"accessToken": res.AccessToken,
+			"accessExp":   res.AccessPayload.ExpiredAt,
+			"user":        res.User,
+		})
+	}
+}
+
+func (a *adapter) credentialLoginHandle() fiber.Handler {
+	return func(ctx *fiber.Ctx) error {
+		var payload dto.LoginUser
+		if err := ctx.BodyParser(&payload); err != nil {
+			return ctx.SendStatus(http.StatusBadRequest)
+		}
+		if errs := utils.ValidateStruct(payload); len(errs) > 0 && errs[0].Error {
+			return utils.GetFibValidationError(errs)
+		}
+
+		res, err := a.service.Login(&payload)
+		if err != nil {
+			// check if error is database error
+			if dbErr, ok := err.(*pq.Error); ok {
+				responses.DBErrorResponse(ctx, dbErr)
+				return nil
 			}
-		} else {
-			//Update
+
+			ctx.Status(http.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
+			return nil
 		}
-		token, err := a.bj.GenerateToken(&jwt.MapClaims{
-			"email": payload.Email,
-			"exp":   time.Now().Add(time.Hour * 72).Unix(),
-		})
-		if err != nil {
-			return c.Status(http.StatusBadRequest).SendString("Something went wrong")
-		}
-		return c.JSON(fiber.Map{
-			"email":     user.Email,
-			"api_token": token,
+
+		return ctx.JSON(fiber.Map{
+			"accessToken": res.AccessToken,
+			"accessExp":   res.AccessPayload.ExpiredAt,
+			"user":        res.User,
 		})
 	}
 }
 
-func (a *adapter) getLoginHandle() fiber.Handler {
+func (a *adapter) bffCreateUser() fiber.Handler {
 	return func(c *fiber.Ctx) error {
-		payload := struct {
-			Email    string `json:"email"`
-			Password string `json:"password"`
-		}{}
-		if err := c.BodyParser(&payload); err != nil {
-			log.Println(err.Error())
-			return c.SendStatus(http.StatusBadRequest)
-		}
-		user, err := a.service.Login(payload.Email, payload.Password)
-		if err != nil {
-			return c.Status(http.StatusUnauthorized).SendString("something went wrong" + err.Error())
-		}
-		if user == nil {
-			return c.Status(http.StatusUnauthorized).SendString("Wrong username & password")
-		}
-		token, err := a.bj.GenerateToken(&jwt.MapClaims{
-			"email": payload.Email,
-			"exp":   time.Now().Add(time.Hour * 72).Unix(),
-		})
-		if err != nil {
-			return c.Status(http.StatusBadRequest).SendString("Something went wrong" + err.Error())
-		}
-		return c.JSON(fiber.Map{
-			"email":     user.Email,
-			"api_token": token,
-		})
+		return nil
 	}
 }
 
-func (a *adapter) getUserFromTokenHandle() fiber.Handler {
+func (a *adapter) bffGetUserByEmail() fiber.Handler {
 	return func(c *fiber.Ctx) error {
-		luser := c.Locals("user")
-		if luser == nil {
-			return c.Status(http.StatusUnauthorized).SendString("Could not find this user")
-		}
-		user := luser.(*jwt.Token)
-		if user == nil {
-			return c.Status(http.StatusUnauthorized).SendString("Could not find this user")
-		}
-		claims := user.Claims.(jwt.MapClaims)
-		log.Println(claims)
-		//claims := u.bjwt.
-		email := claims["email"].(string)
-		member, err := a.service.GetUserByEmail(email)
+		email := c.Params("email")
+
+		user, err := a.service.GetUserByEmail(email)
 		if err != nil {
-			return c.Status(http.StatusUnauthorized).SendString("Could not find this user")
+			c.Status(http.StatusInternalServerError)
+			fmt.Println(err)
+			return err
 		}
-		return c.JSON(member)
+
+		return c.JSON(user)
 	}
 }
 
-func hashPassword(password string) (string, error) {
-	hashedBytes, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
-	if err != nil {
-		return "", err
+func (a *adapter) bffGetUserById() fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		id := c.Params("id")
+		uid, err := uuid.Parse(id)
+		if err != nil {
+			return c.Status(http.StatusBadRequest).SendString("Invalid id")
+		}
+
+		user, err := a.service.GetUserById(uid)
+		if err != nil {
+			c.Status(http.StatusInternalServerError)
+			fmt.Println(err)
+			return err
+		}
+
+		return c.JSON(user)
 	}
-	return string(hashedBytes), nil
+}
+
+func (a *adapter) bffGetUserByAccount() fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		return nil
+	}
+}
+
+func (a *adapter) bffUpdateUser() fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		return nil
+	}
+}
+
+func (a *adapter) bffDeleteUser() fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		return nil
+	}
+}
+
+func (a *adapter) bffLinkAccount() fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		return nil
+	}
+}
+
+func (a *adapter) bffUnlinkAccount() fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		return nil
+	}
+}
+
+func (a *adapter) bffCreateSession() fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		return nil
+	}
+}
+
+func (a *adapter) bffGetSessionAndUser() fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		return nil
+	}
+}
+
+func (a *adapter) bffUpdateSession() fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		return nil
+	}
+}
+
+func (a *adapter) bffDeleteSession() fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		return nil
+	}
+}
+
+func (a *adapter) bffCreateVerificationToken() fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		return nil
+	}
+}
+
+func (a *adapter) bffUseVerificationToken() fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		return nil
+	}
 }

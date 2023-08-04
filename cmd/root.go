@@ -1,10 +1,13 @@
-package main
+/*
+Copyright © 2023 NAME HERE <EMAIL ADDRESS>
+*/
+package cmd
 
 import (
 	"fmt"
-	"github.com/spf13/cobra"
-	"github.com/user2410/rrms-backend/cmd"
 	"os"
+
+	"github.com/spf13/cobra"
 )
 
 type rootCommand struct {
@@ -12,6 +15,7 @@ type rootCommand struct {
 }
 
 func (rc *rootCommand) run(c *cobra.Command, args []string) {
+	fmt.Println("Root command 1234")
 	c.Help()
 }
 
@@ -23,8 +27,8 @@ func newRootCommand() *rootCommand {
 	rc := &rootCommand{}
 	rc.Command = &cobra.Command{
 		Use:           "rrmsd",
-		Short:         fmt.Sprintf(shortFormat, cmd.ReadableName),
-		Long:          fmt.Sprintf(longFormat, cmd.Art(), cmd.ReadableName),
+		Short:         fmt.Sprintf(shortFormat, ReadableName),
+		Long:          fmt.Sprintf(longFormat, Art(), ReadableName),
 		Run:           rc.run,
 		SilenceErrors: true,
 		SilenceUsage:  true,
@@ -32,17 +36,19 @@ func newRootCommand() *rootCommand {
 	return rc
 }
 
-func main() {
+// Execute adds all child commands to the root command and sets flags appropriately.
+// This is called by main.main(). It only needs to happen once to the rootCmd.
+func Execute() {
 	root := newRootCommand()
 	root.Command.AddCommand(
-		cmd.NewVersionCommand().Command,
-		cmd.NewMigrateCommand().Command,
-		cmd.NewServerCommand().Command,
+		NewVersionCommand().Command,
+		NewMigrateCommand().Command,
+		NewServerCommand().Command,
 	)
 
 	c, err := root.Command.ExecuteC()
 	if err != nil {
-		c.Println(cmd.Art())
+		c.Println(Art())
 		c.Println(c.UsageString())
 		c.PrintErrf("ERROR: %v\n", err)
 		os.Exit(1)

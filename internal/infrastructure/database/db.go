@@ -1,8 +1,9 @@
-package db
+package database
 
 import (
 	"database/sql"
 	"fmt"
+
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
@@ -23,7 +24,7 @@ type dao struct {
 func NewDao(connectionUri string) DAO {
 	db, err := ddsqlx.Connect("postgres", connectionUri)
 	if err != nil {
-		fmt.Println("Lỗi kết nối:", err.Error())
+		fmt.Println("Connection error: ", err.Error())
 		return nil
 	}
 	return &dao{

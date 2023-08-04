@@ -2,8 +2,9 @@ package types
 
 import (
 	"database/sql"
-	"github.com/google/uuid"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 const TIME_LAYOUT = "2006-01-02 15:04:05"
@@ -106,11 +107,28 @@ func NStrTime(n sql.NullString) *time.Time {
 	return &t
 }
 
-func UUIDN(s uuid.UUID) sql.NullString {
+func UUIDStrN(s uuid.UUID) sql.NullString {
 	return sql.NullString{
 		Valid:  true,
 		String: s.String(),
 	}
+}
+
+func UUIDN(s *uuid.UUID) uuid.NullUUID {
+	nu := uuid.NullUUID{
+		Valid: s != nil,
+	}
+	if s != nil {
+		nu.UUID = *s
+	}
+	return nu
+}
+
+func PNUUID(u uuid.NullUUID) *uuid.UUID {
+	if !u.Valid {
+		return nil
+	}
+	return &u.UUID
 }
 
 func StrN(s *string) sql.NullString {

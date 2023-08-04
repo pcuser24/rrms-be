@@ -1,4 +1,4 @@
-package db
+package database
 
 import (
 	"errors"
@@ -55,6 +55,7 @@ func (m *migrator) Upgrade() (bool, error) {
 	}
 	return updateOccurred, err
 }
+
 func (m *migrator) Downgrade() (bool, error) {
 	var downgradeOccurred bool
 	_, _, err := m.m.Version()

@@ -1,1 +1,1 @@
-SELECT id, email, password FROM users where email = :email
+SELECT id, email, password FROM "User" WHERE email = :email LIMIT 1;
