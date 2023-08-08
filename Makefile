@@ -21,7 +21,12 @@ migratedown1:
 sqlcgen:
 	sqlc generate
 
+
 build:
 	go build -o rrmsd
 
-.PHONY: sqlcgen build
+
+serve:
+	go run main.go serve
+
+.PHONY: sqlcgen build serve migratecreate migrateup migrateup1 migratedown migratedown1

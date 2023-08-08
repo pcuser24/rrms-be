@@ -11,9 +11,34 @@ import (
 )
 
 type Querier interface {
+	CheckPropertyOwnerShip(ctx context.Context, arg CheckPropertyOwnerShipParams) (int64, error)
+	CreateProperty(ctx context.Context, arg CreatePropertyParams) (Property, error)
+	CreatePropertyAmenity(ctx context.Context, arg CreatePropertyAmenityParams) (PropertyAmenity, error)
+	CreatePropertyFeature(ctx context.Context, arg CreatePropertyFeatureParams) (PropertyFeature, error)
+	CreatePropertyMedia(ctx context.Context, arg CreatePropertyMediaParams) (PropertyMedium, error)
+	CreateUnit(ctx context.Context, arg CreateUnitParams) (Unit, error)
+	CreateUnitAmenity(ctx context.Context, arg CreateUnitAmenityParams) (UnitAmenity, error)
+	CreateUnitMedia(ctx context.Context, arg CreateUnitMediaParams) (UnitMedium, error)
+	DeleteProperty(ctx context.Context, id uuid.UUID) error
+	DeletePropertyAmenity(ctx context.Context, arg DeletePropertyAmenityParams) error
+	DeletePropertyFeature(ctx context.Context, arg DeletePropertyFeatureParams) error
+	DeletePropertyMedia(ctx context.Context, arg DeletePropertyMediaParams) error
+	DeleteUnit(ctx context.Context, id uuid.UUID) error
+	DeleteUnitAmenity(ctx context.Context, arg DeleteUnitAmenityParams) error
+	DeleteUnitMedia(ctx context.Context, arg DeleteUnitMediaParams) error
+	GetPropertyAmenities(ctx context.Context, propertyID uuid.UUID) ([]PropertyAmenity, error)
+	GetPropertyById(ctx context.Context, id uuid.UUID) (Property, error)
+	GetPropertyByOwnerId(ctx context.Context, ownerID uuid.UUID) ([]Property, error)
+	GetPropertyFeatures(ctx context.Context, propertyID uuid.UUID) ([]PropertyFeature, error)
+	GetPropertyMedium(ctx context.Context, propertyID uuid.UUID) ([]PropertyMedium, error)
+	GetPropertyTags(ctx context.Context, propertyID uuid.UUID) ([]PropertyTag, error)
+	GetUnitById(ctx context.Context, id uuid.UUID) (Unit, error)
+	GetUnitsOfProperty(ctx context.Context, propertyID uuid.UUID) ([]Unit, error)
 	GetUserByEmail(ctx context.Context, email string) (User, error)
 	GetUserById(ctx context.Context, id uuid.UUID) (User, error)
 	InsertUser(ctx context.Context, arg InsertUserParams) (User, error)
+	UpdateProperty(ctx context.Context, arg UpdatePropertyParams) error
+	UpdateUnit(ctx context.Context, arg UpdateUnitParams) error
 }
 
 var _ Querier = (*Queries)(nil)

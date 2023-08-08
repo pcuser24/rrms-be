@@ -1,7 +1,6 @@
 package http
 
 import (
-	"errors"
 	"fmt"
 
 	fiber "github.com/gofiber/fiber/v2"
@@ -13,43 +12,18 @@ import (
 type Server interface {
 	Start(port uint16) error
 	GetFibApp() *fiber.App
-	GetApiRoute() fiber.Router
+	GetApiRoute() *fiber.Router
 	Shutdown() error
 }
 
 type server struct {
 	fib      *fiber.App
-	apiRoute fiber.Router
+	apiRoute *fiber.Router
 }
 
 func NewServer(conf fiber.Config) Server {
 	return (&server{
-		fib: fiber.New(
-			conf,
-			fiber.Config{
-				// Override default error handler
-				ErrorHandler: func(ctx *fiber.Ctx, err error) error {
-					// Status code defaults to 500
-					code := fiber.StatusInternalServerError
-
-					// Retrieve the custom status code if it's a *fiber.Error
-					var e *fiber.Error
-					if errors.As(err, &e) {
-						code = e.Code
-					}
-
-					// Send JSON
-					err = ctx.Status(code).JSON(fiber.Map{"message": e.Message})
-					if err != nil {
-						// In case fails
-						return ctx.SendStatus(fiber.StatusInternalServerError)
-					}
-
-					// Return from handler
-					return nil
-				},
-			},
-		),
+		fib: fiber.New(conf),
 	}).init()
 }
 
@@ -58,7 +32,8 @@ func (s *server) init() Server {
 	s.fib.Use(cors.New())
 	s.fib.Use(logger.New())
 
-	s.apiRoute = s.fib.Group("/api")
+	apiRoute := s.fib.Group("/api")
+	s.apiRoute = &apiRoute
 
 	return s
 }
@@ -71,7 +46,7 @@ func (s *server) GetFibApp() *fiber.App {
 	return s.fib
 }
 
-func (s *server) GetApiRoute() fiber.Router {
+func (s *server) GetApiRoute() *fiber.Router {
 	return s.apiRoute
 }
 

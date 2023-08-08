@@ -1,6 +1,8 @@
 package auth
 
 import (
+	"database/sql"
+	"errors"
 	"fmt"
 	"net/http"
 
@@ -13,7 +15,7 @@ import (
 )
 
 type Adapter interface {
-	RegisterServer(route fiber.Router)
+	RegisterServer(route *fiber.Router)
 }
 
 type adapter struct {
@@ -26,8 +28,8 @@ func NewAdapter(service AuthService) Adapter {
 	}
 }
 
-func (a *adapter) RegisterServer(router fiber.Router) {
-	authRoute := router.Group("/auth")
+func (a *adapter) RegisterServer(router *fiber.Router) {
+	authRoute := (*router).Group("/auth")
 
 	credentialGroup := authRoute.Group("/credential")
 	credentialGroup.Post("/register", a.credentialRegisterHandle())
@@ -56,21 +58,21 @@ func (a *adapter) credentialRegisterHandle() fiber.Handler {
 	return func(ctx *fiber.Ctx) error {
 		var payload dto.RegisterUser
 		if err := ctx.BodyParser(&payload); err != nil {
-			return fiber.NewError(http.StatusBadRequest)
+			return ctx.SendStatus(fiber.StatusBadRequest)
 		}
 		if errs := utils.ValidateStruct(payload); len(errs) > 0 && errs[0].Error {
-			return utils.GetFibValidationError(errs)
+			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": utils.GetFibValidationError(errs)})
 		}
 
 		res, err := a.service.RegisterUser(&payload)
 		if err != nil {
-			// check if error is database error
-			if dbErr, ok := err.(*pgconn.PgError); ok {
-				responses.DBErrorResponse(ctx, dbErr)
+			var pgErr *pgconn.PgError
+			if errors.As(err, &pgErr) {
+				responses.DBErrorResponse(ctx, pgErr)
 				return nil
 			}
 
-			ctx.Status(http.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
+			ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
 			return nil
 		}
 
@@ -86,10 +88,10 @@ func (a *adapter) credentialLoginHandle() fiber.Handler {
 	return func(ctx *fiber.Ctx) error {
 		var payload dto.LoginUser
 		if err := ctx.BodyParser(&payload); err != nil {
-			return ctx.SendStatus(http.StatusBadRequest)
+			return ctx.SendStatus(fiber.StatusBadRequest)
 		}
 		if errs := utils.ValidateStruct(payload); len(errs) > 0 && errs[0].Error {
-			return utils.GetFibValidationError(errs)
+			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": utils.GetFibValidationError(errs)})
 		}
 
 		res, err := a.service.Login(&payload)
@@ -100,8 +102,11 @@ func (a *adapter) credentialLoginHandle() fiber.Handler {
 				return nil
 			}
 
-			ctx.Status(http.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
-			return nil
+			if errors.Is(err, sql.ErrNoRows) {
+				return ctx.Status(http.StatusUnauthorized).JSON(fiber.Map{"message": "Invalid credentials"})
+			}
+
+			return ctx.Status(http.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
 		}
 
 		return ctx.JSON(fiber.Map{

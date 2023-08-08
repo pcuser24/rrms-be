@@ -5,7 +5,6 @@ import (
 	"strings"
 
 	"github.com/go-playground/validator/v10"
-	"github.com/gofiber/fiber/v2"
 )
 
 type XValidator struct {
@@ -42,7 +41,7 @@ func ValidateStruct(data interface{}) []ErrorResponse {
 	return validationErrors
 }
 
-func GetFibValidationError(errs []ErrorResponse) *fiber.Error {
+func GetFibValidationError(errs []ErrorResponse) string {
 	errMsgs := make([]string, 0)
 
 	for _, err := range errs {
@@ -54,8 +53,5 @@ func GetFibValidationError(errs []ErrorResponse) *fiber.Error {
 		))
 	}
 
-	return &fiber.Error{
-		Code:    fiber.ErrBadRequest.Code,
-		Message: strings.Join(errMsgs, "\n"),
-	}
+	return strings.Join(errMsgs, "\n")
 }

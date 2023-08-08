@@ -6,10 +6,141 @@ package database
 
 import (
 	"database/sql"
+	"database/sql/driver"
+	"fmt"
 	"time"
 
 	"github.com/google/uuid"
 )
+
+type MEDIATYPE string
+
+const (
+	MEDIATYPEIMAGE MEDIATYPE = "IMAGE"
+	MEDIATYPEVIDEO MEDIATYPE = "VIDEO"
+)
+
+func (e *MEDIATYPE) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = MEDIATYPE(s)
+	case string:
+		*e = MEDIATYPE(s)
+	default:
+		return fmt.Errorf("unsupported scan type for MEDIATYPE: %T", src)
+	}
+	return nil
+}
+
+type NullMEDIATYPE struct {
+	MEDIATYPE MEDIATYPE `json:"MEDIATYPE"`
+	Valid     bool      `json:"valid"` // Valid is true if MEDIATYPE is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullMEDIATYPE) Scan(value interface{}) error {
+	if value == nil {
+		ns.MEDIATYPE, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.MEDIATYPE.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullMEDIATYPE) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.MEDIATYPE), nil
+}
+
+type PROPERTYTYPE string
+
+const (
+	PROPERTYTYPEAPARTMENT       PROPERTYTYPE = "APARTMENT"
+	PROPERTYTYPESINGLERESIDENCE PROPERTYTYPE = "SINGLE_RESIDENCE"
+	PROPERTYTYPEROOM            PROPERTYTYPE = "ROOM"
+	PROPERTYTYPEBLOCK           PROPERTYTYPE = "BLOCK"
+)
+
+func (e *PROPERTYTYPE) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = PROPERTYTYPE(s)
+	case string:
+		*e = PROPERTYTYPE(s)
+	default:
+		return fmt.Errorf("unsupported scan type for PROPERTYTYPE: %T", src)
+	}
+	return nil
+}
+
+type NullPROPERTYTYPE struct {
+	PROPERTYTYPE PROPERTYTYPE `json:"PROPERTYTYPE"`
+	Valid        bool         `json:"valid"` // Valid is true if PROPERTYTYPE is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullPROPERTYTYPE) Scan(value interface{}) error {
+	if value == nil {
+		ns.PROPERTYTYPE, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.PROPERTYTYPE.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullPROPERTYTYPE) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.PROPERTYTYPE), nil
+}
+
+type UNITTYPE string
+
+const (
+	UNITTYPEROOM      UNITTYPE = "ROOM"
+	UNITTYPEAPARTMENT UNITTYPE = "APARTMENT"
+	UNITTYPESTUDIO    UNITTYPE = "STUDIO"
+)
+
+func (e *UNITTYPE) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = UNITTYPE(s)
+	case string:
+		*e = UNITTYPE(s)
+	default:
+		return fmt.Errorf("unsupported scan type for UNITTYPE: %T", src)
+	}
+	return nil
+}
+
+type NullUNITTYPE struct {
+	UNITTYPE UNITTYPE `json:"UNITTYPE"`
+	Valid    bool     `json:"valid"` // Valid is true if UNITTYPE is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullUNITTYPE) Scan(value interface{}) error {
+	if value == nil {
+		ns.UNITTYPE, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.UNITTYPE.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullUNITTYPE) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.UNITTYPE), nil
+}
 
 type Account struct {
 	ID                uuid.UUID      `json:"id"`
@@ -26,6 +157,52 @@ type Account struct {
 	SessionState      sql.NullString `json:"session_state"`
 }
 
+type Property struct {
+	ID             uuid.UUID     `json:"id"`
+	OwnerID        uuid.UUID     `json:"owner_id"`
+	Name           string        `json:"name"`
+	Area           float32       `json:"area"`
+	NumberOfFloors sql.NullInt32 `json:"number_of_floors"`
+	YearBuilt      sql.NullInt32 `json:"year_built"`
+	// n,s,w,e,nw,ne,sw,se
+	Orientation sql.NullString `json:"orientation"`
+	FullAddress string         `json:"full_address"`
+	District    string         `json:"district"`
+	City        string         `json:"city"`
+	Lat         float64        `json:"lat"`
+	Lng         float64        `json:"lng"`
+	Type        PROPERTYTYPE   `json:"type"`
+	CreatedAt   time.Time      `json:"created_at"`
+	UpdatedAt   time.Time      `json:"updated_at"`
+}
+
+// Elevator, Security camera, Pool, Yard, ...
+type PropertyAmenity struct {
+	PropertyID  uuid.UUID      `json:"property_id"`
+	Amenity     string         `json:"amenity"`
+	Description sql.NullString `json:"description"`
+}
+
+// Security guard, Parking, Gym, ...
+type PropertyFeature struct {
+	PropertyID  uuid.UUID      `json:"property_id"`
+	Feature     string         `json:"feature"`
+	Description sql.NullString `json:"description"`
+}
+
+type PropertyMedium struct {
+	ID         int32     `json:"id"`
+	PropertyID uuid.UUID `json:"property_id"`
+	Url        string    `json:"url"`
+	Type       MEDIATYPE `json:"type"`
+}
+
+type PropertyTag struct {
+	ID         int32     `json:"id"`
+	PropertyID uuid.UUID `json:"property_id"`
+	Tag        string    `json:"tag"`
+}
+
 type Session struct {
 	ID           uuid.UUID      `json:"id"`
 	SessionToken string         `json:"sessionToken"`
@@ -35,6 +212,37 @@ type Session struct {
 	ClientIp     sql.NullString `json:"client_ip"`
 	IsBlocked    sql.NullBool   `json:"is_blocked"`
 	CreatedAt    time.Time      `json:"created_at"`
+}
+
+type Unit struct {
+	ID                  uuid.UUID     `json:"id"`
+	PropertyID          uuid.UUID     `json:"property_id"`
+	Name                string        `json:"name"`
+	Area                float32       `json:"area"`
+	Floor               sql.NullInt32 `json:"floor"`
+	HasBalcony          sql.NullBool  `json:"has_balcony"`
+	NumberOfLivingRooms sql.NullInt32 `json:"number_of_living_rooms"`
+	NumberOfBedrooms    sql.NullInt32 `json:"number_of_bedrooms"`
+	NumberOfBathrooms   sql.NullInt32 `json:"number_of_bathrooms"`
+	NumberOfToilets     sql.NullInt32 `json:"number_of_toilets"`
+	NumberOfKitchens    sql.NullInt32 `json:"number_of_kitchens"`
+	Type                UNITTYPE      `json:"type"`
+	CreatedAt           time.Time     `json:"created_at"`
+	UpdatedAt           time.Time     `json:"updated_at"`
+}
+
+// Air conditioner, Fridge, Washing machine, ...
+type UnitAmenity struct {
+	UnitID      uuid.UUID      `json:"unit_id"`
+	Amenity     string         `json:"amenity"`
+	Description sql.NullString `json:"description"`
+}
+
+type UnitMedium struct {
+	ID     int32     `json:"id"`
+	UnitID uuid.UUID `json:"unit_id"`
+	Url    string    `json:"url"`
+	Type   MEDIATYPE `json:"type"`
 }
 
 // Bang user

@@ -13,7 +13,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/user2410/rrms-backend/internal/domain/auth"
-	"github.com/user2410/rrms-backend/internal/domain/unit"
+	"github.com/user2410/rrms-backend/internal/domain/property"
 	db "github.com/user2410/rrms-backend/internal/infrastructure/database"
 	"github.com/user2410/rrms-backend/internal/infrastructure/http"
 	"github.com/user2410/rrms-backend/internal/utils/token"
@@ -104,9 +104,9 @@ func (c *serverCommand) setup(cmd *cobra.Command, args []string) {
 	authRepo := auth.NewUserRepo(dao)
 	authService := auth.NewUserService(authRepo, tokenMaker, c.config.AccessTokenTTL)
 	auth.NewAdapter(authService).RegisterServer(c.httpServer.GetApiRoute())
-	unitRepo := unit.NewRepo(dao)
-	unitService := unit.NewService(unitRepo)
-	unit.NewAdapter(unitService).RegisterServer(c.httpServer.GetApiRoute(), tokenMaker)
+	propertyRepo := property.NewRepo(dao)
+	propertyService := property.NewService(propertyRepo)
+	property.NewAdapter(propertyService).RegisterServer(c.httpServer.GetApiRoute(), tokenMaker)
 }
 
 func (c *serverCommand) run(cmd *cobra.Command, args []string) {
