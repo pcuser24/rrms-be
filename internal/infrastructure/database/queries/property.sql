@@ -45,26 +45,36 @@ INSERT INTO property_media (
 -- name: CreatePropertyAmenity :one
 INSERT INTO property_amenity (
   property_id,
-  amenity
+  amenity_id,
+  description
 ) VALUES (
   sqlc.arg(property_id),
-  sqlc.arg(amenity)
+  sqlc.arg(amenity_id),
+  sqlc.narg(description)
 ) RETURNING *;
 
 -- name: CreatePropertyFeature :one
 INSERT INTO property_feature (
   property_id,
-  feature
+  feature_id,
+  description
 ) VALUES (
   sqlc.arg(property_id),
-  sqlc.arg(feature)
+  sqlc.arg(feature_id),
+  sqlc.narg(description)
 ) RETURNING *;
 
 -- name: GetPropertyById :one
 SELECT * FROM properties WHERE id = $1 LIMIT 1;
 
+-- name: GetAllPropertyAmenities :many
+SELECT * FROM p_amenities;
+
 -- name: GetPropertyAmenities :many
 SELECT * FROM property_amenity WHERE property_id = $1;
+
+-- name: GetAllPropertyFeatures :many
+SELECT * FROM p_features;
 
 -- name: GetPropertyFeatures :many
 SELECT * FROM property_feature WHERE property_id = $1;
@@ -75,8 +85,8 @@ SELECT * FROM property_tag WHERE property_id = $1;
 -- name: GetPropertyMedium :many
 SELECT * FROM property_media WHERE property_id = $1;
 
--- name: GetPropertyByOwnerId :many
-SELECT * FROM properties WHERE owner_id = $1;
+-- name: GetPropertiesByOwnerId :many
+SELECT * FROM properties WHERE owner_id = $1 LIMIT $2 OFFSET $3;
 
 -- name: CheckPropertyOwnerShip :one
 SELECT count(*) FROM properties WHERE id = $1 AND owner_id = $2 LIMIT 1;
@@ -99,11 +109,14 @@ WHERE id = $1;
 -- name: DeleteProperty :exec
 DELETE FROM properties WHERE id = $1;
 
--- name: DeletePropertyMedia :exec
-DELETE FROM property_media WHERE property_id = $1 AND id = $2;
+-- name: DeleteAllPropertyMedia :exec
+DELETE FROM property_media WHERE property_id = $1;
 
--- name: DeletePropertyAmenity :exec
-DELETE FROM property_amenity WHERE property_id = $1 AND amenity = $2;
+-- name: DeleteAllPropertyAmenity :exec
+DELETE FROM property_amenity WHERE property_id = $1;
 
--- name: DeletePropertyFeature :exec
-DELETE FROM property_feature WHERE property_id = $1 AND feature = $2;
+-- name: DeleteAllPropertyFeature :exec
+DELETE FROM property_feature WHERE property_id = $1;
+
+-- name: DeleteAllPropertyTag :exec
+DELETE FROM property_tag WHERE property_id = $1;

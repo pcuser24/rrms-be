@@ -43,23 +43,28 @@ INSERT INTO unit_media (
 -- name: CreateUnitAmenity :one
 INSERT INTO unit_amenity (
   unit_id,
-  amenity
+  amenity_id,
+  description
 ) VALUES (
   sqlc.arg(unit_id),
-  sqlc.arg(amenity)
+  sqlc.arg(amenity_id),
+  sqlc.narg(description)
 ) RETURNING *;
-
--- name: DeleteUnitMedia :exec
-DELETE FROM unit_media WHERE unit_id = $1 AND url = $2;
-
--- name: DeleteUnitAmenity :exec
-DELETE FROM unit_amenity WHERE unit_id = $1 AND amenity = $2;
 
 -- name: GetUnitById :one
 SELECT * FROM units WHERE id = $1 LIMIT 1;
 
 -- name: GetUnitsOfProperty :many
 SELECT * FROM units WHERE property_id = $1;
+
+-- name: GetUnitMedia :many
+SELECT * FROM unit_media WHERE unit_id = $1;
+
+-- name: GetAllUnitAmenities :many
+SELECT * FROM u_amenities;
+
+-- name: GetUnitAmenities :many
+SELECT * FROM unit_amenity WHERE unit_id = $1;
 
 -- name: UpdateUnit :exec
 UPDATE units SET
@@ -77,3 +82,9 @@ WHERE id = $1;
 
 -- name: DeleteUnit :exec
 DELETE FROM units WHERE id = $1;
+
+-- name: DeleteAllUnitMedia :exec
+DELETE FROM unit_media WHERE unit_id = $1;
+
+-- name: DeleteAllUnitAmenity :exec
+DELETE FROM unit_amenity WHERE unit_id = $1;

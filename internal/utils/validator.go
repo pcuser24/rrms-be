@@ -41,7 +41,7 @@ func ValidateStruct(data interface{}) []ErrorResponse {
 	return validationErrors
 }
 
-func GetFibValidationError(errs []ErrorResponse) string {
+func GetValidationError(errs []ErrorResponse) string {
 	errMsgs := make([]string, 0)
 
 	for _, err := range errs {
@@ -53,5 +53,5 @@ func GetFibValidationError(errs []ErrorResponse) string {
 		))
 	}
 
-	return strings.Join(errMsgs, "\n")
+	return strings.Join(errMsgs, "; ")
 }

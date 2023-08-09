@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/signal"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/go-playground/validator/v10"
@@ -113,7 +114,7 @@ func (c *serverCommand) run(cmd *cobra.Command, args []string) {
 	c.setup(cmd, args)
 
 	exitCh := make(chan os.Signal, 1)
-	signal.Notify(exitCh, os.Interrupt)
+	signal.Notify(exitCh, syscall.SIGINT, syscall.SIGTERM, syscall.SIGABRT)
 	go func() {
 		<-exitCh
 		fmt.Println("Gracefully shutting down...")

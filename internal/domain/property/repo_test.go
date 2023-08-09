@@ -6,30 +6,23 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/huandu/go-sqlbuilder"
-	"github.com/user2410/rrms-backend/internal/domain/property/dto"
-	"github.com/user2410/rrms-backend/pkg/utils/types"
 )
 
 func TestXxx(t *testing.T) {
-	desc := "abcd efgh"
-	amenities := []dto.CreatePropertyAmenity{
-		{
-			Amenity:     "a1",
-			Description: &desc,
-		},
-		{
-			Amenity:     "a2",
-			Description: nil,
-		},
+	aid := []int64{1, 2, 3}
+	// transform aid to []interface{}
+	aid_i := make([]interface{}, len(aid))
+	for i, v := range aid {
+		aid_i[i] = v
 	}
 	uid, _ := uuid.Parse("d01bfb0b-dfbf-442f-8674-b0823b5eac60")
 
-	ib := sqlbuilder.NewInsertBuilder()
-	ib.InsertInto("amenities")
-	ib.Cols("property_id", "amenity", "description")
-	for _, amenity := range amenities {
-		ib.Values(uid, amenity.Amenity, types.StrN((amenity.Description)))
-	}
+	ib := sqlbuilder.PostgreSQL.NewDeleteBuilder()
+	ib.DeleteFrom("property_amenity")
+	ib.Where(
+		ib.Equal("property_id", uid),
+		ib.In("amenity_id", aid_i...),
+	)
 	sql, args := ib.Build()
 	fmt.Println(sql)
 	fmt.Println(args)

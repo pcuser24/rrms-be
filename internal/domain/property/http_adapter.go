@@ -32,14 +32,20 @@ func NewAdapter(service Service) Adapter {
 func (a *adapter) RegisterServer(router *fiber.Router, tokenMaker token.Maker) {
 	propertyRoute := (*router).Group("/property")
 
-	propertyRoute.Use(auth.NewAuthMiddleware(tokenMaker))
+	(*router).Get("/property/amenities", a.getAllAmenities())
+	(*router).Get("/property/features", a.getAllFeatures())
+
+	propertyRoute = propertyRoute.Use(auth.NewAuthMiddleware(tokenMaker))
 
 	propertyRoute.Post("/create", a.createProperty())
 	propertyRoute.Get("/get-by-id/:id", checkPropertyOwnership(a.service), a.getPropertyById())
 	propertyRoute.Patch("/update/:id", checkPropertyOwnership(a.service), a.updateProperty())
 	propertyRoute.Delete("/delete/:id", checkPropertyOwnership(a.service), a.deleteProperty())
 
-	// propertyRoute.Patch("/feature/:id", )
+	propertyRoute.Patch("/media/update/:id", checkPropertyOwnership(a.service), a.updatePropertyMedium())
+	propertyRoute.Patch("/amenity/update/:id", checkPropertyOwnership(a.service), a.updatePropertyAmenity())
+	propertyRoute.Patch("/feature/update/:id", checkPropertyOwnership(a.service), a.updatePropertyFeature())
+	propertyRoute.Patch("/tag/update/:id", checkPropertyOwnership(a.service), a.updatePropertyTag())
 }
 
 func checkPropertyOwnership(s Service) fiber.Handler {
@@ -80,7 +86,7 @@ func (a *adapter) createProperty() fiber.Handler {
 		}
 		payload.OwnerID = tkPayload.UserID
 		if errs := utils.ValidateStruct(payload); len(errs) > 0 && errs[0].Error {
-			ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": utils.GetFibValidationError(errs)})
+			ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": utils.GetValidationError(errs)})
 			return nil
 		}
 
@@ -140,7 +146,7 @@ func (a *adapter) updateProperty() fiber.Handler {
 		}
 		payload.ID = puid
 		if errs := utils.ValidateStruct(payload); len(errs) > 0 && errs[0].Error {
-			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": utils.GetFibValidationError(errs)})
+			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": utils.GetValidationError(errs)})
 		}
 
 		err := a.service.UpdateProperty(&payload)
@@ -171,5 +177,307 @@ func (a *adapter) deleteProperty() fiber.Handler {
 			ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
 		}
 		return nil
+	}
+}
+
+func (a *adapter) updatePropertyMedium() fiber.Handler {
+	return func(ctx *fiber.Ctx) error {
+		puid, _ := uuid.Parse(ctx.Params("id"))
+
+		var payload struct {
+			Items  []interface{} `json:"items" validate:"required"`
+			Action string        `json:"action" validate:"required,oneof=add delete replace"`
+		}
+		if err := ctx.BodyParser(&payload); err != nil {
+			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": err.Error()})
+		}
+		if errs := utils.ValidateStruct(payload); len(errs) > 0 && errs[0].Error {
+			ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": utils.GetValidationError(errs)})
+			return nil
+		}
+
+		var res interface{}
+		var err error
+
+		switch payload.Action {
+		case "add", "replace":
+			var items []dto.CreatePropertyMedia
+			for _, i := range payload.Items {
+				var item dto.CreatePropertyMedia
+				err = utils.Map2JSONStruct(i, &item)
+				if err != nil {
+					return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": "invalid payload"})
+				}
+				items = append(items, item)
+			}
+			if payload.Action == "add" {
+				res, err = a.service.AddPropertyMedium(puid, items)
+			} else {
+				res, err = a.service.ReplacePropertyMedium(puid, items)
+			}
+		case "delete":
+			var items []int64
+			for _, item := range payload.Items {
+				i, ok := item.(float64)
+				if !ok {
+					return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": "invalid payload"})
+				}
+				items = append(items, int64(i))
+			}
+			err = a.service.DeletePropertyMedium(puid, items)
+		}
+		if err != nil {
+			if dbErr, ok := err.(*pgconn.PgError); ok {
+				responses.DBErrorResponse(ctx, dbErr)
+				return nil
+			}
+
+			ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
+			return nil
+		}
+
+		switch payload.Action {
+		case "add", "replace":
+			return ctx.Status(201).JSON(fiber.Map{"items": res})
+		case "delete":
+			return ctx.SendStatus(fiber.StatusNoContent)
+		}
+
+		return nil
+	}
+}
+
+func (a *adapter) updatePropertyAmenity() fiber.Handler {
+	return func(ctx *fiber.Ctx) error {
+		puid, _ := uuid.Parse(ctx.Params("id"))
+
+		var payload struct {
+			Items  []interface{} `json:"items" validate:"required"`
+			Action string        `json:"action" validate:"required,oneof=add delete replace"`
+		}
+		if err := ctx.BodyParser(&payload); err != nil {
+			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": err.Error()})
+		}
+		if errs := utils.ValidateStruct(payload); len(errs) > 0 && errs[0].Error {
+			ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": utils.GetValidationError(errs)})
+			return nil
+		}
+
+		var res interface{}
+		var err error
+
+		switch payload.Action {
+		case "add", "replace":
+			var items []dto.CreatePropertyAmenity
+			for _, i := range payload.Items {
+				var item dto.CreatePropertyAmenity
+				err = utils.Map2JSONStruct(i, &item)
+				if err != nil {
+					return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": "invalid payload"})
+				}
+				items = append(items, item)
+			}
+			if payload.Action == "add" {
+				res, err = a.service.AddPropertyAmenities(puid, items)
+			} else {
+				res, err = a.service.ReplacePropertyAmenities(puid, items)
+			}
+		case "delete":
+			var items []int64
+			for _, item := range payload.Items {
+				i, ok := item.(float64)
+				if !ok {
+					return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": "invalid payload"})
+				}
+				items = append(items, int64(i))
+			}
+			err = a.service.DeletePropertyAmenities(puid, items)
+		}
+		if err != nil {
+			if dbErr, ok := err.(*pgconn.PgError); ok {
+				responses.DBErrorResponse(ctx, dbErr)
+				return nil
+			}
+
+			ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
+			return nil
+		}
+
+		switch payload.Action {
+		case "add", "replace":
+			return ctx.Status(201).JSON(fiber.Map{
+				"items": res,
+			})
+		case "delete":
+			return ctx.SendStatus(fiber.StatusNoContent)
+		}
+
+		return nil
+	}
+}
+
+func (a *adapter) updatePropertyFeature() fiber.Handler {
+	return func(ctx *fiber.Ctx) error {
+		puid, _ := uuid.Parse(ctx.Params("id"))
+
+		var payload struct {
+			Items  []interface{} `json:"items" validate:"required"`
+			Action string        `json:"action" validate:"required,oneof=add delete replace"`
+		}
+		if err := ctx.BodyParser(&payload); err != nil {
+			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": err.Error()})
+		}
+		if errs := utils.ValidateStruct(payload); len(errs) > 0 && errs[0].Error {
+			ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": utils.GetValidationError(errs)})
+			return nil
+		}
+
+		var res interface{}
+		var err error
+
+		switch payload.Action {
+		case "add", "replace":
+			var items []dto.CreatePropertyFeature
+			for _, i := range payload.Items {
+				var item dto.CreatePropertyFeature
+				err = utils.Map2JSONStruct(i, &item)
+				if err != nil {
+					return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": "invalid payload"})
+				}
+				items = append(items, item)
+			}
+			if payload.Action == "add" {
+				res, err = a.service.AddPropertyFeatures(puid, items)
+			} else {
+				res, err = a.service.ReplacePropertyFeatures(puid, items)
+			}
+		case "delete":
+			var items []int64
+			for _, item := range payload.Items {
+				i, ok := item.(float64)
+				if !ok {
+					return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": "invalid payload"})
+				}
+				items = append(items, int64(i))
+			}
+			err = a.service.DeletePropertyFeatures(puid, items)
+		}
+		if err != nil {
+			if dbErr, ok := err.(*pgconn.PgError); ok {
+				responses.DBErrorResponse(ctx, dbErr)
+				return nil
+			}
+
+			ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
+			return nil
+		}
+
+		switch payload.Action {
+		case "add", "replace":
+			return ctx.Status(201).JSON(fiber.Map{
+				"items": res,
+			})
+		case "delete":
+			return ctx.SendStatus(fiber.StatusNoContent)
+		}
+
+		return nil
+	}
+}
+
+func (a *adapter) updatePropertyTag() fiber.Handler {
+	return func(ctx *fiber.Ctx) error {
+		puid, _ := uuid.Parse(ctx.Params("id"))
+
+		var payload struct {
+			Items  []interface{} `json:"items"`
+			Action string        `json:"action" validate:"required,oneof=add delete replace"`
+		}
+		if err := ctx.BodyParser(&payload); err != nil {
+			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": err.Error()})
+		}
+		if errs := utils.ValidateStruct(payload); len(errs) > 0 && errs[0].Error {
+			ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": utils.GetValidationError(errs)})
+			return nil
+		}
+
+		var res interface{}
+		var err error
+
+		switch payload.Action {
+		case "add", "replace":
+			var items []dto.CreatePropertyTag
+			for _, i := range payload.Items {
+				var item dto.CreatePropertyTag
+				err = utils.Map2JSONStruct(i, &item)
+				if err != nil {
+					return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": "invalid payload"})
+				}
+				items = append(items, item)
+			}
+			if payload.Action == "add" {
+				res, err = a.service.AddPropertyTags(puid, items)
+			} else {
+				res, err = a.service.ReplacePropertyTags(puid, items)
+			}
+		case "delete":
+			var items []int64
+			for _, item := range payload.Items {
+				i, ok := item.(float64)
+				if !ok {
+					return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": "invalid payload"})
+				}
+				items = append(items, int64(i))
+			}
+			err = a.service.DeletePropertyTags(puid, items)
+		}
+		if err != nil {
+			if dbErr, ok := err.(*pgconn.PgError); ok {
+				responses.DBErrorResponse(ctx, dbErr)
+				return nil
+			}
+
+			ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
+			return nil
+		}
+
+		switch payload.Action {
+		case "add", "replace":
+			return ctx.Status(201).JSON(fiber.Map{
+				"items": res,
+			})
+		case "delete":
+			return ctx.SendStatus(fiber.StatusNoContent)
+		}
+
+		return nil
+	}
+}
+
+func (a *adapter) getAllAmenities() fiber.Handler {
+	return func(ctx *fiber.Ctx) error {
+		res, err := a.service.GetAllAmenities()
+		if err != nil {
+			ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
+			return nil
+		}
+
+		return ctx.JSON(fiber.Map{
+			"items": res,
+		})
+	}
+}
+
+func (a *adapter) getAllFeatures() fiber.Handler {
+	return func(ctx *fiber.Ctx) error {
+		res, err := a.service.GetAllFeatures()
+		if err != nil {
+			ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
+			return nil
+		}
+
+		return ctx.JSON(fiber.Map{
+			"items": res,
+		})
 	}
 }

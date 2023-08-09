@@ -157,6 +157,18 @@ type Account struct {
 	SessionState      sql.NullString `json:"session_state"`
 }
 
+// Elevator, Security camera, Pool, Yard, ...
+type PAmenity struct {
+	ID      int64  `json:"id"`
+	Amenity string `json:"amenity"`
+}
+
+// Security guard, Parking, Gym, ...
+type PFeature struct {
+	ID      int64  `json:"id"`
+	Feature string `json:"feature"`
+}
+
 type Property struct {
 	ID             uuid.UUID     `json:"id"`
 	OwnerID        uuid.UUID     `json:"owner_id"`
@@ -176,29 +188,27 @@ type Property struct {
 	UpdatedAt   time.Time      `json:"updated_at"`
 }
 
-// Elevator, Security camera, Pool, Yard, ...
 type PropertyAmenity struct {
 	PropertyID  uuid.UUID      `json:"property_id"`
-	Amenity     string         `json:"amenity"`
+	AmenityID   int64          `json:"amenity_id"`
 	Description sql.NullString `json:"description"`
 }
 
-// Security guard, Parking, Gym, ...
 type PropertyFeature struct {
 	PropertyID  uuid.UUID      `json:"property_id"`
-	Feature     string         `json:"feature"`
+	FeatureID   int64          `json:"feature_id"`
 	Description sql.NullString `json:"description"`
 }
 
 type PropertyMedium struct {
-	ID         int32     `json:"id"`
+	ID         int64     `json:"id"`
 	PropertyID uuid.UUID `json:"property_id"`
 	Url        string    `json:"url"`
 	Type       MEDIATYPE `json:"type"`
 }
 
 type PropertyTag struct {
-	ID         int32     `json:"id"`
+	ID         int64     `json:"id"`
 	PropertyID uuid.UUID `json:"property_id"`
 	Tag        string    `json:"tag"`
 }
@@ -212,6 +222,12 @@ type Session struct {
 	ClientIp     sql.NullString `json:"client_ip"`
 	IsBlocked    sql.NullBool   `json:"is_blocked"`
 	CreatedAt    time.Time      `json:"created_at"`
+}
+
+// Air conditioner, Fridge, Washing machine, ...
+type UAmenity struct {
+	ID      int64  `json:"id"`
+	Amenity string `json:"amenity"`
 }
 
 type Unit struct {
@@ -231,15 +247,14 @@ type Unit struct {
 	UpdatedAt           time.Time     `json:"updated_at"`
 }
 
-// Air conditioner, Fridge, Washing machine, ...
 type UnitAmenity struct {
 	UnitID      uuid.UUID      `json:"unit_id"`
-	Amenity     string         `json:"amenity"`
+	AmenityID   int64          `json:"amenity_id"`
 	Description sql.NullString `json:"description"`
 }
 
 type UnitMedium struct {
-	ID     int32     `json:"id"`
+	ID     int64     `json:"id"`
 	UnitID uuid.UUID `json:"unit_id"`
 	Url    string    `json:"url"`
 	Type   MEDIATYPE `json:"type"`

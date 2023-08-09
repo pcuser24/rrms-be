@@ -95,22 +95,25 @@ func (q *Queries) CreateUnit(ctx context.Context, arg CreateUnitParams) (Unit, e
 const createUnitAmenity = `-- name: CreateUnitAmenity :one
 INSERT INTO unit_amenity (
   unit_id,
-  amenity
+  amenity_id,
+  description
 ) VALUES (
   $1,
-  $2
-) RETURNING unit_id, amenity, description
+  $2,
+  $3
+) RETURNING unit_id, amenity_id, description
 `
 
 type CreateUnitAmenityParams struct {
-	UnitID  uuid.UUID `json:"unit_id"`
-	Amenity string    `json:"amenity"`
+	UnitID      uuid.UUID      `json:"unit_id"`
+	AmenityID   int64          `json:"amenity_id"`
+	Description sql.NullString `json:"description"`
 }
 
 func (q *Queries) CreateUnitAmenity(ctx context.Context, arg CreateUnitAmenityParams) (UnitAmenity, error) {
-	row := q.db.QueryRowContext(ctx, createUnitAmenity, arg.UnitID, arg.Amenity)
+	row := q.db.QueryRowContext(ctx, createUnitAmenity, arg.UnitID, arg.AmenityID, arg.Description)
 	var i UnitAmenity
-	err := row.Scan(&i.UnitID, &i.Amenity, &i.Description)
+	err := row.Scan(&i.UnitID, &i.AmenityID, &i.Description)
 	return i, err
 }
 
@@ -144,6 +147,24 @@ func (q *Queries) CreateUnitMedia(ctx context.Context, arg CreateUnitMediaParams
 	return i, err
 }
 
+const deleteAllUnitAmenity = `-- name: DeleteAllUnitAmenity :exec
+DELETE FROM unit_amenity WHERE unit_id = $1
+`
+
+func (q *Queries) DeleteAllUnitAmenity(ctx context.Context, unitID uuid.UUID) error {
+	_, err := q.db.ExecContext(ctx, deleteAllUnitAmenity, unitID)
+	return err
+}
+
+const deleteAllUnitMedia = `-- name: DeleteAllUnitMedia :exec
+DELETE FROM unit_media WHERE unit_id = $1
+`
+
+func (q *Queries) DeleteAllUnitMedia(ctx context.Context, unitID uuid.UUID) error {
+	_, err := q.db.ExecContext(ctx, deleteAllUnitMedia, unitID)
+	return err
+}
+
 const deleteUnit = `-- name: DeleteUnit :exec
 DELETE FROM units WHERE id = $1
 `
@@ -153,32 +174,58 @@ func (q *Queries) DeleteUnit(ctx context.Context, id uuid.UUID) error {
 	return err
 }
 
-const deleteUnitAmenity = `-- name: DeleteUnitAmenity :exec
-DELETE FROM unit_amenity WHERE unit_id = $1 AND amenity = $2
+const getAllUnitAmenities = `-- name: GetAllUnitAmenities :many
+SELECT id, amenity FROM u_amenities
 `
 
-type DeleteUnitAmenityParams struct {
-	UnitID  uuid.UUID `json:"unit_id"`
-	Amenity string    `json:"amenity"`
+func (q *Queries) GetAllUnitAmenities(ctx context.Context) ([]UAmenity, error) {
+	rows, err := q.db.QueryContext(ctx, getAllUnitAmenities)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []UAmenity
+	for rows.Next() {
+		var i UAmenity
+		if err := rows.Scan(&i.ID, &i.Amenity); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
-func (q *Queries) DeleteUnitAmenity(ctx context.Context, arg DeleteUnitAmenityParams) error {
-	_, err := q.db.ExecContext(ctx, deleteUnitAmenity, arg.UnitID, arg.Amenity)
-	return err
-}
-
-const deleteUnitMedia = `-- name: DeleteUnitMedia :exec
-DELETE FROM unit_media WHERE unit_id = $1 AND url = $2
+const getUnitAmenities = `-- name: GetUnitAmenities :many
+SELECT unit_id, amenity_id, description FROM unit_amenity WHERE unit_id = $1
 `
 
-type DeleteUnitMediaParams struct {
-	UnitID uuid.UUID `json:"unit_id"`
-	Url    string    `json:"url"`
-}
-
-func (q *Queries) DeleteUnitMedia(ctx context.Context, arg DeleteUnitMediaParams) error {
-	_, err := q.db.ExecContext(ctx, deleteUnitMedia, arg.UnitID, arg.Url)
-	return err
+func (q *Queries) GetUnitAmenities(ctx context.Context, unitID uuid.UUID) ([]UnitAmenity, error) {
+	rows, err := q.db.QueryContext(ctx, getUnitAmenities, unitID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []UnitAmenity
+	for rows.Next() {
+		var i UnitAmenity
+		if err := rows.Scan(&i.UnitID, &i.AmenityID, &i.Description); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const getUnitById = `-- name: GetUnitById :one
@@ -205,6 +252,38 @@ func (q *Queries) GetUnitById(ctx context.Context, id uuid.UUID) (Unit, error) {
 		&i.UpdatedAt,
 	)
 	return i, err
+}
+
+const getUnitMedia = `-- name: GetUnitMedia :many
+SELECT id, unit_id, url, type FROM unit_media WHERE unit_id = $1
+`
+
+func (q *Queries) GetUnitMedia(ctx context.Context, unitID uuid.UUID) ([]UnitMedium, error) {
+	rows, err := q.db.QueryContext(ctx, getUnitMedia, unitID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []UnitMedium
+	for rows.Next() {
+		var i UnitMedium
+		if err := rows.Scan(
+			&i.ID,
+			&i.UnitID,
+			&i.Url,
+			&i.Type,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const getUnitsOfProperty = `-- name: GetUnitsOfProperty :many

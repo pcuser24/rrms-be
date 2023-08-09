@@ -8,7 +8,7 @@ import (
 )
 
 type PropertyTagModel struct {
-	ID         int32     `json:"id"`
+	ID         int64     `json:"id"`
 	PropertyID uuid.UUID `json:"property_id"`
 	Tag        string    `json:"tag"`
 }
@@ -53,13 +53,16 @@ func ToPropertyModel(p *database.Property) *PropertyModel {
 	}
 
 	if p.NumberOfFloors.Valid {
-		m.NumberOfFloors = &p.NumberOfFloors.Int32
+		n := p.NumberOfFloors.Int32
+		m.NumberOfFloors = &n
 	}
 	if p.YearBuilt.Valid {
-		m.YearBuilt = &p.YearBuilt.Int32
+		y := p.YearBuilt.Int32
+		m.YearBuilt = &y
 	}
 	if p.Orientation.Valid {
-		m.Orientation = &p.Orientation.String
+		o := p.Orientation.String
+		m.Orientation = &o
 	}
 
 	return m

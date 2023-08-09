@@ -27,28 +27,42 @@ CREATE TABLE IF NOT EXISTS "properties" (
 ALTER TABLE "properties" ADD CONSTRAINT "property_user_fkey" FOREIGN KEY ("owner_id") REFERENCES "User"("id") ON DELETE CASCADE;
 COMMENT ON COLUMN "properties"."orientation" IS 'n,s,w,e,nw,ne,sw,se';
 
+CREATE TABLE IF NOT EXISTS "p_amenities" (
+  "id" BIGSERIAL PRIMARY KEY,
+  "amenity" TEXT NOT NULL
+);
+COMMENT ON TABLE "p_amenities" IS 'Elevator, Security camera, Pool, Yard, ...';
+ALTER TABLE "p_amenities" ADD CONSTRAINT "p_amenities_amenity_unique" UNIQUE ("amenity");
+
 CREATE TABLE IF NOT EXISTS "property_amenity" (
   "property_id" UUID NOT NULL,
-  "amenity" TEXT NOT NULL,
+  "amenity_id" BIGINT NOT NULL,
   "description" TEXT,
 
-  PRIMARY KEY("property_id", "amenity")
+  PRIMARY KEY("property_id", "amenity_id")
 );
-ALTER TABLE "property_amenity" ADD CONSTRAINT "property_id_amenity_fkey" FOREIGN KEY ("property_id") REFERENCES "properties"("id") ON DELETE CASCADE;
-COMMENT ON TABLE "property_amenity" IS 'Elevator, Security camera, Pool, Yard, ...';
+ALTER TABLE "property_amenity" ADD CONSTRAINT "property_amenity_property_id_fkey" FOREIGN KEY ("property_id") REFERENCES "properties"("id") ON DELETE CASCADE;
+ALTER TABLE "property_amenity" ADD CONSTRAINT "property_amenity_amenity_id_fkey" FOREIGN KEY ("amenity_id") REFERENCES "p_amenities"("id") ON DELETE CASCADE;
+
+CREATE TABLE IF NOT EXISTS "p_features" (
+  "id" BIGSERIAL PRIMARY KEY,
+  "feature" TEXT NOT NULL
+);
+COMMENT ON TABLE "p_features" IS 'Security guard, Parking, Gym, ...';
+ALTER TABLE "p_features" ADD CONSTRAINT "p_features_feature_unique" UNIQUE ("feature");
 
 CREATE TABLE IF NOT EXISTS "property_feature" (
   "property_id" UUID NOT NULL,
-  "feature" TEXT NOT NULL,
+  "feature_id" BIGINT NOT NULL,
   "description" TEXT,
 
-  PRIMARY KEY("property_id", "feature")
+  PRIMARY KEY("property_id", "feature_id")
 );
-ALTER TABLE "property_feature" ADD CONSTRAINT "property_id_feature_fkey" FOREIGN KEY ("property_id") REFERENCES "properties"("id") ON DELETE CASCADE;
-COMMENT ON TABLE "property_feature" IS 'Security guard, Parking, Gym, ...';
+ALTER TABLE "property_feature" ADD CONSTRAINT "property_feature_property_id_fkey" FOREIGN KEY ("property_id") REFERENCES "properties"("id") ON DELETE CASCADE;
+ALTER TABLE "property_feature" ADD CONSTRAINT "property_feature_feature_id_fkey" FOREIGN KEY ("feature_id") REFERENCES "p_features"("id") ON DELETE CASCADE;
 
 CREATE TABLE IF NOT EXISTS "property_tag" (
-  "id" SERIAL PRIMARY KEY,
+  "id" BIGSERIAL PRIMARY KEY,
   "property_id" UUID NOT NULL,
   "tag" TEXT NOT NULL
 );
@@ -60,7 +74,7 @@ CREATE TYPE "MEDIATYPE" AS ENUM (
   'VIDEO'
 );
 CREATE TABLE IF NOT EXISTS "property_media" (
-  "id" SERIAL PRIMARY KEY,
+  "id" BIGSERIAL PRIMARY KEY,
   "property_id" UUID NOT NULL,
   "url" TEXT NOT NULL,
   "type" "MEDIATYPE" NOT NULL

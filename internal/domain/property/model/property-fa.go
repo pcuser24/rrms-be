@@ -6,37 +6,49 @@ import (
 )
 
 // Elevator, Security camera, Pool, Yard, ...
+type PAmenity struct {
+	ID      int64  `json:"id"`
+	Amenity string `json:"amenity"`
+}
+
 type PropertyAmenityModel struct {
 	PropertyID  uuid.UUID `json:"property_id"`
-	Amenity     string    `json:"amenity"`
+	AmenityID   int64     `json:"amenity"`
 	Description *string   `json:"description"`
 }
 
 func ToPropertyAmenityModel(pa *database.PropertyAmenity) *PropertyAmenityModel {
 	a := PropertyAmenityModel{
 		PropertyID: pa.PropertyID,
-		Amenity:    pa.Amenity,
+		AmenityID:  pa.AmenityID,
 	}
 	if pa.Description.Valid {
-		a.Description = &pa.Description.String
+		desc := pa.Description.String
+		a.Description = &desc
 	}
 	return &a
 }
 
 // Security guard, Parking, Gym, ...
+type PFeature struct {
+	ID      int64  `json:"id"`
+	Feature string `json:"feature"`
+}
+
 type PropertyFeatureModel struct {
 	PropertyID  uuid.UUID `json:"property_id"`
-	Feature     string    `json:"feature"`
+	FeatureID   int64     `json:"feature"`
 	Description *string   `json:"description"`
 }
 
 func ToPropertyFeatureModel(pa *database.PropertyFeature) *PropertyFeatureModel {
 	f := PropertyFeatureModel{
 		PropertyID: pa.PropertyID,
-		Feature:    pa.Feature,
+		FeatureID:  pa.FeatureID,
 	}
 	if pa.Description.Valid {
-		f.Description = &pa.Description.String
+		desc := pa.Description.String
+		f.Description = &desc
 	}
 	return &f
 }

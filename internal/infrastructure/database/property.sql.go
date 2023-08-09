@@ -116,44 +116,50 @@ func (q *Queries) CreateProperty(ctx context.Context, arg CreatePropertyParams) 
 const createPropertyAmenity = `-- name: CreatePropertyAmenity :one
 INSERT INTO property_amenity (
   property_id,
-  amenity
+  amenity_id,
+  description
 ) VALUES (
   $1,
-  $2
-) RETURNING property_id, amenity, description
+  $2,
+  $3
+) RETURNING property_id, amenity_id, description
 `
 
 type CreatePropertyAmenityParams struct {
-	PropertyID uuid.UUID `json:"property_id"`
-	Amenity    string    `json:"amenity"`
+	PropertyID  uuid.UUID      `json:"property_id"`
+	AmenityID   int64          `json:"amenity_id"`
+	Description sql.NullString `json:"description"`
 }
 
 func (q *Queries) CreatePropertyAmenity(ctx context.Context, arg CreatePropertyAmenityParams) (PropertyAmenity, error) {
-	row := q.db.QueryRowContext(ctx, createPropertyAmenity, arg.PropertyID, arg.Amenity)
+	row := q.db.QueryRowContext(ctx, createPropertyAmenity, arg.PropertyID, arg.AmenityID, arg.Description)
 	var i PropertyAmenity
-	err := row.Scan(&i.PropertyID, &i.Amenity, &i.Description)
+	err := row.Scan(&i.PropertyID, &i.AmenityID, &i.Description)
 	return i, err
 }
 
 const createPropertyFeature = `-- name: CreatePropertyFeature :one
 INSERT INTO property_feature (
   property_id,
-  feature
+  feature_id,
+  description
 ) VALUES (
   $1,
-  $2
-) RETURNING property_id, feature, description
+  $2,
+  $3
+) RETURNING property_id, feature_id, description
 `
 
 type CreatePropertyFeatureParams struct {
-	PropertyID uuid.UUID `json:"property_id"`
-	Feature    string    `json:"feature"`
+	PropertyID  uuid.UUID      `json:"property_id"`
+	FeatureID   int64          `json:"feature_id"`
+	Description sql.NullString `json:"description"`
 }
 
 func (q *Queries) CreatePropertyFeature(ctx context.Context, arg CreatePropertyFeatureParams) (PropertyFeature, error) {
-	row := q.db.QueryRowContext(ctx, createPropertyFeature, arg.PropertyID, arg.Feature)
+	row := q.db.QueryRowContext(ctx, createPropertyFeature, arg.PropertyID, arg.FeatureID, arg.Description)
 	var i PropertyFeature
-	err := row.Scan(&i.PropertyID, &i.Feature, &i.Description)
+	err := row.Scan(&i.PropertyID, &i.FeatureID, &i.Description)
 	return i, err
 }
 
@@ -187,6 +193,42 @@ func (q *Queries) CreatePropertyMedia(ctx context.Context, arg CreatePropertyMed
 	return i, err
 }
 
+const deleteAllPropertyAmenity = `-- name: DeleteAllPropertyAmenity :exec
+DELETE FROM property_amenity WHERE property_id = $1
+`
+
+func (q *Queries) DeleteAllPropertyAmenity(ctx context.Context, propertyID uuid.UUID) error {
+	_, err := q.db.ExecContext(ctx, deleteAllPropertyAmenity, propertyID)
+	return err
+}
+
+const deleteAllPropertyFeature = `-- name: DeleteAllPropertyFeature :exec
+DELETE FROM property_feature WHERE property_id = $1
+`
+
+func (q *Queries) DeleteAllPropertyFeature(ctx context.Context, propertyID uuid.UUID) error {
+	_, err := q.db.ExecContext(ctx, deleteAllPropertyFeature, propertyID)
+	return err
+}
+
+const deleteAllPropertyMedia = `-- name: DeleteAllPropertyMedia :exec
+DELETE FROM property_media WHERE property_id = $1
+`
+
+func (q *Queries) DeleteAllPropertyMedia(ctx context.Context, propertyID uuid.UUID) error {
+	_, err := q.db.ExecContext(ctx, deleteAllPropertyMedia, propertyID)
+	return err
+}
+
+const deleteAllPropertyTag = `-- name: DeleteAllPropertyTag :exec
+DELETE FROM property_tag WHERE property_id = $1
+`
+
+func (q *Queries) DeleteAllPropertyTag(ctx context.Context, propertyID uuid.UUID) error {
+	_, err := q.db.ExecContext(ctx, deleteAllPropertyTag, propertyID)
+	return err
+}
+
 const deleteProperty = `-- name: DeleteProperty :exec
 DELETE FROM properties WHERE id = $1
 `
@@ -196,50 +238,111 @@ func (q *Queries) DeleteProperty(ctx context.Context, id uuid.UUID) error {
 	return err
 }
 
-const deletePropertyAmenity = `-- name: DeletePropertyAmenity :exec
-DELETE FROM property_amenity WHERE property_id = $1 AND amenity = $2
+const getAllPropertyAmenities = `-- name: GetAllPropertyAmenities :many
+SELECT id, amenity FROM p_amenities
 `
 
-type DeletePropertyAmenityParams struct {
-	PropertyID uuid.UUID `json:"property_id"`
-	Amenity    string    `json:"amenity"`
+func (q *Queries) GetAllPropertyAmenities(ctx context.Context) ([]PAmenity, error) {
+	rows, err := q.db.QueryContext(ctx, getAllPropertyAmenities)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []PAmenity
+	for rows.Next() {
+		var i PAmenity
+		if err := rows.Scan(&i.ID, &i.Amenity); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
-func (q *Queries) DeletePropertyAmenity(ctx context.Context, arg DeletePropertyAmenityParams) error {
-	_, err := q.db.ExecContext(ctx, deletePropertyAmenity, arg.PropertyID, arg.Amenity)
-	return err
-}
-
-const deletePropertyFeature = `-- name: DeletePropertyFeature :exec
-DELETE FROM property_feature WHERE property_id = $1 AND feature = $2
+const getAllPropertyFeatures = `-- name: GetAllPropertyFeatures :many
+SELECT id, feature FROM p_features
 `
 
-type DeletePropertyFeatureParams struct {
-	PropertyID uuid.UUID `json:"property_id"`
-	Feature    string    `json:"feature"`
+func (q *Queries) GetAllPropertyFeatures(ctx context.Context) ([]PFeature, error) {
+	rows, err := q.db.QueryContext(ctx, getAllPropertyFeatures)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []PFeature
+	for rows.Next() {
+		var i PFeature
+		if err := rows.Scan(&i.ID, &i.Feature); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
-func (q *Queries) DeletePropertyFeature(ctx context.Context, arg DeletePropertyFeatureParams) error {
-	_, err := q.db.ExecContext(ctx, deletePropertyFeature, arg.PropertyID, arg.Feature)
-	return err
-}
-
-const deletePropertyMedia = `-- name: DeletePropertyMedia :exec
-DELETE FROM property_media WHERE property_id = $1 AND id = $2
+const getPropertiesByOwnerId = `-- name: GetPropertiesByOwnerId :many
+SELECT id, owner_id, name, area, number_of_floors, year_built, orientation, full_address, district, city, lat, lng, type, created_at, updated_at FROM properties WHERE owner_id = $1 LIMIT $2 OFFSET $3
 `
 
-type DeletePropertyMediaParams struct {
-	PropertyID uuid.UUID `json:"property_id"`
-	ID         int32     `json:"id"`
+type GetPropertiesByOwnerIdParams struct {
+	OwnerID uuid.UUID `json:"owner_id"`
+	Limit   int32     `json:"limit"`
+	Offset  int32     `json:"offset"`
 }
 
-func (q *Queries) DeletePropertyMedia(ctx context.Context, arg DeletePropertyMediaParams) error {
-	_, err := q.db.ExecContext(ctx, deletePropertyMedia, arg.PropertyID, arg.ID)
-	return err
+func (q *Queries) GetPropertiesByOwnerId(ctx context.Context, arg GetPropertiesByOwnerIdParams) ([]Property, error) {
+	rows, err := q.db.QueryContext(ctx, getPropertiesByOwnerId, arg.OwnerID, arg.Limit, arg.Offset)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Property
+	for rows.Next() {
+		var i Property
+		if err := rows.Scan(
+			&i.ID,
+			&i.OwnerID,
+			&i.Name,
+			&i.Area,
+			&i.NumberOfFloors,
+			&i.YearBuilt,
+			&i.Orientation,
+			&i.FullAddress,
+			&i.District,
+			&i.City,
+			&i.Lat,
+			&i.Lng,
+			&i.Type,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const getPropertyAmenities = `-- name: GetPropertyAmenities :many
-SELECT property_id, amenity, description FROM property_amenity WHERE property_id = $1
+SELECT property_id, amenity_id, description FROM property_amenity WHERE property_id = $1
 `
 
 func (q *Queries) GetPropertyAmenities(ctx context.Context, propertyID uuid.UUID) ([]PropertyAmenity, error) {
@@ -251,7 +354,7 @@ func (q *Queries) GetPropertyAmenities(ctx context.Context, propertyID uuid.UUID
 	var items []PropertyAmenity
 	for rows.Next() {
 		var i PropertyAmenity
-		if err := rows.Scan(&i.PropertyID, &i.Amenity, &i.Description); err != nil {
+		if err := rows.Scan(&i.PropertyID, &i.AmenityID, &i.Description); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
@@ -292,51 +395,8 @@ func (q *Queries) GetPropertyById(ctx context.Context, id uuid.UUID) (Property, 
 	return i, err
 }
 
-const getPropertyByOwnerId = `-- name: GetPropertyByOwnerId :many
-SELECT id, owner_id, name, area, number_of_floors, year_built, orientation, full_address, district, city, lat, lng, type, created_at, updated_at FROM properties WHERE owner_id = $1
-`
-
-func (q *Queries) GetPropertyByOwnerId(ctx context.Context, ownerID uuid.UUID) ([]Property, error) {
-	rows, err := q.db.QueryContext(ctx, getPropertyByOwnerId, ownerID)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []Property
-	for rows.Next() {
-		var i Property
-		if err := rows.Scan(
-			&i.ID,
-			&i.OwnerID,
-			&i.Name,
-			&i.Area,
-			&i.NumberOfFloors,
-			&i.YearBuilt,
-			&i.Orientation,
-			&i.FullAddress,
-			&i.District,
-			&i.City,
-			&i.Lat,
-			&i.Lng,
-			&i.Type,
-			&i.CreatedAt,
-			&i.UpdatedAt,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
 const getPropertyFeatures = `-- name: GetPropertyFeatures :many
-SELECT property_id, feature, description FROM property_feature WHERE property_id = $1
+SELECT property_id, feature_id, description FROM property_feature WHERE property_id = $1
 `
 
 func (q *Queries) GetPropertyFeatures(ctx context.Context, propertyID uuid.UUID) ([]PropertyFeature, error) {
@@ -348,7 +408,7 @@ func (q *Queries) GetPropertyFeatures(ctx context.Context, propertyID uuid.UUID)
 	var items []PropertyFeature
 	for rows.Next() {
 		var i PropertyFeature
-		if err := rows.Scan(&i.PropertyID, &i.Feature, &i.Description); err != nil {
+		if err := rows.Scan(&i.PropertyID, &i.FeatureID, &i.Description); err != nil {
 			return nil, err
 		}
 		items = append(items, i)

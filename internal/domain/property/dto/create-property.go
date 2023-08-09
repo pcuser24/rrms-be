@@ -10,18 +10,18 @@ import (
 type CreatePropertyMedia struct {
 	// PropertyID uuid.UUID          `json:"property_id" validate:"required,uuid"`
 	Url  string             `json:"url" validate:"required,url"`
-	Type database.MEDIATYPE `json:"type" validate:"required"`
+	Type database.MEDIATYPE `json:"type" validate:"required,oneof=IMAGE VIDEO"`
 }
 
 type CreatePropertyAmenity struct {
 	// PropertyID  uuid.UUID `json:"property_id" validate:"required,uuid"`
-	Amenity     string  `json:"amenity" validate:"required"`
+	AmenityID   int64   `json:"amenity" validate:"required"`
 	Description *string `json:"description"`
 }
 
 type CreatePropertyFeature struct {
 	// PropertyID  uuid.UUID `json:"property_id" validate:"required,uuid"`
-	Feature     string  `json:"feature" validate:"required"`
+	FeatureID   int64   `json:"feature" validate:"required"`
 	Description *string `json:"description"`
 }
 

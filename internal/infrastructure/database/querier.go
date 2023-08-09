@@ -19,20 +19,26 @@ type Querier interface {
 	CreateUnit(ctx context.Context, arg CreateUnitParams) (Unit, error)
 	CreateUnitAmenity(ctx context.Context, arg CreateUnitAmenityParams) (UnitAmenity, error)
 	CreateUnitMedia(ctx context.Context, arg CreateUnitMediaParams) (UnitMedium, error)
+	DeleteAllPropertyAmenity(ctx context.Context, propertyID uuid.UUID) error
+	DeleteAllPropertyFeature(ctx context.Context, propertyID uuid.UUID) error
+	DeleteAllPropertyMedia(ctx context.Context, propertyID uuid.UUID) error
+	DeleteAllPropertyTag(ctx context.Context, propertyID uuid.UUID) error
+	DeleteAllUnitAmenity(ctx context.Context, unitID uuid.UUID) error
+	DeleteAllUnitMedia(ctx context.Context, unitID uuid.UUID) error
 	DeleteProperty(ctx context.Context, id uuid.UUID) error
-	DeletePropertyAmenity(ctx context.Context, arg DeletePropertyAmenityParams) error
-	DeletePropertyFeature(ctx context.Context, arg DeletePropertyFeatureParams) error
-	DeletePropertyMedia(ctx context.Context, arg DeletePropertyMediaParams) error
 	DeleteUnit(ctx context.Context, id uuid.UUID) error
-	DeleteUnitAmenity(ctx context.Context, arg DeleteUnitAmenityParams) error
-	DeleteUnitMedia(ctx context.Context, arg DeleteUnitMediaParams) error
+	GetAllPropertyAmenities(ctx context.Context) ([]PAmenity, error)
+	GetAllPropertyFeatures(ctx context.Context) ([]PFeature, error)
+	GetAllUnitAmenities(ctx context.Context) ([]UAmenity, error)
+	GetPropertiesByOwnerId(ctx context.Context, arg GetPropertiesByOwnerIdParams) ([]Property, error)
 	GetPropertyAmenities(ctx context.Context, propertyID uuid.UUID) ([]PropertyAmenity, error)
 	GetPropertyById(ctx context.Context, id uuid.UUID) (Property, error)
-	GetPropertyByOwnerId(ctx context.Context, ownerID uuid.UUID) ([]Property, error)
 	GetPropertyFeatures(ctx context.Context, propertyID uuid.UUID) ([]PropertyFeature, error)
 	GetPropertyMedium(ctx context.Context, propertyID uuid.UUID) ([]PropertyMedium, error)
 	GetPropertyTags(ctx context.Context, propertyID uuid.UUID) ([]PropertyTag, error)
+	GetUnitAmenities(ctx context.Context, unitID uuid.UUID) ([]UnitAmenity, error)
 	GetUnitById(ctx context.Context, id uuid.UUID) (Unit, error)
+	GetUnitMedia(ctx context.Context, unitID uuid.UUID) ([]UnitMedium, error)
 	GetUnitsOfProperty(ctx context.Context, propertyID uuid.UUID) ([]Unit, error)
 	GetUserByEmail(ctx context.Context, email string) (User, error)
 	GetUserById(ctx context.Context, id uuid.UUID) (User, error)

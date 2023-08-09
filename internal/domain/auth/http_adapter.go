@@ -61,7 +61,7 @@ func (a *adapter) credentialRegisterHandle() fiber.Handler {
 			return ctx.SendStatus(fiber.StatusBadRequest)
 		}
 		if errs := utils.ValidateStruct(payload); len(errs) > 0 && errs[0].Error {
-			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": utils.GetFibValidationError(errs)})
+			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": utils.GetValidationError(errs)})
 		}
 
 		res, err := a.service.RegisterUser(&payload)
@@ -91,7 +91,7 @@ func (a *adapter) credentialLoginHandle() fiber.Handler {
 			return ctx.SendStatus(fiber.StatusBadRequest)
 		}
 		if errs := utils.ValidateStruct(payload); len(errs) > 0 && errs[0].Error {
-			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": utils.GetFibValidationError(errs)})
+			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": utils.GetValidationError(errs)})
 		}
 
 		res, err := a.service.Login(&payload)

@@ -10,6 +10,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	db "github.com/user2410/rrms-backend/internal/infrastructure/database"
+	"github.com/user2410/rrms-backend/internal/infrastructure/database/seedings"
 )
 
 type migrateConfig struct {
@@ -173,18 +174,14 @@ func newMigrateSeedCommand() *migrateSeedCommand {
 }
 
 func (c *migrateSeedCommand) run(cmd *cobra.Command, args []string) {
-	m, err := initMigrator(c.config)
+	dao, err := db.NewDAO(c.config.DatabaseURL)
 	if err != nil {
-		log.Println(err.Error())
-		os.Exit(1)
+		log.Fatal("failed to create the database connection", err)
 	}
-	res, err := m.Upgrade()
+	defer dao.Close()
+
+	err = seedings.SeedPropertyFeatures(dao)
 	if err != nil {
-		log.Println(err.Error())
-		os.Exit(1)
+		log.Println("failed to seed property features", err)
 	}
-	if !res {
-		log.Println("The database is already up to date")
-	}
-	log.Println("The database has been upgraded successfully")
 }
