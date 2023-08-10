@@ -12,6 +12,7 @@ import (
 
 type Querier interface {
 	CheckPropertyOwnerShip(ctx context.Context, arg CheckPropertyOwnerShipParams) (int64, error)
+	CheckUnitOwnership(ctx context.Context, arg CheckUnitOwnershipParams) (int64, error)
 	CreateProperty(ctx context.Context, arg CreatePropertyParams) (Property, error)
 	CreatePropertyAmenity(ctx context.Context, arg CreatePropertyAmenityParams) (PropertyAmenity, error)
 	CreatePropertyFeature(ctx context.Context, arg CreatePropertyFeatureParams) (PropertyFeature, error)

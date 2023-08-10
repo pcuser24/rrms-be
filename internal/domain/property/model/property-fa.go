@@ -13,7 +13,7 @@ type PAmenity struct {
 
 type PropertyAmenityModel struct {
 	PropertyID  uuid.UUID `json:"property_id"`
-	AmenityID   int64     `json:"amenity"`
+	AmenityID   int64     `json:"amenity_id"`
 	Description *string   `json:"description"`
 }
 
@@ -37,7 +37,7 @@ type PFeature struct {
 
 type PropertyFeatureModel struct {
 	PropertyID  uuid.UUID `json:"property_id"`
-	FeatureID   int64     `json:"feature"`
+	FeatureID   int64     `json:"feature_id"`
 	Description *string   `json:"description"`
 }
 

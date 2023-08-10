@@ -15,13 +15,13 @@ type CreatePropertyMedia struct {
 
 type CreatePropertyAmenity struct {
 	// PropertyID  uuid.UUID `json:"property_id" validate:"required,uuid"`
-	AmenityID   int64   `json:"amenity" validate:"required"`
+	AmenityID   int64   `json:"amenity_id" validate:"required"`
 	Description *string `json:"description"`
 }
 
 type CreatePropertyFeature struct {
 	// PropertyID  uuid.UUID `json:"property_id" validate:"required,uuid"`
-	FeatureID   int64   `json:"feature" validate:"required"`
+	FeatureID   int64   `json:"feature_id" validate:"required"`
 	Description *string `json:"description"`
 }
 
