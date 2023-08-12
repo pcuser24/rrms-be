@@ -150,4 +150,6 @@ func (c *serverCommand) shutdown() {
 	if err := c.httpServer.Shutdown(); err != nil {
 		log.Fatal(err)
 	}
+
+	os.Exit(0)
 }

@@ -19,6 +19,7 @@ type Repo interface {
 	UpdateUnit(ctx context.Context, data *dto.UpdateUnit) error
 	DeleteUnit(ctx context.Context, id uuid.UUID) error
 	CheckUnitOwnership(ctx context.Context, uid uuid.UUID, userId uuid.UUID) (bool, error)
+	CheckUnitOfProperty(ctx context.Context, pid, uid uuid.UUID) (bool, error)
 	AddUnitAmenities(ctx context.Context, uid uuid.UUID, items []dto.CreateUnitAmenity) ([]model.UnitAmenityModel, error)
 	AddUnitMedium(ctx context.Context, uid uuid.UUID, items []dto.CreateUnitMedia) ([]model.UnitMediaModel, error)
 	GetAllAmenities(ctx context.Context) ([]model.UAmenity, error)
@@ -277,4 +278,16 @@ func (r *repo) CheckUnitOwnership(ctx context.Context, id uuid.UUID, userId uuid
 		return false, err
 	}
 	return res > 0, nil
+}
+
+func (r *repo) CheckUnitOfProperty(ctx context.Context, pid, uid uuid.UUID) (bool, error) {
+	res, err := r.dao.CheckUnitOfProperty(ctx, db.CheckUnitOfPropertyParams{
+		ID:         uid,
+		PropertyID: pid,
+	})
+	if err != nil {
+		return false, err
+	}
+	return res > 0, nil
+
 }

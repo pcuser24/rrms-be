@@ -66,6 +66,9 @@ SELECT * FROM u_amenities;
 -- name: GetUnitAmenities :many
 SELECT * FROM unit_amenity WHERE unit_id = $1;
 
+-- name: CheckUnitOfProperty :one
+SELECT count(*) FROM units WHERE id = $1 AND property_id = $2 LIMIT 1;
+
 -- name: CheckUnitOwnership :one
 SELECT count(*) FROM units WHERE units.id = $1 AND property_id IN (SELECT properties.id FROM properties WHERE owner_id = $2) LIMIT 1;
 

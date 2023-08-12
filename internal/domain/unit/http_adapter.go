@@ -41,8 +41,10 @@ func (a *adapter) RegisterServer(router *fiber.Router, tokenMaker token.Maker) {
 	unitRoute.Patch("/update/:id", checkUnitOwnership(a.uService), a.updateUnit())
 	unitRoute.Delete("/delete/:id", checkUnitOwnership(a.uService), a.deleteUnit())
 
-	unitRoute.Patch("/amenity/update/:id", checkUnitOwnership(a.uService), a.updateUnitAmenities())
-	unitRoute.Patch("/media/update/:id", checkUnitOwnership(a.uService), a.updateUnitMedium())
+	unitRoute.Post("/amenity/add/:id", checkUnitOwnership(a.uService), a.addUnitAmenities())
+	unitRoute.Delete("/amenity/delete/:id", checkUnitOwnership(a.uService), a.deleteUnitAmenities())
+	unitRoute.Post("/media/add/:id", checkUnitOwnership(a.uService), a.addUnitMedium())
+	unitRoute.Delete("/media/delete/:id", checkUnitOwnership(a.uService), a.deleteUnitMedium())
 }
 
 func checkUnitOwnership(s Service) fiber.Handler {
@@ -235,48 +237,21 @@ func (a *adapter) getAllAmenities() fiber.Handler {
 	}
 }
 
-func (a *adapter) updateUnitMedium() fiber.Handler {
+func infoDeleteHandler(fn func(uuid.UUID, []int64) error) fiber.Handler {
 	return func(ctx *fiber.Ctx) error {
 		puid, _ := uuid.Parse(ctx.Params("id"))
 
-		var payload struct {
-			Items  []interface{} `json:"items" validate:"required"`
-			Action string        `json:"action" validate:"required,oneof=add delete"`
+		var query struct {
+			Items []int64 `json:"items" validate:"required,dive,gte=1"`
 		}
-		if err := ctx.BodyParser(&payload); err != nil {
+		if err := ctx.QueryParser(&query); err != nil {
 			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": err.Error()})
 		}
-		if errs := utils.ValidateStruct(payload); len(errs) > 0 && errs[0].Error {
-			ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": utils.GetValidationError(errs)})
-			return nil
+		if errs := utils.ValidateStruct(query); len(errs) > 0 && errs[0].Error {
+			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": utils.GetValidationError(errs)})
 		}
 
-		var res interface{}
-		var err error
-
-		switch payload.Action {
-		case "add":
-			var items []dto.CreateUnitMedia
-			for _, i := range payload.Items {
-				var item dto.CreateUnitMedia
-				err = utils.Map2JSONStruct(i, &item)
-				if err != nil {
-					return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": "invalid payload"})
-				}
-				items = append(items, item)
-			}
-			res, err = a.uService.AddUnitMedium(puid, items)
-		case "delete":
-			var items []int64
-			for _, item := range payload.Items {
-				i, ok := item.(float64)
-				if !ok {
-					return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": "invalid payload"})
-				}
-				items = append(items, int64(i))
-			}
-			err = a.uService.DeleteUnitMedium(puid, items)
-		}
+		err := fn(puid, query.Items)
 		if err != nil {
 			if dbErr, ok := err.(*pgconn.PgError); ok {
 				responses.DBErrorResponse(ctx, dbErr)
@@ -284,62 +259,27 @@ func (a *adapter) updateUnitMedium() fiber.Handler {
 			}
 
 			ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
-			return nil
 		}
 
-		switch payload.Action {
-		case "add":
-			return ctx.Status(201).JSON(fiber.Map{"items": res})
-		case "delete":
-			return ctx.SendStatus(fiber.StatusNoContent)
-		}
-
-		return nil
+		return ctx.SendStatus(fiber.StatusNoContent)
 	}
 }
 
-func (a *adapter) updateUnitAmenities() fiber.Handler {
+func (a *adapter) addUnitMedium() fiber.Handler {
 	return func(ctx *fiber.Ctx) error {
 		puid, _ := uuid.Parse(ctx.Params("id"))
 
-		var payload struct {
-			Items  []interface{} `json:"items" validate:"required"`
-			Action string        `json:"action" validate:"required,oneof=add delete replace"`
+		var query struct {
+			Items []dto.CreateUnitMedia `json:"items" validate:"required,dive"`
 		}
-		if err := ctx.BodyParser(&payload); err != nil {
+		if err := ctx.BodyParser(&query); err != nil {
 			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": err.Error()})
 		}
-		if errs := utils.ValidateStruct(payload); len(errs) > 0 && errs[0].Error {
-			ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": utils.GetValidationError(errs)})
-			return nil
+		if errs := utils.ValidateStruct(query); len(errs) > 0 && errs[0].Error {
+			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": utils.GetValidationError(errs)})
 		}
 
-		var res interface{}
-		var err error
-
-		switch payload.Action {
-		case "add":
-			var items []dto.CreateUnitAmenity
-			for _, i := range payload.Items {
-				var item dto.CreateUnitAmenity
-				err = utils.Map2JSONStruct(i, &item)
-				if err != nil {
-					return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": "invalid payload"})
-				}
-				items = append(items, item)
-			}
-			res, err = a.uService.AddUnitAmenities(puid, items)
-		case "delete":
-			var items []int64
-			for _, item := range payload.Items {
-				i, ok := item.(float64)
-				if !ok {
-					return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": "invalid payload"})
-				}
-				items = append(items, int64(i))
-			}
-			err = a.uService.DeleteUnitAmenities(puid, items)
-		}
+		res, err := a.uService.AddUnitMedium(puid, query.Items)
 		if err != nil {
 			if dbErr, ok := err.(*pgconn.PgError); ok {
 				responses.DBErrorResponse(ctx, dbErr)
@@ -347,18 +287,44 @@ func (a *adapter) updateUnitAmenities() fiber.Handler {
 			}
 
 			ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
-			return nil
 		}
 
-		switch payload.Action {
-		case "add":
-			return ctx.Status(201).JSON(fiber.Map{
-				"items": res,
-			})
-		case "delete":
-			return ctx.SendStatus(fiber.StatusNoContent)
-		}
-
-		return nil
+		return ctx.Status(201).JSON(fiber.Map{"items": res})
 	}
+}
+
+func (a *adapter) deleteUnitMedium() fiber.Handler {
+	return infoDeleteHandler(a.uService.DeleteUnitMedium)
+}
+
+func (a *adapter) addUnitAmenities() fiber.Handler {
+	return func(ctx *fiber.Ctx) error {
+		puid, _ := uuid.Parse(ctx.Params("id"))
+
+		var query struct {
+			Items []dto.CreateUnitAmenity `json:"items" validate:"required,dive"`
+		}
+		if err := ctx.BodyParser(&query); err != nil {
+			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": err.Error()})
+		}
+		if errs := utils.ValidateStruct(query); len(errs) > 0 && errs[0].Error {
+			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": utils.GetValidationError(errs)})
+		}
+
+		res, err := a.uService.AddUnitAmenities(puid, query.Items)
+		if err != nil {
+			if dbErr, ok := err.(*pgconn.PgError); ok {
+				responses.DBErrorResponse(ctx, dbErr)
+				return nil
+			}
+
+			ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
+		}
+
+		return ctx.Status(201).JSON(fiber.Map{"items": res})
+	}
+}
+
+func (a *adapter) deleteUnitAmenities() fiber.Handler {
+	return infoDeleteHandler(a.uService.DeleteUnitAmenities)
 }

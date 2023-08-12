@@ -2,11 +2,13 @@ package http
 
 import (
 	"fmt"
+	"reflect"
 
 	fiber "github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/logger"
 	rcv "github.com/gofiber/fiber/v2/middleware/recover"
+	"github.com/google/uuid"
 )
 
 type Server interface {
@@ -28,6 +30,22 @@ func NewServer(conf fiber.Config) Server {
 }
 
 func (s *server) init() Server {
+	fiber.SetParserDecoder(fiber.ParserConfig{
+		IgnoreUnknownKeys: true,
+		ParserType: []fiber.ParserType{
+			fiber.ParserType{
+				Customtype: uuid.UUID{},
+				Converter: func(value string) reflect.Value {
+					if v, err := uuid.Parse(value); err == nil {
+						return reflect.ValueOf(v)
+					}
+					return reflect.Value{}
+				},
+			},
+		},
+		ZeroEmpty: true,
+	})
+
 	s.fib.Use(rcv.New())
 	s.fib.Use(cors.New())
 	s.fib.Use(logger.New())

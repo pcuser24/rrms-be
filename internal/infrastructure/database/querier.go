@@ -13,6 +13,7 @@ import (
 type Querier interface {
 	CheckListingOwnership(ctx context.Context, arg CheckListingOwnershipParams) (int64, error)
 	CheckPropertyOwnerShip(ctx context.Context, arg CheckPropertyOwnerShipParams) (int64, error)
+	CheckUnitOfProperty(ctx context.Context, arg CheckUnitOfPropertyParams) (int64, error)
 	CheckUnitOwnership(ctx context.Context, arg CheckUnitOwnershipParams) (int64, error)
 	CheckValidUnitForListing(ctx context.Context, arg CheckValidUnitForListingParams) (int64, error)
 	CreateListing(ctx context.Context, arg CreateListingParams) (Listing, error)

@@ -14,12 +14,12 @@ type CreateListingPolicy struct {
 }
 
 type CreateListingUnit struct {
-	UnitID uuid.UUID `json:"unit_id" validate:"required"`
+	UnitID uuid.UUID `json:"unit_id" validate:"required,uuid4"`
 }
 
 type CreateListing struct {
 	CreatorID         uuid.UUID             `json:"creator_id"`
-	PropertyID        uuid.UUID             `json:"property_id" validate:"required"`
+	PropertyID        uuid.UUID             `json:"property_id" validate:"required,uuid4"`
 	Title             string                `json:"title" validate:"required"`
 	Description       string                `json:"description" validate:"required"`
 	Price             int64                 `json:"price" validate:"required,gt=0"`
@@ -29,8 +29,8 @@ type CreateListing struct {
 	NumberOfResidents *int32                `json:"number_of_residents" validate:"omitempty,gt=0"`
 	Priority          int32                 `json:"priority" validate:"required,gte=1,lte=5"`
 	ExpiredAt         time.Time             `json:"expired_at" validate:"required"`
-	Policies          []CreateListingPolicy `json:"policies"`
-	Units             []CreateListingUnit   `json:"units"`
+	Policies          []CreateListingPolicy `json:"policies" validate:"dive"`
+	Units             []CreateListingUnit   `json:"units" validate:"dive"`
 }
 
 func (c *CreateListing) ToCreateListingDB() *database.CreateListingParams {

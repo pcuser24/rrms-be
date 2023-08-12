@@ -18,7 +18,7 @@ type CreateUnitMedia struct {
 }
 
 type CreateUnit struct {
-	PropertyID          uuid.UUID           `json:"property_id" validate:"required"`
+	PropertyID          uuid.UUID           `json:"property_id" validate:"required,uuid4"`
 	Name                *string             `json:"name"`
 	Area                float32             `json:"area" validate:"required"`
 	Floor               *int32              `json:"floor"`

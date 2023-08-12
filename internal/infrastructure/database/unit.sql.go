@@ -12,6 +12,22 @@ import (
 	"github.com/google/uuid"
 )
 
+const checkUnitOfProperty = `-- name: CheckUnitOfProperty :one
+SELECT count(*) FROM units WHERE id = $1 AND property_id = $2 LIMIT 1
+`
+
+type CheckUnitOfPropertyParams struct {
+	ID         uuid.UUID `json:"id"`
+	PropertyID uuid.UUID `json:"property_id"`
+}
+
+func (q *Queries) CheckUnitOfProperty(ctx context.Context, arg CheckUnitOfPropertyParams) (int64, error) {
+	row := q.db.QueryRowContext(ctx, checkUnitOfProperty, arg.ID, arg.PropertyID)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const checkUnitOwnership = `-- name: CheckUnitOwnership :one
 SELECT count(*) FROM units WHERE units.id = $1 AND property_id IN (SELECT properties.id FROM properties WHERE owner_id = $2) LIMIT 1
 `

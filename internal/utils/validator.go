@@ -2,9 +2,11 @@ package utils
 
 import (
 	"fmt"
+	"reflect"
 	"strings"
 
 	"github.com/go-playground/validator/v10"
+	"github.com/google/uuid"
 )
 
 type XValidator struct {
@@ -19,6 +21,17 @@ type ErrorResponse struct {
 }
 
 var structValidator = validator.New()
+
+func init() {
+	fmt.Println("Setting up UUID validator...")
+	// validate UUID
+	structValidator.RegisterCustomTypeFunc(func(field reflect.Value) interface{} {
+		if valuer, ok := field.Interface().(uuid.UUID); ok {
+			return valuer.String()
+		}
+		return nil
+	}, uuid.UUID{})
+}
 
 func ValidateStruct(data interface{}) []ErrorResponse {
 	validationErrors := []ErrorResponse{}
