@@ -17,20 +17,13 @@ type Repo interface {
 	GetPropertyById(ctx context.Context, id uuid.UUID) (*model.PropertyModel, error)
 	UpdateProperty(ctx context.Context, data *dto.UpdateProperty) error
 	DeleteProperty(ctx context.Context, id uuid.UUID) error
-	AddPropertyAmenities(ctx context.Context, id uuid.UUID, items []dto.CreatePropertyAmenity) ([]model.PropertyAmenityModel, error)
 	AddPropertyFeatures(ctx context.Context, id uuid.UUID, items []dto.CreatePropertyFeature) ([]model.PropertyFeatureModel, error)
 	AddPropertyMedium(ctx context.Context, id uuid.UUID, items []dto.CreatePropertyMedia) ([]model.PropertyMediaModel, error)
 	AddPropertyTag(ctx context.Context, id uuid.UUID, items []dto.CreatePropertyTag) ([]model.PropertyTagModel, error)
-	GetAllAmenities(ctx context.Context) ([]model.PAmenity, error)
 	GetAllFeatures(ctx context.Context) ([]model.PFeature, error)
-	DeletePropertyAmenities(ctx context.Context, puid uuid.UUID, aid []int64) error
 	DeletePropertyFeatures(ctx context.Context, puid uuid.UUID, fid []int64) error
 	DeletePropertyMedium(ctx context.Context, puid uuid.UUID, mid []int64) error
 	DeletePropertyTags(ctx context.Context, puid uuid.UUID, tid []int64) error
-	DeleteAllPropertyAmenities(ctx context.Context, puid uuid.UUID) error
-	DeleteAllPropertyFeatures(ctx context.Context, puid uuid.UUID) error
-	DeleteAllPropertyMedium(ctx context.Context, puid uuid.UUID) error
-	DeleteAllPropertyTags(ctx context.Context, puid uuid.UUID) error
 }
 
 type repo struct {
@@ -54,11 +47,6 @@ func (r *repo) CreateProperty(ctx context.Context, data *dto.CreateProperty) (*m
 			return nil, err
 		}
 		pm = *model.ToPropertyModel(&res)
-
-		pm.Amenities, err = r.AddPropertyAmenities(ctx, res.ID, data.Amenities)
-		if err != nil {
-			return nil, err
-		}
 
 		pm.Features, err = r.AddPropertyFeatures(ctx, res.ID, data.Features)
 		if err != nil {
@@ -92,14 +80,6 @@ func (r *repo) GetPropertyById(ctx context.Context, id uuid.UUID) (*model.Proper
 	}
 
 	pm := model.ToPropertyModel(&p)
-
-	a, err := r.dao.GetPropertyAmenities(ctx, id)
-	if err != nil {
-		return nil, err
-	}
-	for _, adb := range a {
-		pm.Amenities = append(pm.Amenities, *model.ToPropertyAmenityModel(&adb))
-	}
 
 	f, err := r.dao.GetPropertyFeatures(ctx, id)
 	if err != nil {
@@ -145,53 +125,6 @@ func (r *repo) UpdateProperty(ctx context.Context, data *dto.UpdateProperty) err
 
 func (r *repo) DeleteProperty(ctx context.Context, id uuid.UUID) error {
 	return r.dao.DeleteProperty(ctx, id)
-}
-
-func (r *repo) AddPropertyAmenities(ctx context.Context, id uuid.UUID, items []dto.CreatePropertyAmenity) ([]model.PropertyAmenityModel, error) {
-	var res []model.PropertyAmenityModel
-	if len(items) == 0 {
-		return res, nil
-	}
-
-	ib := sqlbuilder.PostgreSQL.NewInsertBuilder()
-	ib.InsertInto("property_amenity")
-	ib.Cols("property_id", "amenity_id", "description")
-	for _, amenity := range items {
-		ib.Values(id, amenity.AmenityID, types.StrN((amenity.Description)))
-	}
-	ib.SQL("RETURNING *")
-	sql, args := ib.Build()
-	rows, err := r.dao.QueryContext(ctx, sql, args...)
-	if err != nil {
-		return nil, err
-	}
-	res, err = func() ([]model.PropertyAmenityModel, error) {
-		defer rows.Close()
-		var items []model.PropertyAmenityModel
-		for rows.Next() {
-			var i db.PropertyAmenity
-			if err := rows.Scan(
-				&i.PropertyID,
-				&i.AmenityID,
-				&i.Description,
-			); err != nil {
-				return nil, err
-			}
-			items = append(items, *model.ToPropertyAmenityModel(&i))
-		}
-		if err := rows.Close(); err != nil {
-			return nil, err
-		}
-		if err := rows.Err(); err != nil {
-			return nil, err
-		}
-		return items, nil
-	}()
-	if err != nil {
-		return nil, err
-	}
-
-	return res, nil
 }
 
 func (r *repo) AddPropertyFeatures(ctx context.Context, id uuid.UUID, items []dto.CreatePropertyFeature) ([]model.PropertyFeatureModel, error) {
@@ -336,18 +269,6 @@ func (r *repo) AddPropertyMedium(ctx context.Context, id uuid.UUID, items []dto.
 	return res, err
 }
 
-func (r *repo) GetAllAmenities(ctx context.Context) ([]model.PAmenity, error) {
-	resDb, err := r.dao.GetAllPropertyAmenities(ctx)
-	if err != nil {
-		return nil, err
-	}
-	var res []model.PAmenity
-	for _, i := range resDb {
-		res = append(res, model.PAmenity(i))
-	}
-	return res, nil
-}
-
 func (r *repo) GetAllFeatures(ctx context.Context) ([]model.PFeature, error) {
 	resDb, err := r.dao.GetAllPropertyFeatures(ctx)
 	if err != nil {
@@ -380,10 +301,6 @@ func (r *repo) bulkDelete(ctx context.Context, puid uuid.UUID, ids []int64, tabl
 	return err
 }
 
-func (r *repo) DeletePropertyAmenities(ctx context.Context, puid uuid.UUID, aid []int64) error {
-	return r.bulkDelete(ctx, puid, aid, "property_amenity", "amenity_id")
-}
-
 func (r *repo) DeletePropertyFeatures(ctx context.Context, puid uuid.UUID, fid []int64) error {
 	return r.bulkDelete(ctx, puid, fid, "property_feature", "feature_id")
 }
@@ -394,20 +311,4 @@ func (r *repo) DeletePropertyTags(ctx context.Context, puid uuid.UUID, tid []int
 
 func (r *repo) DeletePropertyMedium(ctx context.Context, puid uuid.UUID, mid []int64) error {
 	return r.bulkDelete(ctx, puid, mid, "property_media", "id")
-}
-
-func (r *repo) DeleteAllPropertyAmenities(ctx context.Context, puid uuid.UUID) error {
-	return r.dao.DeleteAllPropertyAmenity(ctx, puid)
-}
-
-func (r *repo) DeleteAllPropertyFeatures(ctx context.Context, puid uuid.UUID) error {
-	return r.dao.DeleteAllPropertyFeature(ctx, puid)
-}
-
-func (r *repo) DeleteAllPropertyTags(ctx context.Context, puid uuid.UUID) error {
-	return r.dao.DeleteAllPropertyTag(ctx, puid)
-}
-
-func (r *repo) DeleteAllPropertyMedium(ctx context.Context, puid uuid.UUID) error {
-	return r.dao.DeleteAllPropertyMedia(ctx, puid)
 }

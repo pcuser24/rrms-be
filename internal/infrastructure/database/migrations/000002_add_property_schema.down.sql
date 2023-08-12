@@ -3,8 +3,6 @@ DROP TABLE IF EXISTS "property_media";
 DROP TABLE IF EXISTS "property_tag";
 DROP TABLE IF EXISTS "property_feature";
 DROP TABLE IF EXISTS "p_features";
-DROP TABLE IF EXISTS "property_amenity";
-DROP TABLE IF EXISTS "p_amenities";
 DROP TABLE IF EXISTS "properties";
 DROP TYPE IF EXISTS "PROPERTYTYPE";
 DROP TYPE IF EXISTS "MEDIATYPE";

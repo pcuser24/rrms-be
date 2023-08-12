@@ -30,7 +30,6 @@ type PropertyModel struct {
 	Type        database.PROPERTYTYPE  `json:"type"`
 	CreatedAt   time.Time              `json:"created_at"`
 	UpdatedAt   time.Time              `json:"updated_at"`
-	Amenities   []PropertyAmenityModel `json:"amenities"`
 	Features    []PropertyFeatureModel `json:"features"`
 	Medium      []PropertyMediaModel   `json:"medium"`
 	Tags        []PropertyTagModel     `json:"tags"`

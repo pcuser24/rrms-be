@@ -5,30 +5,6 @@ import (
 	"github.com/user2410/rrms-backend/internal/infrastructure/database"
 )
 
-// Elevator, Security camera, Pool, Yard, ...
-type PAmenity struct {
-	ID      int64  `json:"id"`
-	Amenity string `json:"amenity"`
-}
-
-type PropertyAmenityModel struct {
-	PropertyID  uuid.UUID `json:"property_id"`
-	AmenityID   int64     `json:"amenity_id"`
-	Description *string   `json:"description"`
-}
-
-func ToPropertyAmenityModel(pa *database.PropertyAmenity) *PropertyAmenityModel {
-	a := PropertyAmenityModel{
-		PropertyID: pa.PropertyID,
-		AmenityID:  pa.AmenityID,
-	}
-	if pa.Description.Valid {
-		desc := pa.Description.String
-		a.Description = &desc
-	}
-	return &a
-}
-
 // Security guard, Parking, Gym, ...
 type PFeature struct {
 	ID      int64  `json:"id"`

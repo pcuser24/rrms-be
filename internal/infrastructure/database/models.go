@@ -189,12 +189,6 @@ type ListingUnit struct {
 	UnitID    uuid.UUID `json:"unit_id"`
 }
 
-// Elevator, Security camera, Pool, Yard, ...
-type PAmenity struct {
-	ID      int64  `json:"id"`
-	Amenity string `json:"amenity"`
-}
-
 // Security guard, Parking, Gym, ...
 type PFeature struct {
 	ID      int64  `json:"id"`
@@ -218,12 +212,6 @@ type Property struct {
 	Type        PROPERTYTYPE   `json:"type"`
 	CreatedAt   time.Time      `json:"created_at"`
 	UpdatedAt   time.Time      `json:"updated_at"`
-}
-
-type PropertyAmenity struct {
-	PropertyID  uuid.UUID      `json:"property_id"`
-	AmenityID   int64          `json:"amenity_id"`
-	Description sql.NullString `json:"description"`
 }
 
 type PropertyFeature struct {

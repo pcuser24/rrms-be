@@ -10,7 +10,6 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	db "github.com/user2410/rrms-backend/internal/infrastructure/database"
-	"github.com/user2410/rrms-backend/internal/infrastructure/database/seedings"
 )
 
 type migrateConfig struct {
@@ -34,7 +33,6 @@ func NewMigrateCommand() *migrateCommand {
 	c.Command.AddCommand(
 		newMigrateUpCommand().Command,
 		newMigrateDownCommand().Command,
-		newMigrateSeedCommand().Command,
 	)
 	return c
 }
@@ -153,35 +151,4 @@ func (c *migrateDownCommand) run(cmd *cobra.Command, args []string) {
 		log.Println("The database is already up to date")
 	}
 	log.Println("The database has been downgraded successfully")
-}
-
-// migrate seed command
-
-type migrateSeedCommand struct {
-	*cobra.Command
-	config *migrateConfig
-}
-
-func newMigrateSeedCommand() *migrateSeedCommand {
-	c := &migrateSeedCommand{}
-	c.Command = &cobra.Command{
-		Use:   "seed",
-		Short: "Upgrade a migration on the permission API database",
-		Run:   c.run,
-	}
-	c.config = newMigrationConfig(c.Command)
-	return c
-}
-
-func (c *migrateSeedCommand) run(cmd *cobra.Command, args []string) {
-	dao, err := db.NewDAO(c.config.DatabaseURL)
-	if err != nil {
-		log.Fatal("failed to create the database connection", err)
-	}
-	defer dao.Close()
-
-	err = seedings.SeedPropertyFeatures(dao)
-	if err != nil {
-		log.Println("failed to seed property features", err)
-	}
 }

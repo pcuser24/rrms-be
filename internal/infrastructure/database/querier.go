@@ -20,22 +20,16 @@ type Querier interface {
 	CreateListingPolicy(ctx context.Context, arg CreateListingPolicyParams) (ListingPolicy, error)
 	CreateListingUnit(ctx context.Context, arg CreateListingUnitParams) (ListingUnit, error)
 	CreateProperty(ctx context.Context, arg CreatePropertyParams) (Property, error)
-	CreatePropertyAmenity(ctx context.Context, arg CreatePropertyAmenityParams) (PropertyAmenity, error)
 	CreatePropertyFeature(ctx context.Context, arg CreatePropertyFeatureParams) (PropertyFeature, error)
 	CreatePropertyMedia(ctx context.Context, arg CreatePropertyMediaParams) (PropertyMedium, error)
 	CreateUnit(ctx context.Context, arg CreateUnitParams) (Unit, error)
 	CreateUnitAmenity(ctx context.Context, arg CreateUnitAmenityParams) (UnitAmenity, error)
 	CreateUnitMedia(ctx context.Context, arg CreateUnitMediaParams) (UnitMedium, error)
-	DeleteAllPropertyAmenity(ctx context.Context, propertyID uuid.UUID) error
-	DeleteAllPropertyFeature(ctx context.Context, propertyID uuid.UUID) error
-	DeleteAllPropertyMedia(ctx context.Context, propertyID uuid.UUID) error
-	DeleteAllPropertyTag(ctx context.Context, propertyID uuid.UUID) error
 	DeleteAllUnitAmenity(ctx context.Context, unitID uuid.UUID) error
 	DeleteAllUnitMedia(ctx context.Context, unitID uuid.UUID) error
 	DeleteListing(ctx context.Context, id uuid.UUID) error
 	DeleteProperty(ctx context.Context, id uuid.UUID) error
 	DeleteUnit(ctx context.Context, id uuid.UUID) error
-	GetAllPropertyAmenities(ctx context.Context) ([]PAmenity, error)
 	GetAllPropertyFeatures(ctx context.Context) ([]PFeature, error)
 	GetAllRentalPolicies(ctx context.Context) ([]RentalPolicy, error)
 	GetAllUnitAmenities(ctx context.Context) ([]UAmenity, error)
@@ -43,7 +37,6 @@ type Querier interface {
 	GetListingPolicies(ctx context.Context, listingID uuid.UUID) ([]ListingPolicy, error)
 	GetListingUnits(ctx context.Context, listingID uuid.UUID) ([]ListingUnit, error)
 	GetPropertiesByOwnerId(ctx context.Context, arg GetPropertiesByOwnerIdParams) ([]Property, error)
-	GetPropertyAmenities(ctx context.Context, propertyID uuid.UUID) ([]PropertyAmenity, error)
 	GetPropertyById(ctx context.Context, id uuid.UUID) (Property, error)
 	GetPropertyFeatures(ctx context.Context, propertyID uuid.UUID) ([]PropertyFeature, error)
 	GetPropertyMedium(ctx context.Context, propertyID uuid.UUID) ([]PropertyMedium, error)

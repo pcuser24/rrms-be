@@ -32,7 +32,6 @@ func NewAdapter(service Service) Adapter {
 func (a *adapter) RegisterServer(router *fiber.Router, tokenMaker token.Maker) {
 	propertyRoute := (*router).Group("/property")
 
-	(*router).Get("/property/amenities", a.getAllAmenities())
 	(*router).Get("/property/features", a.getAllFeatures())
 
 	propertyRoute = propertyRoute.Use(auth.NewAuthMiddleware(tokenMaker))
@@ -44,8 +43,6 @@ func (a *adapter) RegisterServer(router *fiber.Router, tokenMaker token.Maker) {
 
 	propertyRoute.Post("/media/add/:id", checkPropertyOwnership(a.service), a.addPropertyMedium())
 	propertyRoute.Delete("/media/delete/:id", checkPropertyOwnership(a.service), a.deletePropertyMedium())
-	propertyRoute.Post("/amenity/add/:id", checkPropertyOwnership(a.service), a.addPropertyAmenities())
-	propertyRoute.Delete("/amenity/delete/:id", checkPropertyOwnership(a.service), a.deletePropertyAmenities())
 	propertyRoute.Post("/feature/add/:id", checkPropertyOwnership(a.service), a.addPropertyFeatures())
 	propertyRoute.Delete("/feature/delete/:id", checkPropertyOwnership(a.service), a.deletePropertyFeatures())
 	propertyRoute.Post("/tag/add/:id", checkPropertyOwnership(a.service), a.addPropertyTags())
@@ -276,38 +273,6 @@ func (a *adapter) deletePropertyFeatures() fiber.Handler {
 	return infoDeleteHandler(a.service.DeletePropertyFeatures)
 }
 
-func (a *adapter) addPropertyAmenities() fiber.Handler {
-	return func(ctx *fiber.Ctx) error {
-		puid, _ := uuid.Parse(ctx.Params("id"))
-
-		var query struct {
-			Items []dto.CreatePropertyAmenity `json:"items" validate:"required,dive"`
-		}
-		if err := ctx.BodyParser(&query); err != nil {
-			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": err.Error()})
-		}
-		if errs := utils.ValidateStruct(query); len(errs) > 0 && errs[0].Error {
-			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": utils.GetValidationError(errs)})
-		}
-
-		res, err := a.service.AddPropertyAmenities(puid, query.Items)
-		if err != nil {
-			if dbErr, ok := err.(*pgconn.PgError); ok {
-				responses.DBErrorResponse(ctx, dbErr)
-				return nil
-			}
-
-			ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
-		}
-
-		return ctx.Status(201).JSON(fiber.Map{"items": res})
-	}
-}
-
-func (a *adapter) deletePropertyAmenities() fiber.Handler {
-	return infoDeleteHandler(a.service.DeletePropertyAmenities)
-}
-
 func (a *adapter) addPropertyTags() fiber.Handler {
 	return func(ctx *fiber.Ctx) error {
 		puid, _ := uuid.Parse(ctx.Params("id"))
@@ -338,20 +303,6 @@ func (a *adapter) addPropertyTags() fiber.Handler {
 
 func (a *adapter) deletePropertyTags() fiber.Handler {
 	return infoDeleteHandler(a.service.DeletePropertyTags)
-}
-
-func (a *adapter) getAllAmenities() fiber.Handler {
-	return func(ctx *fiber.Ctx) error {
-		res, err := a.service.GetAllAmenities()
-		if err != nil {
-			ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
-			return nil
-		}
-
-		return ctx.JSON(fiber.Map{
-			"items": res,
-		})
-	}
 }
 
 func (a *adapter) getAllFeatures() fiber.Handler {

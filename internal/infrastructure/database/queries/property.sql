@@ -42,17 +42,6 @@ INSERT INTO property_media (
   sqlc.arg(type)
 ) RETURNING *;
 
--- name: CreatePropertyAmenity :one
-INSERT INTO property_amenity (
-  property_id,
-  amenity_id,
-  description
-) VALUES (
-  sqlc.arg(property_id),
-  sqlc.arg(amenity_id),
-  sqlc.narg(description)
-) RETURNING *;
-
 -- name: CreatePropertyFeature :one
 INSERT INTO property_feature (
   property_id,
@@ -66,12 +55,6 @@ INSERT INTO property_feature (
 
 -- name: GetPropertyById :one
 SELECT * FROM properties WHERE id = $1 LIMIT 1;
-
--- name: GetAllPropertyAmenities :many
-SELECT * FROM p_amenities;
-
--- name: GetPropertyAmenities :many
-SELECT * FROM property_amenity WHERE property_id = $1;
 
 -- name: GetAllPropertyFeatures :many
 SELECT * FROM p_features;
@@ -108,15 +91,3 @@ WHERE id = $1;
 
 -- name: DeleteProperty :exec
 DELETE FROM properties WHERE id = $1;
-
--- name: DeleteAllPropertyMedia :exec
-DELETE FROM property_media WHERE property_id = $1;
-
--- name: DeleteAllPropertyAmenity :exec
-DELETE FROM property_amenity WHERE property_id = $1;
-
--- name: DeleteAllPropertyFeature :exec
-DELETE FROM property_feature WHERE property_id = $1;
-
--- name: DeleteAllPropertyTag :exec
-DELETE FROM property_tag WHERE property_id = $1;
