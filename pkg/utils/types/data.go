@@ -92,6 +92,18 @@ func NBool(n sql.NullBool) bool {
 	return n.Bool
 }
 
+func BoolN(b *bool) sql.NullBool {
+	if b == nil {
+		return sql.NullBool{
+			Valid: false,
+		}
+	}
+	return sql.NullBool{
+		Valid: true,
+		Bool:  *b,
+	}
+}
+
 func NUUID(n sql.NullString) uuid.UUID {
 	if !n.Valid {
 		return uuid.New()
@@ -152,6 +164,18 @@ func Int16N(s *int16) sql.NullInt16 {
 	return sql.NullInt16{
 		Valid: true,
 		Int16: *s,
+	}
+}
+
+func Int32N(s *int32) sql.NullInt32 {
+	if s == nil {
+		return sql.NullInt32{
+			Valid: false,
+		}
+	}
+	return sql.NullInt32{
+		Valid: true,
+		Int32: *s,
 	}
 }
 

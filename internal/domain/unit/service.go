@@ -14,7 +14,7 @@ type Service interface {
 	GetUnitsOfProperty(id uuid.UUID) ([]model.UnitModel, error)
 	UpdateUnit(data *dto.UpdateUnit) error
 	DeleteUnit(id uuid.UUID) error
-	CheckOwnership(id uuid.UUID, userId uuid.UUID) (bool, error)
+	CheckUnitOwnership(id uuid.UUID, userId uuid.UUID) (bool, error)
 	AddUnitAmenities(uid uuid.UUID, items []dto.CreateUnitAmenity) ([]model.UnitAmenityModel, error)
 	AddUnitMedium(uid uuid.UUID, items []dto.CreateUnitMedia) ([]model.UnitMediaModel, error)
 	GetAllAmenities() ([]model.UAmenity, error)
@@ -72,6 +72,6 @@ func (s *service) DeleteUnitMedium(uid uuid.UUID, ids []int64) error {
 	return s.repo.DeleteUnitMedium(context.Background(), uid, ids)
 }
 
-func (s *service) CheckOwnership(id uuid.UUID, userId uuid.UUID) (bool, error) {
-	return s.repo.CheckOwnership(context.Background(), id, userId)
+func (s *service) CheckUnitOwnership(id uuid.UUID, userId uuid.UUID) (bool, error) {
+	return s.repo.CheckUnitOwnership(context.Background(), id, userId)
 }

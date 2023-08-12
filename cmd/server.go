@@ -14,7 +14,9 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/user2410/rrms-backend/internal/domain/auth"
+	"github.com/user2410/rrms-backend/internal/domain/listing"
 	"github.com/user2410/rrms-backend/internal/domain/property"
+	"github.com/user2410/rrms-backend/internal/domain/rental"
 	"github.com/user2410/rrms-backend/internal/domain/unit"
 	db "github.com/user2410/rrms-backend/internal/infrastructure/database"
 	"github.com/user2410/rrms-backend/internal/infrastructure/http"
@@ -112,6 +114,12 @@ func (c *serverCommand) setup(cmd *cobra.Command, args []string) {
 	unitRepo := unit.NewRepo(dao)
 	unitService := unit.NewService(unitRepo)
 	unit.NewAdapter(unitService, propertyService).RegisterServer(c.httpServer.GetApiRoute(), tokenMaker)
+	listingRepo := listing.NewRepo(dao)
+	listingService := listing.NewService(listingRepo)
+	listing.NewAdapter(listingService, propertyService, unitService).RegisterServer(c.httpServer.GetApiRoute(), tokenMaker)
+	rentalRepo := rental.NewRepo(dao)
+	rentalService := rental.NewService(rentalRepo)
+	rental.NewAdapter(rentalService).RegisterServer(c.httpServer.GetApiRoute())
 }
 
 func (c *serverCommand) run(cmd *cobra.Command, args []string) {

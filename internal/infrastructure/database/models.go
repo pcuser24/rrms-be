@@ -157,6 +157,38 @@ type Account struct {
 	SessionState      sql.NullString `json:"session_state"`
 }
 
+type Listing struct {
+	ID          uuid.UUID `json:"id"`
+	CreatorID   uuid.UUID `json:"creator_id"`
+	PropertyID  uuid.UUID `json:"property_id"`
+	Title       string    `json:"title"`
+	Description string    `json:"description"`
+	// Rental price per month in vietnamese dong
+	Price           int64 `json:"price"`
+	SecurityDeposit int64 `json:"security_deposit"`
+	// Lease term in months
+	LeaseTerm         int32         `json:"lease_term"`
+	PetsAllowed       sql.NullBool  `json:"pets_allowed"`
+	NumberOfResidents sql.NullInt32 `json:"number_of_residents"`
+	// Priority of the listing, range from 1 to 5, 1 is the lowest
+	Priority  int32     `json:"priority"`
+	Active    bool      `json:"active"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+	ExpiredAt time.Time `json:"expired_at"`
+}
+
+type ListingPolicy struct {
+	ListingID uuid.UUID      `json:"listing_id"`
+	PolicyID  int64          `json:"policy_id"`
+	Note      sql.NullString `json:"note"`
+}
+
+type ListingUnit struct {
+	ListingID uuid.UUID `json:"listing_id"`
+	UnitID    uuid.UUID `json:"unit_id"`
+}
+
 // Elevator, Security camera, Pool, Yard, ...
 type PAmenity struct {
 	ID      int64  `json:"id"`
@@ -211,6 +243,11 @@ type PropertyTag struct {
 	ID         int64     `json:"id"`
 	PropertyID uuid.UUID `json:"property_id"`
 	Tag        string    `json:"tag"`
+}
+
+type RentalPolicy struct {
+	ID     int64  `json:"id"`
+	Policy string `json:"policy"`
 }
 
 type Session struct {
