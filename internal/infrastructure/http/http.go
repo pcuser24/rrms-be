@@ -21,11 +21,13 @@ type Server interface {
 type server struct {
 	fib      *fiber.App
 	apiRoute *fiber.Router
+	corsConf cors.Config
 }
 
-func NewServer(conf fiber.Config) Server {
+func NewServer(conf fiber.Config, corsConf cors.Config) Server {
 	return (&server{
-		fib: fiber.New(conf),
+		fib:      fiber.New(conf),
+		corsConf: corsConf,
 	}).init()
 }
 
@@ -47,7 +49,7 @@ func (s *server) init() Server {
 	})
 
 	s.fib.Use(rcv.New())
-	s.fib.Use(cors.New())
+	s.fib.Use(cors.New(s.corsConf))
 	s.fib.Use(logger.New())
 
 	apiRoute := s.fib.Group("/api")

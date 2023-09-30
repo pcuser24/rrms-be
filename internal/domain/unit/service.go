@@ -14,13 +14,14 @@ type Service interface {
 	GetUnitsOfProperty(id uuid.UUID) ([]model.UnitModel, error)
 	UpdateUnit(data *dto.UpdateUnit) error
 	DeleteUnit(id uuid.UUID) error
-	CheckUnitOwnership(id uuid.UUID, userId uuid.UUID) (bool, error)
+	CheckVisibility(id uuid.UUID, uid uuid.UUID) (bool, error)
+	CheckUnitManageability(id uuid.UUID, userId uuid.UUID) (bool, error)
 	CheckUnitOfProperty(pid, uid uuid.UUID) (bool, error)
 	AddUnitAmenities(uid uuid.UUID, items []dto.CreateUnitAmenity) ([]model.UnitAmenityModel, error)
-	AddUnitMedium(uid uuid.UUID, items []dto.CreateUnitMedia) ([]model.UnitMediaModel, error)
+	AddUnitMedia(uid uuid.UUID, items []dto.CreateUnitMedia) ([]model.UnitMediaModel, error)
 	GetAllAmenities() ([]model.UAmenity, error)
 	DeleteUnitAmenities(uid uuid.UUID, ids []int64) error
-	DeleteUnitMedium(uid uuid.UUID, ids []int64) error
+	DeleteUnitMedia(uid uuid.UUID, ids []int64) error
 }
 
 type service struct {
@@ -57,8 +58,8 @@ func (s *service) AddUnitAmenities(uid uuid.UUID, items []dto.CreateUnitAmenity)
 	return s.repo.AddUnitAmenities(context.Background(), uid, items)
 }
 
-func (s *service) AddUnitMedium(uid uuid.UUID, items []dto.CreateUnitMedia) ([]model.UnitMediaModel, error) {
-	return s.repo.AddUnitMedium(context.Background(), uid, items)
+func (s *service) AddUnitMedia(uid uuid.UUID, items []dto.CreateUnitMedia) ([]model.UnitMediaModel, error) {
+	return s.repo.AddUnitMedia(context.Background(), uid, items)
 }
 
 func (s *service) GetAllAmenities() ([]model.UAmenity, error) {
@@ -69,12 +70,23 @@ func (s *service) DeleteUnitAmenities(uid uuid.UUID, ids []int64) error {
 	return s.repo.DeleteUnitAmenities(context.Background(), uid, ids)
 }
 
-func (s *service) DeleteUnitMedium(uid uuid.UUID, ids []int64) error {
-	return s.repo.DeleteUnitMedium(context.Background(), uid, ids)
+func (s *service) DeleteUnitMedia(uid uuid.UUID, ids []int64) error {
+	return s.repo.DeleteUnitMedia(context.Background(), uid, ids)
 }
 
-func (s *service) CheckUnitOwnership(id uuid.UUID, userId uuid.UUID) (bool, error) {
-	return s.repo.CheckUnitOwnership(context.Background(), id, userId)
+func (s *service) CheckUnitManageability(id uuid.UUID, userId uuid.UUID) (bool, error) {
+	return s.repo.CheckUnitManageability(context.Background(), id, userId)
+}
+
+func (s *service) CheckVisibility(id uuid.UUID, uid uuid.UUID) (bool, error) {
+	isPublic, err := s.repo.IsPublic(context.Background(), id)
+	if err != nil {
+		return false, err
+	}
+	if isPublic {
+		return true, nil
+	}
+	return s.CheckUnitManageability(id, uid)
 }
 
 func (s *service) CheckUnitOfProperty(pid, uid uuid.UUID) (bool, error) {

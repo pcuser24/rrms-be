@@ -13,17 +13,20 @@ import (
 
 type Repo interface {
 	CreateProperty(ctx context.Context, data *dto.CreateProperty) (*model.PropertyModel, error)
-	CheckOwnership(ctx context.Context, id uuid.UUID, userId uuid.UUID) (bool, error)
+	GetPropertyManagers(ctx context.Context, id uuid.UUID) ([]model.PropertyManagerModel, error)
 	GetPropertyById(ctx context.Context, id uuid.UUID) (*model.PropertyModel, error)
+	IsPublic(ctx context.Context, id uuid.UUID) (bool, error)
 	UpdateProperty(ctx context.Context, data *dto.UpdateProperty) error
 	DeleteProperty(ctx context.Context, id uuid.UUID) error
 	AddPropertyFeatures(ctx context.Context, id uuid.UUID, items []dto.CreatePropertyFeature) ([]model.PropertyFeatureModel, error)
-	AddPropertyMedium(ctx context.Context, id uuid.UUID, items []dto.CreatePropertyMedia) ([]model.PropertyMediaModel, error)
+	AddPropertyMedia(ctx context.Context, id uuid.UUID, items []dto.CreatePropertyMedia) ([]model.PropertyMediaModel, error)
 	AddPropertyTag(ctx context.Context, id uuid.UUID, items []dto.CreatePropertyTag) ([]model.PropertyTagModel, error)
+	AddPropertyManagers(ctx context.Context, id uuid.UUID, items []dto.CreatePropertyManager) ([]model.PropertyManagerModel, error)
 	GetAllFeatures(ctx context.Context) ([]model.PFeature, error)
 	DeletePropertyFeatures(ctx context.Context, puid uuid.UUID, fid []int64) error
-	DeletePropertyMedium(ctx context.Context, puid uuid.UUID, mid []int64) error
+	DeletePropertyMedia(ctx context.Context, puid uuid.UUID, mid []int64) error
 	DeletePropertyTags(ctx context.Context, puid uuid.UUID, tid []int64) error
+	DeletePropertyManager(ctx context.Context, puid uuid.UUID, mid uuid.UUID) error
 }
 
 type repo struct {
@@ -39,21 +42,25 @@ func NewRepo(d db.DAO) Repo {
 func (r *repo) CreateProperty(ctx context.Context, data *dto.CreateProperty) (*model.PropertyModel, error) {
 	res, err := r.dao.QueryTx(ctx, func(d db.DAO) (interface{}, error) {
 
-		var pm model.PropertyModel
+		var pm *model.PropertyModel
 
-		// create property
 		res, err := d.CreateProperty(ctx, *data.ToCreatePropertyDB())
 		if err != nil {
 			return nil, err
 		}
-		pm = *model.ToPropertyModel(&res)
+		pm = model.ToPropertyModel(&res)
+
+		pm.Managers, err = r.AddPropertyManagers(ctx, res.ID, data.Managers)
+		if err != nil {
+			return nil, err
+		}
 
 		pm.Features, err = r.AddPropertyFeatures(ctx, res.ID, data.Features)
 		if err != nil {
 			return nil, err
 		}
 
-		pm.Medium, err = r.AddPropertyMedium(ctx, res.ID, data.Medium)
+		pm.Media, err = r.AddPropertyMedia(ctx, res.ID, data.Media)
 		if err != nil {
 			return nil, err
 		}
@@ -68,9 +75,9 @@ func (r *repo) CreateProperty(ctx context.Context, data *dto.CreateProperty) (*m
 	if err != nil {
 		return nil, err
 	}
-	p := res.(model.PropertyModel)
+	p := res.(*model.PropertyModel)
 
-	return &p, nil
+	return p, nil
 }
 
 func (r *repo) GetPropertyById(ctx context.Context, id uuid.UUID) (*model.PropertyModel, error) {
@@ -97,26 +104,31 @@ func (r *repo) GetPropertyById(ctx context.Context, id uuid.UUID) (*model.Proper
 		pm.Tags = append(pm.Tags, model.PropertyTagModel(tdb))
 	}
 
-	m, err := r.dao.GetPropertyMedium(ctx, id)
+	m, err := r.dao.GetPropertyMedia(ctx, id)
 	if err != nil {
 		return nil, err
 	}
 	for _, mdb := range m {
-		pm.Medium = append(pm.Medium, model.PropertyMediaModel(mdb))
+		pm.Media = append(pm.Media, *model.ToPropertyMediaModel(&mdb))
 	}
 
 	return pm, nil
 }
 
-func (r *repo) CheckOwnership(ctx context.Context, id uuid.UUID, userId uuid.UUID) (bool, error) {
-	res, err := r.dao.CheckPropertyOwnerShip(ctx, db.CheckPropertyOwnerShipParams{
-		ID:      id,
-		OwnerID: userId,
-	})
+func (r *repo) GetPropertyManagers(ctx context.Context, id uuid.UUID) ([]model.PropertyManagerModel, error) {
+	res, err := r.dao.GetPropertyManagers(ctx, id)
 	if err != nil {
-		return false, err
+		return nil, err
 	}
-	return res > 0, nil
+	var items []model.PropertyManagerModel
+	for _, i := range res {
+		items = append(items, model.PropertyManagerModel(i))
+	}
+	return items, err
+}
+
+func (r *repo) IsPublic(ctx context.Context, id uuid.UUID) (bool, error) {
+	return r.dao.IsPropertyPublic(ctx, id)
 }
 
 func (r *repo) UpdateProperty(ctx context.Context, data *dto.UpdateProperty) error {
@@ -134,7 +146,7 @@ func (r *repo) AddPropertyFeatures(ctx context.Context, id uuid.UUID, items []dt
 	}
 
 	ib := sqlbuilder.PostgreSQL.NewInsertBuilder()
-	ib.InsertInto("property_feature")
+	ib.InsertInto("property_features")
 	ib.Cols("property_id", "feature_id", "description")
 	for _, ft := range items {
 		ib.Values(id, ft.FeatureID, types.StrN((ft.Description)))
@@ -174,6 +186,53 @@ func (r *repo) AddPropertyFeatures(ctx context.Context, id uuid.UUID, items []dt
 	return res, err
 }
 
+func (r *repo) AddPropertyManagers(ctx context.Context, id uuid.UUID, items []dto.CreatePropertyManager) ([]model.PropertyManagerModel, error) {
+	var res []model.PropertyManagerModel
+	if len(items) == 0 {
+		return res, nil
+	}
+
+	ib := sqlbuilder.PostgreSQL.NewInsertBuilder()
+	ib.InsertInto("property_managers")
+	ib.Cols("property_id", "manager_id", "role")
+	for _, m := range items {
+		ib.Values(id, m.ManagerID, m.Role)
+	}
+	ib.SQL("RETURNING *")
+	sql, args := ib.Build()
+	rows, err := r.dao.QueryContext(ctx, sql, args...)
+	if err != nil {
+		return nil, err
+	}
+	res, err = func() ([]model.PropertyManagerModel, error) {
+		defer rows.Close()
+		var items []model.PropertyManagerModel
+		for rows.Next() {
+			var i db.PropertyManager
+			if err := rows.Scan(
+				&i.PropertyID,
+				&i.ManagerID,
+				&i.Role,
+			); err != nil {
+				return nil, err
+			}
+			items = append(items, model.PropertyManagerModel(i))
+		}
+		if err := rows.Close(); err != nil {
+			return nil, err
+		}
+		if err := rows.Err(); err != nil {
+			return nil, err
+		}
+		return items, nil
+	}()
+	if err != nil {
+		return nil, err
+	}
+
+	return res, err
+}
+
 func (r *repo) AddPropertyTag(ctx context.Context, id uuid.UUID, items []dto.CreatePropertyTag) ([]model.PropertyTagModel, error) {
 	var res []model.PropertyTagModel
 	if len(items) == 0 {
@@ -181,7 +240,7 @@ func (r *repo) AddPropertyTag(ctx context.Context, id uuid.UUID, items []dto.Cre
 	}
 
 	ib := sqlbuilder.PostgreSQL.NewInsertBuilder()
-	ib.InsertInto("property_tag")
+	ib.InsertInto("property_tags")
 	ib.Cols("property_id", "tag")
 	for _, tag := range items {
 		ib.Values(id, tag.Tag)
@@ -221,7 +280,7 @@ func (r *repo) AddPropertyTag(ctx context.Context, id uuid.UUID, items []dto.Cre
 	return res, nil
 }
 
-func (r *repo) AddPropertyMedium(ctx context.Context, id uuid.UUID, items []dto.CreatePropertyMedia) ([]model.PropertyMediaModel, error) {
+func (r *repo) AddPropertyMedia(ctx context.Context, id uuid.UUID, items []dto.CreatePropertyMedia) ([]model.PropertyMediaModel, error) {
 	var res []model.PropertyMediaModel
 	if len(items) == 0 {
 		return res, nil
@@ -229,9 +288,9 @@ func (r *repo) AddPropertyMedium(ctx context.Context, id uuid.UUID, items []dto.
 
 	ib := sqlbuilder.PostgreSQL.NewInsertBuilder()
 	ib.InsertInto("property_media")
-	ib.Cols("property_id", "url", "type")
+	ib.Cols("property_id", "url", "type", "description")
 	for _, media := range items {
-		ib.Values(id, media.Url, media.Type)
+		ib.Values(id, media.Url, media.Type, types.StrN((media.Description)))
 	}
 	ib.SQL("RETURNING *")
 	sql, args := ib.Build()
@@ -243,16 +302,17 @@ func (r *repo) AddPropertyMedium(ctx context.Context, id uuid.UUID, items []dto.
 		defer rows.Close()
 		var items []model.PropertyMediaModel
 		for rows.Next() {
-			var i db.PropertyMedium
+			var i db.PropertyMedia
 			if err := rows.Scan(
 				&i.ID,
 				&i.PropertyID,
 				&i.Url,
 				&i.Type,
+				&i.Description,
 			); err != nil {
 				return nil, err
 			}
-			items = append(items, model.PropertyMediaModel(i))
+			items = append(items, *model.ToPropertyMediaModel(&i))
 		}
 		if err := rows.Close(); err != nil {
 			return nil, err
@@ -302,13 +362,20 @@ func (r *repo) bulkDelete(ctx context.Context, puid uuid.UUID, ids []int64, tabl
 }
 
 func (r *repo) DeletePropertyFeatures(ctx context.Context, puid uuid.UUID, fid []int64) error {
-	return r.bulkDelete(ctx, puid, fid, "property_feature", "feature_id")
+	return r.bulkDelete(ctx, puid, fid, "property_features", "feature_id")
 }
 
 func (r *repo) DeletePropertyTags(ctx context.Context, puid uuid.UUID, tid []int64) error {
-	return r.bulkDelete(ctx, puid, tid, "property_tag", "id")
+	return r.bulkDelete(ctx, puid, tid, "property_tags", "id")
 }
 
-func (r *repo) DeletePropertyMedium(ctx context.Context, puid uuid.UUID, mid []int64) error {
+func (r *repo) DeletePropertyMedia(ctx context.Context, puid uuid.UUID, mid []int64) error {
 	return r.bulkDelete(ctx, puid, mid, "property_media", "id")
+}
+
+func (r *repo) DeletePropertyManager(ctx context.Context, puid uuid.UUID, mid uuid.UUID) error {
+	return r.dao.DeletePropertyManager(ctx, db.DeletePropertyManagerParams{
+		PropertyID: puid,
+		ManagerID:  mid,
+	})
 }

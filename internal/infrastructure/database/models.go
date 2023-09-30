@@ -58,10 +58,16 @@ func (ns NullMEDIATYPE) Value() (driver.Value, error) {
 type PROPERTYTYPE string
 
 const (
-	PROPERTYTYPEAPARTMENT       PROPERTYTYPE = "APARTMENT"
-	PROPERTYTYPESINGLERESIDENCE PROPERTYTYPE = "SINGLE_RESIDENCE"
-	PROPERTYTYPEROOM            PROPERTYTYPE = "ROOM"
-	PROPERTYTYPEBLOCK           PROPERTYTYPE = "BLOCK"
+	PROPERTYTYPEAPARTMENT PROPERTYTYPE = "APARTMENT"
+	PROPERTYTYPEPRIVATE   PROPERTYTYPE = "PRIVATE"
+	PROPERTYTYPETOWNHOUSE PROPERTYTYPE = "TOWNHOUSE"
+	PROPERTYTYPESHOPHOUSE PROPERTYTYPE = "SHOPHOUSE"
+	PROPERTYTYPEVILLA     PROPERTYTYPE = "VILLA"
+	PROPERTYTYPEROOM      PROPERTYTYPE = "ROOM"
+	PROPERTYTYPESTORE     PROPERTYTYPE = "STORE"
+	PROPERTYTYPEOFFICE    PROPERTYTYPE = "OFFICE"
+	PROPERTYTYPEBLOCK     PROPERTYTYPE = "BLOCK"
+	PROPERTYTYPECOMPLEX   PROPERTYTYPE = "COMPLEX"
 )
 
 func (e *PROPERTYTYPE) Scan(src interface{}) error {
@@ -196,22 +202,30 @@ type PFeature struct {
 }
 
 type Property struct {
-	ID             uuid.UUID     `json:"id"`
-	OwnerID        uuid.UUID     `json:"owner_id"`
-	Name           string        `json:"name"`
-	Area           float32       `json:"area"`
-	NumberOfFloors sql.NullInt32 `json:"number_of_floors"`
-	YearBuilt      sql.NullInt32 `json:"year_built"`
+	ID             uuid.UUID      `json:"id"`
+	CreatorID      uuid.UUID      `json:"creator_id"`
+	Name           string         `json:"name"`
+	Building       sql.NullString `json:"building"`
+	Project        sql.NullString `json:"project"`
+	Area           float32        `json:"area"`
+	NumberOfFloors sql.NullInt32  `json:"number_of_floors"`
+	YearBuilt      sql.NullInt32  `json:"year_built"`
 	// n,s,w,e,nw,ne,sw,se
-	Orientation sql.NullString `json:"orientation"`
-	FullAddress string         `json:"full_address"`
-	District    string         `json:"district"`
-	City        string         `json:"city"`
-	Lat         float64        `json:"lat"`
-	Lng         float64        `json:"lng"`
-	Type        PROPERTYTYPE   `json:"type"`
-	CreatedAt   time.Time      `json:"created_at"`
-	UpdatedAt   time.Time      `json:"updated_at"`
+	Orientation   sql.NullString  `json:"orientation"`
+	EntranceWidth sql.NullFloat64 `json:"entrance_width"`
+	Facade        sql.NullFloat64 `json:"facade"`
+	FullAddress   string          `json:"full_address"`
+	City          string          `json:"city"`
+	District      string          `json:"district"`
+	Ward          sql.NullString  `json:"ward"`
+	Lat           sql.NullFloat64 `json:"lat"`
+	Lng           sql.NullFloat64 `json:"lng"`
+	PlaceUrl      string          `json:"place_url"`
+	Description   sql.NullString  `json:"description"`
+	Type          PROPERTYTYPE    `json:"type"`
+	IsPublic      bool            `json:"is_public"`
+	CreatedAt     time.Time       `json:"created_at"`
+	UpdatedAt     time.Time       `json:"updated_at"`
 }
 
 type PropertyFeature struct {
@@ -220,11 +234,18 @@ type PropertyFeature struct {
 	Description sql.NullString `json:"description"`
 }
 
-type PropertyMedium struct {
-	ID         int64     `json:"id"`
+type PropertyManager struct {
 	PropertyID uuid.UUID `json:"property_id"`
-	Url        string    `json:"url"`
-	Type       MEDIATYPE `json:"type"`
+	ManagerID  uuid.UUID `json:"manager_id"`
+	Role       string    `json:"role"`
+}
+
+type PropertyMedia struct {
+	ID          int64          `json:"id"`
+	PropertyID  uuid.UUID      `json:"property_id"`
+	Url         string         `json:"url"`
+	Type        MEDIATYPE      `json:"type"`
+	Description sql.NullString `json:"description"`
 }
 
 type PropertyTag struct {
@@ -261,11 +282,11 @@ type Unit struct {
 	Name                string        `json:"name"`
 	Area                float32       `json:"area"`
 	Floor               sql.NullInt32 `json:"floor"`
-	HasBalcony          sql.NullBool  `json:"has_balcony"`
 	NumberOfLivingRooms sql.NullInt32 `json:"number_of_living_rooms"`
 	NumberOfBedrooms    sql.NullInt32 `json:"number_of_bedrooms"`
 	NumberOfBathrooms   sql.NullInt32 `json:"number_of_bathrooms"`
 	NumberOfToilets     sql.NullInt32 `json:"number_of_toilets"`
+	NumberOfBalconies   sql.NullInt32 `json:"number_of_balconies"`
 	NumberOfKitchens    sql.NullInt32 `json:"number_of_kitchens"`
 	Type                UNITTYPE      `json:"type"`
 	CreatedAt           time.Time     `json:"created_at"`
@@ -278,11 +299,12 @@ type UnitAmenity struct {
 	Description sql.NullString `json:"description"`
 }
 
-type UnitMedium struct {
-	ID     int64     `json:"id"`
-	UnitID uuid.UUID `json:"unit_id"`
-	Url    string    `json:"url"`
-	Type   MEDIATYPE `json:"type"`
+type UnitMedia struct {
+	ID          int64          `json:"id"`
+	UnitID      uuid.UUID      `json:"unit_id"`
+	Url         string         `json:"url"`
+	Type        MEDIATYPE      `json:"type"`
+	Description sql.NullString `json:"description"`
 }
 
 // Bang user

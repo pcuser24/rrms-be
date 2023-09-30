@@ -32,32 +32,31 @@ func (a *adapter) RegisterServer(router *fiber.Router, tokenMaker token.Maker) {
 	unitRoute := (*router).Group("/unit")
 
 	(*router).Get("/unit/amenities", a.getAllAmenities())
+	(*router).Get("/unit/get-by-id/:id", a.getUnitById())
 
 	unitRoute.Use(auth.NewAuthMiddleware(tokenMaker))
 
 	unitRoute.Post("/create", a.createUnit())
-	unitRoute.Get("/get-by-id/:id", checkUnitOwnership(a.uService), a.getUnitById())
 	unitRoute.Get("/get-by-property-id/:id", a.getUnitsOfProperty())
-	unitRoute.Patch("/update/:id", checkUnitOwnership(a.uService), a.updateUnit())
-	unitRoute.Delete("/delete/:id", checkUnitOwnership(a.uService), a.deleteUnit())
+	unitRoute.Patch("/update/:id", checkUnitManageability(a.uService), a.updateUnit())
+	unitRoute.Delete("/delete/:id", checkUnitManageability(a.uService), a.deleteUnit())
 
-	unitRoute.Post("/amenity/add/:id", checkUnitOwnership(a.uService), a.addUnitAmenities())
-	unitRoute.Delete("/amenity/delete/:id", checkUnitOwnership(a.uService), a.deleteUnitAmenities())
-	unitRoute.Post("/media/add/:id", checkUnitOwnership(a.uService), a.addUnitMedium())
-	unitRoute.Delete("/media/delete/:id", checkUnitOwnership(a.uService), a.deleteUnitMedium())
+	unitRoute.Post("/amenity/add/:id", checkUnitManageability(a.uService), a.addUnitAmenities())
+	unitRoute.Delete("/amenity/delete/:id", checkUnitManageability(a.uService), a.deleteUnitAmenities())
+	unitRoute.Post("/media/add/:id", checkUnitManageability(a.uService), a.addUnitMedia())
+	unitRoute.Delete("/media/delete/:id", checkUnitManageability(a.uService), a.deleteUnitMedia())
 }
 
-func checkUnitOwnership(s Service) fiber.Handler {
+func checkUnitManageability(s Service) fiber.Handler {
 	return func(ctx *fiber.Ctx) error {
-		id := ctx.Params("id")
-		puid, err := uuid.Parse(id)
+		puid, err := uuid.Parse(ctx.Params("id"))
 		if err != nil {
 			return ctx.SendStatus(fiber.StatusBadRequest)
 		}
 
 		tkPayload := ctx.Locals(auth.AuthorizationPayloadKey).(*token.Payload)
 
-		isOwner, err := s.CheckUnitOwnership(puid, tkPayload.UserID)
+		isManageable, err := s.CheckUnitManageability(puid, tkPayload.UserID)
 		if err != nil {
 			if dbErr, ok := err.(*pgconn.PgError); ok {
 				responses.DBErrorResponse(ctx, dbErr)
@@ -66,7 +65,7 @@ func checkUnitOwnership(s Service) fiber.Handler {
 
 			return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
 		}
-		if !isOwner {
+		if !isManageable {
 			return ctx.Status(fiber.StatusForbidden).JSON(fiber.Map{"message": "operation not permitted on this unit"})
 		}
 
@@ -88,7 +87,7 @@ func (a *adapter) createUnit() fiber.Handler {
 
 		// check ownership of target property
 		tkPayload := ctx.Locals(auth.AuthorizationPayloadKey).(*token.Payload)
-		isOwner, err := a.pService.CheckOwnership(payload.PropertyID, tkPayload.UserID)
+		isManageable, err := a.pService.CheckManageability(payload.PropertyID, tkPayload.UserID)
 		if err != nil {
 			if dbErr, ok := err.(*pgconn.PgError); ok {
 				responses.DBErrorResponse(ctx, dbErr)
@@ -98,7 +97,7 @@ func (a *adapter) createUnit() fiber.Handler {
 			ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
 			return nil
 		}
-		if !isOwner {
+		if !isManageable {
 			return ctx.Status(fiber.StatusForbidden).JSON(fiber.Map{"message": "operation not permitted on this property"})
 		}
 
@@ -118,12 +117,31 @@ func (a *adapter) createUnit() fiber.Handler {
 
 func (a *adapter) getUnitById() fiber.Handler {
 	return func(ctx *fiber.Ctx) error {
-		id := ctx.Params("id")
-		uid, err := uuid.Parse(id)
+		uid, err := uuid.Parse(ctx.Params("id"))
 		if err != nil {
 			ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": err.Error()})
 			return nil
 		}
+
+		var userID uuid.UUID
+		tkPayload, ok := ctx.Locals(auth.AuthorizationPayloadKey).(*token.Payload)
+		if ok {
+			userID = tkPayload.UserID
+		}
+
+		isVisible, err := a.uService.CheckVisibility(uid, userID)
+		if err != nil {
+			if dbErr, ok := err.(*pgconn.PgError); ok {
+				responses.DBErrorResponse(ctx, dbErr)
+				return nil
+			}
+
+			return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
+		}
+		if !isVisible {
+			return ctx.Status(fiber.StatusForbidden).JSON(fiber.Map{"message": "property is not visible to you"})
+		}
+
 		res, err := a.uService.GetUnitById(uid)
 		if err != nil {
 			if dbErr, ok := err.(*pgconn.PgError); ok {
@@ -147,7 +165,7 @@ func (a *adapter) getUnitsOfProperty() fiber.Handler {
 		}
 
 		tkPayload := ctx.Locals(auth.AuthorizationPayloadKey).(*token.Payload)
-		isOwner, err := a.pService.CheckOwnership(pid, tkPayload.UserID)
+		isManageable, err := a.pService.CheckManageability(pid, tkPayload.UserID)
 		if err != nil {
 			if dbErr, ok := err.(*pgconn.PgError); ok {
 				responses.DBErrorResponse(ctx, dbErr)
@@ -156,7 +174,7 @@ func (a *adapter) getUnitsOfProperty() fiber.Handler {
 
 			return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
 		}
-		if !isOwner {
+		if !isManageable {
 			return ctx.Status(fiber.StatusForbidden).JSON(fiber.Map{"message": "operation not permitted on this property"})
 		}
 
@@ -265,7 +283,7 @@ func infoDeleteHandler(fn func(uuid.UUID, []int64) error) fiber.Handler {
 	}
 }
 
-func (a *adapter) addUnitMedium() fiber.Handler {
+func (a *adapter) addUnitMedia() fiber.Handler {
 	return func(ctx *fiber.Ctx) error {
 		puid, _ := uuid.Parse(ctx.Params("id"))
 
@@ -279,7 +297,7 @@ func (a *adapter) addUnitMedium() fiber.Handler {
 			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": utils.GetValidationError(errs)})
 		}
 
-		res, err := a.uService.AddUnitMedium(puid, query.Items)
+		res, err := a.uService.AddUnitMedia(puid, query.Items)
 		if err != nil {
 			if dbErr, ok := err.(*pgconn.PgError); ok {
 				responses.DBErrorResponse(ctx, dbErr)
@@ -293,8 +311,8 @@ func (a *adapter) addUnitMedium() fiber.Handler {
 	}
 }
 
-func (a *adapter) deleteUnitMedium() fiber.Handler {
-	return infoDeleteHandler(a.uService.DeleteUnitMedium)
+func (a *adapter) deleteUnitMedia() fiber.Handler {
+	return infoDeleteHandler(a.uService.DeleteUnitMedia)
 }
 
 func (a *adapter) addUnitAmenities() fiber.Handler {

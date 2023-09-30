@@ -12,11 +12,12 @@ type UpdateUnit struct {
 	Name                *string   `json:"name"`
 	Area                *float64  `json:"area"`
 	Floor               *int32    `json:"floor"`
-	HasBalcony          *bool     `json:"has_balcony"`
 	NumberOfLivingRooms *int32    `json:"number_of_living_rooms"`
 	NumberOfBedrooms    *int32    `json:"number_of_bedrooms"`
 	NumberOfBathrooms   *int32    `json:"number_of_bathrooms"`
 	NumberOfToilets     *int32    `json:"number_of_toilets"`
+	NumberOfKitchens    *int32    `json:"number_of_kitchens"`
+	NumberOfBalconies   *int32    `json:"number_of_balconies"`
 }
 
 func (u *UpdateUnit) ToUpdateUnitDB() *database.UpdateUnitParams {
@@ -41,12 +42,7 @@ func (u *UpdateUnit) ToUpdateUnitDB() *database.UpdateUnitParams {
 			Valid: true,
 		}
 	}
-	if u.HasBalcony != nil {
-		p.HasBalcony = sql.NullBool{
-			Bool:  *u.HasBalcony,
-			Valid: true,
-		}
-	}
+
 	if u.NumberOfLivingRooms != nil {
 		p.NumberOfLivingRooms = sql.NullInt32{
 			Int32: *u.NumberOfLivingRooms,
@@ -68,6 +64,18 @@ func (u *UpdateUnit) ToUpdateUnitDB() *database.UpdateUnitParams {
 	if u.NumberOfToilets != nil {
 		p.NumberOfToilets = sql.NullInt32{
 			Int32: *u.NumberOfToilets,
+			Valid: true,
+		}
+	}
+	if u.NumberOfKitchens != nil {
+		p.NumberOfKitchens = sql.NullInt32{
+			Int32: *u.NumberOfKitchens,
+			Valid: true,
+		}
+	}
+	if u.NumberOfBalconies != nil {
+		p.NumberOfBalconies = sql.NullInt32{
+			Int32: *u.NumberOfBalconies,
 			Valid: true,
 		}
 	}

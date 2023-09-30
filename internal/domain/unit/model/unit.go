@@ -13,17 +13,17 @@ type UnitModel struct {
 	Name                string             `json:"name"`
 	Area                float32            `json:"area"`
 	Floor               *int32             `json:"floor"`
-	HasBalcony          *bool              `json:"has_balcony"`
 	NumberOfLivingRooms *int32             `json:"number_of_living_rooms"`
 	NumberOfBedrooms    *int32             `json:"number_of_bedrooms"`
 	NumberOfBathrooms   *int32             `json:"number_of_bathrooms"`
 	NumberOfToilets     *int32             `json:"number_of_toilets"`
 	NumberOfKitchens    *int32             `json:"number_of_kitchens"`
+	NumberOfBalconies   *int32             `json:"number_of_balconies"`
 	Type                database.UNITTYPE  `json:"type"`
 	CreatedAt           time.Time          `json:"created_at"`
 	UpdatedAt           time.Time          `json:"updated_at"`
 	Amenities           []UnitAmenityModel `json:"amenities"`
-	Medium              []UnitMediaModel   `json:"medium"`
+	Media               []UnitMediaModel   `json:"media"`
 }
 
 func ToUnitModel(u *database.Unit) *UnitModel {
@@ -39,10 +39,6 @@ func ToUnitModel(u *database.Unit) *UnitModel {
 	if u.Floor.Valid {
 		f := u.Floor.Int32
 		um.Floor = &f
-	}
-	if u.HasBalcony.Valid {
-		b := u.HasBalcony.Bool
-		um.HasBalcony = &b
 	}
 	if u.NumberOfLivingRooms.Valid {
 		n := u.NumberOfLivingRooms.Int32
@@ -63,6 +59,10 @@ func ToUnitModel(u *database.Unit) *UnitModel {
 	if u.NumberOfKitchens.Valid {
 		n := u.NumberOfKitchens.Int32
 		um.NumberOfKitchens = &n
+	}
+	if u.NumberOfBalconies.Valid {
+		n := u.NumberOfBalconies.Int32
+		um.NumberOfBalconies = &n
 	}
 	return um
 }

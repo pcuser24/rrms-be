@@ -10,8 +10,9 @@ import (
 func SeedUnitAmenities(d database.DAO) error {
 	ib := sqlbuilder.PostgreSQL.NewInsertBuilder()
 	ib.InsertInto("u_amenities")
-	ib.Cols("feature")
+	ib.Cols("amenity")
 	for _, i := range []string{
+		"u-amenity_furniture",
 		"u-amenity_fridge",
 		"u-amenity_air-cond",
 		"u-amenity_washing-machine",
@@ -20,10 +21,9 @@ func SeedUnitAmenities(d database.DAO) error {
 		"u-amenity_tv",
 		"u-amenity_internet",
 		"u-amenity_wardrobe",
-		"u-amenity_closet",
 		"u-amenity_entresol",
 		"u-amenity_bed",
-		"u-amenity_sofa",
+		"u-amenity_other",
 	} {
 		ib.Values(i)
 	}

@@ -12,8 +12,8 @@ type PFeature struct {
 }
 
 type PropertyFeatureModel struct {
-	PropertyID  uuid.UUID `json:"property_id"`
-	FeatureID   int64     `json:"feature_id"`
+	PropertyID  uuid.UUID `json:"propertyID"`
+	FeatureID   int64     `json:"featureID"`
 	Description *string   `json:"description"`
 }
 

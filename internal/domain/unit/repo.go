@@ -2,7 +2,6 @@ package unit
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/google/uuid"
 	"github.com/huandu/go-sqlbuilder"
@@ -16,15 +15,16 @@ type Repo interface {
 	CreateUnit(ctx context.Context, data *dto.CreateUnit) (*model.UnitModel, error)
 	GetUnitById(ctx context.Context, id uuid.UUID) (*model.UnitModel, error)
 	GetUnitsOfProperty(ctx context.Context, id uuid.UUID) ([]model.UnitModel, error)
+	CheckUnitManageability(ctx context.Context, uid uuid.UUID, userId uuid.UUID) (bool, error)
+	CheckUnitOfProperty(ctx context.Context, pid, uid uuid.UUID) (bool, error)
+	IsPublic(ctx context.Context, id uuid.UUID) (bool, error)
 	UpdateUnit(ctx context.Context, data *dto.UpdateUnit) error
 	DeleteUnit(ctx context.Context, id uuid.UUID) error
-	CheckUnitOwnership(ctx context.Context, uid uuid.UUID, userId uuid.UUID) (bool, error)
-	CheckUnitOfProperty(ctx context.Context, pid, uid uuid.UUID) (bool, error)
 	AddUnitAmenities(ctx context.Context, uid uuid.UUID, items []dto.CreateUnitAmenity) ([]model.UnitAmenityModel, error)
-	AddUnitMedium(ctx context.Context, uid uuid.UUID, items []dto.CreateUnitMedia) ([]model.UnitMediaModel, error)
+	AddUnitMedia(ctx context.Context, uid uuid.UUID, items []dto.CreateUnitMedia) ([]model.UnitMediaModel, error)
 	GetAllAmenities(ctx context.Context) ([]model.UAmenity, error)
 	DeleteUnitAmenities(ctx context.Context, uid uuid.UUID, ids []int64) error
-	DeleteUnitMedium(ctx context.Context, uid uuid.UUID, ids []int64) error
+	DeleteUnitMedia(ctx context.Context, uid uuid.UUID, ids []int64) error
 }
 
 type repo struct {
@@ -51,7 +51,7 @@ func (r *repo) CreateUnit(ctx context.Context, data *dto.CreateUnit) (*model.Uni
 			return nil, err
 		}
 
-		um.Medium, err = r.AddUnitMedium(ctx, res.ID, data.Medium)
+		um.Media, err = r.AddUnitMedia(ctx, res.ID, data.Media)
 		if err != nil {
 			return nil, err
 		}
@@ -87,7 +87,7 @@ func (r *repo) GetUnitById(ctx context.Context, id uuid.UUID) (*model.UnitModel,
 		return nil, err
 	}
 	for _, mdb := range m {
-		um.Medium = append(um.Medium, model.UnitMediaModel(mdb))
+		um.Media = append(um.Media, *model.ToUnitMediaModel(&mdb))
 	}
 
 	return um, nil
@@ -114,7 +114,7 @@ func (r *repo) GetUnitsOfProperty(ctx context.Context, id uuid.UUID) ([]model.Un
 			return nil, err
 		}
 		for _, mdb := range m {
-			um.Medium = append(um.Medium, model.UnitMediaModel(mdb))
+			um.Media = append(um.Media, *model.ToUnitMediaModel(&mdb))
 		}
 		res = append(res, um)
 	}
@@ -136,15 +136,13 @@ func (r *repo) AddUnitAmenities(ctx context.Context, uid uuid.UUID, items []dto.
 	}
 
 	ib := sqlbuilder.PostgreSQL.NewInsertBuilder()
-	ib.InsertInto("unit_amenity")
+	ib.InsertInto("unit_amenities")
 	ib.Cols("unit_id", "amenity_id", "description")
 	for _, i := range items {
 		ib.Values(uid, i.AmenityID, types.StrN(i.Description))
 	}
 	ib.SQL("RETURNING *")
 	sql, args := ib.Build()
-	fmt.Println("amenity sql:", sql)
-	fmt.Println("amenity args:", args)
 
 	rows, err := r.dao.QueryContext(ctx, sql, args...)
 	if err != nil {
@@ -179,7 +177,7 @@ func (r *repo) AddUnitAmenities(ctx context.Context, uid uuid.UUID, items []dto.
 	return res, nil
 }
 
-func (r *repo) AddUnitMedium(ctx context.Context, uid uuid.UUID, items []dto.CreateUnitMedia) ([]model.UnitMediaModel, error) {
+func (r *repo) AddUnitMedia(ctx context.Context, uid uuid.UUID, items []dto.CreateUnitMedia) ([]model.UnitMediaModel, error) {
 	var res []model.UnitMediaModel
 	if len(items) == 0 {
 		return res, nil
@@ -187,14 +185,12 @@ func (r *repo) AddUnitMedium(ctx context.Context, uid uuid.UUID, items []dto.Cre
 
 	ib := sqlbuilder.PostgreSQL.NewInsertBuilder()
 	ib.InsertInto("unit_media")
-	ib.Cols("unit_id", "url", "type")
+	ib.Cols("unit_id", "url", "type", "description")
 	for _, media := range items {
-		ib.Values(uid, media.Url, media.Type)
+		ib.Values(uid, media.Url, media.Type, types.StrN(media.Description))
 	}
 	ib.SQL("RETURNING *")
 	sql, args := ib.Build()
-	fmt.Println("medium sql:", sql)
-	fmt.Println("medium args:", args)
 	rows, err := r.dao.QueryContext(ctx, sql, args...)
 	if err != nil {
 		return nil, err
@@ -203,16 +199,17 @@ func (r *repo) AddUnitMedium(ctx context.Context, uid uuid.UUID, items []dto.Cre
 		defer rows.Close()
 		var items []model.UnitMediaModel
 		for rows.Next() {
-			var i db.UnitMedium
+			var i db.UnitMedia
 			if err := rows.Scan(
 				&i.ID,
 				&i.UnitID,
 				&i.Url,
 				&i.Type,
+				&i.Description,
 			); err != nil {
 				return nil, err
 			}
-			items = append(items, model.UnitMediaModel(i))
+			items = append(items, *model.ToUnitMediaModel(&i))
 		}
 		if err := rows.Close(); err != nil {
 			return nil, err
@@ -250,10 +247,10 @@ func (r *repo) bulkDelete(ctx context.Context, uid uuid.UUID, ids []int64, table
 }
 
 func (r *repo) DeleteUnitAmenities(ctx context.Context, uid uuid.UUID, ids []int64) error {
-	return r.bulkDelete(ctx, uid, ids, "unit_amenity", "amenity_id")
+	return r.bulkDelete(ctx, uid, ids, "unit_amenities", "amenity_id")
 }
 
-func (r *repo) DeleteUnitMedium(ctx context.Context, uid uuid.UUID, ids []int64) error {
+func (r *repo) DeleteUnitMedia(ctx context.Context, uid uuid.UUID, ids []int64) error {
 	return r.bulkDelete(ctx, uid, ids, "unit_media", "id")
 }
 
@@ -269,10 +266,10 @@ func (r *repo) GetAllAmenities(ctx context.Context) ([]model.UAmenity, error) {
 	return res, nil
 }
 
-func (r *repo) CheckUnitOwnership(ctx context.Context, id uuid.UUID, userId uuid.UUID) (bool, error) {
-	res, err := r.dao.CheckUnitOwnership(ctx, db.CheckUnitOwnershipParams{
-		ID:      id,
-		OwnerID: userId,
+func (r *repo) CheckUnitManageability(ctx context.Context, id uuid.UUID, userId uuid.UUID) (bool, error) {
+	res, err := r.dao.CheckUnitManageability(ctx, db.CheckUnitManageabilityParams{
+		ID:        id,
+		ManagerID: userId,
 	})
 	if err != nil {
 		return false, err
@@ -290,4 +287,8 @@ func (r *repo) CheckUnitOfProperty(ctx context.Context, pid, uid uuid.UUID) (boo
 	}
 	return res > 0, nil
 
+}
+
+func (r *repo) IsPublic(ctx context.Context, id uuid.UUID) (bool, error) {
+	return r.dao.IsUnitPublic(ctx, id)
 }

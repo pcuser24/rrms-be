@@ -8,29 +8,30 @@ import (
 )
 
 type CreateUnitAmenity struct {
-	AmenityID   int64   `json:"amenity_id" validate:"required"`
+	AmenityID   int64   `json:"amenityID" validate:"required"`
 	Description *string `json:"description"`
 }
 
 type CreateUnitMedia struct {
-	Url  string             `json:"url" validate:"required,url"`
-	Type database.MEDIATYPE `json:"type" validate:"required,oneof=IMAGE VIDEO"`
+	Url         string             `json:"url" validate:"required,url"`
+	Type        database.MEDIATYPE `json:"type" validate:"required,oneof=IMAGE VIDEO"`
+	Description *string            `json:"description"`
 }
 
 type CreateUnit struct {
-	PropertyID          uuid.UUID           `json:"property_id" validate:"required,uuid4"`
+	PropertyID          uuid.UUID           `json:"propertyID" validate:"required,uuid4"`
 	Name                *string             `json:"name"`
 	Area                float32             `json:"area" validate:"required"`
 	Floor               *int32              `json:"floor"`
-	HasBalcony          *bool               `json:"has_balcony"`
-	NumberOfLivingRooms *int32              `json:"number_of_living_rooms"`
-	NumberOfBedrooms    *int32              `json:"number_of_bedrooms"`
-	NumberOfBathrooms   *int32              `json:"number_of_bathrooms"`
-	NumberOfToilets     *int32              `json:"number_of_toilets"`
-	NumberOfKitchens    *int32              `json:"number_of_kitchens"`
-	Type                database.UNITTYPE   `json:"type" validate:"required"`
+	NumberOfLivingRooms *int32              `json:"numberOfLivingRooms"`
+	NumberOfBedrooms    *int32              `json:"numberOfBedrooms"`
+	NumberOfBathrooms   *int32              `json:"numberOfBathrooms"`
+	NumberOfToilets     *int32              `json:"numberOfToilets"`
+	NumberOfKitchens    *int32              `json:"numberOfKitchens"`
+	NumberOfBalconies   *int32              `json:"numberOfBalconies"`
+	Type                database.UNITTYPE   `json:"type" validate:"required,oneof=APARTMENT ROOM STUDIO"`
 	Amenities           []CreateUnitAmenity `json:"amenities"`
-	Medium              []CreateUnitMedia   `json:"medium"`
+	Media               []CreateUnitMedia   `json:"media"`
 }
 
 func (cu *CreateUnit) ToCreateUnitDB() *database.CreateUnitParams {
@@ -48,12 +49,6 @@ func (cu *CreateUnit) ToCreateUnitDB() *database.CreateUnitParams {
 	if cu.Floor != nil {
 		p.Floor = sql.NullInt32{
 			Int32: *cu.Floor,
-			Valid: true,
-		}
-	}
-	if cu.HasBalcony != nil {
-		p.HasBalcony = sql.NullBool{
-			Bool:  *cu.HasBalcony,
 			Valid: true,
 		}
 	}
@@ -84,6 +79,12 @@ func (cu *CreateUnit) ToCreateUnitDB() *database.CreateUnitParams {
 	if cu.NumberOfKitchens != nil {
 		p.NumberOfKitchens = sql.NullInt32{
 			Int32: *cu.NumberOfKitchens,
+			Valid: true,
+		}
+	}
+	if cu.NumberOfBalconies != nil {
+		p.NumberOfBalconies = sql.NullInt32{
+			Int32: *cu.NumberOfBalconies,
 			Valid: true,
 		}
 	}

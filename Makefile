@@ -8,14 +8,14 @@ migratecreate:
 migrateup:
 	migrate -path internal/infrastructure/database/migrations -database "$(DB_URL)" -verbose up
 
-migrateup1:
-	migrate -path internal/infrastructure/database/migrations -database "$(DB_URL)" -verbose up 1
+migrateupn:
+	migrate -path internal/infrastructure/database/migrations -database "$(DB_URL)" -verbose up ${n}
 
 migratedown:
 	migrate -path internal/infrastructure/database/migrations -database "$(DB_URL)" -verbose down
 
-migratedown1:
-	migrate -path internal/infrastructure/database/migrations -database "$(DB_URL)" -verbose down 1
+migratedownn:
+	migrate -path internal/infrastructure/database/migrations -database "$(DB_URL)" -verbose down ${n}
 
 
 sqlcgen:

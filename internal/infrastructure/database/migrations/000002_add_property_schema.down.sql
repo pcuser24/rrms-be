@@ -1,7 +1,8 @@
 BEGIN;
 DROP TABLE IF EXISTS "property_media";
-DROP TABLE IF EXISTS "property_tag";
-DROP TABLE IF EXISTS "property_feature";
+DROP TABLE IF EXISTS "property_tags";
+DROP TABLE IF EXISTS "property_managers";
+DROP TABLE IF EXISTS "property_features";
 DROP TABLE IF EXISTS "p_features";
 DROP TABLE IF EXISTS "properties";
 DROP TYPE IF EXISTS "PROPERTYTYPE";
