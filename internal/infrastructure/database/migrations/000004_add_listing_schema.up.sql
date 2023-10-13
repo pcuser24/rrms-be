@@ -6,8 +6,15 @@ CREATE TABLE IF NOT EXISTS "listings" (
   "property_id" UUID NOT NULL,
   "title" TEXT NOT NULL DEFAULT '',
   "description" TEXT NOT NULL DEFAULT '',
+  
+  -- contact info
+  "full_name" TEXT NOT NULL,
+  "email" TEXT NOT NULL,
+  "phone" TEXT NOT NULL,
+  "contact_type" TEXT NOT NULL,
 
   "price" BIGINT NOT NULL,
+  "price_negotiable" BOOL NOT NULL DEFAULT FALSE,
   "security_deposit" BIGINT NOT NULL DEFAULT 0,
   "lease_term" INTEGER NOT NULL DEFAULT 1,
 
@@ -15,9 +22,10 @@ CREATE TABLE IF NOT EXISTS "listings" (
   "number_of_residents" INTEGER CHECK (number_of_residents >= 0),
 
   "priority" INTEGER NOT NULL DEFAULT 1,
-  "active" BOOL NOT NULL DEFAULT TRUE,
+  "active" BOOL NOT NULL DEFAULT FALSE,
   "created_at" TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   "updated_at" TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  "post_at" TIMESTAMPTZ NOT NULL,
   "expired_at" TIMESTAMPTZ NOT NULL
 );
 ALTER TABLE "listings" ADD CONSTRAINT "listings_creator_id_fkey" FOREIGN KEY ("creator_id") REFERENCES "User"("id") ON DELETE CASCADE;

@@ -6,8 +6,8 @@ import (
 )
 
 type ListingPolicyModel struct {
-	ListingID uuid.UUID `json:"listing_id"`
-	PolicyID  int64     `json:"policy_id"`
+	ListingID uuid.UUID `json:"listingID"`
+	PolicyID  int64     `json:"policyID"`
 	Note      *string   `json:"note"`
 }
 

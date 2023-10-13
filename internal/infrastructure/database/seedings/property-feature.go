@@ -12,17 +12,17 @@ func SeedPropertyFeatures(d database.DAO) error {
 	ib.InsertInto("p_features")
 	ib.Cols("feature")
 	for _, i := range []string{
-		"p-feature_security",
-		"p-feature_fire-alarm",
-		"p-feature_gym",
-		"p-feature_fitness-center",
-		"p-feature_swimming-pool",
-		"p-feature_community-rooms",
-		"p-feature_public-library",
-		"p-feature_parking",
-		"p-feature_outdoor-common-area",
-		"p-feature_services",
-		"p-feature_facilities",
+		"p_feature-security",
+		"p_feature-fire_alarm",
+		"p_feature-gym",
+		"p_feature-fitness_center",
+		"p_feature-swimming_pool",
+		"p_feature-community_rooms",
+		"p_feature-public_library",
+		"p_feature-parking",
+		"p_feature-outdoor_common_area",
+		"p_feature-services",
+		"p_feature-facilities",
 	} {
 		ib.Values(i)
 	}

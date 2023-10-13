@@ -1,6 +1,8 @@
 package listing
 
 import (
+	"log"
+
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgconn"
@@ -8,6 +10,7 @@ import (
 	"github.com/user2410/rrms-backend/internal/domain/listing/dto"
 	"github.com/user2410/rrms-backend/internal/domain/property"
 	"github.com/user2410/rrms-backend/internal/domain/unit"
+	"github.com/user2410/rrms-backend/internal/infrastructure/database"
 	"github.com/user2410/rrms-backend/internal/interfaces/rest/responses"
 	"github.com/user2410/rrms-backend/internal/utils"
 	"github.com/user2410/rrms-backend/internal/utils/token"
@@ -38,16 +41,16 @@ func (a *adapter) RegisterServer(router *fiber.Router, tokenMaker token.Maker) {
 
 	listingRoute.Post("/create", a.createListing())
 	listingRoute.Get("/get-by-id/:id", a.getListingById())
-	listingRoute.Patch("/update/:id", checkListingManageability(a.lService), a.updateListing())
-	listingRoute.Delete("/delete/:id", checkListingManageability(a.lService), a.deleteListing())
+	listingRoute.Patch("/update/:id", a.checkListingManageability(), a.updateListing())
+	listingRoute.Delete("/delete/:id", a.checkListingManageability(), a.deleteListing())
 
-	listingRoute.Post("/policy/add/:id", checkListingManageability(a.lService), a.addListingPolicies())
-	listingRoute.Delete("/policy/delete/:id", checkListingManageability(a.lService), a.deleteListingPolicies())
-	listingRoute.Post("/unit/add/:id", checkListingManageability(a.lService), a.addListingUnits())
-	listingRoute.Delete("/unit/delete/:id", checkListingManageability(a.lService), a.deleteListingUnits())
+	listingRoute.Post("/policy/add/:id", a.checkListingManageability(), a.addListingPolicies())
+	listingRoute.Delete("/policy/delete/:id", a.checkListingManageability(), a.deleteListingPolicies())
+	listingRoute.Post("/unit/add/:id", a.checkListingManageability(), a.addListingUnits())
+	listingRoute.Delete("/unit/delete/:id", a.checkListingManageability(), a.deleteListingUnits())
 }
 
-func checkListingManageability(s Service) fiber.Handler {
+func (a *adapter) checkListingManageability() fiber.Handler {
 	return func(ctx *fiber.Ctx) error {
 		id := ctx.Params("id")
 		lid, err := uuid.Parse(id)
@@ -57,16 +60,15 @@ func checkListingManageability(s Service) fiber.Handler {
 
 		tkPayload := ctx.Locals(auth.AuthorizationPayloadKey).(*token.Payload)
 
-		isManager, err := s.CheckListingOwnership(lid, tkPayload.UserID)
+		isCreator, err := a.lService.CheckListingOwnership(lid, tkPayload.UserID)
 		if err != nil {
 			if dbErr, ok := err.(*pgconn.PgError); ok {
-				responses.DBErrorResponse(ctx, dbErr)
-				return nil
+				return responses.DBErrorResponse(ctx, dbErr)
 			}
 
 			return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
 		}
-		if !isManager {
+		if !isCreator {
 			return ctx.Status(fiber.StatusForbidden).JSON(fiber.Map{"message": "operation not permitted on this unit"})
 		}
 
@@ -81,19 +83,19 @@ func (a *adapter) createListing() fiber.Handler {
 
 		var payload dto.CreateListing
 		if err := ctx.BodyParser(&payload); err != nil {
-			return err
+			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": err.Error()})
 		}
 		payload.CreatorID = tkPayload.UserID
 		if errs := utils.ValidateStruct(payload); len(errs) > 0 && errs[0].Error {
 			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": utils.GetValidationError(errs)})
 		}
+		log.Println("Passed struct validation")
 
 		// check ownership of target property
 		isManager, err := a.pService.CheckManageability(payload.PropertyID, tkPayload.UserID)
 		if err != nil {
 			if dbErr, ok := err.(*pgconn.PgError); ok {
-				responses.DBErrorResponse(ctx, dbErr)
-				return nil
+				return responses.DBErrorResponse(ctx, dbErr)
 			}
 
 			return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
@@ -101,23 +103,30 @@ func (a *adapter) createListing() fiber.Handler {
 		if !isManager {
 			return ctx.Status(fiber.StatusForbidden).JSON(fiber.Map{"message": "operation not permitted on this property"})
 		}
+		log.Println("Passed property ownership check")
 
 		// validate units
 		for _, pu := range payload.Units {
 			isValid, err := a.uService.CheckUnitOfProperty(payload.PropertyID, pu.UnitID)
 			if err != nil {
+				if dbErr, ok := err.(*pgconn.PgError); ok {
+					return responses.DBErrorResponse(ctx, dbErr)
+				}
 				return ctx.SendStatus(fiber.StatusInternalServerError)
 			}
 			if !isValid {
 				return ctx.Status(fiber.StatusForbidden).JSON(fiber.Map{"message": "operation not permitted on unit id = " + pu.UnitID.String()})
 			}
 		}
+		log.Println("Passed unit validation")
 
 		res, err := a.lService.CreateListing(&payload)
 		if err != nil {
 			if dbErr, ok := err.(*pgconn.PgError); ok {
-				responses.DBErrorResponse(ctx, dbErr)
-				return nil
+				return responses.DBErrorResponse(ctx, dbErr)
+			}
+			if dbErr, ok := err.(*database.TXError); ok {
+				return responses.DBTXErrorResponse(ctx, dbErr)
 			}
 
 			return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
@@ -137,8 +146,7 @@ func (a *adapter) getListingById() fiber.Handler {
 		res, err := a.lService.GetListingByID(lid)
 		if err != nil {
 			if dbErr, ok := err.(*pgconn.PgError); ok {
-				responses.DBErrorResponse(ctx, dbErr)
-				return nil
+				return responses.DBErrorResponse(ctx, dbErr)
 			}
 
 			ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
@@ -165,8 +173,7 @@ func (a *adapter) updateListing() fiber.Handler {
 		err := a.lService.UpdateListing(&payload)
 		if err != nil {
 			if dbErr, ok := err.(*pgconn.PgError); ok {
-				responses.DBErrorResponse(ctx, dbErr)
-				return nil
+				return responses.DBErrorResponse(ctx, dbErr)
 			}
 
 			ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
@@ -186,8 +193,7 @@ func (a *adapter) deleteListing() fiber.Handler {
 		err = a.lService.DeleteListing(lid)
 		if err != nil {
 			if dbErr, ok := err.(*pgconn.PgError); ok {
-				responses.DBErrorResponse(ctx, dbErr)
-				return nil
+				return responses.DBErrorResponse(ctx, dbErr)
 			}
 
 			ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
@@ -213,8 +219,7 @@ func (a *adapter) addListingPolicies() fiber.Handler {
 		res, err := a.lService.AddListingPolicies(lid, query.Items)
 		if err != nil {
 			if dbErr, ok := err.(*pgconn.PgError); ok {
-				responses.DBErrorResponse(ctx, dbErr)
-				return nil
+				return responses.DBErrorResponse(ctx, dbErr)
 			}
 
 			ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
@@ -241,8 +246,7 @@ func (a *adapter) deleteListingPolicies() fiber.Handler {
 		err := a.lService.DeleteListingPolicies(lid, query.Items)
 		if err != nil {
 			if dbErr, ok := err.(*pgconn.PgError); ok {
-				responses.DBErrorResponse(ctx, dbErr)
-				return nil
+				return responses.DBErrorResponse(ctx, dbErr)
 			}
 
 			ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
@@ -280,8 +284,7 @@ func (a *adapter) addListingUnits() fiber.Handler {
 		res, err := a.lService.AddListingUnits(lid, query.Items)
 		if err != nil {
 			if dbErr, ok := err.(*pgconn.PgError); ok {
-				responses.DBErrorResponse(ctx, dbErr)
-				return nil
+				return responses.DBErrorResponse(ctx, dbErr)
 			}
 
 			ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
@@ -308,8 +311,7 @@ func (a *adapter) deleteListingUnits() fiber.Handler {
 		err := a.lService.DeleteListingUnits(lid, query.Items)
 		if err != nil {
 			if dbErr, ok := err.(*pgconn.PgError); ok {
-				responses.DBErrorResponse(ctx, dbErr)
-				return nil
+				return responses.DBErrorResponse(ctx, dbErr)
 			}
 
 			ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})

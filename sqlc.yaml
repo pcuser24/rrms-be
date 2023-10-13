@@ -11,3 +11,6 @@ sql:
         emit_prepared_queries: false
         emit_interface: true
         emit_exact_table_names: false
+        rename:
+          property_media: PropertyMedia
+          unit_media: UnitMedia

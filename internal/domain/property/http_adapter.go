@@ -10,6 +10,7 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/user2410/rrms-backend/internal/domain/auth"
 	"github.com/user2410/rrms-backend/internal/domain/property/dto"
+	"github.com/user2410/rrms-backend/internal/infrastructure/database"
 	"github.com/user2410/rrms-backend/internal/interfaces/rest/responses"
 	"github.com/user2410/rrms-backend/internal/utils"
 	"github.com/user2410/rrms-backend/internal/utils/token"
@@ -63,8 +64,7 @@ func checkPropertyManageability(s Service) fiber.Handler {
 		isManager, err := s.CheckManageability(puid, tkPayload.UserID)
 		if err != nil {
 			if dbErr, ok := err.(*pgconn.PgError); ok {
-				responses.DBErrorResponse(ctx, dbErr)
-				return nil
+				return responses.DBErrorResponse(ctx, dbErr)
 			}
 
 			return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
@@ -94,8 +94,10 @@ func (a *adapter) createProperty() fiber.Handler {
 		res, err := a.service.CreateProperty(&payload, tkPayload.UserID)
 		if err != nil {
 			if dbErr, ok := err.(*pgconn.PgError); ok {
-				responses.DBErrorResponse(ctx, dbErr)
-				return nil
+				return responses.DBErrorResponse(ctx, dbErr)
+			}
+			if dbErr, ok := err.(*database.TXError); ok {
+				return responses.DBTXErrorResponse(ctx, dbErr)
 			}
 
 			ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
@@ -123,8 +125,7 @@ func (a *adapter) getPropertyById() fiber.Handler {
 		isVisible, err := a.service.CheckVisibility(puid, userID)
 		if err != nil {
 			if dbErr, ok := err.(*pgconn.PgError); ok {
-				responses.DBErrorResponse(ctx, dbErr)
-				return nil
+				return responses.DBErrorResponse(ctx, dbErr)
 			}
 
 			return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
@@ -137,8 +138,7 @@ func (a *adapter) getPropertyById() fiber.Handler {
 		if err != nil {
 			var pgErr *pgconn.PgError
 			if errors.As(err, &pgErr) {
-				responses.DBErrorResponse(ctx, pgErr)
-				return nil
+				return responses.DBErrorResponse(ctx, pgErr)
 			}
 
 			if errors.Is(err, sql.ErrNoRows) {
@@ -172,8 +172,7 @@ func (a *adapter) updateProperty() fiber.Handler {
 		err := a.service.UpdateProperty(&payload)
 		if err != nil {
 			if dbErr, ok := err.(*pgconn.PgError); ok {
-				responses.DBErrorResponse(ctx, dbErr)
-				return nil
+				return responses.DBErrorResponse(ctx, dbErr)
 			}
 
 			return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
@@ -190,8 +189,7 @@ func (a *adapter) deleteProperty() fiber.Handler {
 		err := a.service.DeleteProperty(puid)
 		if err != nil {
 			if dbErr, ok := err.(*pgconn.PgError); ok {
-				responses.DBErrorResponse(ctx, dbErr)
-				return nil
+				return responses.DBErrorResponse(ctx, dbErr)
 			}
 
 			ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
@@ -217,8 +215,7 @@ func (a *adapter) addPropertyMedia() fiber.Handler {
 		res, err := a.service.AddPropertyMedia(puid, query.Items)
 		if err != nil {
 			if dbErr, ok := err.(*pgconn.PgError); ok {
-				responses.DBErrorResponse(ctx, dbErr)
-				return nil
+				return responses.DBErrorResponse(ctx, dbErr)
 			}
 
 			ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
@@ -245,8 +242,7 @@ func infoDeleteHandler(fn func(uuid.UUID, []int64) error) fiber.Handler {
 		err := fn(puid, query.Items)
 		if err != nil {
 			if dbErr, ok := err.(*pgconn.PgError); ok {
-				responses.DBErrorResponse(ctx, dbErr)
-				return nil
+				return responses.DBErrorResponse(ctx, dbErr)
 			}
 
 			ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
@@ -277,8 +273,7 @@ func (a *adapter) addPropertyFeatures() fiber.Handler {
 		res, err := a.service.AddPropertyFeatures(puid, query.Items)
 		if err != nil {
 			if dbErr, ok := err.(*pgconn.PgError); ok {
-				responses.DBErrorResponse(ctx, dbErr)
-				return nil
+				return responses.DBErrorResponse(ctx, dbErr)
 			}
 
 			ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
@@ -309,8 +304,7 @@ func (a *adapter) addPropertyTags() fiber.Handler {
 		res, err := a.service.AddPropertyTags(puid, query.Items)
 		if err != nil {
 			if dbErr, ok := err.(*pgconn.PgError); ok {
-				responses.DBErrorResponse(ctx, dbErr)
-				return nil
+				return responses.DBErrorResponse(ctx, dbErr)
 			}
 
 			ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
@@ -341,8 +335,7 @@ func (a *adapter) addPropertyManagers() fiber.Handler {
 		res, err := a.service.AddPropertyManagers(puid, query.Items)
 		if err != nil {
 			if dbErr, ok := err.(*pgconn.PgError); ok {
-				responses.DBErrorResponse(ctx, dbErr)
-				return nil
+				return responses.DBErrorResponse(ctx, dbErr)
 			}
 
 			ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
@@ -363,8 +356,7 @@ func (a *adapter) deletePropertyManagers() fiber.Handler {
 		err = a.service.DeletePropertyManager(puid, mid)
 		if err != nil {
 			if dbErr, ok := err.(*pgconn.PgError); ok {
-				responses.DBErrorResponse(ctx, dbErr)
-				return nil
+				return responses.DBErrorResponse(ctx, dbErr)
 			}
 
 			ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})

@@ -10,10 +10,10 @@ type UpdateListing struct {
 	Title             *string   `json:"title"`
 	Description       *string   `json:"description"`
 	Price             *int64    `json:"price"`
-	SecurityDeposit   *int64    `json:"security_deposit"`
-	LeaseTerm         *int32    `json:"lease_term"`
-	PetsAllowed       *bool     `json:"pets_allowed"`
-	NumberOfResidents *int32    `json:"number_of_residents"`
+	SecurityDeposit   *int64    `json:"securityDeposit"`
+	LeaseTerm         *int32    `json:"leaseTerm"`
+	PetsAllowed       *bool     `json:"petsAllowed"`
+	NumberOfResidents *int32    `json:"numberOfResidents"`
 	ID                uuid.UUID `json:"id"`
 }
 

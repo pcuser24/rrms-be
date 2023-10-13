@@ -7,6 +7,7 @@ import (
 	"github.com/user2410/rrms-backend/internal/domain/auth"
 	"github.com/user2410/rrms-backend/internal/domain/property"
 	"github.com/user2410/rrms-backend/internal/domain/unit/dto"
+	"github.com/user2410/rrms-backend/internal/infrastructure/database"
 	"github.com/user2410/rrms-backend/internal/interfaces/rest/responses"
 	"github.com/user2410/rrms-backend/internal/utils"
 	"github.com/user2410/rrms-backend/internal/utils/token"
@@ -59,8 +60,7 @@ func checkUnitManageability(s Service) fiber.Handler {
 		isManageable, err := s.CheckUnitManageability(puid, tkPayload.UserID)
 		if err != nil {
 			if dbErr, ok := err.(*pgconn.PgError); ok {
-				responses.DBErrorResponse(ctx, dbErr)
-				return nil
+				return responses.DBErrorResponse(ctx, dbErr)
 			}
 
 			return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
@@ -90,8 +90,7 @@ func (a *adapter) createUnit() fiber.Handler {
 		isManageable, err := a.pService.CheckManageability(payload.PropertyID, tkPayload.UserID)
 		if err != nil {
 			if dbErr, ok := err.(*pgconn.PgError); ok {
-				responses.DBErrorResponse(ctx, dbErr)
-				return nil
+				return responses.DBErrorResponse(ctx, dbErr)
 			}
 
 			ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
@@ -104,8 +103,10 @@ func (a *adapter) createUnit() fiber.Handler {
 		res, err := a.uService.CreateUnit(&payload)
 		if err != nil {
 			if dbErr, ok := err.(*pgconn.PgError); ok {
-				responses.DBErrorResponse(ctx, dbErr)
-				return nil
+				return responses.DBErrorResponse(ctx, dbErr)
+			}
+			if dbErr, ok := err.(*database.TXError); ok {
+				return responses.DBTXErrorResponse(ctx, dbErr)
 			}
 
 			ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
@@ -132,8 +133,7 @@ func (a *adapter) getUnitById() fiber.Handler {
 		isVisible, err := a.uService.CheckVisibility(uid, userID)
 		if err != nil {
 			if dbErr, ok := err.(*pgconn.PgError); ok {
-				responses.DBErrorResponse(ctx, dbErr)
-				return nil
+				return responses.DBErrorResponse(ctx, dbErr)
 			}
 
 			return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
@@ -145,8 +145,7 @@ func (a *adapter) getUnitById() fiber.Handler {
 		res, err := a.uService.GetUnitById(uid)
 		if err != nil {
 			if dbErr, ok := err.(*pgconn.PgError); ok {
-				responses.DBErrorResponse(ctx, dbErr)
-				return nil
+				return responses.DBErrorResponse(ctx, dbErr)
 			}
 
 			ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
@@ -168,8 +167,7 @@ func (a *adapter) getUnitsOfProperty() fiber.Handler {
 		isManageable, err := a.pService.CheckManageability(pid, tkPayload.UserID)
 		if err != nil {
 			if dbErr, ok := err.(*pgconn.PgError); ok {
-				responses.DBErrorResponse(ctx, dbErr)
-				return nil
+				return responses.DBErrorResponse(ctx, dbErr)
 			}
 
 			return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
@@ -181,8 +179,7 @@ func (a *adapter) getUnitsOfProperty() fiber.Handler {
 		res, err := a.uService.GetUnitsOfProperty(pid)
 		if err != nil {
 			if dbErr, ok := err.(*pgconn.PgError); ok {
-				responses.DBErrorResponse(ctx, dbErr)
-				return nil
+				return responses.DBErrorResponse(ctx, dbErr)
 			}
 
 			return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
@@ -210,8 +207,7 @@ func (a *adapter) updateUnit() fiber.Handler {
 		err := a.uService.UpdateUnit(&payload)
 		if err != nil {
 			if dbErr, ok := err.(*pgconn.PgError); ok {
-				responses.DBErrorResponse(ctx, dbErr)
-				return nil
+				return responses.DBErrorResponse(ctx, dbErr)
 			}
 
 			ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
@@ -231,8 +227,7 @@ func (a *adapter) deleteUnit() fiber.Handler {
 		err = a.uService.DeleteUnit(uid)
 		if err != nil {
 			if dbErr, ok := err.(*pgconn.PgError); ok {
-				responses.DBErrorResponse(ctx, dbErr)
-				return nil
+				return responses.DBErrorResponse(ctx, dbErr)
 			}
 
 			ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
@@ -272,8 +267,7 @@ func infoDeleteHandler(fn func(uuid.UUID, []int64) error) fiber.Handler {
 		err := fn(puid, query.Items)
 		if err != nil {
 			if dbErr, ok := err.(*pgconn.PgError); ok {
-				responses.DBErrorResponse(ctx, dbErr)
-				return nil
+				return responses.DBErrorResponse(ctx, dbErr)
 			}
 
 			ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
@@ -300,8 +294,7 @@ func (a *adapter) addUnitMedia() fiber.Handler {
 		res, err := a.uService.AddUnitMedia(puid, query.Items)
 		if err != nil {
 			if dbErr, ok := err.(*pgconn.PgError); ok {
-				responses.DBErrorResponse(ctx, dbErr)
-				return nil
+				return responses.DBErrorResponse(ctx, dbErr)
 			}
 
 			ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
@@ -332,8 +325,7 @@ func (a *adapter) addUnitAmenities() fiber.Handler {
 		res, err := a.uService.AddUnitAmenities(puid, query.Items)
 		if err != nil {
 			if dbErr, ok := err.(*pgconn.PgError); ok {
-				responses.DBErrorResponse(ctx, dbErr)
-				return nil
+				return responses.DBErrorResponse(ctx, dbErr)
 			}
 
 			ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})

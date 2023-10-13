@@ -6,6 +6,7 @@ import (
 	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
 	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/user2410/rrms-backend/internal/infrastructure/database"
 )
 
 func ErrorResponse(err error) fiber.Map {
@@ -16,16 +17,24 @@ func ValidationErrorResponse(ctx *fiber.Ctx, err validator.FieldError) {
 	ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": err.Error()})
 }
 
-func DBErrorResponse(ctx *fiber.Ctx, err *pgconn.PgError) {
+func DBErrorResponse(ctx *fiber.Ctx, err *pgconn.PgError) error {
 	fmt.Println("db error:", err.Code, err.Message)
 	switch err.Code[0:2] {
 	case "22":
-		ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": err.Message})
+		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": err.Message})
 	case "23":
-		ctx.Status(fiber.StatusConflict).JSON(fiber.Map{"message": err.Message})
+		return ctx.Status(fiber.StatusConflict).JSON(fiber.Map{"message": err.Message})
 	default:
-		ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": "Internal Server Error"})
+		return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": "Internal Server Error"})
 	}
+}
+
+func DBTXErrorResponse(ctx *fiber.Ctx, err *database.TXError) error {
+	if err.Err != nil {
+		pgErr := err.Err.(*pgconn.PgError)
+		return DBErrorResponse(ctx, pgErr)
+	}
+	return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": "Internal Server Error"})
 }
 
 // http error status response
