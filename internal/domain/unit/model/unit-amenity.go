@@ -11,8 +11,8 @@ type UAmenity struct {
 }
 
 type UnitAmenityModel struct {
-	UnitID      uuid.UUID `json:"unitID"`
-	AmenityID   int64     `json:"amenityID"`
+	UnitID      uuid.UUID `json:"unitId"`
+	AmenityID   int64     `json:"amenityId"`
 	Description *string   `json:"description"`
 }
 

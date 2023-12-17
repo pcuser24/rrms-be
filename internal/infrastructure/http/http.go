@@ -35,7 +35,7 @@ func (s *server) init() Server {
 	fiber.SetParserDecoder(fiber.ParserConfig{
 		IgnoreUnknownKeys: true,
 		ParserType: []fiber.ParserType{
-			fiber.ParserType{
+			{
 				Customtype: uuid.UUID{},
 				Converter: func(value string) reflect.Value {
 					if v, err := uuid.Parse(value); err == nil {

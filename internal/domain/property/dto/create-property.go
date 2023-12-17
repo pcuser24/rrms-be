@@ -32,7 +32,7 @@ type CreatePropertyTag struct {
 }
 
 type CreateProperty struct {
-	CreatorID      uuid.UUID               `json:"creatorID"`
+	CreatorID      uuid.UUID               `json:"creatorId"`
 	Name           *string                 `json:"name"`
 	Building       *string                 `json:"building"`
 	Project        *string                 `json:"project"`

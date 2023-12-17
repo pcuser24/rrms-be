@@ -102,7 +102,7 @@ type CreateListingParams struct {
 	Price             int64         `json:"price"`
 	PriceNegotiable   sql.NullBool  `json:"price_negotiable"`
 	SecurityDeposit   sql.NullInt64 `json:"security_deposit"`
-	LeaseTerm         int32         `json:"lease_term"`
+	LeaseTerm         sql.NullInt32 `json:"lease_term"`
 	PetsAllowed       sql.NullBool  `json:"pets_allowed"`
 	NumberOfResidents sql.NullInt32 `json:"number_of_residents"`
 	Priority          int32         `json:"priority"`
@@ -160,7 +160,7 @@ func (q *Queries) CreateListing(ctx context.Context, arg CreateListingParams) (L
 }
 
 const createListingPolicy = `-- name: CreateListingPolicy :one
-INSERT INTO listing_policy (
+INSERT INTO listing_policies (
   listing_id,
   policy_id,
   note
@@ -276,7 +276,7 @@ func (q *Queries) GetListingByID(ctx context.Context, id uuid.UUID) (Listing, er
 }
 
 const getListingPolicies = `-- name: GetListingPolicies :many
-SELECT listing_id, policy_id, note FROM listing_policy WHERE listing_id = $1
+SELECT listing_id, policy_id, note FROM listing_policies WHERE listing_id = $1
 `
 
 func (q *Queries) GetListingPolicies(ctx context.Context, listingID uuid.UUID) ([]ListingPolicy, error) {

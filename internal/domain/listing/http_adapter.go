@@ -35,46 +35,17 @@ func NewAdapter(lService Service, pService property.Service, uService unit.Servi
 }
 
 func (a *adapter) RegisterServer(router *fiber.Router, tokenMaker token.Maker) {
-	listingRoute := (*router).Group("/listing")
+	listingRoute := (*router).Group("/listings")
+
+	// non-required authorization routes
+	listingRoute.Get("/", a.searchListings())
+	listingRoute.Get("/listing/:id", a.getListingById())
 
 	listingRoute.Use(auth.NewAuthMiddleware(tokenMaker))
 
-	listingRoute.Post("/create", a.createListing())
-	listingRoute.Get("/get-by-id/:id", a.getListingById())
-	listingRoute.Patch("/update/:id", a.checkListingManageability(), a.updateListing())
-	listingRoute.Delete("/delete/:id", a.checkListingManageability(), a.deleteListing())
-
-	listingRoute.Post("/policy/add/:id", a.checkListingManageability(), a.addListingPolicies())
-	listingRoute.Delete("/policy/delete/:id", a.checkListingManageability(), a.deleteListingPolicies())
-	listingRoute.Post("/unit/add/:id", a.checkListingManageability(), a.addListingUnits())
-	listingRoute.Delete("/unit/delete/:id", a.checkListingManageability(), a.deleteListingUnits())
-}
-
-func (a *adapter) checkListingManageability() fiber.Handler {
-	return func(ctx *fiber.Ctx) error {
-		id := ctx.Params("id")
-		lid, err := uuid.Parse(id)
-		if err != nil {
-			return ctx.SendStatus(fiber.StatusBadRequest)
-		}
-
-		tkPayload := ctx.Locals(auth.AuthorizationPayloadKey).(*token.Payload)
-
-		isCreator, err := a.lService.CheckListingOwnership(lid, tkPayload.UserID)
-		if err != nil {
-			if dbErr, ok := err.(*pgconn.PgError); ok {
-				return responses.DBErrorResponse(ctx, dbErr)
-			}
-
-			return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
-		}
-		if !isCreator {
-			return ctx.Status(fiber.StatusForbidden).JSON(fiber.Map{"message": "operation not permitted on this unit"})
-		}
-
-		ctx.Next()
-		return nil
-	}
+	listingRoute.Post("/", a.createListing())
+	listingRoute.Patch("/listing/:id", a.checkListingManageability(), a.updateListing())
+	listingRoute.Delete("/listing/:id", a.checkListingManageability(), a.deleteListing())
 }
 
 func (a *adapter) createListing() fiber.Handler {
@@ -89,7 +60,7 @@ func (a *adapter) createListing() fiber.Handler {
 		if errs := utils.ValidateStruct(payload); len(errs) > 0 && errs[0].Error {
 			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": utils.GetValidationError(errs)})
 		}
-		log.Println("Passed struct validation")
+		// log.Println("Passed struct validation")
 
 		// check ownership of target property
 		isManager, err := a.pService.CheckManageability(payload.PropertyID, tkPayload.UserID)
@@ -103,7 +74,7 @@ func (a *adapter) createListing() fiber.Handler {
 		if !isManager {
 			return ctx.Status(fiber.StatusForbidden).JSON(fiber.Map{"message": "operation not permitted on this property"})
 		}
-		log.Println("Passed property ownership check")
+		// log.Println("Passed property ownership check")
 
 		// validate units
 		for _, pu := range payload.Units {
@@ -118,7 +89,7 @@ func (a *adapter) createListing() fiber.Handler {
 				return ctx.Status(fiber.StatusForbidden).JSON(fiber.Map{"message": "operation not permitted on unit id = " + pu.UnitID.String()})
 			}
 		}
-		log.Println("Passed unit validation")
+		// log.Println("Passed unit validation")
 
 		res, err := a.lService.CreateListing(&payload)
 		if err != nil {
@@ -132,6 +103,36 @@ func (a *adapter) createListing() fiber.Handler {
 			return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
 		}
 		return ctx.Status(fiber.StatusCreated).JSON(res)
+	}
+}
+
+func (a *adapter) searchListings() fiber.Handler {
+	return func(ctx *fiber.Ctx) error {
+		var payload dto.SearchListingCombinationQuery
+		if err := ctx.QueryParser(&payload); err != nil {
+			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": err.Error()})
+		}
+		if errs := utils.ValidateStruct(payload); len(errs) > 0 && errs[0].Error {
+			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": utils.GetValidationError(errs)})
+		}
+		log.Println(payload)
+
+		res, err := a.lService.SearchListingCombination(&payload)
+		if err != nil {
+			if dbErr, ok := err.(*pgconn.PgError); ok {
+				return responses.DBErrorResponse(ctx, dbErr)
+			}
+
+			ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
+			return nil
+		}
+
+		return ctx.JSON(fiber.Map{
+			"limit":  *payload.Limit,
+			"offset": *payload.Offset,
+			"count":  res.Count,
+			"items":  res.Items,
+		})
 	}
 }
 
@@ -199,124 +200,5 @@ func (a *adapter) deleteListing() fiber.Handler {
 			ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
 		}
 		return nil
-	}
-}
-
-func (a *adapter) addListingPolicies() fiber.Handler {
-	return func(ctx *fiber.Ctx) error {
-		lid, _ := uuid.Parse(ctx.Params("id"))
-
-		var query struct {
-			Items []dto.CreateListingPolicy `json:"items" validate:"required,dive"`
-		}
-		if err := ctx.BodyParser(&query); err != nil {
-			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": err.Error()})
-		}
-		if errs := utils.ValidateStruct(query); len(errs) > 0 && errs[0].Error {
-			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": utils.GetValidationError(errs)})
-		}
-
-		res, err := a.lService.AddListingPolicies(lid, query.Items)
-		if err != nil {
-			if dbErr, ok := err.(*pgconn.PgError); ok {
-				return responses.DBErrorResponse(ctx, dbErr)
-			}
-
-			ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
-		}
-
-		return ctx.Status(201).JSON(fiber.Map{"items": res})
-	}
-}
-
-func (a *adapter) deleteListingPolicies() fiber.Handler {
-	return func(ctx *fiber.Ctx) error {
-		lid, _ := uuid.Parse(ctx.Params("id"))
-
-		var query struct {
-			Items []int64 `json:"items" validate:"required,dive,gte=1"`
-		}
-		if err := ctx.QueryParser(&query); err != nil {
-			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": err.Error()})
-		}
-		if errs := utils.ValidateStruct(query); len(errs) > 0 && errs[0].Error {
-			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": utils.GetValidationError(errs)})
-		}
-
-		err := a.lService.DeleteListingPolicies(lid, query.Items)
-		if err != nil {
-			if dbErr, ok := err.(*pgconn.PgError); ok {
-				return responses.DBErrorResponse(ctx, dbErr)
-			}
-
-			ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
-		}
-
-		return ctx.SendStatus(fiber.StatusNoContent)
-	}
-}
-
-func (a *adapter) addListingUnits() fiber.Handler {
-	return func(ctx *fiber.Ctx) error {
-		lid, _ := uuid.Parse(ctx.Params("id"))
-
-		var query struct {
-			Items []dto.CreateListingUnit `json:"items" validate:"required,dive"`
-		}
-		if err := ctx.BodyParser(&query); err != nil {
-			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": err.Error()})
-		}
-		if errs := utils.ValidateStruct(query); len(errs) > 0 && errs[0].Error {
-			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": utils.GetValidationError(errs)})
-		}
-
-		// validate input units
-		for _, uid := range query.Items {
-			isValid, err := a.lService.CheckValidUnitForListing(lid, uid.UnitID)
-			if err != nil {
-				return fiber.NewError(fiber.StatusInternalServerError, err.Error())
-			}
-			if !isValid {
-				return fiber.NewError(fiber.StatusForbidden, "operation not permitted on unit id = "+uid.UnitID.String())
-			}
-		}
-
-		res, err := a.lService.AddListingUnits(lid, query.Items)
-		if err != nil {
-			if dbErr, ok := err.(*pgconn.PgError); ok {
-				return responses.DBErrorResponse(ctx, dbErr)
-			}
-
-			ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
-		}
-
-		return ctx.Status(201).JSON(fiber.Map{"items": res})
-	}
-}
-
-func (a *adapter) deleteListingUnits() fiber.Handler {
-	return func(ctx *fiber.Ctx) error {
-		lid, _ := uuid.Parse(ctx.Params("id"))
-
-		var query struct {
-			Items []uuid.UUID `json:"items" validate:"required,dive,uuid4"`
-		}
-		if err := ctx.QueryParser(&query); err != nil {
-			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": err.Error()})
-		}
-		if errs := utils.ValidateStruct(query); len(errs) > 0 && errs[0].Error {
-			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": utils.GetValidationError(errs)})
-		}
-
-		err := a.lService.DeleteListingUnits(lid, query.Items)
-		if err != nil {
-			if dbErr, ok := err.(*pgconn.PgError); ok {
-				return responses.DBErrorResponse(ctx, dbErr)
-			}
-
-			ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
-		}
-
-		return ctx.SendStatus(fiber.StatusNoContent)
 	}
 }

@@ -7,7 +7,7 @@ import (
 
 type PropertyMediaModel struct {
 	ID          int64              `json:"id"`
-	PropertyID  uuid.UUID          `json:"propertyID"`
+	PropertyID  uuid.UUID          `json:"propertyId"`
 	Url         string             `json:"url"`
 	Type        database.MEDIATYPE `json:"type"`
 	Description *string            `json:"description"`

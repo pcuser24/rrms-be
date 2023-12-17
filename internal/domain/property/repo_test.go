@@ -1,30 +1,38 @@
 package property
 
 import (
-	"fmt"
+	"log"
 	"testing"
+	"time"
 
-	"github.com/google/uuid"
-	"github.com/huandu/go-sqlbuilder"
+	"github.com/user2410/rrms-backend/internal/domain/property/dto"
+	"github.com/user2410/rrms-backend/pkg/utils/types"
 )
 
-func TestXxx(t *testing.T) {
-	aid := []int64{1, 2, 3}
-	// transform aid to []interface{}
-	aid_i := make([]interface{}, len(aid))
-	for i, v := range aid {
-		aid_i[i] = v
-	}
-	uid, _ := uuid.Parse("d01bfb0b-dfbf-442f-8674-b0823b5eac60")
-
-	ib := sqlbuilder.PostgreSQL.NewDeleteBuilder()
-	ib.DeleteFrom("property_amenity")
-	ib.Where(
-		ib.Equal("property_id", uid),
-		ib.In("amenity_id", aid_i...),
-	)
-	sql, args := ib.Build()
-	fmt.Println(sql)
-	fmt.Println(args)
-
+func TestProperty(t *testing.T) {
+	sql, args := SearchPropertyBuilder(
+		[]string{"properties.id", "properties.name"},
+		&dto.SearchPropertyQuery{
+			PTypes:          []string{"APARTMENT", "HOUSE", "TEST"},
+			PName:           types.Ptr[string]("test name"),
+			PBuilding:       types.Ptr[string]("test building"),
+			PProject:        types.Ptr[string]("test project"),
+			PFullAddress:    types.Ptr[string]("test address"),
+			PCity:           types.Ptr[string]("test city"),
+			PDistrict:       types.Ptr[string]("test district"),
+			PWard:           types.Ptr[string]("test ward"),
+			PMinArea:        types.Ptr[float32](3000),
+			PMaxArea:        types.Ptr[float32](2000),
+			PNumberOfFloors: types.Ptr[int32](12),
+			PYearBuilt:      types.Ptr[int32](2023),
+			POrientation:    types.Ptr[string]("nw"),
+			PMinFacade:      types.Ptr[int32](12),
+			PIsPublic:       types.Ptr[bool](true),
+			PFeatures:       []int32{1, 2, 3},
+			PTags:           []string{"tag 1", "tag 2"},
+			PMinCreatedAt:   types.Ptr[time.Time](time.Date(2009, time.November, 10, 23, 0, 0, 0, time.UTC)),
+			PMaxCreatedAt:   types.Ptr[time.Time](time.Date(2010, time.November, 10, 23, 0, 0, 0, time.UTC)),
+		}, "", "")
+	log.Println(sql)
+	log.Println(args)
 }

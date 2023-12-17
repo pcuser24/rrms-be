@@ -7,7 +7,7 @@ import (
 
 type UnitMediaModel struct {
 	ID          int64              `json:"id"`
-	UnitID      uuid.UUID          `json:"unitID"`
+	UnitID      uuid.UUID          `json:"unitId"`
 	Url         string             `json:"url"`
 	Type        database.MEDIATYPE `json:"type"`
 	Description *string            `json:"description"`

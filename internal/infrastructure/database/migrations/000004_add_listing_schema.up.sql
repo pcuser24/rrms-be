@@ -15,8 +15,8 @@ CREATE TABLE IF NOT EXISTS "listings" (
 
   "price" BIGINT NOT NULL,
   "price_negotiable" BOOL NOT NULL DEFAULT FALSE,
-  "security_deposit" BIGINT NOT NULL DEFAULT 0,
-  "lease_term" INTEGER NOT NULL DEFAULT 1,
+  "security_deposit" BIGINT,
+  "lease_term" INTEGER,
 
   "pets_allowed" BOOL,
   "number_of_residents" INTEGER CHECK (number_of_residents >= 0),
@@ -47,14 +47,14 @@ CREATE TABLE IF NOT EXISTS "rental_policies" (
   "policy" TEXT NOT NULL
 );
 
-CREATE TABLE IF NOT EXISTS "listing_policy" (
+CREATE TABLE IF NOT EXISTS "listing_policies" (
   "listing_id" UUID NOT NULL,
   "policy_id" BIGINT NOT NULL,
   "note" TEXT,
 
   PRIMARY KEY("listing_id", "policy_id")
 );
-ALTER TABLE "listing_policy" ADD CONSTRAINT "listing_policy_listing_id_fkey" FOREIGN KEY ("listing_id") REFERENCES "listings"("id") ON DELETE CASCADE;
-ALTER TABLE "listing_policy" ADD CONSTRAINT "listing_policy_policy_id_fkey" FOREIGN KEY ("policy_id") REFERENCES "rental_policies"("id") ON DELETE CASCADE;
+ALTER TABLE "listing_policies" ADD CONSTRAINT "listing_policies_listing_id_fkey" FOREIGN KEY ("listing_id") REFERENCES "listings"("id") ON DELETE CASCADE;
+ALTER TABLE "listing_policies" ADD CONSTRAINT "listing_policies_policy_id_fkey" FOREIGN KEY ("policy_id") REFERENCES "rental_policies"("id") ON DELETE CASCADE;
 
 END;

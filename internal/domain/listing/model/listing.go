@@ -9,8 +9,8 @@ import (
 
 type ListingModel struct {
 	ID          uuid.UUID `json:"id"`
-	CreatorID   uuid.UUID `json:"creatorID"`
-	PropertyID  uuid.UUID `json:"propertyID"`
+	CreatorID   uuid.UUID `json:"creatorId"`
+	PropertyID  uuid.UUID `json:"propertyId"`
 	Title       string    `json:"title"`
 	Description string    `json:"description"`
 
@@ -19,10 +19,10 @@ type ListingModel struct {
 	Phone       string `json:"phone"`
 	ContactType string `json:"contactType"`
 
-	Price           int64 `json:"price"`
-	SecurityDeposit int64 `json:"securityDeposit"`
+	Price           int64  `json:"price"`
+	SecurityDeposit *int64 `json:"securityDeposit"`
 
-	LeaseTerm         int32  `json:"leaseTerm"`
+	LeaseTerm         *int32 `json:"leaseTerm"`
 	PetsAllowed       *bool  `json:"petsAllowed"`
 	NumberOfResidents *int32 `json:"numberOfResidents"`
 
@@ -38,24 +38,32 @@ type ListingModel struct {
 
 func ToListingModel(ldb *database.Listing) *ListingModel {
 	lm := &ListingModel{
-		ID:              ldb.ID,
-		CreatorID:       ldb.CreatorID,
-		PropertyID:      ldb.PropertyID,
-		Title:           ldb.Title,
-		Description:     ldb.Description,
-		FullName:        ldb.FullName,
-		Email:           ldb.Email,
-		Phone:           ldb.Phone,
-		ContactType:     ldb.ContactType,
-		Price:           ldb.Price,
-		SecurityDeposit: ldb.SecurityDeposit,
-		LeaseTerm:       ldb.LeaseTerm,
-		Priority:        ldb.Priority,
-		Active:          ldb.Active,
-		CreatedAt:       ldb.CreatedAt,
-		UpdatedAt:       ldb.UpdatedAt,
-		ExpiredAt:       ldb.ExpiredAt,
-		PostAt:          ldb.PostAt,
+		ID:          ldb.ID,
+		CreatorID:   ldb.CreatorID,
+		PropertyID:  ldb.PropertyID,
+		Title:       ldb.Title,
+		Description: ldb.Description,
+		FullName:    ldb.FullName,
+		Email:       ldb.Email,
+		Phone:       ldb.Phone,
+		ContactType: ldb.ContactType,
+		Price:       ldb.Price,
+		Priority:    ldb.Priority,
+		Active:      ldb.Active,
+		CreatedAt:   ldb.CreatedAt,
+		UpdatedAt:   ldb.UpdatedAt,
+		ExpiredAt:   ldb.ExpiredAt,
+		PostAt:      ldb.PostAt,
+	}
+
+	if ldb.SecurityDeposit.Valid {
+		val := ldb.SecurityDeposit.Int64
+		lm.SecurityDeposit = &val
+	}
+
+	if ldb.LeaseTerm.Valid {
+		val := ldb.LeaseTerm.Int32
+		lm.LeaseTerm = &val
 	}
 
 	if ldb.PetsAllowed.Valid {

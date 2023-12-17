@@ -8,7 +8,7 @@ import (
 )
 
 type CreateUnitAmenity struct {
-	AmenityID   int64   `json:"amenityID" validate:"required"`
+	AmenityID   int64   `json:"amenityId" validate:"required"`
 	Description *string `json:"description"`
 }
 
@@ -19,7 +19,7 @@ type CreateUnitMedia struct {
 }
 
 type CreateUnit struct {
-	PropertyID          uuid.UUID           `json:"propertyID" validate:"required,uuid4"`
+	PropertyID          uuid.UUID           `json:"propertyId" validate:"required,uuid4"`
 	Name                *string             `json:"name"`
 	Area                float32             `json:"area" validate:"required"`
 	Floor               *int32              `json:"floor"`

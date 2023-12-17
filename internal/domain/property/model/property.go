@@ -9,13 +9,13 @@ import (
 
 type PropertyTagModel struct {
 	ID         int64     `json:"id"`
-	PropertyID uuid.UUID `json:"propertyID"`
+	PropertyID uuid.UUID `json:"propertyId"`
 	Tag        string    `json:"tag"`
 }
 
 type PropertyModel struct {
 	ID             uuid.UUID `json:"id"`
-	CreatorID      uuid.UUID `json:"creatorID"`
+	CreatorID      uuid.UUID `json:"creatorId"`
 	Name           string    `json:"name"`
 	Building       *string   `json:"building"`
 	Project        *string   `json:"project"`

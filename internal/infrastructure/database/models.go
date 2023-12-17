@@ -174,11 +174,11 @@ type Listing struct {
 	Phone       string    `json:"phone"`
 	ContactType string    `json:"contact_type"`
 	// Rental price per month in vietnamese dong
-	Price           int64 `json:"price"`
-	PriceNegotiable bool  `json:"price_negotiable"`
-	SecurityDeposit int64 `json:"security_deposit"`
+	Price           int64         `json:"price"`
+	PriceNegotiable bool          `json:"price_negotiable"`
+	SecurityDeposit sql.NullInt64 `json:"security_deposit"`
 	// Lease term in months
-	LeaseTerm         int32         `json:"lease_term"`
+	LeaseTerm         sql.NullInt32 `json:"lease_term"`
 	PetsAllowed       sql.NullBool  `json:"pets_allowed"`
 	NumberOfResidents sql.NullInt32 `json:"number_of_residents"`
 	// Priority of the listing, range from 1 to 5, 1 is the lowest

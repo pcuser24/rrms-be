@@ -43,7 +43,7 @@ INSERT INTO listings (
 ) RETURNING *;
 
 -- name: CreateListingPolicy :one
-INSERT INTO listing_policy (
+INSERT INTO listing_policies (
   listing_id,
   policy_id,
   note
@@ -66,7 +66,7 @@ INSERT INTO listing_unit (
 SELECT * FROM listings WHERE id = $1 LIMIT 1;
 
 -- name: GetListingPolicies :many
-SELECT * FROM listing_policy WHERE listing_id = $1;
+SELECT * FROM listing_policies WHERE listing_id = $1;
 
 -- name: GetListingUnits :many
 SELECT * FROM listing_unit WHERE listing_id = $1;

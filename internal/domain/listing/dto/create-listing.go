@@ -10,17 +10,17 @@ import (
 )
 
 type CreateListingPolicy struct {
-	PolicyID int64   `json:"policyID" validate:"required"`
+	PolicyID int64   `json:"policyId" validate:"required"`
 	Note     *string `json:"note"`
 }
 
 type CreateListingUnit struct {
-	UnitID uuid.UUID `json:"unitID" validate:"required,uuid4"`
+	UnitID uuid.UUID `json:"unitId" validate:"required,uuid4"`
 }
 
 type CreateListing struct {
-	CreatorID         uuid.UUID             `json:"creatorID"`
-	PropertyID        uuid.UUID             `json:"propertyID" validate:"required,uuid4"`
+	CreatorID         uuid.UUID             `json:"creatorId"`
+	PropertyID        uuid.UUID             `json:"propertyId" validate:"required,uuid4"`
 	Title             string                `json:"title" validate:"required"`
 	Description       string                `json:"description" validate:"required"`
 	FullName          string                `json:"fullName" validate:"required"`
@@ -29,8 +29,8 @@ type CreateListing struct {
 	ContactType       string                `json:"contactType" validate:"required"`
 	Price             int64                 `json:"price" validate:"required,gt=0"`
 	PriceNegotiable   bool                  `json:"priceNegotiable"`
-	SecurityDeposit   *int64                `json:"securityDeposit" validate:"gt=0"`
-	LeaseTerm         int32                 `json:"leaseTerm" validate:"required,gt=0"`
+	SecurityDeposit   *int64                `json:"securityDeposit" validate:"omitempty,gt=0"`
+	LeaseTerm         *int32                `json:"leaseTerm" validate:"required,gt=0"`
 	PetsAllowed       *bool                 `json:"petsAllowed"`
 	NumberOfResidents *int32                `json:"numberOfResidents" validate:"omitempty,gt=0"`
 	Priority          int32                 `json:"priority" validate:"required,gte=1,lte=5"`
@@ -54,7 +54,7 @@ func (c *CreateListing) ToCreateListingDB() *database.CreateListingParams {
 		Price:             c.Price,
 		PriceNegotiable:   sql.NullBool{Valid: true, Bool: c.PriceNegotiable},
 		SecurityDeposit:   types.Int64N(c.SecurityDeposit),
-		LeaseTerm:         c.LeaseTerm,
+		LeaseTerm:         types.Int32N(c.LeaseTerm),
 		PetsAllowed:       types.BoolN(c.PetsAllowed),
 		NumberOfResidents: types.Int32N(c.NumberOfResidents),
 		Priority:          c.Priority,

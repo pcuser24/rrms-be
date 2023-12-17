@@ -30,48 +30,17 @@ func NewAdapter(uService Service, pService property.Service) Adapter {
 }
 
 func (a *adapter) RegisterServer(router *fiber.Router, tokenMaker token.Maker) {
-	unitRoute := (*router).Group("/unit")
+	unitRoute := (*router).Group("/units")
 
-	(*router).Get("/unit/amenities", a.getAllAmenities())
-	(*router).Get("/unit/get-by-id/:id", a.getUnitById())
+	unitRoute.Get("/unit/amenities", a.getAllAmenities())
+	unitRoute.Get("/unit/:id", a.getUnitById())
 
 	unitRoute.Use(auth.NewAuthMiddleware(tokenMaker))
 
-	unitRoute.Post("/create", a.createUnit())
-	unitRoute.Get("/get-by-property-id/:id", a.getUnitsOfProperty())
-	unitRoute.Patch("/update/:id", checkUnitManageability(a.uService), a.updateUnit())
-	unitRoute.Delete("/delete/:id", checkUnitManageability(a.uService), a.deleteUnit())
-
-	unitRoute.Post("/amenity/add/:id", checkUnitManageability(a.uService), a.addUnitAmenities())
-	unitRoute.Delete("/amenity/delete/:id", checkUnitManageability(a.uService), a.deleteUnitAmenities())
-	unitRoute.Post("/media/add/:id", checkUnitManageability(a.uService), a.addUnitMedia())
-	unitRoute.Delete("/media/delete/:id", checkUnitManageability(a.uService), a.deleteUnitMedia())
-}
-
-func checkUnitManageability(s Service) fiber.Handler {
-	return func(ctx *fiber.Ctx) error {
-		puid, err := uuid.Parse(ctx.Params("id"))
-		if err != nil {
-			return ctx.SendStatus(fiber.StatusBadRequest)
-		}
-
-		tkPayload := ctx.Locals(auth.AuthorizationPayloadKey).(*token.Payload)
-
-		isManageable, err := s.CheckUnitManageability(puid, tkPayload.UserID)
-		if err != nil {
-			if dbErr, ok := err.(*pgconn.PgError); ok {
-				return responses.DBErrorResponse(ctx, dbErr)
-			}
-
-			return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
-		}
-		if !isManageable {
-			return ctx.Status(fiber.StatusForbidden).JSON(fiber.Map{"message": "operation not permitted on this unit"})
-		}
-
-		ctx.Next()
-		return nil
-	}
+	unitRoute.Post("/", a.createUnit())
+	unitRoute.Get("/property/:id", a.getUnitsOfProperty())
+	unitRoute.Patch("/unit/:id", checkUnitManageability(a.uService), a.updateUnit())
+	unitRoute.Delete("/unit/:id", checkUnitManageability(a.uService), a.deleteUnit())
 }
 
 func (a *adapter) createUnit() fiber.Handler {
@@ -248,93 +217,4 @@ func (a *adapter) getAllAmenities() fiber.Handler {
 			"items": res,
 		})
 	}
-}
-
-func infoDeleteHandler(fn func(uuid.UUID, []int64) error) fiber.Handler {
-	return func(ctx *fiber.Ctx) error {
-		puid, _ := uuid.Parse(ctx.Params("id"))
-
-		var query struct {
-			Items []int64 `json:"items" validate:"required,dive,gte=1"`
-		}
-		if err := ctx.QueryParser(&query); err != nil {
-			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": err.Error()})
-		}
-		if errs := utils.ValidateStruct(query); len(errs) > 0 && errs[0].Error {
-			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": utils.GetValidationError(errs)})
-		}
-
-		err := fn(puid, query.Items)
-		if err != nil {
-			if dbErr, ok := err.(*pgconn.PgError); ok {
-				return responses.DBErrorResponse(ctx, dbErr)
-			}
-
-			ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
-		}
-
-		return ctx.SendStatus(fiber.StatusNoContent)
-	}
-}
-
-func (a *adapter) addUnitMedia() fiber.Handler {
-	return func(ctx *fiber.Ctx) error {
-		puid, _ := uuid.Parse(ctx.Params("id"))
-
-		var query struct {
-			Items []dto.CreateUnitMedia `json:"items" validate:"required,dive"`
-		}
-		if err := ctx.BodyParser(&query); err != nil {
-			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": err.Error()})
-		}
-		if errs := utils.ValidateStruct(query); len(errs) > 0 && errs[0].Error {
-			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": utils.GetValidationError(errs)})
-		}
-
-		res, err := a.uService.AddUnitMedia(puid, query.Items)
-		if err != nil {
-			if dbErr, ok := err.(*pgconn.PgError); ok {
-				return responses.DBErrorResponse(ctx, dbErr)
-			}
-
-			ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
-		}
-
-		return ctx.Status(201).JSON(fiber.Map{"items": res})
-	}
-}
-
-func (a *adapter) deleteUnitMedia() fiber.Handler {
-	return infoDeleteHandler(a.uService.DeleteUnitMedia)
-}
-
-func (a *adapter) addUnitAmenities() fiber.Handler {
-	return func(ctx *fiber.Ctx) error {
-		puid, _ := uuid.Parse(ctx.Params("id"))
-
-		var query struct {
-			Items []dto.CreateUnitAmenity `json:"items" validate:"required,dive"`
-		}
-		if err := ctx.BodyParser(&query); err != nil {
-			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": err.Error()})
-		}
-		if errs := utils.ValidateStruct(query); len(errs) > 0 && errs[0].Error {
-			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": utils.GetValidationError(errs)})
-		}
-
-		res, err := a.uService.AddUnitAmenities(puid, query.Items)
-		if err != nil {
-			if dbErr, ok := err.(*pgconn.PgError); ok {
-				return responses.DBErrorResponse(ctx, dbErr)
-			}
-
-			ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
-		}
-
-		return ctx.Status(201).JSON(fiber.Map{"items": res})
-	}
-}
-
-func (a *adapter) deleteUnitAmenities() fiber.Handler {
-	return infoDeleteHandler(a.uService.DeleteUnitAmenities)
 }
