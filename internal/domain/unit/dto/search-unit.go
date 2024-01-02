@@ -6,6 +6,7 @@ type SearchUnitQuery struct {
 	UMinArea             *int64  `query:"uminPrice"`
 	UMaxArea             *int64  `query:"umaxPrice"`
 	UFloor               *int32  `query:"ufloor"`
+	UPrice               int64   `query:"uprice"`
 	UNumberOfLivingRooms *int32  `query:"unumberOfLivingRooms"`
 	UNumberOfBedrooms    *int32  `query:"unumberOfBedrooms"`
 	UNumberOfBathrooms   *int32  `query:"unumberOfBathrooms"`

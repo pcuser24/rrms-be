@@ -3,7 +3,7 @@ DB_URL=postgresql://root:mysecret@localhost:32755/rrms?sslmode=disable
 
 # migration
 migratecreate:
-	migrate create -ext sql -dir internal/infrastructure/database/migrations -seq ${MIGRATION_NAME}
+	migrate create -ext sql -dir internal/infrastructure/database/migrations -seq ${NAME}
 
 migrateup:
 	migrate -path internal/infrastructure/database/migrations -database "$(DB_URL)" -verbose up

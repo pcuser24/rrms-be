@@ -13,7 +13,7 @@ type UnitMediaModel struct {
 	Description *string            `json:"description"`
 }
 
-func ToUnitMediaModel(um *database.UnitMedia) *UnitMediaModel {
+func ToUnitMediaModel(um *database.UnitMedium) *UnitMediaModel {
 	m := UnitMediaModel{
 		ID:     um.ID,
 		UnitID: um.UnitID,

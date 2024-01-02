@@ -28,7 +28,7 @@ func NewAdapter(service Service) Adapter {
 func (a *adapter) RegisterServer(route *fiber.Router, tokenMaker token.Maker) {
 	storageRoute := (*route).Group("/storage")
 
-	storageRoute.Use(auth.NewAuthMiddleware(tokenMaker))
+	storageRoute.Use(auth.AuthorizedMiddleware(tokenMaker))
 
 	storageRoute.Post("/presign", a.getPresignUrl())
 }

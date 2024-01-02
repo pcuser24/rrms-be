@@ -3,6 +3,7 @@ package http
 import (
 	"fmt"
 	"reflect"
+	"runtime/debug"
 
 	fiber "github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
@@ -36,7 +37,7 @@ func (s *server) init() Server {
 		IgnoreUnknownKeys: true,
 		ParserType: []fiber.ParserType{
 			{
-				Customtype: uuid.UUID{},
+				Customtype: uuid.Nil,
 				Converter: func(value string) reflect.Value {
 					if v, err := uuid.Parse(value); err == nil {
 						return reflect.ValueOf(v)
@@ -48,7 +49,14 @@ func (s *server) init() Server {
 		ZeroEmpty: true,
 	})
 
-	s.fib.Use(rcv.New())
+	s.fib.Use(rcv.New(rcv.Config{
+		StackTraceHandler: func(c *fiber.Ctx, e interface{}) {
+			debug.PrintStack()
+			c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"message": "Internal server error",
+			})
+		},
+	}))
 	s.fib.Use(cors.New(s.corsConf))
 	s.fib.Use(logger.New())
 

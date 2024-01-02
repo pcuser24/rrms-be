@@ -334,15 +334,15 @@ const getPropertyMedia = `-- name: GetPropertyMedia :many
 SELECT id, property_id, url, type, description FROM property_media WHERE property_id = $1
 `
 
-func (q *Queries) GetPropertyMedia(ctx context.Context, propertyID uuid.UUID) ([]PropertyMedia, error) {
+func (q *Queries) GetPropertyMedia(ctx context.Context, propertyID uuid.UUID) ([]PropertyMedium, error) {
 	rows, err := q.db.QueryContext(ctx, getPropertyMedia, propertyID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []PropertyMedia
+	var items []PropertyMedium
 	for rows.Next() {
-		var i PropertyMedia
+		var i PropertyMedium
 		if err := rows.Scan(
 			&i.ID,
 			&i.PropertyID,
@@ -456,9 +456,9 @@ type InsertPropertyMediaParams struct {
 	Type       MEDIATYPE `json:"type"`
 }
 
-func (q *Queries) InsertPropertyMedia(ctx context.Context, arg InsertPropertyMediaParams) (PropertyMedia, error) {
+func (q *Queries) InsertPropertyMedia(ctx context.Context, arg InsertPropertyMediaParams) (PropertyMedium, error) {
 	row := q.db.QueryRowContext(ctx, insertPropertyMedia, arg.PropertyID, arg.Url, arg.Type)
-	var i PropertyMedia
+	var i PropertyMedium
 	err := row.Scan(
 		&i.ID,
 		&i.PropertyID,

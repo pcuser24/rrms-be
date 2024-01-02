@@ -34,11 +34,11 @@ func (a *adapter) RegisterServer(router *fiber.Router, tokenMaker token.Maker) {
 
 	unitRoute.Get("/unit/amenities", a.getAllAmenities())
 	unitRoute.Get("/unit/:id", a.getUnitById())
+	unitRoute.Get("/property/:id", a.getUnitsOfProperty())
 
-	unitRoute.Use(auth.NewAuthMiddleware(tokenMaker))
+	unitRoute.Use(auth.AuthorizedMiddleware(tokenMaker))
 
 	unitRoute.Post("/", a.createUnit())
-	unitRoute.Get("/property/:id", a.getUnitsOfProperty())
 	unitRoute.Patch("/unit/:id", checkUnitManageability(a.uService), a.updateUnit())
 	unitRoute.Delete("/unit/:id", checkUnitManageability(a.uService), a.deleteUnit())
 }
@@ -93,7 +93,7 @@ func (a *adapter) getUnitById() fiber.Handler {
 			return nil
 		}
 
-		var userID uuid.UUID
+		var userID uuid.UUID = uuid.Nil
 		tkPayload, ok := ctx.Locals(auth.AuthorizationPayloadKey).(*token.Payload)
 		if ok {
 			userID = tkPayload.UserID
@@ -132,8 +132,13 @@ func (a *adapter) getUnitsOfProperty() fiber.Handler {
 			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": err.Error()})
 		}
 
-		tkPayload := ctx.Locals(auth.AuthorizationPayloadKey).(*token.Payload)
-		isManageable, err := a.pService.CheckManageability(pid, tkPayload.UserID)
+		var userID uuid.UUID = uuid.Nil
+		tkPayload, ok := ctx.Locals(auth.AuthorizationPayloadKey).(*token.Payload)
+		if ok {
+			userID = tkPayload.UserID
+		}
+
+		isVisible, err := a.pService.CheckVisibility(pid, userID)
 		if err != nil {
 			if dbErr, ok := err.(*pgconn.PgError); ok {
 				return responses.DBErrorResponse(ctx, dbErr)
@@ -141,9 +146,20 @@ func (a *adapter) getUnitsOfProperty() fiber.Handler {
 
 			return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
 		}
-		if !isManageable {
-			return ctx.Status(fiber.StatusForbidden).JSON(fiber.Map{"message": "operation not permitted on this property"})
+		if !isVisible {
+			return ctx.Status(fiber.StatusForbidden).JSON(fiber.Map{"message": "property is not visible to you"})
 		}
+		// isManageable, err := a.pService.CheckManageability(pid, userID)
+		// if err != nil {
+		// 	if dbErr, ok := err.(*pgconn.PgError); ok {
+		// 		return responses.DBErrorResponse(ctx, dbErr)
+		// 	}
+
+		// 	return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
+		// }
+		// if !isManageable {
+		// 	return ctx.Status(fiber.StatusForbidden).JSON(fiber.Map{"message": "operation not permitted on this property"})
+		// }
 
 		res, err := a.uService.GetUnitsOfProperty(pid)
 		if err != nil {

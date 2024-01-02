@@ -14,6 +14,7 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"github.com/user2410/rrms-backend/internal/domain/application"
 	"github.com/user2410/rrms-backend/internal/domain/auth"
 	"github.com/user2410/rrms-backend/internal/domain/listing"
 	"github.com/user2410/rrms-backend/internal/domain/property"
@@ -34,6 +35,7 @@ type ServerConfig struct {
 	TokenMaker      string        `mapstructure:"TOKEN_MAKER" validate:"required"`
 	TokenSecreteKey string        `mapstructure:"TOKEN_SECRET_KEY" validate:"required"`
 	AccessTokenTTL  time.Duration `mapstructure:"ACCESS_TOKEN_TTL" validate:"required"`
+	RefreshTokenTTL time.Duration `mapstructure:"REFRESH_TOKEN_TTL" validate:"required"`
 
 	AWSRegion          string `mapstructure:"AWS_REGION" validate:"required"`
 	AWSAccessKeyID     string `mapstructure:"AWS_ACCESS_KEY_ID" validate:"required"`
@@ -135,8 +137,8 @@ func (c *serverCommand) setup(cmd *cobra.Command, args []string) {
 	apiRoute := c.httpServer.GetApiRoute()
 
 	authRepo := auth.NewUserRepo(dao)
-	authService := auth.NewUserService(authRepo, tokenMaker, c.config.AccessTokenTTL)
-	auth.NewAdapter(authService).RegisterServer(apiRoute)
+	authService := auth.NewUserService(authRepo, tokenMaker, c.config.AccessTokenTTL, c.config.RefreshTokenTTL)
+	auth.NewAdapter(authService).RegisterServer(apiRoute, tokenMaker)
 	propertyRepo := property.NewRepo(dao)
 	propertyService := property.NewService(propertyRepo)
 	property.NewAdapter(propertyService).RegisterServer(apiRoute, tokenMaker)
@@ -149,6 +151,9 @@ func (c *serverCommand) setup(cmd *cobra.Command, args []string) {
 	rentalRepo := rental.NewRepo(dao)
 	rentalService := rental.NewService(rentalRepo)
 	rental.NewAdapter(rentalService).RegisterServer(apiRoute)
+	applicationRepo := application.NewRepo(dao)
+	applicationService := application.NewService(applicationRepo)
+	application.NewAdapter(applicationService).RegisterServer(apiRoute, tokenMaker)
 
 	storageService := storage.NewService(s3Storage)
 	storage.NewAdapter(storageService).RegisterServer(apiRoute, tokenMaker)

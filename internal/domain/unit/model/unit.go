@@ -13,6 +13,7 @@ type UnitModel struct {
 	Name                string             `json:"name"`
 	Area                float32            `json:"area"`
 	Floor               *int32             `json:"floor"`
+	Price               *int64             `json:"price"`
 	NumberOfLivingRooms *int32             `json:"number_of_living_rooms"`
 	NumberOfBedrooms    *int32             `json:"number_of_bedrooms"`
 	NumberOfBathrooms   *int32             `json:"number_of_bathrooms"`

@@ -7,6 +7,7 @@ CREATE TABLE IF NOT EXISTS "units" (
   "name" TEXT NOT NULL DEFAULT '',
   "area" REAL NOT NULL DEFAULT 0,
   "floor" INTEGER,
+  "price" BIGINT,
   "number_of_living_rooms" INTEGER CHECK (number_of_living_rooms >= 0),
   "number_of_bedrooms" INTEGER CHECK (number_of_bedrooms >= 0),
   "number_of_bathrooms" INTEGER CHECK (number_of_bathrooms >= 0),

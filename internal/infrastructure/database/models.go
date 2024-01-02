@@ -13,6 +13,50 @@ import (
 	"github.com/google/uuid"
 )
 
+type APPLICATIONSTATUS string
+
+const (
+	APPLICATIONSTATUSPENDING               APPLICATIONSTATUS = "PENDING"
+	APPLICATIONSTATUSAPPROVED              APPLICATIONSTATUS = "APPROVED"
+	APPLICATIONSTATUSCONDITIONALLYAPPROVED APPLICATIONSTATUS = "CONDITIONALLY_APPROVED"
+	APPLICATIONSTATUSREJECTED              APPLICATIONSTATUS = "REJECTED"
+)
+
+func (e *APPLICATIONSTATUS) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = APPLICATIONSTATUS(s)
+	case string:
+		*e = APPLICATIONSTATUS(s)
+	default:
+		return fmt.Errorf("unsupported scan type for APPLICATIONSTATUS: %T", src)
+	}
+	return nil
+}
+
+type NullAPPLICATIONSTATUS struct {
+	APPLICATIONSTATUS APPLICATIONSTATUS `json:"APPLICATION_STATUS"`
+	Valid             bool              `json:"valid"` // Valid is true if APPLICATIONSTATUS is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullAPPLICATIONSTATUS) Scan(value interface{}) error {
+	if value == nil {
+		ns.APPLICATIONSTATUS, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.APPLICATIONSTATUS.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullAPPLICATIONSTATUS) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.APPLICATIONSTATUS), nil
+}
+
 type MEDIATYPE string
 
 const (
@@ -163,6 +207,76 @@ type Account struct {
 	SessionState      sql.NullString `json:"session_state"`
 }
 
+type Application struct {
+	ID                       int64             `json:"id"`
+	CreatorID                uuid.UUID         `json:"creator_id"`
+	ListingID                uuid.UUID         `json:"listing_id"`
+	PropertyID               uuid.UUID         `json:"property_id"`
+	UnitIds                  []uuid.UUID       `json:"unit_ids"`
+	Status                   APPLICATIONSTATUS `json:"status"`
+	CreatedAt                time.Time         `json:"created_at"`
+	UpdatedAt                time.Time         `json:"updated_at"`
+	FullName                 string            `json:"full_name"`
+	Email                    string            `json:"email"`
+	Phone                    string            `json:"phone"`
+	Dob                      time.Time         `json:"dob"`
+	ProfileImage             string            `json:"profile_image"`
+	MoveinDate               time.Time         `json:"movein_date"`
+	PreferredTerm            int32             `json:"preferred_term"`
+	RhAddress                sql.NullString    `json:"rh_address"`
+	RhCity                   sql.NullString    `json:"rh_city"`
+	RhDistrict               sql.NullString    `json:"rh_district"`
+	RhWard                   sql.NullString    `json:"rh_ward"`
+	RhRentalDuration         sql.NullInt32     `json:"rh_rental_duration"`
+	RhMonthlyPayment         sql.NullFloat64   `json:"rh_monthly_payment"`
+	RhReasonForLeaving       sql.NullString    `json:"rh_reason_for_leaving"`
+	EmploymentStatus         string            `json:"employment_status"`
+	EmploymentCompanyName    sql.NullString    `json:"employment_company_name"`
+	EmploymentPosition       sql.NullString    `json:"employment_position"`
+	EmploymentMonthlyIncome  sql.NullFloat64   `json:"employment_monthly_income"`
+	EmploymentComment        sql.NullString    `json:"employment_comment"`
+	EmploymentProofsOfIncome []string          `json:"employment_proofs_of_income"`
+	IdentityType             string            `json:"identity_type"`
+	IdentityNumber           string            `json:"identity_number"`
+	IdentityIssuedDate       time.Time         `json:"identity_issued_date"`
+	IdentityIssuedBy         string            `json:"identity_issued_by"`
+}
+
+type ApplicationCoap struct {
+	ApplicationID int64          `json:"application_id"`
+	FullName      string         `json:"full_name"`
+	Dob           time.Time      `json:"dob"`
+	Job           string         `json:"job"`
+	Income        int32          `json:"income"`
+	Email         sql.NullString `json:"email"`
+	Phone         sql.NullString `json:"phone"`
+	Description   sql.NullString `json:"description"`
+}
+
+type ApplicationMinor struct {
+	ApplicationID int64          `json:"application_id"`
+	FullName      string         `json:"full_name"`
+	Dob           time.Time      `json:"dob"`
+	Email         sql.NullString `json:"email"`
+	Phone         sql.NullString `json:"phone"`
+	Description   sql.NullString `json:"description"`
+}
+
+type ApplicationPet struct {
+	ApplicationID int64           `json:"application_id"`
+	Type          string          `json:"type"`
+	Weight        sql.NullFloat64 `json:"weight"`
+	Description   sql.NullString  `json:"description"`
+}
+
+type ApplicationVehicle struct {
+	ApplicationID int64          `json:"application_id"`
+	Type          string         `json:"type"`
+	Model         sql.NullString `json:"model"`
+	Code          string         `json:"code"`
+	Description   sql.NullString `json:"description"`
+}
+
 type Listing struct {
 	ID          uuid.UUID `json:"id"`
 	CreatorID   uuid.UUID `json:"creator_id"`
@@ -246,7 +360,7 @@ type PropertyManager struct {
 	Role       string    `json:"role"`
 }
 
-type PropertyMedia struct {
+type PropertyMedium struct {
 	ID          int64          `json:"id"`
 	PropertyID  uuid.UUID      `json:"property_id"`
 	Url         string         `json:"url"`
@@ -272,7 +386,7 @@ type Session struct {
 	Expires      time.Time      `json:"expires"`
 	UserAgent    sql.NullString `json:"user_agent"`
 	ClientIp     sql.NullString `json:"client_ip"`
-	IsBlocked    sql.NullBool   `json:"is_blocked"`
+	IsBlocked    bool           `json:"is_blocked"`
 	CreatedAt    time.Time      `json:"created_at"`
 }
 
@@ -288,6 +402,7 @@ type Unit struct {
 	Name                string        `json:"name"`
 	Area                float32       `json:"area"`
 	Floor               sql.NullInt32 `json:"floor"`
+	Price               sql.NullInt64 `json:"price"`
 	NumberOfLivingRooms sql.NullInt32 `json:"number_of_living_rooms"`
 	NumberOfBedrooms    sql.NullInt32 `json:"number_of_bedrooms"`
 	NumberOfBathrooms   sql.NullInt32 `json:"number_of_bathrooms"`
@@ -305,7 +420,7 @@ type UnitAmenity struct {
 	Description sql.NullString `json:"description"`
 }
 
-type UnitMedia struct {
+type UnitMedium struct {
 	ID          int64          `json:"id"`
 	UnitID      uuid.UUID      `json:"unit_id"`
 	Url         string         `json:"url"`

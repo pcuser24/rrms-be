@@ -13,7 +13,7 @@ type PropertyMediaModel struct {
 	Description *string            `json:"description"`
 }
 
-func ToPropertyMediaModel(pm *database.PropertyMedia) *PropertyMediaModel {
+func ToPropertyMediaModel(pm *database.PropertyMedium) *PropertyMediaModel {
 	m := PropertyMediaModel{
 		ID:         pm.ID,
 		PropertyID: pm.PropertyID,

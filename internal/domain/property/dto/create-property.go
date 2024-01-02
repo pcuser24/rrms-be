@@ -32,24 +32,24 @@ type CreatePropertyTag struct {
 }
 
 type CreateProperty struct {
-	CreatorID      uuid.UUID               `json:"creatorId"`
-	Name           *string                 `json:"name"`
-	Building       *string                 `json:"building"`
-	Project        *string                 `json:"project"`
+	CreatorID      uuid.UUID               `json:"creatorId" validate:"required,uuid4"`
+	Name           *string                 `json:"name" validate:"omitempty"`
+	Building       *string                 `json:"building" validate:"omitempty"`
+	Project        *string                 `json:"project" validate:"omitempty"`
 	Area           float32                 `json:"area" validate:"required,gt=0"`
-	NumberOfFloors *int32                  `json:"numberOfFloors"`
-	YearBuilt      *int32                  `json:"yearBuilt"`
-	Orientation    *string                 `json:"orientation"`
-	EntranceWidth  *float64                `json:"entranceWidth"`
-	Facade         *float64                `json:"facade"`
+	NumberOfFloors *int32                  `json:"numberOfFloors" validate:"omitempty,gt=0"`
+	YearBuilt      *int32                  `json:"yearBuilt" validate:"omitempty,gt=0"`
+	Orientation    *string                 `json:"orientation" validate:"omitempty"`
+	EntranceWidth  *float64                `json:"entranceWidth" validate:"omitempty"`
+	Facade         *float64                `json:"facade" validate:"omitempty"`
 	FullAddress    string                  `json:"fullAddress" validate:"required"`
 	District       string                  `json:"district" validate:"required"`
 	City           string                  `json:"city" validate:"required"`
-	Ward           *string                 `json:"ward"`
+	Ward           *string                 `json:"ward" validate:"omitempty"`
 	PlaceUrl       string                  `json:"placeUrl" validate:"required,url"`
-	Lat            *float64                `json:"lat"`
-	Lng            *float64                `json:"lng"`
-	Description    *string                 `json:"description"`
+	Lat            *float64                `json:"lat" validate:"omitempty"`
+	Lng            *float64                `json:"lng" validate:"omitempty"`
+	Description    *string                 `json:"description" validate:"omitempty"`
 	Type           database.PROPERTYTYPE   `json:"type" validate:"required,oneof=APARTMENT PRIVATE TOWNHOUSE SHOPHOUSE VILLA ROOM STORE OFFICE BLOCK COMPLEX"`
 	Managers       []CreatePropertyManager `json:"managers" validate:"dive"`
 	Media          []CreatePropertyMedia   `json:"media" validate:"dive"`

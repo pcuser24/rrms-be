@@ -1,7 +1,6 @@
 package auth
 
 import (
-	"database/sql"
 	"errors"
 	"fmt"
 	"net/http"
@@ -12,10 +11,11 @@ import (
 	"github.com/user2410/rrms-backend/internal/domain/auth/dto"
 	"github.com/user2410/rrms-backend/internal/interfaces/rest/responses"
 	"github.com/user2410/rrms-backend/internal/utils"
+	"github.com/user2410/rrms-backend/internal/utils/token"
 )
 
 type Adapter interface {
-	RegisterServer(route *fiber.Router)
+	RegisterServer(route *fiber.Router, tokenMaker token.Maker)
 }
 
 type adapter struct {
@@ -28,12 +28,13 @@ func NewAdapter(service AuthService) Adapter {
 	}
 }
 
-func (a *adapter) RegisterServer(router *fiber.Router) {
+func (a *adapter) RegisterServer(router *fiber.Router, tokenMaker token.Maker) {
 	authRoute := (*router).Group("/auth")
 
 	credentialGroup := authRoute.Group("/credential")
 	credentialGroup.Post("/register", a.credentialRegisterHandle())
-	credentialGroup.Post("/login", a.credentialLoginHandle())
+	credentialGroup.Post("/login", GetAuthorizationMiddleware(tokenMaker), a.credentialLoginHandle())
+	credentialGroup.Delete("/logout", AuthorizedMiddleware(tokenMaker), a.credentialLogout())
 
 	bffGroup := authRoute.Group("/bff")
 	bffUserGroup := bffGroup.Group("/user")
@@ -76,11 +77,7 @@ func (a *adapter) credentialRegisterHandle() fiber.Handler {
 			return nil
 		}
 
-		return ctx.JSON(fiber.Map{
-			"accessToken": res.AccessToken,
-			"accessExp":   res.AccessPayload.ExpiredAt,
-			"user":        res.User.ToUserResponse(),
-		})
+		return ctx.Status(fiber.StatusOK).JSON(res)
 	}
 }
 
@@ -94,26 +91,50 @@ func (a *adapter) credentialLoginHandle() fiber.Handler {
 			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": utils.GetValidationError(errs)})
 		}
 
-		res, err := a.service.Login(&payload)
+		session := &dto.CreateSessionDto{
+			ID:        uuid.Nil,
+			UserAgent: ctx.Context().UserAgent(),
+			ClientIp:  ctx.IP(),
+		}
+		tkPayload, ok := ctx.Locals(AuthorizationPayloadKey).(*token.Payload)
+		if ok {
+			session.ID = tkPayload.ID
+		}
+
+		res, err := a.service.Login(&payload, session)
 		if err != nil {
-			// check if error is database error
+
 			if dbErr, ok := err.(*pgconn.PgError); ok {
 				responses.DBErrorResponse(ctx, dbErr)
 				return nil
 			}
 
-			if errors.Is(err, sql.ErrNoRows) {
-				return ctx.Status(http.StatusUnauthorized).JSON(fiber.Map{"message": "Invalid credentials"})
+			if errors.Is(err, ErrInvalidCredential) {
+				return ctx.Status(http.StatusUnauthorized).JSON(fiber.Map{"message": err.Error()})
 			}
 
 			return ctx.Status(http.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
 		}
 
 		return ctx.JSON(fiber.Map{
-			"accessToken": res.AccessToken,
-			"accessExp":   res.AccessPayload.ExpiredAt,
-			"user":        res.User.ToUserResponse(),
+			"sessionId":    res.SessionID,
+			"accessToken":  res.AccessToken,
+			"accessExp":    res.AccessPayload.ExpiredAt,
+			"refreshToken": res.RefreshToken,
+			"refreshExp":   res.RefreshPayload.ExpiredAt,
+			"user":         res.User.ToUserResponse(),
 		})
+	}
+}
+
+func (a *adapter) credentialLogout() fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		tokenPayload := c.Locals(AuthorizationPayloadKey).(*token.Payload)
+		err := a.service.Logout(tokenPayload.ID)
+		if err != nil {
+			return c.SendStatus(http.StatusInternalServerError)
+		}
+		return nil
 	}
 }
 

@@ -43,7 +43,7 @@ CREATE TABLE "Session" (
 
   "user_agent" TEXT,
   "client_ip" TEXT,
-  "is_blocked" BOOLEAN DEFAULT FALSE,
+  "is_blocked" BOOLEAN NOT NULL DEFAULT FALSE,
   "created_at" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
   CONSTRAINT "session_user_id_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE

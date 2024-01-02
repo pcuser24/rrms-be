@@ -41,7 +41,7 @@ func (a *adapter) RegisterServer(router *fiber.Router, tokenMaker token.Maker) {
 	listingRoute.Get("/", a.searchListings())
 	listingRoute.Get("/listing/:id", a.getListingById())
 
-	listingRoute.Use(auth.NewAuthMiddleware(tokenMaker))
+	listingRoute.Use(auth.AuthorizedMiddleware(tokenMaker))
 
 	listingRoute.Post("/", a.createListing())
 	listingRoute.Patch("/listing/:id", a.checkListingManageability(), a.updateListing())

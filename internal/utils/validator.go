@@ -30,7 +30,7 @@ func init() {
 			return valuer.String()
 		}
 		return nil
-	}, uuid.UUID{})
+	}, uuid.Nil)
 }
 
 func ValidateStruct(data interface{}) []ErrorResponse {

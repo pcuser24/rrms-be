@@ -16,7 +16,10 @@ func checkUnitManageability(s Service) fiber.Handler {
 			return ctx.SendStatus(fiber.StatusBadRequest)
 		}
 
-		tkPayload := ctx.Locals(auth.AuthorizationPayloadKey).(*token.Payload)
+		tkPayload, ok := ctx.Locals(auth.AuthorizationPayloadKey).(*token.Payload)
+		if !ok {
+			return ctx.SendStatus(fiber.StatusForbidden)
+		}
 
 		isManageable, err := s.CheckUnitManageability(puid, tkPayload.UserID)
 		if err != nil {

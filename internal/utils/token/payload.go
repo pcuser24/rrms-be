@@ -21,15 +21,19 @@ type Payload struct {
 	ExpiredAt time.Time `json:"exp"`
 }
 
-func NewPayload(userId uuid.UUID, tokenType TokenType, duration time.Duration) (*Payload, error) {
-	tokenID, err := uuid.NewRandom()
-	if err != nil {
-		return nil, err
+func NewPayload(userId uuid.UUID, duration time.Duration, options CreateTokenOptions) (*Payload, error) {
+	var tokenID uuid.UUID = options.TokenID
+	if options.TokenType == RefreshToken {
+		var err error
+		tokenID, err = uuid.NewRandom()
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	payload := &Payload{
 		ID:        tokenID,
-		TokenType: tokenType,
+		TokenType: options.TokenType,
 		UserID:    userId,
 		IssuedAt:  time.Now(),
 		ExpiredAt: time.Now().Add(duration),

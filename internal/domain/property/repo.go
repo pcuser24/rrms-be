@@ -304,7 +304,7 @@ func (r *repo) AddPropertyMedia(ctx context.Context, id uuid.UUID, items []dto.C
 		defer rows.Close()
 		var items []model.PropertyMediaModel
 		for rows.Next() {
-			var i db.PropertyMedia
+			var i db.PropertyMedium
 			if err := rows.Scan(
 				&i.ID,
 				&i.PropertyID,

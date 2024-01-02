@@ -9,13 +9,13 @@ import (
 
 type CreateUnitAmenity struct {
 	AmenityID   int64   `json:"amenityId" validate:"required"`
-	Description *string `json:"description"`
+	Description *string `json:"description" validate:"omitempty"`
 }
 
 type CreateUnitMedia struct {
 	Url         string             `json:"url" validate:"required,url"`
 	Type        database.MEDIATYPE `json:"type" validate:"required,oneof=IMAGE VIDEO"`
-	Description *string            `json:"description"`
+	Description *string            `json:"description" validate:"omitempty"`
 }
 
 type CreateUnit struct {
@@ -23,6 +23,7 @@ type CreateUnit struct {
 	Name                *string             `json:"name"`
 	Area                float32             `json:"area" validate:"required"`
 	Floor               *int32              `json:"floor"`
+	Price               *int64              `json:"price"`
 	NumberOfLivingRooms *int32              `json:"numberOfLivingRooms"`
 	NumberOfBedrooms    *int32              `json:"numberOfBedrooms"`
 	NumberOfBathrooms   *int32              `json:"numberOfBathrooms"`

@@ -201,7 +201,7 @@ func (r *repo) AddUnitMedia(ctx context.Context, uid uuid.UUID, items []dto.Crea
 		defer rows.Close()
 		var items []model.UnitMediaModel
 		for rows.Next() {
-			var i db.UnitMedia
+			var i db.UnitMedium
 			if err := rows.Scan(
 				&i.ID,
 				&i.UnitID,

@@ -36,7 +36,7 @@ func (a *adapter) RegisterServer(router *fiber.Router, tokenMaker token.Maker) {
 	propertyRoute.Get("/property/features", a.getAllFeatures())
 	propertyRoute.Get("/property/:id", a.getPropertyById())
 
-	propertyRoute.Use(auth.NewAuthMiddleware(tokenMaker))
+	propertyRoute.Use(auth.AuthorizedMiddleware(tokenMaker))
 
 	propertyRoute.Post("/", a.createProperty())
 	propertyRoute.Patch("/property/:id", checkPropertyManageability(a.service), a.updateProperty())
@@ -86,7 +86,7 @@ func (a *adapter) getPropertyById() fiber.Handler {
 		if ok {
 			userID = tkPayload.UserID
 		} else {
-			userID = uuid.UUID{}
+			userID = uuid.Nil
 		}
 
 		isVisible, err := a.service.CheckVisibility(puid, userID)

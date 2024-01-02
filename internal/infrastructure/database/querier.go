@@ -16,11 +16,18 @@ type Querier interface {
 	CheckUnitManageability(ctx context.Context, arg CheckUnitManageabilityParams) (int64, error)
 	CheckUnitOfProperty(ctx context.Context, arg CheckUnitOfPropertyParams) (int64, error)
 	CheckValidUnitForListing(ctx context.Context, arg CheckValidUnitForListingParams) (int64, error)
+	CreateApplication(ctx context.Context, arg CreateApplicationParams) (Application, error)
+	CreateApplicationCoap(ctx context.Context, arg CreateApplicationCoapParams) (ApplicationCoap, error)
+	CreateApplicationMinor(ctx context.Context, arg CreateApplicationMinorParams) (ApplicationMinor, error)
+	CreateApplicationPet(ctx context.Context, arg CreateApplicationPetParams) (ApplicationPet, error)
+	CreateApplicationVehicle(ctx context.Context, arg CreateApplicationVehicleParams) (ApplicationVehicle, error)
 	CreateListing(ctx context.Context, arg CreateListingParams) (Listing, error)
 	CreateListingPolicy(ctx context.Context, arg CreateListingPolicyParams) (ListingPolicy, error)
 	CreateListingUnit(ctx context.Context, arg CreateListingUnitParams) (ListingUnit, error)
 	CreateProperty(ctx context.Context, arg CreatePropertyParams) (Property, error)
+	CreateSession(ctx context.Context, arg CreateSessionParams) (Session, error)
 	CreateUnit(ctx context.Context, arg CreateUnitParams) (Unit, error)
+	DeleteApplication(ctx context.Context, id int64) error
 	DeleteListing(ctx context.Context, id uuid.UUID) error
 	DeleteProperty(ctx context.Context, id uuid.UUID) error
 	DeletePropertyFeature(ctx context.Context, arg DeletePropertyFeatureParams) error
@@ -33,34 +40,42 @@ type Querier interface {
 	GetAllPropertyFeatures(ctx context.Context) ([]PFeature, error)
 	GetAllRentalPolicies(ctx context.Context) ([]RentalPolicy, error)
 	GetAllUnitAmenities(ctx context.Context) ([]UAmenity, error)
+	GetApplicationByID(ctx context.Context, id int64) (Application, error)
+	GetApplicationCoaps(ctx context.Context, applicationID int64) ([]ApplicationCoap, error)
+	GetApplicationMinors(ctx context.Context, applicationID int64) ([]ApplicationMinor, error)
+	GetApplicationPets(ctx context.Context, applicationID int64) ([]ApplicationPet, error)
+	GetApplicationVehicles(ctx context.Context, applicationID int64) ([]ApplicationVehicle, error)
 	GetListingByID(ctx context.Context, id uuid.UUID) (Listing, error)
 	GetListingPolicies(ctx context.Context, listingID uuid.UUID) ([]ListingPolicy, error)
 	GetListingUnits(ctx context.Context, listingID uuid.UUID) ([]ListingUnit, error)
 	GetPropertyById(ctx context.Context, id uuid.UUID) (Property, error)
 	GetPropertyFeatures(ctx context.Context, propertyID uuid.UUID) ([]PropertyFeature, error)
 	GetPropertyManagers(ctx context.Context, propertyID uuid.UUID) ([]PropertyManager, error)
-	GetPropertyMedia(ctx context.Context, propertyID uuid.UUID) ([]PropertyMedia, error)
+	GetPropertyMedia(ctx context.Context, propertyID uuid.UUID) ([]PropertyMedium, error)
 	GetPropertyTags(ctx context.Context, propertyID uuid.UUID) ([]PropertyTag, error)
+	GetSessionById(ctx context.Context, id uuid.UUID) (Session, error)
 	GetUnitAmenities(ctx context.Context, unitID uuid.UUID) ([]UnitAmenity, error)
 	GetUnitById(ctx context.Context, id uuid.UUID) (Unit, error)
 	GetUnitManagers(ctx context.Context, id uuid.UUID) ([]PropertyManager, error)
-	GetUnitMedia(ctx context.Context, unitID uuid.UUID) ([]UnitMedia, error)
+	GetUnitMedia(ctx context.Context, unitID uuid.UUID) ([]UnitMedium, error)
 	GetUnitsOfProperty(ctx context.Context, propertyID uuid.UUID) ([]Unit, error)
 	GetUserByEmail(ctx context.Context, email string) (User, error)
 	GetUserById(ctx context.Context, id uuid.UUID) (User, error)
 	InsertPropertyFeature(ctx context.Context, arg InsertPropertyFeatureParams) (PropertyFeature, error)
 	InsertPropertyManager(ctx context.Context, arg InsertPropertyManagerParams) error
-	InsertPropertyMedia(ctx context.Context, arg InsertPropertyMediaParams) (PropertyMedia, error)
+	InsertPropertyMedia(ctx context.Context, arg InsertPropertyMediaParams) (PropertyMedium, error)
 	InsertPropertyTag(ctx context.Context, arg InsertPropertyTagParams) (PropertyTag, error)
 	InsertUnitAmenity(ctx context.Context, arg InsertUnitAmenityParams) (UnitAmenity, error)
-	InsertUnitMedia(ctx context.Context, arg InsertUnitMediaParams) (UnitMedia, error)
+	InsertUnitMedia(ctx context.Context, arg InsertUnitMediaParams) (UnitMedium, error)
 	InsertUser(ctx context.Context, arg InsertUserParams) (User, error)
 	IsPropertyPublic(ctx context.Context, id uuid.UUID) (bool, error)
 	IsUnitPublic(ctx context.Context, id uuid.UUID) (bool, error)
+	UpdateApplicationStatus(ctx context.Context, arg UpdateApplicationStatusParams) error
 	UpdateListing(ctx context.Context, arg UpdateListingParams) error
 	UpdateListingStatus(ctx context.Context, arg UpdateListingStatusParams) error
 	UpdateProperty(ctx context.Context, arg UpdatePropertyParams) error
 	UpdatePropertyManager(ctx context.Context, arg UpdatePropertyManagerParams) error
+	UpdateSessionBlockingStatus(ctx context.Context, arg UpdateSessionBlockingStatusParams) error
 	UpdateUnit(ctx context.Context, arg UpdateUnitParams) error
 }
 

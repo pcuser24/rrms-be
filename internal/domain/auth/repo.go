@@ -12,8 +12,11 @@ import (
 
 type AuthRepo interface {
 	InsertUser(ctx context.Context, data *dto.RegisterUser) (*model.UserModel, error)
+	CreateSession(ctx context.Context, data *dto.CreateSessionDto) (*model.SessionModel, error)
 	GetUserByEmail(ctx context.Context, email string) (*model.UserModel, error)
 	GetUserById(ctx context.Context, id uuid.UUID) (*model.UserModel, error)
+	GetSessionById(ctx context.Context, id uuid.UUID) (*model.SessionModel, error)
+	UpdateSessionStatus(ctx context.Context, id uuid.UUID, isBlocked bool) error
 }
 
 type authRepo struct {
@@ -38,6 +41,15 @@ func (u *authRepo) InsertUser(ctx context.Context, data *dto.RegisterUser) (*mod
 	return model.ToUserModel(&res), nil
 }
 
+func (u *authRepo) CreateSession(ctx context.Context, data *dto.CreateSessionDto) (*model.SessionModel, error) {
+	res, err := u.dao.CreateSession(ctx, *data.ToCreateSessionParams())
+	if err != nil {
+		return nil, err
+	}
+
+	return model.ToSessionModel(&res), nil
+}
+
 func (u *authRepo) GetUserByEmail(ctx context.Context, email string) (*model.UserModel, error) {
 	res, err := u.dao.GetUserByEmail(ctx, email)
 	if err != nil {
@@ -54,4 +66,19 @@ func (u *authRepo) GetUserById(ctx context.Context, id uuid.UUID) (*model.UserMo
 	}
 
 	return model.ToUserModel(&res), nil
+}
+
+func (u *authRepo) GetSessionById(ctx context.Context, id uuid.UUID) (*model.SessionModel, error) {
+	res, err := u.dao.GetSessionById(ctx, id)
+	if err != nil && err.Error() == "sql: no rows in result set" {
+		return nil, nil
+	}
+	return model.ToSessionModel(&res), err
+}
+
+func (u *authRepo) UpdateSessionStatus(ctx context.Context, id uuid.UUID, isBlocked bool) error {
+	return u.dao.UpdateSessionBlockingStatus(ctx, db.UpdateSessionBlockingStatusParams{
+		ID:        id,
+		IsBlocked: isBlocked,
+	})
 }
