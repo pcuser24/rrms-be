@@ -1,15 +1,42 @@
 package property
 
 import (
+	"context"
 	"log"
 	"testing"
 	"time"
 
 	"github.com/user2410/rrms-backend/internal/domain/property/dto"
+	"github.com/user2410/rrms-backend/internal/infrastructure/database"
 	"github.com/user2410/rrms-backend/pkg/utils/types"
 )
 
-func TestProperty(t *testing.T) {
+func TestGetProperties(t *testing.T) {
+	dao, err := database.NewDAO("postgresql://root:mysecret@localhost:32755/rrms?sslmode=disable")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer dao.Close()
+
+	repo := NewRepo(dao)
+	res, err := repo.GetProperties(
+		context.Background(),
+		[]string{
+			("8d8ec157-a6bc-4793-9a27-989386ef7d07"),
+			("936f1a14-728d-4e60-9dee-6254a0547278"),
+		},
+		[]string{"name", "lat", "lng", "media"},
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	for _, p := range res {
+		t.Log(p.Name, *p.Lat, *p.Lng, p.Features, p.Media)
+	}
+}
+
+func TestSearchProperty(t *testing.T) {
 	sql, args := SearchPropertyBuilder(
 		[]string{"properties.id", "properties.name"},
 		&dto.SearchPropertyQuery{

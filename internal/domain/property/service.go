@@ -13,17 +13,10 @@ type Service interface {
 	CheckVisibility(id uuid.UUID, uid uuid.UUID) (bool, error)
 	CheckManageability(id uuid.UUID, userId uuid.UUID) (bool, error)
 	GetPropertyById(id uuid.UUID) (*model.PropertyModel, error)
+	GetPropertiesOfUser(userId uuid.UUID, fields []string) ([]getPropertiesOfUserResponse, error)
 	UpdateProperty(data *dto.UpdateProperty) error
 	DeleteProperty(id uuid.UUID) error
-	AddPropertyMedia(id uuid.UUID, items []dto.CreatePropertyMedia) ([]model.PropertyMediaModel, error)
-	AddPropertyFeatures(id uuid.UUID, items []dto.CreatePropertyFeature) ([]model.PropertyFeatureModel, error)
-	AddPropertyTags(id uuid.UUID, items []dto.CreatePropertyTag) ([]model.PropertyTagModel, error)
-	AddPropertyManagers(id uuid.UUID, items []dto.CreatePropertyManager) ([]model.PropertyManagerModel, error)
 	GetAllFeatures() ([]model.PFeature, error)
-	DeletePropertyFeatures(puid uuid.UUID, fid []int64) error
-	DeletePropertyMedia(puid uuid.UUID, mid []int64) error
-	DeletePropertyTags(puid uuid.UUID, tid []int64) error
-	DeletePropertyManager(puid uuid.UUID, mid uuid.UUID) error
 }
 
 type service struct {
@@ -89,38 +82,42 @@ func (s *service) DeleteProperty(id uuid.UUID) error {
 	return s.repo.DeleteProperty(context.Background(), id)
 }
 
-func (s *service) AddPropertyMedia(id uuid.UUID, items []dto.CreatePropertyMedia) ([]model.PropertyMediaModel, error) {
-	return s.repo.AddPropertyMedia(context.Background(), id, items)
-}
-
-func (s *service) AddPropertyFeatures(id uuid.UUID, items []dto.CreatePropertyFeature) ([]model.PropertyFeatureModel, error) {
-	return s.repo.AddPropertyFeatures(context.Background(), id, items)
-}
-
-func (s *service) AddPropertyTags(id uuid.UUID, items []dto.CreatePropertyTag) ([]model.PropertyTagModel, error) {
-	return s.repo.AddPropertyTag(context.Background(), id, items)
-}
-
 func (s *service) GetAllFeatures() ([]model.PFeature, error) {
 	return s.repo.GetAllFeatures(context.Background())
 }
 
-func (s *service) DeletePropertyFeatures(puid uuid.UUID, fid []int64) error {
-	return s.repo.DeletePropertyFeatures(context.Background(), puid, fid)
+type getPropertiesOfUserResponse struct {
+	Role     string              `json:"role"`
+	Property model.PropertyModel `json:"property"`
 }
 
-func (s *service) DeletePropertyMedia(puid uuid.UUID, mid []int64) error {
-	return s.repo.DeletePropertyMedia(context.Background(), puid, mid)
-}
+func (s *service) GetPropertiesOfUser(userId uuid.UUID, fields []string) ([]getPropertiesOfUserResponse, error) {
+	managedProps, err := s.repo.GetManagedProperties(context.Background(), userId)
+	if err != nil {
+		return nil, err
+	}
 
-func (s *service) DeletePropertyTags(puid uuid.UUID, tid []int64) error {
-	return s.repo.DeletePropertyTags(context.Background(), puid, tid)
-}
+	var pids []string
+	for _, p := range managedProps {
+		pid := p.PropertyID.String()
+		pids = append(pids, pid)
+	}
 
-func (s *service) AddPropertyManagers(id uuid.UUID, items []dto.CreatePropertyManager) ([]model.PropertyManagerModel, error) {
-	return s.repo.AddPropertyManagers(context.Background(), id, items)
-}
+	ps, err := s.repo.GetProperties(context.Background(), pids, fields)
+	if err != nil {
+		return nil, err
+	}
 
-func (s *service) DeletePropertyManager(puid uuid.UUID, mid uuid.UUID) error {
-	return s.repo.DeletePropertyManager(context.Background(), puid, mid)
+	var res []getPropertiesOfUserResponse
+	for _, p := range managedProps {
+		r := getPropertiesOfUserResponse{Role: p.Role}
+		for i, pp := range ps {
+			if pp.ID == p.PropertyID {
+				r.Property = ps[i]
+			}
+		}
+		res = append(res, r)
+	}
+
+	return res, nil
 }

@@ -149,6 +149,117 @@ func (q *Queries) CreateProperty(ctx context.Context, arg CreatePropertyParams) 
 	return i, err
 }
 
+const createPropertyFeature = `-- name: CreatePropertyFeature :one
+INSERT INTO property_features (
+  property_id,
+  feature_id,
+  description
+) VALUES (
+  $1,
+  $2,
+  $3
+) RETURNING property_id, feature_id, description
+`
+
+type CreatePropertyFeatureParams struct {
+	PropertyID  uuid.UUID      `json:"property_id"`
+	FeatureID   int64          `json:"feature_id"`
+	Description sql.NullString `json:"description"`
+}
+
+func (q *Queries) CreatePropertyFeature(ctx context.Context, arg CreatePropertyFeatureParams) (PropertyFeature, error) {
+	row := q.db.QueryRowContext(ctx, createPropertyFeature, arg.PropertyID, arg.FeatureID, arg.Description)
+	var i PropertyFeature
+	err := row.Scan(&i.PropertyID, &i.FeatureID, &i.Description)
+	return i, err
+}
+
+const createPropertyManager = `-- name: CreatePropertyManager :one
+INSERT INTO property_managers (
+  property_id,
+  manager_id,
+  role
+) VALUES (
+  $1,
+  $2,
+  $3
+) RETURNING property_id, manager_id, role
+`
+
+type CreatePropertyManagerParams struct {
+	PropertyID uuid.UUID `json:"property_id"`
+	ManagerID  uuid.UUID `json:"manager_id"`
+	Role       string    `json:"role"`
+}
+
+func (q *Queries) CreatePropertyManager(ctx context.Context, arg CreatePropertyManagerParams) (PropertyManager, error) {
+	row := q.db.QueryRowContext(ctx, createPropertyManager, arg.PropertyID, arg.ManagerID, arg.Role)
+	var i PropertyManager
+	err := row.Scan(&i.PropertyID, &i.ManagerID, &i.Role)
+	return i, err
+}
+
+const createPropertyMedia = `-- name: CreatePropertyMedia :one
+INSERT INTO property_media (
+  property_id,
+  url,
+  type,
+  description
+) VALUES (
+  $1,
+  $2,
+  $3,
+  $4
+) RETURNING id, property_id, url, type, description
+`
+
+type CreatePropertyMediaParams struct {
+	PropertyID  uuid.UUID      `json:"property_id"`
+	Url         string         `json:"url"`
+	Type        MEDIATYPE      `json:"type"`
+	Description sql.NullString `json:"description"`
+}
+
+func (q *Queries) CreatePropertyMedia(ctx context.Context, arg CreatePropertyMediaParams) (PropertyMedium, error) {
+	row := q.db.QueryRowContext(ctx, createPropertyMedia,
+		arg.PropertyID,
+		arg.Url,
+		arg.Type,
+		arg.Description,
+	)
+	var i PropertyMedium
+	err := row.Scan(
+		&i.ID,
+		&i.PropertyID,
+		&i.Url,
+		&i.Type,
+		&i.Description,
+	)
+	return i, err
+}
+
+const createPropertyTag = `-- name: CreatePropertyTag :one
+INSERT INTO property_tags (
+  property_id,
+  tag
+) VALUES (
+  $1,
+  $2
+) RETURNING id, property_id, tag
+`
+
+type CreatePropertyTagParams struct {
+	PropertyID uuid.UUID `json:"property_id"`
+	Tag        string    `json:"tag"`
+}
+
+func (q *Queries) CreatePropertyTag(ctx context.Context, arg CreatePropertyTagParams) (PropertyTag, error) {
+	row := q.db.QueryRowContext(ctx, createPropertyTag, arg.PropertyID, arg.Tag)
+	var i PropertyTag
+	err := row.Scan(&i.ID, &i.PropertyID, &i.Tag)
+	return i, err
+}
+
 const deleteProperty = `-- name: DeleteProperty :exec
 DELETE FROM properties WHERE id = $1
 `
@@ -228,6 +339,38 @@ func (q *Queries) GetAllPropertyFeatures(ctx context.Context) ([]PFeature, error
 	for rows.Next() {
 		var i PFeature
 		if err := rows.Scan(&i.ID, &i.Feature); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getManagedProperties = `-- name: GetManagedProperties :many
+SELECT property_id, role FROM property_managers WHERE manager_id = $1
+`
+
+type GetManagedPropertiesRow struct {
+	PropertyID uuid.UUID `json:"property_id"`
+	Role       string    `json:"role"`
+}
+
+func (q *Queries) GetManagedProperties(ctx context.Context, managerID uuid.UUID) ([]GetManagedPropertiesRow, error) {
+	rows, err := q.db.QueryContext(ctx, getManagedProperties, managerID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetManagedPropertiesRow
+	for rows.Next() {
+		var i GetManagedPropertiesRow
+		if err := rows.Scan(&i.PropertyID, &i.Role); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
@@ -388,107 +531,6 @@ func (q *Queries) GetPropertyTags(ctx context.Context, propertyID uuid.UUID) ([]
 		return nil, err
 	}
 	return items, nil
-}
-
-const insertPropertyFeature = `-- name: InsertPropertyFeature :one
-INSERT INTO property_features (
-  property_id,
-  feature_id,
-  description
-) VALUES (
-  $1,
-  $2,
-  $3
-) RETURNING property_id, feature_id, description
-`
-
-type InsertPropertyFeatureParams struct {
-	PropertyID  uuid.UUID      `json:"property_id"`
-	FeatureID   int64          `json:"feature_id"`
-	Description sql.NullString `json:"description"`
-}
-
-func (q *Queries) InsertPropertyFeature(ctx context.Context, arg InsertPropertyFeatureParams) (PropertyFeature, error) {
-	row := q.db.QueryRowContext(ctx, insertPropertyFeature, arg.PropertyID, arg.FeatureID, arg.Description)
-	var i PropertyFeature
-	err := row.Scan(&i.PropertyID, &i.FeatureID, &i.Description)
-	return i, err
-}
-
-const insertPropertyManager = `-- name: InsertPropertyManager :exec
-INSERT INTO property_managers (
-  property_id,
-  manager_id,
-  role
-) VALUES (
-  $1,
-  $2,
-  $3
-)
-`
-
-type InsertPropertyManagerParams struct {
-	PropertyID uuid.UUID `json:"property_id"`
-	ManagerID  uuid.UUID `json:"manager_id"`
-	Role       string    `json:"role"`
-}
-
-func (q *Queries) InsertPropertyManager(ctx context.Context, arg InsertPropertyManagerParams) error {
-	_, err := q.db.ExecContext(ctx, insertPropertyManager, arg.PropertyID, arg.ManagerID, arg.Role)
-	return err
-}
-
-const insertPropertyMedia = `-- name: InsertPropertyMedia :one
-INSERT INTO property_media (
-  property_id,
-  url,
-  type
-) VALUES (
-  $1,
-  $2,
-  $3
-) RETURNING id, property_id, url, type, description
-`
-
-type InsertPropertyMediaParams struct {
-	PropertyID uuid.UUID `json:"property_id"`
-	Url        string    `json:"url"`
-	Type       MEDIATYPE `json:"type"`
-}
-
-func (q *Queries) InsertPropertyMedia(ctx context.Context, arg InsertPropertyMediaParams) (PropertyMedium, error) {
-	row := q.db.QueryRowContext(ctx, insertPropertyMedia, arg.PropertyID, arg.Url, arg.Type)
-	var i PropertyMedium
-	err := row.Scan(
-		&i.ID,
-		&i.PropertyID,
-		&i.Url,
-		&i.Type,
-		&i.Description,
-	)
-	return i, err
-}
-
-const insertPropertyTag = `-- name: InsertPropertyTag :one
-INSERT INTO property_tags (
-  property_id,
-  tag
-) VALUES (
-  $1,
-  $2
-) RETURNING id, property_id, tag
-`
-
-type InsertPropertyTagParams struct {
-	PropertyID uuid.UUID `json:"property_id"`
-	Tag        string    `json:"tag"`
-}
-
-func (q *Queries) InsertPropertyTag(ctx context.Context, arg InsertPropertyTagParams) (PropertyTag, error) {
-	row := q.db.QueryRowContext(ctx, insertPropertyTag, arg.PropertyID, arg.Tag)
-	var i PropertyTag
-	err := row.Scan(&i.ID, &i.PropertyID, &i.Tag)
-	return i, err
 }
 
 const isPropertyPublic = `-- name: IsPropertyPublic :one

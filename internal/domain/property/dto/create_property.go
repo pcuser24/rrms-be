@@ -5,6 +5,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/user2410/rrms-backend/internal/infrastructure/database"
+	"github.com/user2410/rrms-backend/pkg/utils/types"
 )
 
 type CreatePropertyManager struct {
@@ -20,10 +21,25 @@ type CreatePropertyMedia struct {
 	Description *string            `json:"description"`
 }
 
+func (m *CreatePropertyMedia) ToCreatePropertyMediaDB() *database.CreatePropertyMediaParams {
+	return &database.CreatePropertyMediaParams{
+		Url:         m.Url,
+		Type:        m.Type,
+		Description: types.StrN(m.Description),
+	}
+}
+
 type CreatePropertyFeature struct {
 	// PropertyID  uuid.UUID `json:"property_id" validate:"required,uuid"`
 	FeatureID   int64   `json:"featureID" validate:"required"`
 	Description *string `json:"description"`
+}
+
+func (f *CreatePropertyFeature) ToCreatePropertyFeatureDB() *database.CreatePropertyFeatureParams {
+	return &database.CreatePropertyFeatureParams{
+		FeatureID:   f.FeatureID,
+		Description: types.StrN(f.Description),
+	}
 }
 
 type CreatePropertyTag struct {

@@ -39,6 +39,7 @@ func (a *adapter) RegisterServer(router *fiber.Router, tokenMaker token.Maker) {
 	propertyRoute.Use(auth.AuthorizedMiddleware(tokenMaker))
 
 	propertyRoute.Post("/", a.createProperty())
+	propertyRoute.Get("/my-properties", a.getMyProperties())
 	propertyRoute.Patch("/property/:id", checkPropertyManageability(a.service), a.updateProperty())
 	propertyRoute.Delete("/property/:id", checkPropertyManageability(a.service), a.deleteProperty())
 }
@@ -119,6 +120,30 @@ func (a *adapter) getPropertyById() fiber.Handler {
 		// 	return ctx.Status(fiber.StatusForbidden).JSON(fiber.Map{"message": "you are not authorized to view this property"})
 		// }
 		return ctx.JSON(res)
+	}
+}
+
+func (a *adapter) getMyProperties() fiber.Handler {
+	return func(ctx *fiber.Ctx) error {
+		var query dto.GetPropertiesQuery
+		if err := ctx.QueryParser(&query); err != nil {
+			return ctx.SendStatus(fiber.StatusBadRequest)
+		}
+		// if errs := utils.ValidateStruct(query); len(errs) > 0 && errs[0].Error {
+		// 	return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": utils.GetValidationError(errs)})
+		// }
+
+		tokenPayload := ctx.Locals(auth.AuthorizationPayloadKey).(*token.Payload)
+		res, err := a.service.GetPropertiesOfUser(tokenPayload.UserID, query.Fields)
+		if err != nil {
+			if dbErr, ok := err.(*pgconn.PgError); ok {
+				return responses.DBErrorResponse(ctx, dbErr)
+			}
+
+			return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
+		}
+
+		return ctx.Status(fiber.StatusOK).JSON(res)
 	}
 }
 

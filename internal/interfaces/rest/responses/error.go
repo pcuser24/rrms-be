@@ -20,7 +20,7 @@ func ValidationErrorResponse(ctx *fiber.Ctx, err validator.FieldError) {
 func DBErrorResponse(ctx *fiber.Ctx, err *pgconn.PgError) error {
 	fmt.Println("db error:", err.Code, err.Message)
 	switch err.Code[0:2] {
-	case "22":
+	case "22", "42":
 		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": err.Message})
 	case "23":
 		return ctx.Status(fiber.StatusConflict).JSON(fiber.Map{"message": err.Message})

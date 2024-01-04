@@ -45,7 +45,7 @@ INSERT INTO properties (
   NOW()
 ) RETURNING *;
 
--- name: InsertPropertyManager :exec
+-- name: CreatePropertyManager :one
 INSERT INTO property_managers (
   property_id,
   manager_id,
@@ -54,20 +54,22 @@ INSERT INTO property_managers (
   sqlc.arg(property_id),
   sqlc.arg(manager_id),
   sqlc.arg(role)
-);
+) RETURNING *;
 
--- name: InsertPropertyMedia :one
+-- name: CreatePropertyMedia :one
 INSERT INTO property_media (
   property_id,
   url,
-  type
+  type,
+  description
 ) VALUES (
   sqlc.arg(property_id),
   sqlc.arg(url),
-  sqlc.arg(type)
+  sqlc.arg(type),
+  sqlc.narg(description)
 ) RETURNING *;
 
--- name: InsertPropertyFeature :one
+-- name: CreatePropertyFeature :one
 INSERT INTO property_features (
   property_id,
   feature_id,
@@ -78,7 +80,7 @@ INSERT INTO property_features (
   sqlc.narg(description)
 ) RETURNING *;
 
--- name: InsertPropertyTag :one
+-- name: CreatePropertyTag :one
 INSERT INTO property_tags (
   property_id,
   tag
@@ -104,6 +106,9 @@ SELECT * FROM property_media WHERE property_id = $1;
 
 -- name: GetPropertyManagers :many
 SELECT * FROM property_managers WHERE property_id = $1;
+
+-- name: GetManagedProperties :many
+SELECT property_id, role FROM property_managers WHERE manager_id = $1;
 
 -- name: IsPropertyPublic :one
 SELECT is_public FROM properties WHERE id = $1 LIMIT 1;

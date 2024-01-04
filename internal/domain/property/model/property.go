@@ -7,11 +7,7 @@ import (
 	"github.com/user2410/rrms-backend/internal/infrastructure/database"
 )
 
-type PropertyTagModel struct {
-	ID         int64     `json:"id"`
-	PropertyID uuid.UUID `json:"propertyId"`
-	Tag        string    `json:"tag"`
-}
+type PropertyTagModel = database.PropertyTag
 
 type PropertyModel struct {
 	ID             uuid.UUID `json:"id"`
