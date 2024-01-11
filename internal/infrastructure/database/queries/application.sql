@@ -148,6 +148,14 @@ SELECT * FROM application_pets WHERE application_id = $1;
 -- name: GetApplicationVehicles :many
 SELECT * FROM application_vehicles WHERE application_id = $1;
 
+-- name: GetApplicationsByUserId :many
+SELECT * FROM applications WHERE creator_id = $1;
+
+-- name: GetApplicationsToUser :many
+SELECT * FROM applications WHERE property_id IN (
+  SELECT property_id FROM property_managers WHERE manager_id = $1
+);
+
 -- name: UpdateApplicationStatus :exec
 UPDATE applications SET status = $1, updated_at = NOW() WHERE id = $2;
 

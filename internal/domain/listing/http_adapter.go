@@ -3,6 +3,7 @@ package listing
 import (
 	"log"
 
+	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgconn"
@@ -44,6 +45,7 @@ func (a *adapter) RegisterServer(router *fiber.Router, tokenMaker token.Maker) {
 	listingRoute.Use(auth.AuthorizedMiddleware(tokenMaker))
 
 	listingRoute.Post("/", a.createListing())
+	listingRoute.Get("/my-listings", a.getMyListings())
 	listingRoute.Patch("/listing/:id", a.checkListingManageability(), a.updateListing())
 	listingRoute.Delete("/listing/:id", a.checkListingManageability(), a.deleteListing())
 }
@@ -57,7 +59,7 @@ func (a *adapter) createListing() fiber.Handler {
 			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": err.Error()})
 		}
 		payload.CreatorID = tkPayload.UserID
-		if errs := utils.ValidateStruct(payload); len(errs) > 0 && errs[0].Error {
+		if errs := utils.ValidateStruct(nil, payload); len(errs) > 0 && errs[0].Error {
 			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": utils.GetValidationError(errs)})
 		}
 		// log.Println("Passed struct validation")
@@ -112,7 +114,7 @@ func (a *adapter) searchListings() fiber.Handler {
 		if err := ctx.QueryParser(&payload); err != nil {
 			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": err.Error()})
 		}
-		if errs := utils.ValidateStruct(payload); len(errs) > 0 && errs[0].Error {
+		if errs := utils.ValidateStruct(nil, payload); len(errs) > 0 && errs[0].Error {
 			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": utils.GetValidationError(errs)})
 		}
 		log.Println(payload)
@@ -133,6 +135,32 @@ func (a *adapter) searchListings() fiber.Handler {
 			"count":  res.Count,
 			"items":  res.Items,
 		})
+	}
+}
+
+func (a *adapter) getMyListings() fiber.Handler {
+	return func(ctx *fiber.Ctx) error {
+		var query dto.GetListingsQuery
+		if err := ctx.QueryParser(&query); err != nil {
+			return ctx.SendStatus(fiber.StatusBadRequest)
+		}
+		validator := validator.New()
+		validator.RegisterValidation("listingFields", dto.ValidateQuery)
+		if errs := utils.ValidateStruct(validator, query); len(errs) > 0 && errs[0].Error {
+			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": utils.GetValidationError(errs)})
+		}
+
+		tokenPayload := ctx.Locals(auth.AuthorizationPayloadKey).(*token.Payload)
+		res, err := a.lService.GetListingsOfUser(tokenPayload.UserID, query.Fields)
+		if err != nil {
+			if dbErr, ok := err.(*pgconn.PgError); ok {
+				return responses.DBErrorResponse(ctx, dbErr)
+			}
+
+			return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
+		}
+
+		return ctx.Status(fiber.StatusOK).JSON(res)
 	}
 }
 
@@ -166,7 +194,7 @@ func (a *adapter) updateListing() fiber.Handler {
 			return err
 		}
 		payload.ID = lid
-		if errs := utils.ValidateStruct(payload); len(errs) > 0 && errs[0].Error {
+		if errs := utils.ValidateStruct(nil, payload); len(errs) > 0 && errs[0].Error {
 			ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": utils.GetValidationError(errs)})
 			return nil
 		}

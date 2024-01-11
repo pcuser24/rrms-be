@@ -5,6 +5,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/user2410/rrms-backend/internal/infrastructure/database"
+	"github.com/user2410/rrms-backend/pkg/utils/types"
 )
 
 type UnitModel struct {
@@ -28,42 +29,21 @@ type UnitModel struct {
 }
 
 func ToUnitModel(u *database.Unit) *UnitModel {
-	um := &UnitModel{
-		ID:         u.ID,
-		PropertyID: u.PropertyID,
-		Name:       u.Name,
-		Area:       u.Area,
-		Type:       u.Type,
-		CreatedAt:  u.CreatedAt,
-		UpdatedAt:  u.UpdatedAt,
+	return &UnitModel{
+		ID:                  u.ID,
+		PropertyID:          u.PropertyID,
+		Name:                u.Name,
+		Area:                u.Area,
+		Type:                u.Type,
+		Floor:               types.PNInt32(u.Floor),
+		Price:               types.PNInt64(u.Price),
+		NumberOfLivingRooms: types.PNInt32(u.NumberOfLivingRooms),
+		NumberOfBedrooms:    types.PNInt32(u.NumberOfBedrooms),
+		NumberOfBathrooms:   types.PNInt32(u.NumberOfBathrooms),
+		NumberOfToilets:     types.PNInt32(u.NumberOfToilets),
+		NumberOfKitchens:    types.PNInt32(u.NumberOfKitchens),
+		NumberOfBalconies:   types.PNInt32(u.NumberOfBalconies),
+		CreatedAt:           u.CreatedAt,
+		UpdatedAt:           u.UpdatedAt,
 	}
-	if u.Floor.Valid {
-		f := u.Floor.Int32
-		um.Floor = &f
-	}
-	if u.NumberOfLivingRooms.Valid {
-		n := u.NumberOfLivingRooms.Int32
-		um.NumberOfLivingRooms = &n
-	}
-	if u.NumberOfBedrooms.Valid {
-		n := u.NumberOfBedrooms.Int32
-		um.NumberOfBedrooms = &n
-	}
-	if u.NumberOfBathrooms.Valid {
-		n := u.NumberOfBathrooms.Int32
-		um.NumberOfBathrooms = &n
-	}
-	if u.NumberOfToilets.Valid {
-		n := u.NumberOfToilets.Int32
-		um.NumberOfToilets = &n
-	}
-	if u.NumberOfKitchens.Valid {
-		n := u.NumberOfKitchens.Int32
-		um.NumberOfKitchens = &n
-	}
-	if u.NumberOfBalconies.Valid {
-		n := u.NumberOfBalconies.Int32
-		um.NumberOfBalconies = &n
-	}
-	return um
 }

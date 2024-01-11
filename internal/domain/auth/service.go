@@ -41,7 +41,6 @@ func (u *authService) RegisterUser(data *dto.RegisterUser) (*model.UserModel, er
 	if err != nil {
 		return nil, err
 	}
-
 	data.Password = hash
 
 	// Create a new entry in User table
@@ -50,6 +49,7 @@ func (u *authService) RegisterUser(data *dto.RegisterUser) (*model.UserModel, er
 		return nil, err
 	}
 
+	user.Password = nil
 	return user, nil
 }
 

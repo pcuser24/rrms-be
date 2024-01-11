@@ -3,6 +3,7 @@ package application
 import (
 	"context"
 
+	"github.com/google/uuid"
 	"github.com/user2410/rrms-backend/internal/domain/application/dto"
 	"github.com/user2410/rrms-backend/internal/domain/application/model"
 	"github.com/user2410/rrms-backend/internal/infrastructure/database"
@@ -11,9 +12,8 @@ import (
 type Repo interface {
 	CreateApplication(ctx context.Context, data *dto.CreateApplicationDto) (*model.ApplicationModel, error)
 	GetApplicationById(ctx context.Context, id int64) (*model.ApplicationModel, error)
-	// GetApplicationsByUserId(ctx context.Context, userId string) ([]*model.Application, error)
-	// GetApplicationsByListingId(ctx context.Context, listingId string) ([]*model.Application, error)
-	// GetApplicationsByStatus(ctx context.Context, status string) ([]*model.Application, error)
+	GetApplicationsByUserId(ctx context.Context, uid uuid.UUID) ([]model.ApplicationModel, error)
+	GetApplicationsToUser(ctx context.Context, uid uuid.UUID) ([]model.ApplicationModel, error)
 	UpdateApplicationStatus(ctx context.Context, id int64, status database.APPLICATIONSTATUS) error
 	DeleteApplication(ctx context.Context, id int64) error
 }
@@ -118,6 +118,30 @@ func (r *repo) GetApplicationById(ctx context.Context, id int64) (*model.Applica
 	}
 
 	return a, nil
+}
+
+func (r *repo) GetApplicationsByUserId(ctx context.Context, uid uuid.UUID) ([]model.ApplicationModel, error) {
+	res, err := r.dao.GetApplicationsByUserId(ctx, uid)
+	if err != nil {
+		return nil, err
+	}
+	var applications []model.ApplicationModel
+	for _, a := range res {
+		applications = append(applications, *model.ToApplicationModel(&a))
+	}
+	return applications, nil
+}
+
+func (r *repo) GetApplicationsToUser(ctx context.Context, uid uuid.UUID) ([]model.ApplicationModel, error) {
+	res, err := r.dao.GetApplicationsToUser(ctx, uid)
+	if err != nil {
+		return nil, err
+	}
+	var applications []model.ApplicationModel
+	for _, a := range res {
+		applications = append(applications, *model.ToApplicationModel(&a))
+	}
+	return applications, nil
 }
 
 func (r *repo) UpdateApplicationStatus(ctx context.Context, id int64, status database.APPLICATIONSTATUS) error {

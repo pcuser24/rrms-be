@@ -8,17 +8,16 @@ import (
 
 	"github.com/huandu/go-sqlbuilder"
 	listingDTO "github.com/user2410/rrms-backend/internal/domain/listing/dto"
-	"github.com/user2410/rrms-backend/internal/domain/property"
 	propertyDTO "github.com/user2410/rrms-backend/internal/domain/property/dto"
-	"github.com/user2410/rrms-backend/internal/domain/unit"
 	unitDTO "github.com/user2410/rrms-backend/internal/domain/unit/dto"
 	"github.com/user2410/rrms-backend/internal/infrastructure/database"
+	sqlbuilders "github.com/user2410/rrms-backend/internal/infrastructure/database/sql_builders"
 	"github.com/user2410/rrms-backend/internal/utils"
 	"github.com/user2410/rrms-backend/pkg/utils/types"
 )
 
 func TestSearchListing(t *testing.T) {
-	sql, args := SearchListingBuilder([]string{"1"}, &listingDTO.SearchListingQuery{
+	sql, args := sqlbuilders.SearchListingBuilder([]string{"1"}, &listingDTO.SearchListingQuery{
 		LTitle:                types.Ptr[string]("test_name"),
 		LCreatorID:            types.Ptr[string]("5224e97d-94dd-4988-98fb-ab5d4a3e0967"),
 		LPropertyID:           types.Ptr[string]("5224e97d-94dd-4988-98fb-ab5d4a3e0967"),
@@ -46,7 +45,7 @@ func TestSearchListing(t *testing.T) {
 }
 
 func TestSearchListingCombination(t *testing.T) {
-	sqlListing, argsListing := SearchListingBuilder([]string{"1"}, &listingDTO.SearchListingQuery{
+	sqlListing, argsListing := sqlbuilders.SearchListingBuilder([]string{"1"}, &listingDTO.SearchListingQuery{
 		LTitle:                types.Ptr[string]("test_name"),
 		LCreatorID:            types.Ptr[string]("5224e97d-94dd-4988-98fb-ab5d4a3e0967"),
 		LPropertyID:           types.Ptr[string]("5224e97d-94dd-4988-98fb-ab5d4a3e0967"),
@@ -70,7 +69,7 @@ func TestSearchListingCombination(t *testing.T) {
 		LMaxExpiredAt:         types.Ptr[time.Time](time.Date(2010, time.November, 10, 23, 0, 0, 0, time.UTC)),
 	}, "", "", "")
 
-	sqlUnit, argsUnit := unit.SearchUnitBuilder([]string{"1"}, &unitDTO.SearchUnitQuery{
+	sqlUnit, argsUnit := sqlbuilders.SearchUnitBuilder([]string{"1"}, &unitDTO.SearchUnitQuery{
 		UPropertyID:          types.Ptr[string]("5224e97d-94dd-4988-98fb-ab5d4a3e0967"),
 		UName:                types.Ptr[string]("test_name"),
 		UMinArea:             types.Ptr[int64](3000),
@@ -84,7 +83,7 @@ func TestSearchListingCombination(t *testing.T) {
 		UNumberOfBalconies:   types.Ptr[int32](12),
 	}, "", "")
 
-	sqlProp, argsProp := property.SearchPropertyBuilder([]string{"1"}, &propertyDTO.SearchPropertyQuery{
+	sqlProp, argsProp := sqlbuilders.SearchPropertyBuilder([]string{"1"}, &propertyDTO.SearchPropertyQuery{
 		PTypes:          []string{"APARTMENT", "HOUSE"},
 		PName:           types.Ptr[string]("test_name"),
 		PBuilding:       types.Ptr[string]("test_building"),

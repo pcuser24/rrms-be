@@ -3,6 +3,7 @@ package model
 import (
 	"github.com/google/uuid"
 	"github.com/user2410/rrms-backend/internal/infrastructure/database"
+	"github.com/user2410/rrms-backend/pkg/utils/types"
 )
 
 type UnitMediaModel struct {
@@ -14,15 +15,11 @@ type UnitMediaModel struct {
 }
 
 func ToUnitMediaModel(um *database.UnitMedium) *UnitMediaModel {
-	m := UnitMediaModel{
-		ID:     um.ID,
-		UnitID: um.UnitID,
-		Url:    um.Url,
-		Type:   um.Type,
+	return &UnitMediaModel{
+		ID:          um.ID,
+		UnitID:      um.UnitID,
+		Url:         um.Url,
+		Type:        um.Type,
+		Description: types.PNStr(um.Description),
 	}
-	if um.Description.Valid {
-		desc := um.Description.String
-		m.Description = &desc
-	}
-	return &m
 }

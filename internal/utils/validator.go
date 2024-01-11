@@ -2,6 +2,7 @@ package utils
 
 import (
 	"fmt"
+	"log"
 	"reflect"
 	"strings"
 
@@ -20,12 +21,17 @@ type ErrorResponse struct {
 	Value       interface{}
 }
 
-var structValidator = validator.New()
+var defaultStructValidator = validator.New()
+
+func GetDefaultValidator() *validator.Validate {
+	copy := *defaultStructValidator
+	return &copy
+}
 
 func init() {
-	fmt.Println("Setting up UUID validator...")
+	log.Println("Setting up UUID validator...")
 	// validate UUID
-	structValidator.RegisterCustomTypeFunc(func(field reflect.Value) interface{} {
+	defaultStructValidator.RegisterCustomTypeFunc(func(field reflect.Value) interface{} {
 		if valuer, ok := field.Interface().(uuid.UUID); ok {
 			return valuer.String()
 		}
@@ -33,10 +39,12 @@ func init() {
 	}, uuid.Nil)
 }
 
-func ValidateStruct(data interface{}) []ErrorResponse {
+func ValidateStruct(v *validator.Validate, data interface{}) []ErrorResponse {
+	if v == nil {
+		v = defaultStructValidator
+	}
 	validationErrors := []ErrorResponse{}
-
-	errs := structValidator.Struct(data)
+	errs := v.Struct(data)
 	if errs != nil {
 		for _, err := range errs.(validator.ValidationErrors) {
 			// In this case data object is actually holding the User struct

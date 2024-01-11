@@ -14,6 +14,14 @@ type CreateListingPolicy struct {
 	Note     *string `json:"note"`
 }
 
+func (c *CreateListingPolicy) ToCreateListingPolicyDB(lid uuid.UUID) *database.CreateListingPolicyParams {
+	return &database.CreateListingPolicyParams{
+		ListingID: lid,
+		PolicyID:  c.PolicyID,
+		Note:      types.StrN(c.Note),
+	}
+}
+
 type CreateListingUnit struct {
 	UnitID uuid.UUID `json:"unitId" validate:"required,uuid4"`
 }

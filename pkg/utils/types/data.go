@@ -64,6 +64,20 @@ func PNInt16(n sql.NullInt16) *int16 {
 	return &n.Int16
 }
 
+func NInt32(n sql.NullInt32) int32 {
+	if !n.Valid {
+		return 0
+	}
+	return n.Int32
+}
+
+func PNInt32(n sql.NullInt32) *int32 {
+	if !n.Valid {
+		return nil
+	}
+	return &n.Int32
+}
+
 func NInt64(n sql.NullInt64) int64 {
 	if !n.Valid {
 		return 0
@@ -76,6 +90,20 @@ func PNInt64(n sql.NullInt64) *int64 {
 		return nil
 	}
 	return &n.Int64
+}
+
+func NFloat64(n sql.NullFloat64) float64 {
+	if !n.Valid {
+		return 0
+	}
+	return n.Float64
+}
+
+func PNFloat64(n sql.NullFloat64) *float64 {
+	if !n.Valid {
+		return nil
+	}
+	return &n.Float64
 }
 
 func NTime(n sql.NullTime) *time.Time {

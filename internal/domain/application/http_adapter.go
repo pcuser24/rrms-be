@@ -28,6 +28,14 @@ func (a *adapter) RegisterServer(route *fiber.Router, tokenMaker token.Maker) {
 	applicationRoute.Use(auth.AuthorizedMiddleware(tokenMaker))
 
 	applicationRoute.Post("/", a.createApplications())
+	applicationRoute.Get("/my-applications",
+		// TODO: A middleware to check if the user is a tenant
+		a.getMyApplications(),
+	)
+	applicationRoute.Get("/to-me",
+		// TODO: A middleware to check if the user is a property manager
+		a.getApplicationsToMe(),
+	)
 	applicationRoute.Get("/application/:id", a.getApplicationById())
 	applicationRoute.Delete("/application/:id", a.deleteApplication())
 
@@ -48,7 +56,7 @@ func (a *adapter) createApplications() fiber.Handler {
 			return err
 		}
 		payload.CreatorID = tkPayload.UserID
-		if errs := utils.ValidateStruct(payload); len(errs) > 0 && errs[0].Error {
+		if errs := utils.ValidateStruct(nil, payload); len(errs) > 0 && errs[0].Error {
 			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": utils.GetValidationError(errs)})
 		}
 
@@ -63,6 +71,41 @@ func (a *adapter) createApplications() fiber.Handler {
 		}
 
 		return ctx.Status(fiber.StatusCreated).JSON(newApplication)
+	}
+}
+
+func (a *adapter) getMyApplications() fiber.Handler {
+	return func(ctx *fiber.Ctx) error {
+		tkPayload := ctx.Locals(auth.AuthorizationPayloadKey).(*token.Payload)
+
+		applications, err := a.service.GetApplicationsByUserId(tkPayload.UserID)
+		if err != nil {
+			if dbErr, ok := err.(*pgconn.PgError); ok {
+				return responses.DBErrorResponse(ctx, dbErr)
+			}
+
+			return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
+		}
+
+		return ctx.Status(fiber.StatusOK).JSON(applications)
+	}
+}
+
+// Get applications to properties that I manage
+func (a *adapter) getApplicationsToMe() fiber.Handler {
+	return func(ctx *fiber.Ctx) error {
+		tkPayload := ctx.Locals(auth.AuthorizationPayloadKey).(*token.Payload)
+
+		applications, err := a.service.GetApplicationsToUser(tkPayload.UserID)
+		if err != nil {
+			if dbErr, ok := err.(*pgconn.PgError); ok {
+				return responses.DBErrorResponse(ctx, dbErr)
+			}
+
+			return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
+		}
+
+		return ctx.Status(fiber.StatusOK).JSON(applications)
 	}
 }
 

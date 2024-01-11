@@ -8,6 +8,7 @@ import (
 
 	"github.com/user2410/rrms-backend/internal/domain/property/dto"
 	"github.com/user2410/rrms-backend/internal/infrastructure/database"
+	sqlbuilders "github.com/user2410/rrms-backend/internal/infrastructure/database/sql_builders"
 	"github.com/user2410/rrms-backend/pkg/utils/types"
 )
 
@@ -37,7 +38,7 @@ func TestGetProperties(t *testing.T) {
 }
 
 func TestSearchProperty(t *testing.T) {
-	sql, args := SearchPropertyBuilder(
+	sql, args := sqlbuilders.SearchPropertyBuilder(
 		[]string{"properties.id", "properties.name"},
 		&dto.SearchPropertyQuery{
 			PTypes:          []string{"APARTMENT", "HOUSE", "TEST"},

@@ -3,6 +3,7 @@ package model
 import (
 	"github.com/google/uuid"
 	"github.com/user2410/rrms-backend/internal/infrastructure/database"
+	"github.com/user2410/rrms-backend/pkg/utils/types"
 )
 
 type UAmenity struct {
@@ -17,13 +18,9 @@ type UnitAmenityModel struct {
 }
 
 func ToUnitAmenityModel(ua *database.UnitAmenity) *UnitAmenityModel {
-	a := UnitAmenityModel{
-		UnitID:    ua.UnitID,
-		AmenityID: ua.AmenityID,
+	return &UnitAmenityModel{
+		UnitID:      ua.UnitID,
+		AmenityID:   ua.AmenityID,
+		Description: types.PNStr(ua.Description),
 	}
-	if ua.Description.Valid {
-		desc := ua.Description.String
-		a.Description = &desc
-	}
-	return &a
 }

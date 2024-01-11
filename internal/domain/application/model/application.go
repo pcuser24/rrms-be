@@ -5,6 +5,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/user2410/rrms-backend/internal/infrastructure/database"
+	"github.com/user2410/rrms-backend/pkg/utils/types"
 )
 
 /***/
@@ -19,21 +20,14 @@ type ApplicationMinorModel struct {
 }
 
 func ToApplicationMinorModel(db *database.ApplicationMinor) ApplicationMinorModel {
-	m := ApplicationMinorModel{
+	return ApplicationMinorModel{
 		ApplicationID: db.ApplicationID,
 		FullName:      db.FullName,
+		Email:         types.PNStr(db.Email),
+		Phone:         types.PNStr(db.Phone),
+		Description:   types.PNStr(db.Description),
 		Dob:           db.Dob,
 	}
-	if db.Email.Valid {
-		m.Email = &db.Email.String
-	}
-	if db.Phone.Valid {
-		m.Phone = &db.Phone.String
-	}
-	if db.Description.Valid {
-		m.Description = &db.Description.String
-	}
-	return m
 }
 
 /***/
@@ -50,23 +44,16 @@ type ApplicationCoapModel struct {
 }
 
 func ToApplicationCoapModel(db *database.ApplicationCoap) ApplicationCoapModel {
-	m := ApplicationCoapModel{
+	return ApplicationCoapModel{
 		ApplicationID: db.ApplicationID,
 		FullName:      db.FullName,
 		Dob:           db.Dob,
 		Job:           db.Job,
+		Email:         types.PNStr(db.Email),
+		Phone:         types.PNStr(db.Phone),
+		Description:   types.PNStr(db.Description),
 		Income:        db.Income,
 	}
-	if db.Email.Valid {
-		m.Email = &db.Email.String
-	}
-	if db.Phone.Valid {
-		m.Phone = &db.Phone.String
-	}
-	if db.Description.Valid {
-		m.Description = &db.Description.String
-	}
-	return m
 }
 
 /***/
@@ -79,17 +66,12 @@ type ApplicationPetModel struct {
 }
 
 func ToApplicationPetModel(db *database.ApplicationPet) ApplicationPetModel {
-	m := ApplicationPetModel{
+	return ApplicationPetModel{
 		ApplicationID: db.ApplicationID,
+		Weight:        types.PNFloat64(db.Weight),
+		Description:   types.PNStr(db.Description),
 		Type:          db.Type,
 	}
-	if db.Weight.Valid {
-		m.Weight = &db.Weight.Float64
-	}
-	if db.Description.Valid {
-		m.Description = &db.Description.String
-	}
-	return m
 }
 
 /***/
@@ -103,18 +85,13 @@ type ApplicationVehicle struct {
 }
 
 func ToApplicationVehicleModel(db *database.ApplicationVehicle) ApplicationVehicle {
-	m := ApplicationVehicle{
+	return ApplicationVehicle{
 		ApplicationID: db.ApplicationID,
 		Type:          db.Type,
+		Model:         types.PNStr(db.Model),
 		Code:          db.Code,
+		Description:   types.PNStr(db.Description),
 	}
-	if db.Model.Valid {
-		m.Model = &db.Model.String
-	}
-	if db.Description.Valid {
-		m.Description = &db.Description.String
-	}
-	return m
 }
 
 type ApplicationModel struct {
@@ -158,53 +135,38 @@ type ApplicationModel struct {
 }
 
 func ToApplicationModel(a *database.Application) *ApplicationModel {
-	am := &ApplicationModel{
-		ID:            a.ID,
-		PropertyID:    a.PropertyID,
-		Status:        a.Status,
-		CreatorID:     a.CreatorID,
-		FullName:      a.FullName,
-		Email:         a.Email,
-		Phone:         a.Phone,
-		Dob:           a.Dob,
-		ProfileImage:  a.ProfileImage,
-		MoveinDate:    a.MoveinDate,
-		PreferredTerm: a.PreferredTerm,
-		CreatedAt:     a.CreatedAt,
-		UpdatedAt:     a.UpdatedAt,
+	return &ApplicationModel{
+		ID:                       a.ID,
+		CreatorID:                a.CreatorID,
+		ListingID:                a.ListingID,
+		PropertyID:               a.PropertyID,
+		UnitIds:                  a.UnitIds,
+		Status:                   a.Status,
+		FullName:                 a.FullName,
+		Email:                    a.Email,
+		Phone:                    a.Phone,
+		Dob:                      a.Dob,
+		ProfileImage:             a.ProfileImage,
+		MoveinDate:               a.MoveinDate,
+		PreferredTerm:            a.PreferredTerm,
+		RhAddress:                types.PNStr(a.RhAddress),
+		RhCity:                   types.PNStr(a.RhCity),
+		RhDistrict:               types.PNStr(a.RhDistrict),
+		RhWard:                   types.PNStr(a.RhWard),
+		RhRentalDuration:         types.PNInt32(a.RhRentalDuration),
+		RhMonthlyPayment:         types.PNFloat64(a.RhMonthlyPayment),
+		RhReasonForLeaving:       types.PNStr(a.RhReasonForLeaving),
+		EmploymentStatus:         a.EmploymentStatus,
+		EmploymentCompanyName:    types.PNStr(a.EmploymentCompanyName),
+		EmploymentPosition:       types.PNStr(a.EmploymentPosition),
+		EmploymentMonthlyIncome:  types.PNFloat64(a.EmploymentMonthlyIncome),
+		EmploymentComment:        types.PNStr(a.EmploymentComment),
+		EmploymentProofsOfIncome: a.EmploymentProofsOfIncome,
+		IdentityType:             a.IdentityType,
+		IdentityNumber:           a.IdentityNumber,
+		IdentityIssuedDate:       a.IdentityIssuedDate,
+		IdentityIssuedBy:         a.IdentityIssuedBy,
+		CreatedAt:                a.CreatedAt,
+		UpdatedAt:                a.UpdatedAt,
 	}
-	if a.RhAddress.Valid {
-		am.RhAddress = &a.RhAddress.String
-	}
-	if a.RhCity.Valid {
-		am.RhCity = &a.RhCity.String
-	}
-	if a.RhDistrict.Valid {
-		am.RhDistrict = &a.RhDistrict.String
-	}
-	if a.RhWard.Valid {
-		am.RhWard = &a.RhWard.String
-	}
-	if a.RhRentalDuration.Valid {
-		am.RhRentalDuration = &a.RhRentalDuration.Int32
-	}
-	if a.RhMonthlyPayment.Valid {
-		am.RhMonthlyPayment = &a.RhMonthlyPayment.Float64
-	}
-	if a.RhReasonForLeaving.Valid {
-		am.RhReasonForLeaving = &a.RhReasonForLeaving.String
-	}
-	if a.EmploymentCompanyName.Valid {
-		am.EmploymentCompanyName = &a.EmploymentCompanyName.String
-	}
-	if a.EmploymentPosition.Valid {
-		am.EmploymentPosition = &a.EmploymentPosition.String
-	}
-	if a.EmploymentMonthlyIncome.Valid {
-		am.EmploymentMonthlyIncome = &a.EmploymentMonthlyIncome.Float64
-	}
-	if a.EmploymentComment.Valid {
-		am.EmploymentComment = &a.EmploymentComment.String
-	}
-	return am
 }

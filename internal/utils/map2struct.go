@@ -16,7 +16,7 @@ func Map2JSONStruct(s interface{}, d interface{}) error {
 		return err
 	}
 
-	if errs := ValidateStruct(d); len(errs) > 0 && errs[0].Error {
+	if errs := ValidateStruct(nil, d); len(errs) > 0 && errs[0].Error {
 		return fmt.Errorf("%s", GetValidationError(errs))
 	}
 

@@ -1,6 +1,12 @@
 package dto
 
-import "time"
+import (
+	"time"
+
+	"github.com/google/uuid"
+	unitDTO "github.com/user2410/rrms-backend/internal/domain/unit/dto"
+	"github.com/user2410/rrms-backend/internal/interfaces/rest/requests"
+)
 
 type SearchPropertyQuery struct {
 	PTypes          []string   `query:"ptypes"`
@@ -25,4 +31,19 @@ type SearchPropertyQuery struct {
 	PMaxCreatedAt   *time.Time `query:"pmaxCreatedAt"`
 	PMinUpdatedAt   *time.Time `query:"pminUpdatedAt"`
 	PMaxUpdatedAt   *time.Time `query:"pmaxUpdatedAt"`
+}
+
+type SearchPropertyCombinationQuery struct {
+	requests.SearchSortPaginationQuery
+	SearchPropertyQuery
+	unitDTO.SearchUnitQuery
+}
+
+type SearchPropertyCombinationItem struct {
+	LId uuid.UUID `json:"lid"`
+}
+
+type SearchPropertyCombinationResponse struct {
+	Count uint32                          `json:"count"`
+	Items []SearchPropertyCombinationItem `json:"items"`
 }

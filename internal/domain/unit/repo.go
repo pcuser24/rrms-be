@@ -3,44 +3,45 @@ package unit
 import (
 	"context"
 	"fmt"
-	"strings"
+	"log"
+	"slices"
 
 	"github.com/google/uuid"
 	"github.com/huandu/go-sqlbuilder"
 	"github.com/user2410/rrms-backend/internal/domain/unit/dto"
 	"github.com/user2410/rrms-backend/internal/domain/unit/model"
-	db "github.com/user2410/rrms-backend/internal/infrastructure/database"
+	"github.com/user2410/rrms-backend/internal/infrastructure/database"
+	sqlbuilders "github.com/user2410/rrms-backend/internal/infrastructure/database/sql_builders"
+	"github.com/user2410/rrms-backend/internal/utils"
 	"github.com/user2410/rrms-backend/pkg/utils/types"
 )
 
 type Repo interface {
 	CreateUnit(ctx context.Context, data *dto.CreateUnit) (*model.UnitModel, error)
 	GetUnitById(ctx context.Context, id uuid.UUID) (*model.UnitModel, error)
+	GetUnitsByIds(ctx context.Context, ids []string, fields []string) ([]model.UnitModel, error)
 	GetUnitsOfProperty(ctx context.Context, id uuid.UUID) ([]model.UnitModel, error)
+	SearchUnitCombination(ctx context.Context, query *dto.SearchUnitCombinationQuery) (*dto.SearchUnitCombinationResponse, error)
 	CheckUnitManageability(ctx context.Context, uid uuid.UUID, userId uuid.UUID) (bool, error)
 	CheckUnitOfProperty(ctx context.Context, pid, uid uuid.UUID) (bool, error)
 	IsPublic(ctx context.Context, id uuid.UUID) (bool, error)
 	UpdateUnit(ctx context.Context, data *dto.UpdateUnit) error
 	DeleteUnit(ctx context.Context, id uuid.UUID) error
-	AddUnitAmenities(ctx context.Context, uid uuid.UUID, items []dto.CreateUnitAmenity) ([]model.UnitAmenityModel, error)
-	AddUnitMedia(ctx context.Context, uid uuid.UUID, items []dto.CreateUnitMedia) ([]model.UnitMediaModel, error)
 	GetAllAmenities(ctx context.Context) ([]model.UAmenity, error)
-	DeleteUnitAmenities(ctx context.Context, uid uuid.UUID, ids []int64) error
-	DeleteUnitMedia(ctx context.Context, uid uuid.UUID, ids []int64) error
 }
 
 type repo struct {
-	dao db.DAO
+	dao database.DAO
 }
 
-func NewRepo(d db.DAO) Repo {
+func NewRepo(d database.DAO) Repo {
 	return &repo{
 		dao: d,
 	}
 }
 
 func (r *repo) CreateUnit(ctx context.Context, data *dto.CreateUnit) (*model.UnitModel, error) {
-	res, err := r.dao.QueryTx(ctx, func(d db.DAO) (interface{}, error) {
+	res, err := r.dao.QueryTx(ctx, func(d database.DAO) (interface{}, error) {
 		var um *model.UnitModel
 		res, err := d.CreateUnit(ctx, *data.ToCreateUnitDB())
 		if err != nil {
@@ -48,14 +49,29 @@ func (r *repo) CreateUnit(ctx context.Context, data *dto.CreateUnit) (*model.Uni
 		}
 		um = model.ToUnitModel(&res)
 
-		um.Amenities, err = r.AddUnitAmenities(ctx, res.ID, data.Amenities)
-		if err != nil {
-			return nil, err
+		for _, a := range data.Amenities {
+			amenity, err := r.dao.CreateUnitAmenity(ctx, database.CreateUnitAmenityParams{
+				UnitID:      res.ID,
+				AmenityID:   a.AmenityID,
+				Description: types.StrN(a.Description),
+			})
+			if err != nil {
+				return nil, err
+			}
+			um.Amenities = append(um.Amenities, *model.ToUnitAmenityModel(&amenity))
 		}
 
-		um.Media, err = r.AddUnitMedia(ctx, res.ID, data.Media)
-		if err != nil {
-			return nil, err
+		for _, m := range data.Media {
+			media, err := r.dao.CreateUnitMedia(ctx, database.CreateUnitMediaParams{
+				UnitID:      res.ID,
+				Url:         m.Url,
+				Type:        m.Type,
+				Description: types.StrN(m.Description),
+			})
+			if err != nil {
+				return nil, err
+			}
+			um.Media = append(um.Media, *model.ToUnitMediaModel(&media))
 		}
 
 		return um, nil
@@ -123,55 +139,36 @@ func (r *repo) GetUnitsOfProperty(ctx context.Context, id uuid.UUID) ([]model.Un
 	return res, nil
 }
 
-func (r *repo) UpdateUnit(ctx context.Context, data *dto.UpdateUnit) error {
-	return r.dao.UpdateUnit(ctx, *data.ToUpdateUnitDB())
-}
+func (r *repo) SearchUnitCombination(ctx context.Context, query *dto.SearchUnitCombinationQuery) (*dto.SearchUnitCombinationResponse, error) {
+	sqlUnit, argsUnit := sqlbuilders.SearchUnitBuilder(
+		[]string{"units.id", "count(*) OVER() AS full_count"},
+		&query.SearchUnitQuery,
+		"", "",
+	)
 
-func (r *repo) DeleteUnit(ctx context.Context, id uuid.UUID) error {
-	return r.dao.DeleteUnit(ctx, id)
-}
-
-func (r *repo) AddUnitAmenities(ctx context.Context, uid uuid.UUID, items []dto.CreateUnitAmenity) ([]model.UnitAmenityModel, error) {
-	var res []model.UnitAmenityModel
-	if len(items) == 0 {
-		return res, nil
-	}
-
-	ib := sqlbuilder.PostgreSQL.NewInsertBuilder()
-	ib.InsertInto("unit_amenities")
-	ib.Cols("unit_id", "amenity_id", "description")
-	for _, i := range items {
-		ib.Values(uid, i.AmenityID, types.StrN(i.Description))
-	}
-	ib.SQL("RETURNING *")
-	sql, args := ib.Build()
-
-	rows, err := r.dao.QueryContext(ctx, sql, args...)
+	sql, args := sqlbuilder.Build(sqlUnit, argsUnit...).Build()
+	sqSql := utils.SequelizePlaceholders(sql)
+	sqSql += fmt.Sprintf(" ORDER BY %v %v", utils.PtrDerefence[string](query.SortBy, "created_at"), utils.PtrDerefence[string](query.Order, "desc"))
+	sqSql += fmt.Sprintf(" LIMIT %v", utils.PtrDerefence[int32](query.Limit, 1000))
+	sqSql += fmt.Sprintf(" OFFSET %v", utils.PtrDerefence[int32](query.Offset, 0))
+	rows, err := r.dao.QueryContext(context.Background(), sqSql, args...)
 	if err != nil {
 		return nil, err
 	}
-	res, err = func() ([]model.UnitAmenityModel, error) {
+
+	res, err := func() (*dto.SearchUnitCombinationResponse, error) {
 		defer rows.Close()
-		var items []model.UnitAmenityModel
+		var r dto.SearchUnitCombinationResponse
 		for rows.Next() {
-			var i db.UnitAmenity
-			if err := rows.Scan(
-				&i.UnitID,
-				&i.AmenityID,
-				&i.Description,
-			); err != nil {
+			var i dto.SearchUnitCombinationItem
+			if err := rows.Scan(&i.UId, &r.Count); err != nil {
 				return nil, err
 			}
-			items = append(items, *model.ToUnitAmenityModel(&i))
+			r.Items = append(r.Items, i)
 		}
-		if err := rows.Close(); err != nil {
-			return nil, err
-		}
-		if err := rows.Err(); err != nil {
-			return nil, err
-		}
-		return items, nil
+		return &r, nil
 	}()
+
 	if err != nil {
 		return nil, err
 	}
@@ -179,81 +176,12 @@ func (r *repo) AddUnitAmenities(ctx context.Context, uid uuid.UUID, items []dto.
 	return res, nil
 }
 
-func (r *repo) AddUnitMedia(ctx context.Context, uid uuid.UUID, items []dto.CreateUnitMedia) ([]model.UnitMediaModel, error) {
-	var res []model.UnitMediaModel
-	if len(items) == 0 {
-		return res, nil
-	}
-
-	ib := sqlbuilder.PostgreSQL.NewInsertBuilder()
-	ib.InsertInto("unit_media")
-	ib.Cols("unit_id", "url", "type", "description")
-	for _, media := range items {
-		ib.Values(uid, media.Url, media.Type, types.StrN(media.Description))
-	}
-	ib.SQL("RETURNING *")
-	sql, args := ib.Build()
-	rows, err := r.dao.QueryContext(ctx, sql, args...)
-	if err != nil {
-		return nil, err
-	}
-	res, err = func() ([]model.UnitMediaModel, error) {
-		defer rows.Close()
-		var items []model.UnitMediaModel
-		for rows.Next() {
-			var i db.UnitMedium
-			if err := rows.Scan(
-				&i.ID,
-				&i.UnitID,
-				&i.Url,
-				&i.Type,
-				&i.Description,
-			); err != nil {
-				return nil, err
-			}
-			items = append(items, *model.ToUnitMediaModel(&i))
-		}
-		if err := rows.Close(); err != nil {
-			return nil, err
-		}
-		if err := rows.Err(); err != nil {
-			return nil, err
-		}
-		return items, nil
-	}()
-	if err != nil {
-		return nil, err
-	}
-
-	return res, err
+func (r *repo) UpdateUnit(ctx context.Context, data *dto.UpdateUnit) error {
+	return r.dao.UpdateUnit(ctx, *data.ToUpdateUnitDB())
 }
 
-func (r *repo) bulkDelete(ctx context.Context, uid uuid.UUID, ids []int64, table_name, info_id_field string) error {
-	if len(ids) == 0 {
-		return nil
-	}
-
-	ids_i := make([]interface{}, len(ids))
-	for i, v := range ids {
-		ids_i[i] = v
-	}
-	ib := sqlbuilder.PostgreSQL.NewDeleteBuilder()
-	ib.DeleteFrom(table_name)
-	ib.Where(
-		ib.Equal("unit_id", uid),
-		ib.In(info_id_field, ids_i...),
-	)
-	sql, args := ib.Build()
-	_, err := r.dao.ExecContext(ctx, sql, args...)
-	return err
-}
-
-func (r *repo) DeleteUnitAmenities(ctx context.Context, uid uuid.UUID, ids []int64) error {
-	return r.bulkDelete(ctx, uid, ids, "unit_amenities", "amenity_id")
-}
-
-func (r *repo) DeleteUnitMedia(ctx context.Context, uid uuid.UUID, ids []int64) error {
-	return r.bulkDelete(ctx, uid, ids, "unit_media", "id")
+func (r *repo) DeleteUnit(ctx context.Context, id uuid.UUID) error {
+	return r.dao.DeleteUnit(ctx, id)
 }
 
 func (r *repo) GetAllAmenities(ctx context.Context) ([]model.UAmenity, error) {
@@ -269,7 +197,7 @@ func (r *repo) GetAllAmenities(ctx context.Context) ([]model.UAmenity, error) {
 }
 
 func (r *repo) CheckUnitManageability(ctx context.Context, id uuid.UUID, userId uuid.UUID) (bool, error) {
-	res, err := r.dao.CheckUnitManageability(ctx, db.CheckUnitManageabilityParams{
+	res, err := r.dao.CheckUnitManageability(ctx, database.CheckUnitManageabilityParams{
 		ID:        id,
 		ManagerID: userId,
 	})
@@ -280,7 +208,7 @@ func (r *repo) CheckUnitManageability(ctx context.Context, id uuid.UUID, userId 
 }
 
 func (r *repo) CheckUnitOfProperty(ctx context.Context, pid, uid uuid.UUID) (bool, error) {
-	res, err := r.dao.CheckUnitOfProperty(ctx, db.CheckUnitOfPropertyParams{
+	res, err := r.dao.CheckUnitOfProperty(ctx, database.CheckUnitOfPropertyParams{
 		ID:         uid,
 		PropertyID: pid,
 	})
@@ -288,80 +216,106 @@ func (r *repo) CheckUnitOfProperty(ctx context.Context, pid, uid uuid.UUID) (boo
 		return false, err
 	}
 	return res > 0, nil
-
 }
 
 func (r *repo) IsPublic(ctx context.Context, id uuid.UUID) (bool, error) {
 	return r.dao.IsUnitPublic(ctx, id)
 }
 
-func SearchUnitBuilder(
-	searchFields []string, query *dto.SearchUnitQuery,
-	connectID, connectProperty string,
-) (string, []interface{}) {
-	var searchQuery string = "SELECT " + strings.Join(searchFields, ", ") + " FROM units WHERE "
-	var searchQueries []string
-	var args []interface{}
+func (r *repo) GetUnitsByIds(ctx context.Context, ids []string, fields []string) ([]model.UnitModel, error) {
+	var nonFKFields []string = []string{"id"}
+	var fkFields []string
+	for _, f := range fields {
+		if slices.Contains([]string{"amenities", "media"}, f) {
+			fkFields = append(fkFields, f)
+		} else {
+			nonFKFields = append(nonFKFields, f)
+		}
+	}
+	// log.Println(nonFKFields, fkFields)
 
-	if query.UName != nil {
-		searchQueries = append(searchQueries, "units.name ILIKE $?")
-		args = append(args, "%"+(*query.UName)+"%")
+	// get non fk fields
+	ib := sqlbuilder.PostgreSQL.NewSelectBuilder()
+	ib.Select(nonFKFields...)
+	ib.From("units")
+	ib.Where(ib.In("id::text", sqlbuilder.List(ids)))
+	query, args := ib.Build()
+	log.Println(query, args)
+	rows, err := r.dao.QueryContext(ctx, query, args...)
+	if err != nil {
+		return nil, err
 	}
-	if query.UPropertyID != nil {
-		searchQueries = append(searchQueries, "units.property_id = $?")
-		args = append(args, *query.UPropertyID)
+	defer rows.Close()
+	var items []model.UnitModel
+	var i database.Unit
+	var scanningFields []interface{} = []interface{}{&i.ID}
+	for _, f := range nonFKFields {
+		switch f {
+		case "property_id":
+			scanningFields = append(scanningFields, &i.PropertyID)
+		case "name":
+			scanningFields = append(scanningFields, &i.Name)
+		case "area":
+			scanningFields = append(scanningFields, &i.Area)
+		case "floor":
+			scanningFields = append(scanningFields, &i.Floor)
+		case "price":
+			scanningFields = append(scanningFields, &i.Price)
+		case "number_of_living_rooms":
+			scanningFields = append(scanningFields, &i.NumberOfLivingRooms)
+		case "number_of_bedrooms":
+			scanningFields = append(scanningFields, &i.NumberOfBedrooms)
+		case "number_of_bathrooms":
+			scanningFields = append(scanningFields, &i.NumberOfBathrooms)
+		case "number_of_toilets":
+			scanningFields = append(scanningFields, &i.NumberOfToilets)
+		case "number_of_balconies":
+			scanningFields = append(scanningFields, &i.NumberOfBalconies)
+		case "number_of_kitchens":
+			scanningFields = append(scanningFields, &i.NumberOfKitchens)
+		case "type":
+			scanningFields = append(scanningFields, &i.Type)
+		case "created_at":
+			scanningFields = append(scanningFields, &i.CreatedAt)
+		case "updated_at":
+			scanningFields = append(scanningFields, &i.UpdatedAt)
+		}
 	}
-	if query.UMinArea != nil {
-		searchQueries = append(searchQueries, "units.area >= $?")
-		args = append(args, *query.UMinArea)
+	for rows.Next() {
+		if err := rows.Scan(scanningFields...); err != nil {
+			return nil, err
+		}
+		items = append(items, *model.ToUnitModel(&i))
 	}
-	if query.UMaxArea != nil {
-		searchQueries = append(searchQueries, "units.area <= $?")
-		args = append(args, *query.UMaxArea)
+	if err := rows.Close(); err != nil {
+		return nil, err
 	}
-	if query.UFloor != nil {
-		searchQueries = append(searchQueries, "units.floor = $?")
-		args = append(args, *query.UFloor)
-	}
-	if query.UNumberOfLivingRooms != nil {
-		searchQueries = append(searchQueries, "units.number_of_living_rooms = $?")
-		args = append(args, *query.UNumberOfLivingRooms)
-	}
-	if query.UNumberOfBedrooms != nil {
-		searchQueries = append(searchQueries, "units.number_of_bedrooms = $?")
-		args = append(args, *query.UNumberOfBedrooms)
-	}
-	if query.UNumberOfBathrooms != nil {
-		searchQueries = append(searchQueries, "units.number_of_bathrooms = $?")
-		args = append(args, *query.UNumberOfBathrooms)
-	}
-	if query.UNumberOfToilets != nil {
-		searchQueries = append(searchQueries, "units.number_of_toilets = $?")
-		args = append(args, *query.UNumberOfToilets)
-	}
-	if query.UNumberOfKitchens != nil {
-		searchQueries = append(searchQueries, "units.number_of_kitchens = $?")
-		args = append(args, *query.UNumberOfKitchens)
-	}
-	if query.UNumberOfBalconies != nil {
-		searchQueries = append(searchQueries, "units.number_of_balconies = $?")
-		args = append(args, *query.UNumberOfBalconies)
-	}
-	if len(query.UAmenities) > 0 {
-		searchQueries = append(searchQueries, "unit_amenities.amenity_id IN ($?)")
-		args = append(args, sqlbuilder.List(query.UAmenities))
+	if err := rows.Err(); err != nil {
+		return nil, err
 	}
 
-	if len(searchQueries) == 0 {
-		return "", []interface{}{}
-	}
-	if len(connectID) > 0 {
-		searchQueries = append(searchQueries, fmt.Sprintf("units.id = %v", connectID))
-	}
-	if len(connectProperty) > 0 {
-		searchQueries = append(searchQueries, fmt.Sprintf("units.property_id = %v", connectProperty))
+	// get fk fields
+	for i := 0; i < len(items); i++ {
+		u := &items[i]
+		if slices.Contains(fkFields, "amenities") {
+			ua, err := r.dao.GetUnitAmenities(ctx, u.ID)
+			if err != nil {
+				return nil, err
+			}
+			for _, a := range ua {
+				u.Amenities = append(u.Amenities, *model.ToUnitAmenityModel(&a))
+			}
+		}
+		if slices.Contains(fkFields, "media") {
+			um, err := r.dao.GetUnitMedia(ctx, u.ID)
+			if err != nil {
+				return nil, err
+			}
+			for _, m := range um {
+				u.Media = append(u.Media, *model.ToUnitMediaModel(&m))
+			}
+		}
 	}
 
-	searchQuery += strings.Join(searchQueries, " AND \n")
-	return searchQuery, args
+	return items, nil
 }

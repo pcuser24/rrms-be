@@ -42,7 +42,7 @@ INSERT INTO unit_media (
   sqlc.arg(type)
 ) RETURNING *;
 
--- name: InsertUnitAmenity :one
+-- name: CreateUnitAmenity :one
 INSERT INTO unit_amenities (
   unit_id,
   amenity_id,
@@ -50,6 +50,19 @@ INSERT INTO unit_amenities (
 ) VALUES (
   sqlc.arg(unit_id),
   sqlc.arg(amenity_id),
+  sqlc.narg(description)
+) RETURNING *;
+
+-- name: CreateUnitMedia :one
+INSERT INTO unit_media (
+  unit_id,
+  url,
+  type,
+  description
+) VALUES (
+  sqlc.arg(unit_id),
+  sqlc.arg(url),
+  sqlc.arg(type),
   sqlc.narg(description)
 ) RETURNING *;
 

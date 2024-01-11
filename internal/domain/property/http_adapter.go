@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgconn"
@@ -52,7 +53,7 @@ func (a *adapter) createProperty() fiber.Handler {
 		if err := ctx.BodyParser(&payload); err != nil {
 			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": err.Error()})
 		}
-		if errs := utils.ValidateStruct(payload); len(errs) > 0 && errs[0].Error {
+		if errs := utils.ValidateStruct(nil, payload); len(errs) > 0 && errs[0].Error {
 			ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": utils.GetValidationError(errs)})
 			return nil
 		}
@@ -129,9 +130,11 @@ func (a *adapter) getMyProperties() fiber.Handler {
 		if err := ctx.QueryParser(&query); err != nil {
 			return ctx.SendStatus(fiber.StatusBadRequest)
 		}
-		// if errs := utils.ValidateStruct(query); len(errs) > 0 && errs[0].Error {
-		// 	return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": utils.GetValidationError(errs)})
-		// }
+		validator := validator.New()
+		validator.RegisterValidation("propertyFields", dto.ValidQuery)
+		if errs := utils.ValidateStruct(validator, query); len(errs) > 0 && errs[0].Error {
+			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": utils.GetValidationError(errs)})
+		}
 
 		tokenPayload := ctx.Locals(auth.AuthorizationPayloadKey).(*token.Payload)
 		res, err := a.service.GetPropertiesOfUser(tokenPayload.UserID, query.Fields)
@@ -157,7 +160,7 @@ func (a *adapter) updateProperty() fiber.Handler {
 			return ctx.SendStatus(fiber.StatusBadRequest)
 		}
 		payload.ID = puid
-		if errs := utils.ValidateStruct(payload); len(errs) > 0 && errs[0].Error {
+		if errs := utils.ValidateStruct(nil, payload); len(errs) > 0 && errs[0].Error {
 			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": utils.GetValidationError(errs)})
 		}
 

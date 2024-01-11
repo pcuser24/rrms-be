@@ -41,12 +41,7 @@ type SearchListingCombinationQuery struct {
 }
 
 type SearchListingCombinationItem struct {
-	LId         uuid.UUID `json:"lid"`
-	LPropertyID uuid.UUID `json:"lpropertyId"`
-	LTitle      string    `json:"ltitle"`
-	LPrice      int64     `json:"lprice"`
-	LPriority   int32     `json:"lpriority"`
-	LPostAt     time.Time `json:"lpostAt"`
+	LId uuid.UUID `json:"lid"`
 }
 
 type SearchListingCombinationResponse struct {
