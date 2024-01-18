@@ -35,6 +35,19 @@ CREATE TABLE IF NOT EXISTS "u_amenities" (
 );
 COMMENT ON TABLE "u_amenities" IS 'Air conditioner, Fridge, Washing machine, ...';
 ALTER TABLE "u_amenities" ADD CONSTRAINT "u_amenities_amenity_unique" UNIQUE ("amenity");
+INSERT INTO u_amenities (amenity) VALUES
+('u-amenity_furniture'),
+('u-amenity_fridge'),
+('u-amenity_air-cond'),
+('u-amenity_washing-machine'),
+('u-amenity_dishwasher'),
+('u-amenity_water-heater'),
+('u-amenity_tv'),
+('u-amenity_internet'),
+('u-amenity_wardrobe'),
+('u-amenity_entresol'),
+('u-amenity_bed'),
+('u-amenity_other');
 
 CREATE TABLE IF NOT EXISTS "unit_amenities" (
   "unit_id" UUID NOT NULL,

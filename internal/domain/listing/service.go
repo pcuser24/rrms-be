@@ -7,13 +7,15 @@ import (
 	"github.com/user2410/rrms-backend/internal/domain/listing/dto"
 	"github.com/user2410/rrms-backend/internal/domain/listing/model"
 	"github.com/user2410/rrms-backend/internal/interfaces/rest/requests"
-	"github.com/user2410/rrms-backend/pkg/utils/types"
+	"github.com/user2410/rrms-backend/internal/utils"
+	"github.com/user2410/rrms-backend/internal/utils/types"
 )
 
 type Service interface {
 	CreateListing(data *dto.CreateListing) (*model.ListingModel, error)
 	SearchListingCombination(data *dto.SearchListingCombinationQuery) (*dto.SearchListingCombinationResponse, error)
 	GetListingByID(id uuid.UUID) (*model.ListingModel, error)
+	GetListingsByIds(ids []uuid.UUID, fields []string) ([]model.ListingModel, error)
 	GetListingsOfUser(userId uuid.UUID, fields []string) ([]model.ListingModel, error)
 	UpdateListing(data *dto.UpdateListing) error
 	DeleteListing(id uuid.UUID) error
@@ -36,11 +38,23 @@ func (s *service) CreateListing(data *dto.CreateListing) (*model.ListingModel, e
 }
 
 func (s *service) SearchListingCombination(data *dto.SearchListingCombinationQuery) (*dto.SearchListingCombinationResponse, error) {
+	data.SortBy = types.Ptr(utils.PtrDerefence[string](data.SortBy, "created_at"))
+	data.Order = types.Ptr(utils.PtrDerefence[string](data.Order, "desc"))
+	data.Limit = types.Ptr(utils.PtrDerefence[int32](data.Limit, 1000))
+	data.Offset = types.Ptr(utils.PtrDerefence[int32](data.Offset, 0))
 	return s.repo.SearchListingCombination(context.Background(), data)
 }
 
 func (s *service) GetListingByID(id uuid.UUID) (*model.ListingModel, error) {
 	return s.repo.GetListingByID(context.Background(), id)
+}
+
+func (s *service) GetListingsByIds(ids []uuid.UUID, fields []string) ([]model.ListingModel, error) {
+	idsStr := make([]string, len(ids))
+	for i, id := range ids {
+		idsStr[i] = id.String()
+	}
+	return s.repo.GetListingsByIds(context.Background(), idsStr, fields)
 }
 
 func (s *service) UpdateListing(data *dto.UpdateListing) error {
@@ -78,6 +92,6 @@ func (s *service) GetListingsOfUser(userId uuid.UUID, fields []string) ([]model.
 		lids = append(lids, listing.LId.String())
 	}
 
-	return s.repo.GetListings(context.Background(), lids, fields)
+	return s.repo.GetListingsByIds(context.Background(), lids, fields)
 
 }

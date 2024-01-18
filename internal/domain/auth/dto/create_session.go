@@ -1,12 +1,11 @@
 package dto
 
 import (
-	"database/sql"
 	"time"
 
 	"github.com/google/uuid"
 	"github.com/user2410/rrms-backend/internal/infrastructure/database"
-	"github.com/user2410/rrms-backend/pkg/utils/types"
+	"github.com/user2410/rrms-backend/internal/utils/types"
 )
 
 type CreateSessionDto struct {
@@ -20,19 +19,13 @@ type CreateSessionDto struct {
 }
 
 func (d *CreateSessionDto) ToCreateSessionParams() *database.CreateSessionParams {
-	s := &database.CreateSessionParams{
+	return &database.CreateSessionParams{
 		ID:           d.ID,
 		Userid:       d.UserId,
 		Sessiontoken: d.SessionToken,
 		Expires:      d.Expires,
 		ClientIp:     types.StrN(&d.ClientIp),
 		CreatedAt:    d.CreatedAt,
+		UserAgent:    types.StrN(types.Ptr[string](string(d.UserAgent))),
 	}
-
-	s.UserAgent = sql.NullString{
-		String: string(d.UserAgent),
-		Valid:  true,
-	}
-
-	return s
 }

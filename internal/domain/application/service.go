@@ -2,10 +2,13 @@ package application
 
 import (
 	"context"
+	"fmt"
 
+	"github.com/gofiber/fiber/v2/log"
 	"github.com/google/uuid"
 	"github.com/user2410/rrms-backend/internal/domain/application/dto"
 	"github.com/user2410/rrms-backend/internal/domain/application/model"
+	"github.com/user2410/rrms-backend/internal/infrastructure/database"
 )
 
 type Service interface {
@@ -13,21 +16,41 @@ type Service interface {
 	GetApplicationById(id int64) (*model.ApplicationModel, error)
 	GetApplicationsByUserId(uid uuid.UUID) ([]model.ApplicationModel, error)
 	GetApplicationsToUser(uid uuid.UUID) ([]model.ApplicationModel, error)
+	UpdateApplicationStatus(aid int64, status database.APPLICATIONSTATUS) error
 	DeleteApplication(id int64) error
 }
 
 type service struct {
-	repo Repo
+	repo            Repo
+	taskDistributor TaskDistributor
 }
 
-func NewService(repo Repo) Service {
+func NewService(
+	repo Repo,
+	taskDistributor TaskDistributor,
+) Service {
 	return &service{
-		repo: repo,
+		repo:            repo,
+		taskDistributor: taskDistributor,
 	}
 }
 
 func (s *service) CreateApplication(data *dto.CreateApplicationDto) (*model.ApplicationModel, error) {
-	return s.repo.CreateApplication(context.Background(), data)
+	a, err := s.repo.CreateApplication(context.Background(), data)
+	if err != nil {
+		return nil, err
+	}
+	if err = s.taskDistributor.DistributeTaskSendEmailOnNewApplication(
+		context.Background(),
+		&dto.TaskSendEmailOnNewApplicationPayload{
+			Username:      a.FullName,
+			ApplicationId: a.ID,
+			ListingId:     a.ListingID,
+		},
+	); err != nil {
+		log.Errorf("failed to distribute DistributeTaskSendNewApplicationEmail task: %v", err)
+	}
+	return a, nil
 }
 
 func (s *service) GetApplicationById(id int64) (*model.ApplicationModel, error) {
@@ -36,6 +59,32 @@ func (s *service) GetApplicationById(id int64) (*model.ApplicationModel, error) 
 
 func (s *service) DeleteApplication(id int64) error {
 	return s.repo.DeleteApplication(context.Background(), id)
+}
+
+var ErrInvalidStatusTransition = fmt.Errorf("invalid status transition")
+
+func (s *service) UpdateApplicationStatus(aid int64, status database.APPLICATIONSTATUS) error {
+	a, err := s.repo.GetApplicationById(context.Background(), aid)
+	if err != nil {
+		return err
+	}
+
+	switch status {
+	case database.APPLICATIONSTATUSCONDITIONALLYAPPROVED:
+		if a.Status != database.APPLICATIONSTATUSPENDING {
+			return ErrInvalidStatusTransition
+		}
+	case database.APPLICATIONSTATUSAPPROVED:
+		if a.Status != database.APPLICATIONSTATUSPENDING && status != database.APPLICATIONSTATUSCONDITIONALLYAPPROVED {
+			return ErrInvalidStatusTransition
+		}
+	case database.APPLICATIONSTATUSREJECTED:
+		if status != database.APPLICATIONSTATUSPENDING && status != database.APPLICATIONSTATUSCONDITIONALLYAPPROVED {
+			return ErrInvalidStatusTransition
+		}
+	}
+
+	return s.repo.UpdateApplicationStatus(context.Background(), aid, status)
 }
 
 func (s *service) GetApplicationsByUserId(uid uuid.UUID) ([]model.ApplicationModel, error) {

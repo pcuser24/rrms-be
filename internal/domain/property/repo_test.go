@@ -9,7 +9,7 @@ import (
 	"github.com/user2410/rrms-backend/internal/domain/property/dto"
 	"github.com/user2410/rrms-backend/internal/infrastructure/database"
 	sqlbuilders "github.com/user2410/rrms-backend/internal/infrastructure/database/sql_builders"
-	"github.com/user2410/rrms-backend/pkg/utils/types"
+	"github.com/user2410/rrms-backend/internal/utils/types"
 )
 
 func TestGetProperties(t *testing.T) {
@@ -20,7 +20,7 @@ func TestGetProperties(t *testing.T) {
 	defer dao.Close()
 
 	repo := NewRepo(dao)
-	res, err := repo.GetProperties(
+	res, err := repo.GetPropertiesByIds(
 		context.Background(),
 		[]string{
 			("8d8ec157-a6bc-4793-9a27-989386ef7d07"),

@@ -5,6 +5,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/user2410/rrms-backend/internal/infrastructure/database"
+	"github.com/user2410/rrms-backend/internal/utils/types"
 )
 
 type PropertyTagModel = database.PropertyTag
@@ -20,8 +21,8 @@ type PropertyModel struct {
 	YearBuilt      *int32    `json:"yearBuilt"`
 	// n,s,w,e,nw,ne,sw,se
 	Orientation   *string                `json:"orientation"`
-	EntranceWidth *float64               `json:"entranceWidth"`
-	Facade        *float64               `json:"facade"`
+	EntranceWidth *float32               `json:"entranceWidth"`
+	Facade        *float32               `json:"facade"`
 	FullAddress   string                 `json:"fullAddress"`
 	District      string                 `json:"district"`
 	City          string                 `json:"city"`
@@ -40,63 +41,28 @@ type PropertyModel struct {
 }
 
 func ToPropertyModel(p *database.Property) *PropertyModel {
-	m := &PropertyModel{
-		ID:          p.ID,
-		CreatorID:   p.CreatorID,
-		Name:        p.Name,
-		Area:        p.Area,
-		FullAddress: p.FullAddress,
-		District:    p.District,
-		City:        p.City,
-		PlaceUrl:    p.PlaceUrl,
-		Type:        p.Type,
-		CreatedAt:   p.CreatedAt,
-		UpdatedAt:   p.UpdatedAt,
+	return &PropertyModel{
+		ID:             p.ID,
+		CreatorID:      p.CreatorID,
+		Name:           p.Name,
+		Building:       types.PNStr(p.Building),
+		Project:        types.PNStr(p.Project),
+		NumberOfFloors: types.PNInt32(p.NumberOfFloors),
+		YearBuilt:      types.PNInt32(p.YearBuilt),
+		Orientation:    types.PNStr(p.Orientation),
+		EntranceWidth:  types.PNFloat32(p.EntranceWidth),
+		Facade:         types.PNFloat32(p.Facade),
+		Area:           p.Area,
+		FullAddress:    p.FullAddress,
+		District:       p.District,
+		City:           p.City,
+		Ward:           types.PNStr(p.Ward),
+		Lat:            types.PNFloat64(p.Lat),
+		Lng:            types.PNFloat64(p.Lng),
+		PlaceUrl:       p.PlaceUrl,
+		Type:           p.Type,
+		CreatedAt:      p.CreatedAt,
+		UpdatedAt:      p.UpdatedAt,
+		Description:    types.PNStr(p.Description),
 	}
-
-	if p.Building.Valid {
-		b := p.Building.String
-		m.Building = &b
-	}
-	if p.Project.Valid {
-		p := p.Project.String
-		m.Project = &p
-	}
-	if p.NumberOfFloors.Valid {
-		n := p.NumberOfFloors.Int32
-		m.NumberOfFloors = &n
-	}
-	if p.YearBuilt.Valid {
-		y := p.YearBuilt.Int32
-		m.YearBuilt = &y
-	}
-	if p.Orientation.Valid {
-		o := p.Orientation.String
-		m.Orientation = &o
-	}
-	if p.EntranceWidth.Valid {
-		e := p.EntranceWidth.Float64
-		m.EntranceWidth = &e
-	}
-	if p.Facade.Valid {
-		f := p.Facade.Float64
-		m.Facade = &f
-	}
-	if p.Ward.Valid {
-		w := p.Ward.String
-		m.Ward = &w
-	}
-	if p.Lat.Valid {
-		l := p.Lat.Float64
-		m.Lat = &l
-	}
-	if p.Lng.Valid {
-		l := p.Lng.Float64
-		m.Lng = &l
-	}
-	if p.Description.Valid {
-		d := p.Description.String
-		m.Description = &d
-	}
-	return m
 }

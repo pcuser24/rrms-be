@@ -7,9 +7,9 @@ package database
 
 import (
 	"context"
-	"database/sql"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 const checkUnitManageability = `-- name: CheckUnitManageability :one
@@ -22,7 +22,7 @@ type CheckUnitManageabilityParams struct {
 }
 
 func (q *Queries) CheckUnitManageability(ctx context.Context, arg CheckUnitManageabilityParams) (int64, error) {
-	row := q.db.QueryRowContext(ctx, checkUnitManageability, arg.ID, arg.ManagerID)
+	row := q.db.QueryRow(ctx, checkUnitManageability, arg.ID, arg.ManagerID)
 	var count int64
 	err := row.Scan(&count)
 	return count, err
@@ -38,7 +38,7 @@ type CheckUnitOfPropertyParams struct {
 }
 
 func (q *Queries) CheckUnitOfProperty(ctx context.Context, arg CheckUnitOfPropertyParams) (int64, error) {
-	row := q.db.QueryRowContext(ctx, checkUnitOfProperty, arg.ID, arg.PropertyID)
+	row := q.db.QueryRow(ctx, checkUnitOfProperty, arg.ID, arg.PropertyID)
 	var count int64
 	err := row.Scan(&count)
 	return count, err
@@ -79,22 +79,22 @@ INSERT INTO units (
 `
 
 type CreateUnitParams struct {
-	PropertyID          uuid.UUID      `json:"property_id"`
-	Name                sql.NullString `json:"name"`
-	Area                float32        `json:"area"`
-	Floor               sql.NullInt32  `json:"floor"`
-	Price               sql.NullInt64  `json:"price"`
-	NumberOfLivingRooms sql.NullInt32  `json:"number_of_living_rooms"`
-	NumberOfBedrooms    sql.NullInt32  `json:"number_of_bedrooms"`
-	NumberOfBathrooms   sql.NullInt32  `json:"number_of_bathrooms"`
-	NumberOfToilets     sql.NullInt32  `json:"number_of_toilets"`
-	NumberOfKitchens    sql.NullInt32  `json:"number_of_kitchens"`
-	NumberOfBalconies   sql.NullInt32  `json:"number_of_balconies"`
-	Type                UNITTYPE       `json:"type"`
+	PropertyID          uuid.UUID   `json:"property_id"`
+	Name                pgtype.Text `json:"name"`
+	Area                float32     `json:"area"`
+	Floor               pgtype.Int4 `json:"floor"`
+	Price               pgtype.Int8 `json:"price"`
+	NumberOfLivingRooms pgtype.Int4 `json:"number_of_living_rooms"`
+	NumberOfBedrooms    pgtype.Int4 `json:"number_of_bedrooms"`
+	NumberOfBathrooms   pgtype.Int4 `json:"number_of_bathrooms"`
+	NumberOfToilets     pgtype.Int4 `json:"number_of_toilets"`
+	NumberOfKitchens    pgtype.Int4 `json:"number_of_kitchens"`
+	NumberOfBalconies   pgtype.Int4 `json:"number_of_balconies"`
+	Type                UNITTYPE    `json:"type"`
 }
 
 func (q *Queries) CreateUnit(ctx context.Context, arg CreateUnitParams) (Unit, error) {
-	row := q.db.QueryRowContext(ctx, createUnit,
+	row := q.db.QueryRow(ctx, createUnit,
 		arg.PropertyID,
 		arg.Name,
 		arg.Area,
@@ -142,13 +142,13 @@ INSERT INTO unit_amenities (
 `
 
 type CreateUnitAmenityParams struct {
-	UnitID      uuid.UUID      `json:"unit_id"`
-	AmenityID   int64          `json:"amenity_id"`
-	Description sql.NullString `json:"description"`
+	UnitID      uuid.UUID   `json:"unit_id"`
+	AmenityID   int64       `json:"amenity_id"`
+	Description pgtype.Text `json:"description"`
 }
 
 func (q *Queries) CreateUnitAmenity(ctx context.Context, arg CreateUnitAmenityParams) (UnitAmenity, error) {
-	row := q.db.QueryRowContext(ctx, createUnitAmenity, arg.UnitID, arg.AmenityID, arg.Description)
+	row := q.db.QueryRow(ctx, createUnitAmenity, arg.UnitID, arg.AmenityID, arg.Description)
 	var i UnitAmenity
 	err := row.Scan(&i.UnitID, &i.AmenityID, &i.Description)
 	return i, err
@@ -169,14 +169,14 @@ INSERT INTO unit_media (
 `
 
 type CreateUnitMediaParams struct {
-	UnitID      uuid.UUID      `json:"unit_id"`
-	Url         string         `json:"url"`
-	Type        MEDIATYPE      `json:"type"`
-	Description sql.NullString `json:"description"`
+	UnitID      uuid.UUID   `json:"unit_id"`
+	Url         string      `json:"url"`
+	Type        MEDIATYPE   `json:"type"`
+	Description pgtype.Text `json:"description"`
 }
 
 func (q *Queries) CreateUnitMedia(ctx context.Context, arg CreateUnitMediaParams) (UnitMedium, error) {
-	row := q.db.QueryRowContext(ctx, createUnitMedia,
+	row := q.db.QueryRow(ctx, createUnitMedia,
 		arg.UnitID,
 		arg.Url,
 		arg.Type,
@@ -198,7 +198,7 @@ DELETE FROM units WHERE id = $1
 `
 
 func (q *Queries) DeleteUnit(ctx context.Context, id uuid.UUID) error {
-	_, err := q.db.ExecContext(ctx, deleteUnit, id)
+	_, err := q.db.Exec(ctx, deleteUnit, id)
 	return err
 }
 
@@ -212,7 +212,7 @@ type DeleteUnitAmenityParams struct {
 }
 
 func (q *Queries) DeleteUnitAmenity(ctx context.Context, arg DeleteUnitAmenityParams) error {
-	_, err := q.db.ExecContext(ctx, deleteUnitAmenity, arg.UnitID, arg.AmenityID)
+	_, err := q.db.Exec(ctx, deleteUnitAmenity, arg.UnitID, arg.AmenityID)
 	return err
 }
 
@@ -226,7 +226,7 @@ type DeleteUnitMediaParams struct {
 }
 
 func (q *Queries) DeleteUnitMedia(ctx context.Context, arg DeleteUnitMediaParams) error {
-	_, err := q.db.ExecContext(ctx, deleteUnitMedia, arg.UnitID, arg.ID)
+	_, err := q.db.Exec(ctx, deleteUnitMedia, arg.UnitID, arg.ID)
 	return err
 }
 
@@ -235,7 +235,7 @@ SELECT id, amenity FROM u_amenities
 `
 
 func (q *Queries) GetAllUnitAmenities(ctx context.Context) ([]UAmenity, error) {
-	rows, err := q.db.QueryContext(ctx, getAllUnitAmenities)
+	rows, err := q.db.Query(ctx, getAllUnitAmenities)
 	if err != nil {
 		return nil, err
 	}
@@ -248,9 +248,6 @@ func (q *Queries) GetAllUnitAmenities(ctx context.Context) ([]UAmenity, error) {
 		}
 		items = append(items, i)
 	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
@@ -262,7 +259,7 @@ SELECT unit_id, amenity_id, description FROM unit_amenities WHERE unit_id = $1
 `
 
 func (q *Queries) GetUnitAmenities(ctx context.Context, unitID uuid.UUID) ([]UnitAmenity, error) {
-	rows, err := q.db.QueryContext(ctx, getUnitAmenities, unitID)
+	rows, err := q.db.Query(ctx, getUnitAmenities, unitID)
 	if err != nil {
 		return nil, err
 	}
@@ -275,9 +272,6 @@ func (q *Queries) GetUnitAmenities(ctx context.Context, unitID uuid.UUID) ([]Uni
 		}
 		items = append(items, i)
 	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
@@ -289,7 +283,7 @@ SELECT id, property_id, name, area, floor, price, number_of_living_rooms, number
 `
 
 func (q *Queries) GetUnitById(ctx context.Context, id uuid.UUID) (Unit, error) {
-	row := q.db.QueryRowContext(ctx, getUnitById, id)
+	row := q.db.QueryRow(ctx, getUnitById, id)
 	var i Unit
 	err := row.Scan(
 		&i.ID,
@@ -316,7 +310,7 @@ SELECT property_id, manager_id, role FROM property_managers WHERE property_id IN
 `
 
 func (q *Queries) GetUnitManagers(ctx context.Context, id uuid.UUID) ([]PropertyManager, error) {
-	rows, err := q.db.QueryContext(ctx, getUnitManagers, id)
+	rows, err := q.db.Query(ctx, getUnitManagers, id)
 	if err != nil {
 		return nil, err
 	}
@@ -329,9 +323,6 @@ func (q *Queries) GetUnitManagers(ctx context.Context, id uuid.UUID) ([]Property
 		}
 		items = append(items, i)
 	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
@@ -343,7 +334,7 @@ SELECT id, unit_id, url, type, description FROM unit_media WHERE unit_id = $1
 `
 
 func (q *Queries) GetUnitMedia(ctx context.Context, unitID uuid.UUID) ([]UnitMedium, error) {
-	rows, err := q.db.QueryContext(ctx, getUnitMedia, unitID)
+	rows, err := q.db.Query(ctx, getUnitMedia, unitID)
 	if err != nil {
 		return nil, err
 	}
@@ -362,9 +353,6 @@ func (q *Queries) GetUnitMedia(ctx context.Context, unitID uuid.UUID) ([]UnitMed
 		}
 		items = append(items, i)
 	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
@@ -376,7 +364,7 @@ SELECT id, property_id, name, area, floor, price, number_of_living_rooms, number
 `
 
 func (q *Queries) GetUnitsOfProperty(ctx context.Context, propertyID uuid.UUID) ([]Unit, error) {
-	rows, err := q.db.QueryContext(ctx, getUnitsOfProperty, propertyID)
+	rows, err := q.db.Query(ctx, getUnitsOfProperty, propertyID)
 	if err != nil {
 		return nil, err
 	}
@@ -405,9 +393,6 @@ func (q *Queries) GetUnitsOfProperty(ctx context.Context, propertyID uuid.UUID) 
 		}
 		items = append(items, i)
 	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
@@ -433,7 +418,7 @@ type InsertUnitMediaParams struct {
 }
 
 func (q *Queries) InsertUnitMedia(ctx context.Context, arg InsertUnitMediaParams) (UnitMedium, error) {
-	row := q.db.QueryRowContext(ctx, insertUnitMedia, arg.UnitID, arg.Url, arg.Type)
+	row := q.db.QueryRow(ctx, insertUnitMedia, arg.UnitID, arg.Url, arg.Type)
 	var i UnitMedium
 	err := row.Scan(
 		&i.ID,
@@ -450,7 +435,7 @@ SELECT is_public FROM properties WHERE properties.id IN (SELECT property_id from
 `
 
 func (q *Queries) IsUnitPublic(ctx context.Context, id uuid.UUID) (bool, error) {
-	row := q.db.QueryRowContext(ctx, isUnitPublic, id)
+	row := q.db.QueryRow(ctx, isUnitPublic, id)
 	var is_public bool
 	err := row.Scan(&is_public)
 	return is_public, err
@@ -473,21 +458,21 @@ WHERE id = $1
 `
 
 type UpdateUnitParams struct {
-	ID                  uuid.UUID       `json:"id"`
-	Name                sql.NullString  `json:"name"`
-	Area                sql.NullFloat64 `json:"area"`
-	Floor               sql.NullInt32   `json:"floor"`
-	Price               sql.NullInt64   `json:"price"`
-	NumberOfLivingRooms sql.NullInt32   `json:"number_of_living_rooms"`
-	NumberOfBedrooms    sql.NullInt32   `json:"number_of_bedrooms"`
-	NumberOfBathrooms   sql.NullInt32   `json:"number_of_bathrooms"`
-	NumberOfToilets     sql.NullInt32   `json:"number_of_toilets"`
-	NumberOfKitchens    sql.NullInt32   `json:"number_of_kitchens"`
-	NumberOfBalconies   sql.NullInt32   `json:"number_of_balconies"`
+	ID                  uuid.UUID     `json:"id"`
+	Name                pgtype.Text   `json:"name"`
+	Area                pgtype.Float4 `json:"area"`
+	Floor               pgtype.Int4   `json:"floor"`
+	Price               pgtype.Int8   `json:"price"`
+	NumberOfLivingRooms pgtype.Int4   `json:"number_of_living_rooms"`
+	NumberOfBedrooms    pgtype.Int4   `json:"number_of_bedrooms"`
+	NumberOfBathrooms   pgtype.Int4   `json:"number_of_bathrooms"`
+	NumberOfToilets     pgtype.Int4   `json:"number_of_toilets"`
+	NumberOfKitchens    pgtype.Int4   `json:"number_of_kitchens"`
+	NumberOfBalconies   pgtype.Int4   `json:"number_of_balconies"`
 }
 
 func (q *Queries) UpdateUnit(ctx context.Context, arg UpdateUnitParams) error {
-	_, err := q.db.ExecContext(ctx, updateUnit,
+	_, err := q.db.Exec(ctx, updateUnit,
 		arg.ID,
 		arg.Name,
 		arg.Area,

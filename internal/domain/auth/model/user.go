@@ -6,18 +6,18 @@ import (
 	"github.com/google/uuid"
 	"github.com/user2410/rrms-backend/internal/domain/auth/dto"
 	"github.com/user2410/rrms-backend/internal/infrastructure/database"
-	"github.com/user2410/rrms-backend/pkg/utils/types"
+	"github.com/user2410/rrms-backend/internal/utils/types"
 )
 
 type UserModel struct {
 	ID        uuid.UUID
 	Email     string
 	Password  *string
-	GroupID   *uuid.UUID
+	GroupID   uuid.UUID
 	CreatedAt time.Time
 	UpdatedAt time.Time
-	CreatedBy *uuid.UUID
-	UpdatedBy *uuid.UUID
+	CreatedBy uuid.UUID
+	UpdatedBy uuid.UUID
 	DeletedF  bool
 }
 
@@ -31,11 +31,11 @@ func (u *UserModel) ToUserResponse() *dto.UserResponse {
 		UpdatedBy: nil,
 		DeletedF:  u.DeletedF,
 	}
-	if u.CreatedBy != nil {
+	if u.CreatedBy != uuid.Nil {
 		str := u.CreatedBy.String()
 		ur.CreatedBy = &str
 	}
-	if u.UpdatedBy != nil {
+	if u.UpdatedBy != uuid.Nil {
 		str := u.UpdatedBy.String()
 		ur.UpdatedBy = &str
 	}

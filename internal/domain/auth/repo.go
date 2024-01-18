@@ -7,7 +7,7 @@ import (
 	"github.com/user2410/rrms-backend/internal/domain/auth/dto"
 	"github.com/user2410/rrms-backend/internal/domain/auth/model"
 	db "github.com/user2410/rrms-backend/internal/infrastructure/database"
-	"github.com/user2410/rrms-backend/pkg/utils/types"
+	"github.com/user2410/rrms-backend/internal/utils/types"
 )
 
 type AuthRepo interface {
@@ -70,7 +70,7 @@ func (u *authRepo) GetUserById(ctx context.Context, id uuid.UUID) (*model.UserMo
 
 func (u *authRepo) GetSessionById(ctx context.Context, id uuid.UUID) (*model.SessionModel, error) {
 	res, err := u.dao.GetSessionById(ctx, id)
-	if err != nil && err.Error() == "sql: no rows in result set" {
+	if err != nil {
 		return nil, nil
 	}
 	return model.ToSessionModel(&res), err

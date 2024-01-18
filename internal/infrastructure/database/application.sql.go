@@ -7,11 +7,10 @@ package database
 
 import (
 	"context"
-	"database/sql"
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/lib/pq"
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 const createApplication = `-- name: CreateApplication :one
@@ -85,42 +84,42 @@ INSERT INTO applications (
 `
 
 type CreateApplicationParams struct {
-	CreatorID                uuid.UUID       `json:"creator_id"`
-	ListingID                uuid.UUID       `json:"listing_id"`
-	PropertyID               uuid.UUID       `json:"property_id"`
-	UnitIds                  []uuid.UUID     `json:"unit_ids"`
-	FullName                 string          `json:"full_name"`
-	Dob                      time.Time       `json:"dob"`
-	Email                    string          `json:"email"`
-	Phone                    string          `json:"phone"`
-	ProfileImage             string          `json:"profile_image"`
-	MoveinDate               time.Time       `json:"movein_date"`
-	PreferredTerm            int32           `json:"preferred_term"`
-	RhAddress                sql.NullString  `json:"rh_address"`
-	RhCity                   sql.NullString  `json:"rh_city"`
-	RhDistrict               sql.NullString  `json:"rh_district"`
-	RhWard                   sql.NullString  `json:"rh_ward"`
-	RhRentalDuration         sql.NullInt32   `json:"rh_rental_duration"`
-	RhMonthlyPayment         sql.NullFloat64 `json:"rh_monthly_payment"`
-	RhReasonForLeaving       sql.NullString  `json:"rh_reason_for_leaving"`
-	EmploymentStatus         string          `json:"employment_status"`
-	EmploymentCompanyName    sql.NullString  `json:"employment_company_name"`
-	EmploymentPosition       sql.NullString  `json:"employment_position"`
-	EmploymentMonthlyIncome  sql.NullFloat64 `json:"employment_monthly_income"`
-	EmploymentComment        sql.NullString  `json:"employment_comment"`
-	EmploymentProofsOfIncome []string        `json:"employment_proofs_of_income"`
-	IdentityType             string          `json:"identity_type"`
-	IdentityNumber           string          `json:"identity_number"`
-	IdentityIssuedDate       time.Time       `json:"identity_issued_date"`
-	IdentityIssuedBy         string          `json:"identity_issued_by"`
+	CreatorID                uuid.UUID     `json:"creator_id"`
+	ListingID                uuid.UUID     `json:"listing_id"`
+	PropertyID               uuid.UUID     `json:"property_id"`
+	UnitIds                  []uuid.UUID   `json:"unit_ids"`
+	FullName                 string        `json:"full_name"`
+	Dob                      time.Time     `json:"dob"`
+	Email                    string        `json:"email"`
+	Phone                    string        `json:"phone"`
+	ProfileImage             string        `json:"profile_image"`
+	MoveinDate               time.Time     `json:"movein_date"`
+	PreferredTerm            int32         `json:"preferred_term"`
+	RhAddress                pgtype.Text   `json:"rh_address"`
+	RhCity                   pgtype.Text   `json:"rh_city"`
+	RhDistrict               pgtype.Text   `json:"rh_district"`
+	RhWard                   pgtype.Text   `json:"rh_ward"`
+	RhRentalDuration         pgtype.Int4   `json:"rh_rental_duration"`
+	RhMonthlyPayment         pgtype.Float4 `json:"rh_monthly_payment"`
+	RhReasonForLeaving       pgtype.Text   `json:"rh_reason_for_leaving"`
+	EmploymentStatus         string        `json:"employment_status"`
+	EmploymentCompanyName    pgtype.Text   `json:"employment_company_name"`
+	EmploymentPosition       pgtype.Text   `json:"employment_position"`
+	EmploymentMonthlyIncome  pgtype.Float4 `json:"employment_monthly_income"`
+	EmploymentComment        pgtype.Text   `json:"employment_comment"`
+	EmploymentProofsOfIncome []string      `json:"employment_proofs_of_income"`
+	IdentityType             string        `json:"identity_type"`
+	IdentityNumber           string        `json:"identity_number"`
+	IdentityIssuedDate       time.Time     `json:"identity_issued_date"`
+	IdentityIssuedBy         string        `json:"identity_issued_by"`
 }
 
 func (q *Queries) CreateApplication(ctx context.Context, arg CreateApplicationParams) (Application, error) {
-	row := q.db.QueryRowContext(ctx, createApplication,
+	row := q.db.QueryRow(ctx, createApplication,
 		arg.CreatorID,
 		arg.ListingID,
 		arg.PropertyID,
-		pq.Array(arg.UnitIds),
+		arg.UnitIds,
 		arg.FullName,
 		arg.Dob,
 		arg.Email,
@@ -140,7 +139,7 @@ func (q *Queries) CreateApplication(ctx context.Context, arg CreateApplicationPa
 		arg.EmploymentPosition,
 		arg.EmploymentMonthlyIncome,
 		arg.EmploymentComment,
-		pq.Array(arg.EmploymentProofsOfIncome),
+		arg.EmploymentProofsOfIncome,
 		arg.IdentityType,
 		arg.IdentityNumber,
 		arg.IdentityIssuedDate,
@@ -152,7 +151,7 @@ func (q *Queries) CreateApplication(ctx context.Context, arg CreateApplicationPa
 		&i.CreatorID,
 		&i.ListingID,
 		&i.PropertyID,
-		pq.Array(&i.UnitIds),
+		&i.UnitIds,
 		&i.Status,
 		&i.CreatedAt,
 		&i.UpdatedAt,
@@ -175,7 +174,7 @@ func (q *Queries) CreateApplication(ctx context.Context, arg CreateApplicationPa
 		&i.EmploymentPosition,
 		&i.EmploymentMonthlyIncome,
 		&i.EmploymentComment,
-		pq.Array(&i.EmploymentProofsOfIncome),
+		&i.EmploymentProofsOfIncome,
 		&i.IdentityType,
 		&i.IdentityNumber,
 		&i.IdentityIssuedDate,
@@ -207,18 +206,18 @@ INSERT INTO application_coaps (
 `
 
 type CreateApplicationCoapParams struct {
-	ApplicationID int64          `json:"application_id"`
-	FullName      string         `json:"full_name"`
-	Dob           time.Time      `json:"dob"`
-	Job           string         `json:"job"`
-	Income        int32          `json:"income"`
-	Email         sql.NullString `json:"email"`
-	Phone         sql.NullString `json:"phone"`
-	Description   sql.NullString `json:"description"`
+	ApplicationID int64       `json:"application_id"`
+	FullName      string      `json:"full_name"`
+	Dob           time.Time   `json:"dob"`
+	Job           string      `json:"job"`
+	Income        int32       `json:"income"`
+	Email         pgtype.Text `json:"email"`
+	Phone         pgtype.Text `json:"phone"`
+	Description   pgtype.Text `json:"description"`
 }
 
 func (q *Queries) CreateApplicationCoap(ctx context.Context, arg CreateApplicationCoapParams) (ApplicationCoap, error) {
-	row := q.db.QueryRowContext(ctx, createApplicationCoap,
+	row := q.db.QueryRow(ctx, createApplicationCoap,
 		arg.ApplicationID,
 		arg.FullName,
 		arg.Dob,
@@ -261,16 +260,16 @@ INSERT INTO application_minors (
 `
 
 type CreateApplicationMinorParams struct {
-	ApplicationID int64          `json:"application_id"`
-	FullName      string         `json:"full_name"`
-	Dob           time.Time      `json:"dob"`
-	Email         sql.NullString `json:"email"`
-	Phone         sql.NullString `json:"phone"`
-	Description   sql.NullString `json:"description"`
+	ApplicationID int64       `json:"application_id"`
+	FullName      string      `json:"full_name"`
+	Dob           time.Time   `json:"dob"`
+	Email         pgtype.Text `json:"email"`
+	Phone         pgtype.Text `json:"phone"`
+	Description   pgtype.Text `json:"description"`
 }
 
 func (q *Queries) CreateApplicationMinor(ctx context.Context, arg CreateApplicationMinorParams) (ApplicationMinor, error) {
-	row := q.db.QueryRowContext(ctx, createApplicationMinor,
+	row := q.db.QueryRow(ctx, createApplicationMinor,
 		arg.ApplicationID,
 		arg.FullName,
 		arg.Dob,
@@ -305,14 +304,14 @@ INSERT INTO application_pets (
 `
 
 type CreateApplicationPetParams struct {
-	ApplicationID int64           `json:"application_id"`
-	Type          string          `json:"type"`
-	Weight        sql.NullFloat64 `json:"weight"`
-	Description   sql.NullString  `json:"description"`
+	ApplicationID int64         `json:"application_id"`
+	Type          string        `json:"type"`
+	Weight        pgtype.Float4 `json:"weight"`
+	Description   pgtype.Text   `json:"description"`
 }
 
 func (q *Queries) CreateApplicationPet(ctx context.Context, arg CreateApplicationPetParams) (ApplicationPet, error) {
-	row := q.db.QueryRowContext(ctx, createApplicationPet,
+	row := q.db.QueryRow(ctx, createApplicationPet,
 		arg.ApplicationID,
 		arg.Type,
 		arg.Weight,
@@ -345,15 +344,15 @@ INSERT INTO application_vehicles (
 `
 
 type CreateApplicationVehicleParams struct {
-	ApplicationID int64          `json:"application_id"`
-	Type          string         `json:"type"`
-	Model         sql.NullString `json:"model"`
-	Code          string         `json:"code"`
-	Description   sql.NullString `json:"description"`
+	ApplicationID int64       `json:"application_id"`
+	Type          string      `json:"type"`
+	Model         pgtype.Text `json:"model"`
+	Code          string      `json:"code"`
+	Description   pgtype.Text `json:"description"`
 }
 
 func (q *Queries) CreateApplicationVehicle(ctx context.Context, arg CreateApplicationVehicleParams) (ApplicationVehicle, error) {
-	row := q.db.QueryRowContext(ctx, createApplicationVehicle,
+	row := q.db.QueryRow(ctx, createApplicationVehicle,
 		arg.ApplicationID,
 		arg.Type,
 		arg.Model,
@@ -376,7 +375,7 @@ DELETE FROM applications WHERE id = $1
 `
 
 func (q *Queries) DeleteApplication(ctx context.Context, id int64) error {
-	_, err := q.db.ExecContext(ctx, deleteApplication, id)
+	_, err := q.db.Exec(ctx, deleteApplication, id)
 	return err
 }
 
@@ -385,14 +384,14 @@ SELECT id, creator_id, listing_id, property_id, unit_ids, status, created_at, up
 `
 
 func (q *Queries) GetApplicationByID(ctx context.Context, id int64) (Application, error) {
-	row := q.db.QueryRowContext(ctx, getApplicationByID, id)
+	row := q.db.QueryRow(ctx, getApplicationByID, id)
 	var i Application
 	err := row.Scan(
 		&i.ID,
 		&i.CreatorID,
 		&i.ListingID,
 		&i.PropertyID,
-		pq.Array(&i.UnitIds),
+		&i.UnitIds,
 		&i.Status,
 		&i.CreatedAt,
 		&i.UpdatedAt,
@@ -415,7 +414,7 @@ func (q *Queries) GetApplicationByID(ctx context.Context, id int64) (Application
 		&i.EmploymentPosition,
 		&i.EmploymentMonthlyIncome,
 		&i.EmploymentComment,
-		pq.Array(&i.EmploymentProofsOfIncome),
+		&i.EmploymentProofsOfIncome,
 		&i.IdentityType,
 		&i.IdentityNumber,
 		&i.IdentityIssuedDate,
@@ -429,7 +428,7 @@ SELECT application_id, full_name, dob, job, income, email, phone, description FR
 `
 
 func (q *Queries) GetApplicationCoaps(ctx context.Context, applicationID int64) ([]ApplicationCoap, error) {
-	rows, err := q.db.QueryContext(ctx, getApplicationCoaps, applicationID)
+	rows, err := q.db.Query(ctx, getApplicationCoaps, applicationID)
 	if err != nil {
 		return nil, err
 	}
@@ -451,9 +450,6 @@ func (q *Queries) GetApplicationCoaps(ctx context.Context, applicationID int64) 
 		}
 		items = append(items, i)
 	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
@@ -465,7 +461,7 @@ SELECT application_id, full_name, dob, email, phone, description FROM applicatio
 `
 
 func (q *Queries) GetApplicationMinors(ctx context.Context, applicationID int64) ([]ApplicationMinor, error) {
-	rows, err := q.db.QueryContext(ctx, getApplicationMinors, applicationID)
+	rows, err := q.db.Query(ctx, getApplicationMinors, applicationID)
 	if err != nil {
 		return nil, err
 	}
@@ -485,9 +481,6 @@ func (q *Queries) GetApplicationMinors(ctx context.Context, applicationID int64)
 		}
 		items = append(items, i)
 	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
@@ -499,7 +492,7 @@ SELECT application_id, type, weight, description FROM application_pets WHERE app
 `
 
 func (q *Queries) GetApplicationPets(ctx context.Context, applicationID int64) ([]ApplicationPet, error) {
-	rows, err := q.db.QueryContext(ctx, getApplicationPets, applicationID)
+	rows, err := q.db.Query(ctx, getApplicationPets, applicationID)
 	if err != nil {
 		return nil, err
 	}
@@ -517,9 +510,6 @@ func (q *Queries) GetApplicationPets(ctx context.Context, applicationID int64) (
 		}
 		items = append(items, i)
 	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
@@ -531,7 +521,7 @@ SELECT application_id, type, model, code, description FROM application_vehicles 
 `
 
 func (q *Queries) GetApplicationVehicles(ctx context.Context, applicationID int64) ([]ApplicationVehicle, error) {
-	rows, err := q.db.QueryContext(ctx, getApplicationVehicles, applicationID)
+	rows, err := q.db.Query(ctx, getApplicationVehicles, applicationID)
 	if err != nil {
 		return nil, err
 	}
@@ -550,9 +540,6 @@ func (q *Queries) GetApplicationVehicles(ctx context.Context, applicationID int6
 		}
 		items = append(items, i)
 	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
@@ -564,7 +551,7 @@ SELECT id, creator_id, listing_id, property_id, unit_ids, status, created_at, up
 `
 
 func (q *Queries) GetApplicationsByUserId(ctx context.Context, creatorID uuid.UUID) ([]Application, error) {
-	rows, err := q.db.QueryContext(ctx, getApplicationsByUserId, creatorID)
+	rows, err := q.db.Query(ctx, getApplicationsByUserId, creatorID)
 	if err != nil {
 		return nil, err
 	}
@@ -577,7 +564,7 @@ func (q *Queries) GetApplicationsByUserId(ctx context.Context, creatorID uuid.UU
 			&i.CreatorID,
 			&i.ListingID,
 			&i.PropertyID,
-			pq.Array(&i.UnitIds),
+			&i.UnitIds,
 			&i.Status,
 			&i.CreatedAt,
 			&i.UpdatedAt,
@@ -600,7 +587,7 @@ func (q *Queries) GetApplicationsByUserId(ctx context.Context, creatorID uuid.UU
 			&i.EmploymentPosition,
 			&i.EmploymentMonthlyIncome,
 			&i.EmploymentComment,
-			pq.Array(&i.EmploymentProofsOfIncome),
+			&i.EmploymentProofsOfIncome,
 			&i.IdentityType,
 			&i.IdentityNumber,
 			&i.IdentityIssuedDate,
@@ -609,9 +596,6 @@ func (q *Queries) GetApplicationsByUserId(ctx context.Context, creatorID uuid.UU
 			return nil, err
 		}
 		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err
@@ -626,7 +610,7 @@ SELECT id, creator_id, listing_id, property_id, unit_ids, status, created_at, up
 `
 
 func (q *Queries) GetApplicationsToUser(ctx context.Context, managerID uuid.UUID) ([]Application, error) {
-	rows, err := q.db.QueryContext(ctx, getApplicationsToUser, managerID)
+	rows, err := q.db.Query(ctx, getApplicationsToUser, managerID)
 	if err != nil {
 		return nil, err
 	}
@@ -639,7 +623,7 @@ func (q *Queries) GetApplicationsToUser(ctx context.Context, managerID uuid.UUID
 			&i.CreatorID,
 			&i.ListingID,
 			&i.PropertyID,
-			pq.Array(&i.UnitIds),
+			&i.UnitIds,
 			&i.Status,
 			&i.CreatedAt,
 			&i.UpdatedAt,
@@ -662,7 +646,7 @@ func (q *Queries) GetApplicationsToUser(ctx context.Context, managerID uuid.UUID
 			&i.EmploymentPosition,
 			&i.EmploymentMonthlyIncome,
 			&i.EmploymentComment,
-			pq.Array(&i.EmploymentProofsOfIncome),
+			&i.EmploymentProofsOfIncome,
 			&i.IdentityType,
 			&i.IdentityNumber,
 			&i.IdentityIssuedDate,
@@ -671,9 +655,6 @@ func (q *Queries) GetApplicationsToUser(ctx context.Context, managerID uuid.UUID
 			return nil, err
 		}
 		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err
@@ -691,6 +672,6 @@ type UpdateApplicationStatusParams struct {
 }
 
 func (q *Queries) UpdateApplicationStatus(ctx context.Context, arg UpdateApplicationStatusParams) error {
-	_, err := q.db.ExecContext(ctx, updateApplicationStatus, arg.Status, arg.ID)
+	_, err := q.db.Exec(ctx, updateApplicationStatus, arg.Status, arg.ID)
 	return err
 }

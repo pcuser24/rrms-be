@@ -1,16 +1,14 @@
 package dto
 
 import (
-	"database/sql"
-
 	"github.com/google/uuid"
 	"github.com/user2410/rrms-backend/internal/infrastructure/database"
-	"github.com/user2410/rrms-backend/pkg/utils/types"
+	"github.com/user2410/rrms-backend/internal/utils/types"
 )
 
 type CreatePropertyManager struct {
-	PropertyID uuid.UUID `json:"propertyID" validate:"required,uuid"`
-	ManagerID  uuid.UUID `json:"managerID" validate:"required,uuid"`
+	PropertyID uuid.UUID `json:"propertyId" validate:"required,uuid"`
+	ManagerID  uuid.UUID `json:"managerId" validate:"required,uuid"`
 	Role       string    `json:"role" validate:"required"`
 }
 
@@ -21,8 +19,9 @@ type CreatePropertyMedia struct {
 	Description *string            `json:"description"`
 }
 
-func (m *CreatePropertyMedia) ToCreatePropertyMediaDB() *database.CreatePropertyMediaParams {
+func (m *CreatePropertyMedia) ToCreatePropertyMediaDB(propertyId uuid.UUID) *database.CreatePropertyMediaParams {
 	return &database.CreatePropertyMediaParams{
+		PropertyID:  propertyId,
 		Url:         m.Url,
 		Type:        m.Type,
 		Description: types.StrN(m.Description),
@@ -31,12 +30,13 @@ func (m *CreatePropertyMedia) ToCreatePropertyMediaDB() *database.CreateProperty
 
 type CreatePropertyFeature struct {
 	// PropertyID  uuid.UUID `json:"property_id" validate:"required,uuid"`
-	FeatureID   int64   `json:"featureID" validate:"required"`
+	FeatureID   int64   `json:"featureId" validate:"required"`
 	Description *string `json:"description"`
 }
 
-func (f *CreatePropertyFeature) ToCreatePropertyFeatureDB() *database.CreatePropertyFeatureParams {
+func (f *CreatePropertyFeature) ToCreatePropertyFeatureDB(propertyId uuid.UUID) *database.CreatePropertyFeatureParams {
 	return &database.CreatePropertyFeatureParams{
+		PropertyID:  propertyId,
 		FeatureID:   f.FeatureID,
 		Description: types.StrN(f.Description),
 	}
@@ -48,7 +48,7 @@ type CreatePropertyTag struct {
 }
 
 type CreateProperty struct {
-	CreatorID      uuid.UUID               `json:"creatorId" validate:"required,uuid4"`
+	CreatorID      uuid.UUID               `json:"creatorId"`
 	Name           *string                 `json:"name" validate:"omitempty"`
 	Building       *string                 `json:"building" validate:"omitempty"`
 	Project        *string                 `json:"project" validate:"omitempty"`
@@ -56,8 +56,8 @@ type CreateProperty struct {
 	NumberOfFloors *int32                  `json:"numberOfFloors" validate:"omitempty,gt=0"`
 	YearBuilt      *int32                  `json:"yearBuilt" validate:"omitempty,gt=0"`
 	Orientation    *string                 `json:"orientation" validate:"omitempty"`
-	EntranceWidth  *float64                `json:"entranceWidth" validate:"omitempty"`
-	Facade         *float64                `json:"facade" validate:"omitempty"`
+	EntranceWidth  *float32                `json:"entranceWidth" validate:"omitempty"`
+	Facade         *float32                `json:"facade" validate:"omitempty"`
 	FullAddress    string                  `json:"fullAddress" validate:"required"`
 	District       string                  `json:"district" validate:"required"`
 	City           string                  `json:"city" validate:"required"`
@@ -74,86 +74,25 @@ type CreateProperty struct {
 }
 
 func (c *CreateProperty) ToCreatePropertyDB() *database.CreatePropertyParams {
-	p := &database.CreatePropertyParams{
-		CreatorID:   c.CreatorID,
-		Area:        c.Area,
-		FullAddress: c.FullAddress,
-		District:    c.District,
-		City:        c.City,
-		PlaceUrl:    c.PlaceUrl,
-		Type:        c.Type,
+	return &database.CreatePropertyParams{
+		CreatorID:      c.CreatorID,
+		Name:           types.StrN(c.Name),
+		Building:       types.StrN(c.Building),
+		Project:        types.StrN(c.Project),
+		NumberOfFloors: types.Int32N(c.NumberOfFloors),
+		YearBuilt:      types.Int32N(c.YearBuilt),
+		Orientation:    types.StrN(c.Orientation),
+		EntranceWidth:  types.Float32N(c.EntranceWidth),
+		Facade:         types.Float32N(c.Facade),
+		Ward:           types.StrN(c.Ward),
+		Lat:            types.Float64N(c.Lat),
+		Lng:            types.Float64N(c.Lng),
+		Area:           c.Area,
+		FullAddress:    c.FullAddress,
+		District:       c.District,
+		City:           c.City,
+		PlaceUrl:       c.PlaceUrl,
+		Type:           c.Type,
+		Description:    types.StrN(c.Description),
 	}
-	if c.Name != nil {
-		p.Name = sql.NullString{
-			Valid:  true,
-			String: *c.Name,
-		}
-	}
-	if c.Building != nil {
-		p.Building = sql.NullString{
-			Valid:  true,
-			String: *c.Building,
-		}
-	}
-	if c.Project != nil {
-		p.Project = sql.NullString{
-			Valid:  true,
-			String: *c.Project,
-		}
-	}
-	if c.NumberOfFloors != nil {
-		p.NumberOfFloors = sql.NullInt32{
-			Valid: true,
-			Int32: *c.NumberOfFloors,
-		}
-	}
-	if c.YearBuilt != nil {
-		p.YearBuilt = sql.NullInt32{
-			Valid: true,
-			Int32: *c.YearBuilt,
-		}
-	}
-	if c.Orientation != nil {
-		p.Orientation = sql.NullString{
-			Valid:  true,
-			String: *c.Orientation,
-		}
-	}
-	if c.EntranceWidth != nil {
-		p.EntranceWidth = sql.NullFloat64{
-			Valid:   true,
-			Float64: *c.EntranceWidth,
-		}
-	}
-	if c.Facade != nil {
-		p.Facade = sql.NullFloat64{
-			Valid:   true,
-			Float64: *c.Facade,
-		}
-	}
-	if c.Ward != nil {
-		p.Ward = sql.NullString{
-			Valid:  true,
-			String: *c.Ward,
-		}
-	}
-	if c.Lat != nil {
-		p.Lat = sql.NullFloat64{
-			Valid:   true,
-			Float64: *c.Lat,
-		}
-	}
-	if c.Lng != nil {
-		p.Lng = sql.NullFloat64{
-			Valid:   true,
-			Float64: *c.Lng,
-		}
-	}
-	if c.Description != nil {
-		p.Description = sql.NullString{
-			Valid:  true,
-			String: *c.Description,
-		}
-	}
-	return p
 }

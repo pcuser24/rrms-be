@@ -4,12 +4,11 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"path/filepath"
 
 	"github.com/go-playground/validator/v10"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	db "github.com/user2410/rrms-backend/internal/infrastructure/database"
+	"github.com/user2410/rrms-backend/internal/infrastructure/database"
 )
 
 type migrateConfig struct {
@@ -41,16 +40,8 @@ func (c *migrateCommand) run(cmd *cobra.Command, args []string) {
 	c.Help()
 }
 
-func initMigrator(c *migrateConfig) (db.Migrator, error) {
-	dao, err := db.NewDAO(c.DatabaseURL)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create the database connection: %w", err)
-	}
-	mDir, err := filepath.Abs(c.DBMigrationDir)
-	if err != nil {
-		return nil, fmt.Errorf("failed to resolve the migration directory: %w", err)
-	}
-	m, err := db.NewMigrator(dao.GetConn(), mDir)
+func initMigrator(c *migrateConfig) (database.Migrator, error) {
+	m, err := database.NewMigrator(c.DBMigrationDir, c.DatabaseURL)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create the migration manager: %w", err)
 	}

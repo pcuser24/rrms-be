@@ -6,6 +6,9 @@ import (
 	"github.com/google/uuid"
 	"github.com/user2410/rrms-backend/internal/domain/property/dto"
 	"github.com/user2410/rrms-backend/internal/domain/property/model"
+	unitModel "github.com/user2410/rrms-backend/internal/domain/unit/model"
+	"github.com/user2410/rrms-backend/internal/utils"
+	"github.com/user2410/rrms-backend/internal/utils/types"
 )
 
 type Service interface {
@@ -13,7 +16,10 @@ type Service interface {
 	CheckVisibility(id uuid.UUID, uid uuid.UUID) (bool, error)
 	CheckManageability(id uuid.UUID, userId uuid.UUID) (bool, error)
 	GetPropertyById(id uuid.UUID) (*model.PropertyModel, error)
+	GetPropertiesByIds(ids []uuid.UUID, fields []string) ([]model.PropertyModel, error)
+	GetUnitsOfProperty(id uuid.UUID) ([]unitModel.UnitModel, error)
 	GetPropertiesOfUser(userId uuid.UUID, fields []string) ([]getPropertiesOfUserResponse, error)
+	SearchListingCombination(data *dto.SearchPropertyCombinationQuery) (*dto.SearchPropertyCombinationResponse, error)
 	UpdateProperty(data *dto.UpdateProperty) error
 	DeleteProperty(id uuid.UUID) error
 	GetAllFeatures() ([]model.PFeature, error)
@@ -40,6 +46,18 @@ func (s *service) CreateProperty(data *dto.CreateProperty, creatorID uuid.UUID) 
 
 func (s *service) GetPropertyById(id uuid.UUID) (*model.PropertyModel, error) {
 	return s.repo.GetPropertyById(context.Background(), id)
+}
+
+func (s *service) GetPropertiesByIds(ids []uuid.UUID, fields []string) ([]model.PropertyModel, error) {
+	idsStr := make([]string, len(ids))
+	for i, id := range ids {
+		idsStr[i] = id.String()
+	}
+	return s.repo.GetPropertiesByIds(context.Background(), idsStr, fields)
+}
+
+func (s *service) GetUnitsOfProperty(id uuid.UUID) ([]unitModel.UnitModel, error) {
+	return s.repo.GetUnitsOfProperty(context.Background(), id)
 }
 
 func (s *service) UpdateProperty(data *dto.UpdateProperty) error {
@@ -103,7 +121,7 @@ func (s *service) GetPropertiesOfUser(userId uuid.UUID, fields []string) ([]getP
 		pids = append(pids, pid)
 	}
 
-	ps, err := s.repo.GetProperties(context.Background(), pids, fields)
+	ps, err := s.repo.GetPropertiesByIds(context.Background(), pids, fields)
 	if err != nil {
 		return nil, err
 	}
@@ -120,4 +138,12 @@ func (s *service) GetPropertiesOfUser(userId uuid.UUID, fields []string) ([]getP
 	}
 
 	return res, nil
+}
+
+func (s *service) SearchListingCombination(data *dto.SearchPropertyCombinationQuery) (*dto.SearchPropertyCombinationResponse, error) {
+	data.SortBy = types.Ptr(utils.PtrDerefence[string](data.SortBy, "created_at"))
+	data.Order = types.Ptr(utils.PtrDerefence[string](data.Order, "desc"))
+	data.Limit = types.Ptr(utils.PtrDerefence[int32](data.Limit, 1000))
+	data.Offset = types.Ptr(utils.PtrDerefence[int32](data.Offset, 0))
+	return s.repo.SearchPropertyCombination(context.Background(), data)
 }

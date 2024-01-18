@@ -12,8 +12,8 @@ type Error struct {
 }
 
 var (
-	ExpiredTokenErr = &Error{t: Expired}
-	InvalidTokenErr = &Error{t: Invalid}
+	ErrExpiredToken = &Error{t: Expired}
+	ErrInvalidToken = &Error{t: Invalid}
 )
 
 func (e *Error) Error() string {

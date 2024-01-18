@@ -7,10 +7,10 @@ package database
 
 import (
 	"context"
-	"database/sql"
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 const checkListingOwnership = `-- name: CheckListingOwnership :one
@@ -23,7 +23,7 @@ type CheckListingOwnershipParams struct {
 }
 
 func (q *Queries) CheckListingOwnership(ctx context.Context, arg CheckListingOwnershipParams) (int64, error) {
-	row := q.db.QueryRowContext(ctx, checkListingOwnership, arg.ID, arg.CreatorID)
+	row := q.db.QueryRow(ctx, checkListingOwnership, arg.ID, arg.CreatorID)
 	var count int64
 	err := row.Scan(&count)
 	return count, err
@@ -39,7 +39,7 @@ type CheckValidUnitForListingParams struct {
 }
 
 func (q *Queries) CheckValidUnitForListing(ctx context.Context, arg CheckValidUnitForListingParams) (int64, error) {
-	row := q.db.QueryRowContext(ctx, checkValidUnitForListing, arg.ID, arg.ID_2)
+	row := q.db.QueryRow(ctx, checkValidUnitForListing, arg.ID, arg.ID_2)
 	var count int64
 	err := row.Scan(&count)
 	return count, err
@@ -91,28 +91,28 @@ INSERT INTO listings (
 `
 
 type CreateListingParams struct {
-	CreatorID         uuid.UUID     `json:"creator_id"`
-	PropertyID        uuid.UUID     `json:"property_id"`
-	Title             string        `json:"title"`
-	Description       string        `json:"description"`
-	FullName          string        `json:"full_name"`
-	Email             string        `json:"email"`
-	Phone             string        `json:"phone"`
-	ContactType       string        `json:"contact_type"`
-	Price             int64         `json:"price"`
-	PriceNegotiable   sql.NullBool  `json:"price_negotiable"`
-	SecurityDeposit   sql.NullInt64 `json:"security_deposit"`
-	LeaseTerm         sql.NullInt32 `json:"lease_term"`
-	PetsAllowed       sql.NullBool  `json:"pets_allowed"`
-	NumberOfResidents sql.NullInt32 `json:"number_of_residents"`
-	Priority          int32         `json:"priority"`
-	PostAt            time.Time     `json:"post_at"`
-	Active            bool          `json:"active"`
-	ExpiredAt         time.Time     `json:"expired_at"`
+	CreatorID         uuid.UUID   `json:"creator_id"`
+	PropertyID        uuid.UUID   `json:"property_id"`
+	Title             string      `json:"title"`
+	Description       string      `json:"description"`
+	FullName          string      `json:"full_name"`
+	Email             string      `json:"email"`
+	Phone             string      `json:"phone"`
+	ContactType       string      `json:"contact_type"`
+	Price             int64       `json:"price"`
+	PriceNegotiable   pgtype.Bool `json:"price_negotiable"`
+	SecurityDeposit   pgtype.Int8 `json:"security_deposit"`
+	LeaseTerm         pgtype.Int4 `json:"lease_term"`
+	PetsAllowed       pgtype.Bool `json:"pets_allowed"`
+	NumberOfResidents pgtype.Int4 `json:"number_of_residents"`
+	Priority          int32       `json:"priority"`
+	PostAt            time.Time   `json:"post_at"`
+	Active            bool        `json:"active"`
+	ExpiredAt         time.Time   `json:"expired_at"`
 }
 
 func (q *Queries) CreateListing(ctx context.Context, arg CreateListingParams) (Listing, error) {
-	row := q.db.QueryRowContext(ctx, createListing,
+	row := q.db.QueryRow(ctx, createListing,
 		arg.CreatorID,
 		arg.PropertyID,
 		arg.Title,
@@ -172,13 +172,13 @@ INSERT INTO listing_policies (
 `
 
 type CreateListingPolicyParams struct {
-	ListingID uuid.UUID      `json:"listing_id"`
-	PolicyID  int64          `json:"policy_id"`
-	Note      sql.NullString `json:"note"`
+	ListingID uuid.UUID   `json:"listing_id"`
+	PolicyID  int64       `json:"policy_id"`
+	Note      pgtype.Text `json:"note"`
 }
 
 func (q *Queries) CreateListingPolicy(ctx context.Context, arg CreateListingPolicyParams) (ListingPolicy, error) {
-	row := q.db.QueryRowContext(ctx, createListingPolicy, arg.ListingID, arg.PolicyID, arg.Note)
+	row := q.db.QueryRow(ctx, createListingPolicy, arg.ListingID, arg.PolicyID, arg.Note)
 	var i ListingPolicy
 	err := row.Scan(&i.ListingID, &i.PolicyID, &i.Note)
 	return i, err
@@ -200,7 +200,7 @@ type CreateListingUnitParams struct {
 }
 
 func (q *Queries) CreateListingUnit(ctx context.Context, arg CreateListingUnitParams) (ListingUnit, error) {
-	row := q.db.QueryRowContext(ctx, createListingUnit, arg.ListingID, arg.UnitID)
+	row := q.db.QueryRow(ctx, createListingUnit, arg.ListingID, arg.UnitID)
 	var i ListingUnit
 	err := row.Scan(&i.ListingID, &i.UnitID)
 	return i, err
@@ -211,7 +211,7 @@ DELETE FROM listings WHERE id = $1
 `
 
 func (q *Queries) DeleteListing(ctx context.Context, id uuid.UUID) error {
-	_, err := q.db.ExecContext(ctx, deleteListing, id)
+	_, err := q.db.Exec(ctx, deleteListing, id)
 	return err
 }
 
@@ -220,7 +220,7 @@ SELECT id, policy FROM rental_policies
 `
 
 func (q *Queries) GetAllRentalPolicies(ctx context.Context) ([]RentalPolicy, error) {
-	rows, err := q.db.QueryContext(ctx, getAllRentalPolicies)
+	rows, err := q.db.Query(ctx, getAllRentalPolicies)
 	if err != nil {
 		return nil, err
 	}
@@ -233,9 +233,6 @@ func (q *Queries) GetAllRentalPolicies(ctx context.Context) ([]RentalPolicy, err
 		}
 		items = append(items, i)
 	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
@@ -247,7 +244,7 @@ SELECT id, creator_id, property_id, title, description, full_name, email, phone,
 `
 
 func (q *Queries) GetListingByID(ctx context.Context, id uuid.UUID) (Listing, error) {
-	row := q.db.QueryRowContext(ctx, getListingByID, id)
+	row := q.db.QueryRow(ctx, getListingByID, id)
 	var i Listing
 	err := row.Scan(
 		&i.ID,
@@ -280,7 +277,7 @@ SELECT listing_id, policy_id, note FROM listing_policies WHERE listing_id = $1
 `
 
 func (q *Queries) GetListingPolicies(ctx context.Context, listingID uuid.UUID) ([]ListingPolicy, error) {
-	rows, err := q.db.QueryContext(ctx, getListingPolicies, listingID)
+	rows, err := q.db.Query(ctx, getListingPolicies, listingID)
 	if err != nil {
 		return nil, err
 	}
@@ -293,9 +290,6 @@ func (q *Queries) GetListingPolicies(ctx context.Context, listingID uuid.UUID) (
 		}
 		items = append(items, i)
 	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
@@ -307,7 +301,7 @@ SELECT listing_id, unit_id FROM listing_unit WHERE listing_id = $1
 `
 
 func (q *Queries) GetListingUnits(ctx context.Context, listingID uuid.UUID) ([]ListingUnit, error) {
-	rows, err := q.db.QueryContext(ctx, getListingUnits, listingID)
+	rows, err := q.db.Query(ctx, getListingUnits, listingID)
 	if err != nil {
 		return nil, err
 	}
@@ -319,9 +313,6 @@ func (q *Queries) GetListingUnits(ctx context.Context, listingID uuid.UUID) ([]L
 			return nil, err
 		}
 		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err
@@ -349,24 +340,24 @@ WHERE id = $14
 `
 
 type UpdateListingParams struct {
-	Title             sql.NullString `json:"title"`
-	Description       sql.NullString `json:"description"`
-	FullName          sql.NullString `json:"full_name"`
-	Email             sql.NullString `json:"email"`
-	Phone             sql.NullString `json:"phone"`
-	ContactType       sql.NullString `json:"contact_type"`
-	Price             sql.NullInt64  `json:"price"`
-	PriceNegotiable   sql.NullBool   `json:"price_negotiable"`
-	SecurityDeposit   sql.NullInt64  `json:"security_deposit"`
-	LeaseTerm         sql.NullInt32  `json:"lease_term"`
-	PetsAllowed       sql.NullBool   `json:"pets_allowed"`
-	NumberOfResidents sql.NullInt32  `json:"number_of_residents"`
-	PostAt            sql.NullTime   `json:"post_at"`
-	ID                uuid.UUID      `json:"id"`
+	Title             pgtype.Text        `json:"title"`
+	Description       pgtype.Text        `json:"description"`
+	FullName          pgtype.Text        `json:"full_name"`
+	Email             pgtype.Text        `json:"email"`
+	Phone             pgtype.Text        `json:"phone"`
+	ContactType       pgtype.Text        `json:"contact_type"`
+	Price             pgtype.Int8        `json:"price"`
+	PriceNegotiable   pgtype.Bool        `json:"price_negotiable"`
+	SecurityDeposit   pgtype.Int8        `json:"security_deposit"`
+	LeaseTerm         pgtype.Int4        `json:"lease_term"`
+	PetsAllowed       pgtype.Bool        `json:"pets_allowed"`
+	NumberOfResidents pgtype.Int4        `json:"number_of_residents"`
+	PostAt            pgtype.Timestamptz `json:"post_at"`
+	ID                uuid.UUID          `json:"id"`
 }
 
 func (q *Queries) UpdateListing(ctx context.Context, arg UpdateListingParams) error {
-	_, err := q.db.ExecContext(ctx, updateListing,
+	_, err := q.db.Exec(ctx, updateListing,
 		arg.Title,
 		arg.Description,
 		arg.FullName,
@@ -395,6 +386,6 @@ type UpdateListingStatusParams struct {
 }
 
 func (q *Queries) UpdateListingStatus(ctx context.Context, arg UpdateListingStatusParams) error {
-	_, err := q.db.ExecContext(ctx, updateListingStatus, arg.Active, arg.ID)
+	_, err := q.db.Exec(ctx, updateListingStatus, arg.Active, arg.ID)
 	return err
 }

@@ -36,7 +36,14 @@ func (a *adapter) RegisterServer(route *fiber.Router, tokenMaker token.Maker) {
 		// TODO: A middleware to check if the user is a property manager
 		a.getApplicationsToMe(),
 	)
-	applicationRoute.Get("/application/:id", a.getApplicationById())
+	applicationRoute.Get("/application/:id",
+		// TODO: A middleware to check if the user is a property manager
+		a.getApplicationById(),
+	)
+	applicationRoute.Put("/application/:id",
+		// TODO: A middleware to check if the user is a property manager
+		a.updateApplicationStatus(),
+	)
 	applicationRoute.Delete("/application/:id", a.deleteApplication())
 
 }
@@ -56,7 +63,7 @@ func (a *adapter) createApplications() fiber.Handler {
 			return err
 		}
 		payload.CreatorID = tkPayload.UserID
-		if errs := utils.ValidateStruct(nil, payload); len(errs) > 0 && errs[0].Error {
+		if errs := utils.ValidateStruct(nil, payload); len(errs) > 0 {
 			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": utils.GetValidationError(errs)})
 		}
 
@@ -127,6 +134,30 @@ func (a *adapter) getApplicationById() fiber.Handler {
 		}
 
 		return ctx.Status(fiber.StatusOK).JSON(application)
+	}
+}
+
+func (a *adapter) updateApplicationStatus() fiber.Handler {
+	return func(ctx *fiber.Ctx) error {
+		aid, err := strconv.ParseInt(ctx.Params("id"), 10, 64)
+		if err != nil {
+			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": "invalid application id"})
+		}
+
+		status := ctx.Query("status")
+		if status == "" {
+			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": "status is required"})
+		}
+
+		err = a.service.UpdateApplicationStatus(aid, database.APPLICATIONSTATUS(status))
+		if err != nil {
+			if err == database.ErrRecordNotFound {
+				return ctx.Status(fiber.StatusNotFound).JSON(fiber.Map{"message": "application not found"})
+			}
+			return ctx.SendStatus(fiber.StatusInternalServerError)
+		}
+
+		return ctx.SendStatus(fiber.StatusOK)
 	}
 }
 

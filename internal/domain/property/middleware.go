@@ -9,7 +9,11 @@ import (
 	"github.com/user2410/rrms-backend/internal/utils/token"
 )
 
-func checkPropertyManageability(s Service) fiber.Handler {
+const (
+	PropertyIDLocalKey = "property_id"
+)
+
+func CheckPropertyManageability(s Service) fiber.Handler {
 	return func(ctx *fiber.Ctx) error {
 		puid, err := uuid.Parse(ctx.Params("id"))
 		if err != nil {
@@ -33,7 +37,39 @@ func checkPropertyManageability(s Service) fiber.Handler {
 			return ctx.Status(fiber.StatusForbidden).JSON(fiber.Map{"message": "operation not permitted on this property"})
 		}
 
-		ctx.Next()
-		return nil
+		return ctx.Next()
+	}
+}
+
+// should be stacked on top of AuthorizedMiddleware middleware
+func CheckPropertyVisibility(service Service) fiber.Handler {
+	return func(ctx *fiber.Ctx) error {
+		puid, err := uuid.Parse(ctx.Params("id"))
+		if err != nil {
+			return ctx.SendStatus(fiber.StatusBadRequest)
+		}
+		ctx.Locals(PropertyIDLocalKey, puid)
+
+		var userID uuid.UUID
+		tkPayload, ok := ctx.Locals(auth.AuthorizationPayloadKey).(*token.Payload)
+		if ok {
+			userID = tkPayload.UserID
+		} else {
+			userID = uuid.Nil
+		}
+
+		isVisible, err := service.CheckVisibility(puid, userID)
+		if err != nil {
+			if dbErr, ok := err.(*pgconn.PgError); ok {
+				return responses.DBErrorResponse(ctx, dbErr)
+			}
+
+			return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
+		}
+		if !isVisible {
+			return ctx.Status(fiber.StatusForbidden).JSON(fiber.Map{"message": "property is not visible to you"})
+		}
+
+		return ctx.Next()
 	}
 }

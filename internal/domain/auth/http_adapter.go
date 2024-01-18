@@ -7,9 +7,8 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
-	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/user2410/rrms-backend/internal/domain/auth/dto"
-	"github.com/user2410/rrms-backend/internal/interfaces/rest/responses"
+	"github.com/user2410/rrms-backend/internal/infrastructure/database"
 	"github.com/user2410/rrms-backend/internal/utils"
 	"github.com/user2410/rrms-backend/internal/utils/token"
 )
@@ -32,8 +31,9 @@ func (a *adapter) RegisterServer(router *fiber.Router, tokenMaker token.Maker) {
 	authRoute := (*router).Group("/auth")
 
 	credentialGroup := authRoute.Group("/credential")
-	credentialGroup.Post("/register", a.credentialRegisterHandle())
-	credentialGroup.Post("/login", GetAuthorizationMiddleware(tokenMaker), a.credentialLoginHandle())
+	credentialGroup.Post("/register", a.credentialRegister())
+	credentialGroup.Post("/login", GetAuthorizationMiddleware(tokenMaker), a.credentialLogin())
+	credentialGroup.Put("/refresh", a.credentialRefresh())
 	credentialGroup.Delete("/logout", AuthorizedMiddleware(tokenMaker), a.credentialLogout())
 
 	bffGroup := authRoute.Group("/bff")
@@ -55,39 +55,37 @@ func (a *adapter) RegisterServer(router *fiber.Router, tokenMaker token.Maker) {
 	bffGroup.Put("/use-verification-token", a.bffUseVerificationToken())
 }
 
-func (a *adapter) credentialRegisterHandle() fiber.Handler {
+func (a *adapter) credentialRegister() fiber.Handler {
 	return func(ctx *fiber.Ctx) error {
 		var payload dto.RegisterUser
 		if err := ctx.BodyParser(&payload); err != nil {
 			return ctx.SendStatus(fiber.StatusBadRequest)
 		}
-		if errs := utils.ValidateStruct(nil, payload); len(errs) > 0 && errs[0].Error {
+		if errs := utils.ValidateStruct(nil, payload); len(errs) > 0 {
 			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": utils.GetValidationError(errs)})
 		}
 
-		res, err := a.service.RegisterUser(&payload)
+		res, err := a.service.Register(&payload)
 		if err != nil {
-			var pgErr *pgconn.PgError
-			if errors.As(err, &pgErr) {
-				responses.DBErrorResponse(ctx, pgErr)
-				return nil
+			dbErrCode := database.ErrorCode(err)
+			if dbErrCode == database.UniqueViolation {
+				return ctx.Status(fiber.StatusConflict).JSON(fiber.Map{"message": "email already exists"})
 			}
 
-			ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
-			return nil
+			return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
 		}
 
 		return ctx.Status(fiber.StatusOK).JSON(res)
 	}
 }
 
-func (a *adapter) credentialLoginHandle() fiber.Handler {
+func (a *adapter) credentialLogin() fiber.Handler {
 	return func(ctx *fiber.Ctx) error {
 		var payload dto.LoginUser
 		if err := ctx.BodyParser(&payload); err != nil {
 			return ctx.SendStatus(fiber.StatusBadRequest)
 		}
-		if errs := utils.ValidateStruct(nil, payload); len(errs) > 0 && errs[0].Error {
+		if errs := utils.ValidateStruct(nil, payload); len(errs) > 0 {
 			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": utils.GetValidationError(errs)})
 		}
 
@@ -103,10 +101,8 @@ func (a *adapter) credentialLoginHandle() fiber.Handler {
 
 		res, err := a.service.Login(&payload, session)
 		if err != nil {
-
-			if dbErr, ok := err.(*pgconn.PgError); ok {
-				responses.DBErrorResponse(ctx, dbErr)
-				return nil
+			if errors.Is(err, database.ErrRecordNotFound) {
+				return ctx.Status(http.StatusNotFound).JSON(fiber.Map{"message": "no user with such email"})
 			}
 
 			if errors.Is(err, ErrInvalidCredential) {
@@ -123,6 +119,32 @@ func (a *adapter) credentialLoginHandle() fiber.Handler {
 			"refreshToken": res.RefreshToken,
 			"refreshExp":   res.RefreshPayload.ExpiredAt,
 			"user":         res.User.ToUserResponse(),
+		})
+	}
+}
+
+func (a *adapter) credentialRefresh() fiber.Handler {
+	return func(ctx *fiber.Ctx) error {
+		var payload dto.RefreshTokenDto
+		if err := ctx.BodyParser(&payload); err != nil {
+			return ctx.SendStatus(fiber.StatusBadRequest)
+		}
+
+		res, err := a.service.RefreshAccessToken(payload.AccessToken, payload.RefreshToken)
+		if err != nil {
+			switch err {
+			case ErrInvalidCredential, ErrInvalidSession:
+				return ctx.Status(http.StatusForbidden).JSON(fiber.Map{"message": err.Error()})
+			case token.ErrInvalidToken:
+				return ctx.Status(http.StatusUnauthorized).JSON(fiber.Map{"message": err.Error()})
+			default:
+				return ctx.Status(http.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
+			}
+		}
+
+		return ctx.Status(http.StatusOK).JSON(fiber.Map{
+			"accessToken": res.AccessToken,
+			"accessExp":   res.AccessPayload.ExpiredAt,
 		})
 	}
 }
@@ -150,9 +172,10 @@ func (a *adapter) bffGetUserByEmail() fiber.Handler {
 
 		user, err := a.service.GetUserByEmail(email)
 		if err != nil {
-			c.Status(http.StatusInternalServerError)
-			fmt.Println(err)
-			return err
+			if errors.Is(err, database.ErrRecordNotFound) {
+				return c.Status(http.StatusNotFound).JSON(fiber.Map{"message": fmt.Sprintf("User with email %s not found", email)})
+			}
+			return c.SendStatus(http.StatusInternalServerError)
 		}
 
 		return c.JSON(user)
@@ -164,14 +187,15 @@ func (a *adapter) bffGetUserById() fiber.Handler {
 		id := c.Params("id")
 		uid, err := uuid.Parse(id)
 		if err != nil {
-			return c.Status(http.StatusBadRequest).SendString("Invalid id")
+			return c.Status(http.StatusBadRequest).JSON(fiber.Map{"message": "Invalid id"})
 		}
 
 		user, err := a.service.GetUserById(uid)
 		if err != nil {
-			c.Status(http.StatusInternalServerError)
-			fmt.Println(err)
-			return err
+			if errors.Is(err, database.ErrRecordNotFound) {
+				return c.Status(http.StatusNotFound).JSON(fiber.Map{"message": fmt.Sprintf("User with id %s not found", id)})
+			}
+			return c.SendStatus(http.StatusInternalServerError)
 		}
 
 		return c.JSON(user)

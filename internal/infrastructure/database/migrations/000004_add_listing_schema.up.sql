@@ -46,6 +46,19 @@ CREATE TABLE IF NOT EXISTS "rental_policies" (
   "id" BIGSERIAL PRIMARY KEY,
   "policy" TEXT NOT NULL
 );
+INSERT INTO rental_policies (policy) VALUES
+('rental_policy-payment'),
+('rental_policy-maintenance'),
+('rental_policy-insurance'),
+('rental_policy-noise'),
+('rental_policy-lease_renewal'),
+('rental_policy-change_to_property'),
+('rental_policy-parking'),
+('rental_policy-pets'),
+('rental_policy-subletting'),
+('rental_policy-business'),
+('rental_policy-consequences'),
+('rental_policy-other');
 
 CREATE TABLE IF NOT EXISTS "listing_policies" (
   "listing_id" UUID NOT NULL,

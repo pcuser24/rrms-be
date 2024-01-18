@@ -3,7 +3,6 @@ package unit
 import (
 	"context"
 	"fmt"
-	"log"
 	"slices"
 
 	"github.com/google/uuid"
@@ -13,7 +12,7 @@ import (
 	"github.com/user2410/rrms-backend/internal/infrastructure/database"
 	sqlbuilders "github.com/user2410/rrms-backend/internal/infrastructure/database/sql_builders"
 	"github.com/user2410/rrms-backend/internal/utils"
-	"github.com/user2410/rrms-backend/pkg/utils/types"
+	"github.com/user2410/rrms-backend/internal/utils/types"
 )
 
 type Repo interface {
@@ -151,7 +150,7 @@ func (r *repo) SearchUnitCombination(ctx context.Context, query *dto.SearchUnitC
 	sqSql += fmt.Sprintf(" ORDER BY %v %v", utils.PtrDerefence[string](query.SortBy, "created_at"), utils.PtrDerefence[string](query.Order, "desc"))
 	sqSql += fmt.Sprintf(" LIMIT %v", utils.PtrDerefence[int32](query.Limit, 1000))
 	sqSql += fmt.Sprintf(" OFFSET %v", utils.PtrDerefence[int32](query.Offset, 0))
-	rows, err := r.dao.QueryContext(context.Background(), sqSql, args...)
+	rows, err := r.dao.Query(context.Background(), sqSql, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -240,8 +239,8 @@ func (r *repo) GetUnitsByIds(ctx context.Context, ids []string, fields []string)
 	ib.From("units")
 	ib.Where(ib.In("id::text", sqlbuilder.List(ids)))
 	query, args := ib.Build()
-	log.Println(query, args)
-	rows, err := r.dao.QueryContext(ctx, query, args...)
+	// log.Println(query, args)
+	rows, err := r.dao.Query(ctx, query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -287,9 +286,7 @@ func (r *repo) GetUnitsByIds(ctx context.Context, ids []string, fields []string)
 		}
 		items = append(items, *model.ToUnitModel(&i))
 	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
+	rows.Close()
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}

@@ -3,7 +3,7 @@ package model
 import (
 	"github.com/google/uuid"
 	"github.com/user2410/rrms-backend/internal/infrastructure/database"
-	"github.com/user2410/rrms-backend/pkg/utils/types"
+	"github.com/user2410/rrms-backend/internal/utils/types"
 )
 
 type UnitMediaModel struct {

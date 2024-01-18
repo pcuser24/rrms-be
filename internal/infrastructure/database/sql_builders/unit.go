@@ -12,7 +12,7 @@ func SearchUnitBuilder(
 	searchFields []string, query *dto.SearchUnitQuery,
 	connectID, connectProperty string,
 ) (string, []interface{}) {
-	var searchQuery string = "SELECT " + strings.Join(searchFields, ", ") + " FROM units WHERE "
+	var searchQuery string = "SELECT " + strings.Join(searchFields, ", ") + " FROM units"
 	var searchQueries []string
 	var args []interface{}
 
@@ -61,20 +61,24 @@ func SearchUnitBuilder(
 		args = append(args, *query.UNumberOfBalconies)
 	}
 	if len(query.UAmenities) > 0 {
-		searchQueries = append(searchQueries, "unit_amenities.amenity_id IN ($?)")
+		searchQueries = append(searchQueries, "EXISTS (SELECT 1 FROM unit_amenities WHERE unit_id = units.id AND amenity_id IN ($?))")
 		args = append(args, sqlbuilder.List(query.UAmenities))
 	}
 
-	if len(searchQueries) == 0 {
+	// no field is specified and check exisence only
+	if len(searchQueries) == 0 && searchFields[0] == "1" {
 		return "", []interface{}{}
 	}
+
 	if len(connectID) > 0 {
 		searchQueries = append(searchQueries, fmt.Sprintf("units.id = %v", connectID))
 	}
 	if len(connectProperty) > 0 {
 		searchQueries = append(searchQueries, fmt.Sprintf("units.property_id = %v", connectProperty))
 	}
-
-	searchQuery += strings.Join(searchQueries, " AND \n")
+	if len(searchQueries) > 0 {
+		// some fields are specified
+		searchQuery += " WHERE " + strings.Join(searchQueries, " AND ")
+	}
 	return searchQuery, args
 }

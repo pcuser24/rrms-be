@@ -13,7 +13,7 @@ import (
 	"github.com/user2410/rrms-backend/internal/infrastructure/database"
 	sqlbuilders "github.com/user2410/rrms-backend/internal/infrastructure/database/sql_builders"
 	"github.com/user2410/rrms-backend/internal/utils"
-	"github.com/user2410/rrms-backend/pkg/utils/types"
+	"github.com/user2410/rrms-backend/internal/utils/types"
 )
 
 func TestSearchListing(t *testing.T) {
@@ -133,7 +133,7 @@ func TestSearchListingCombination(t *testing.T) {
 
 	sqSql := utils.SequelizePlaceholders(sql)
 	t.Log("sqSql", sqSql)
-	rows, err := dao.QueryContext(context.Background(), sqSql, args...)
+	rows, err := dao.Query(context.Background(), sqSql, args...)
 	if err != nil {
 		t.Fatal(err)
 	}

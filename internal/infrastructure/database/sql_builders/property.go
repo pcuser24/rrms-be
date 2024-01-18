@@ -6,13 +6,14 @@ import (
 
 	"github.com/huandu/go-sqlbuilder"
 	"github.com/user2410/rrms-backend/internal/domain/property/dto"
+	"github.com/user2410/rrms-backend/internal/utils"
 )
 
 func SearchPropertyBuilder(
 	searchFields []string, query *dto.SearchPropertyQuery,
 	connectID, connectCreator string,
 ) (string, []interface{}) {
-	var searchQuery string = "SELECT " + strings.Join(searchFields, ", ") + " FROM properties WHERE "
+	var searchQuery string = "SELECT " + strings.Join(searchFields, ", ") + " FROM properties"
 	var searchQueries []string
 	var args []interface{}
 
@@ -105,15 +106,48 @@ func SearchPropertyBuilder(
 		args = append(args, sqlbuilder.List(query.PTags))
 	}
 
-	if len(searchQueries) == 0 {
+	// no field is specified and check exisence only
+	if len(searchQueries) == 0 && searchFields[0] == "1" {
 		return "", []interface{}{}
 	}
+
 	if len(connectID) > 0 {
 		searchQueries = append(searchQueries, fmt.Sprintf("properties.id = %v", connectID))
 	}
 	if len(connectCreator) > 0 {
 		searchQueries = append(searchQueries, fmt.Sprintf("properties.creator_id = %v", connectCreator))
 	}
-	searchQuery += strings.Join(searchQueries, " AND \n")
+	if len(searchQueries) > 0 {
+		// some fields are specified
+		searchQuery += " WHERE " + strings.Join(searchQueries, " AND ")
+	}
 	return searchQuery, args
+}
+
+func SearchPropertyCombinationBuilder(query *dto.SearchPropertyCombinationQuery) (string, []any) {
+	sqlProp, argsProp := SearchPropertyBuilder(
+		[]string{"properties.id", "count(*) OVER() AS full_count"},
+		&query.SearchPropertyQuery,
+		"", "",
+	)
+	sqlUnit, argsUnit := SearchUnitBuilder([]string{"1"}, &query.SearchUnitQuery, "", "properties.id")
+
+	var queryStr string = sqlProp
+	var argsLs []interface{} = argsProp
+	// build order: unit -> property
+	if len(argsProp) > 0 && len(sqlUnit) > 0 {
+		queryStr += fmt.Sprintf(" AND EXISTS (%v)", sqlUnit)
+		argsLs = append(argsLs, argsUnit...)
+	} else if len(sqlUnit) > 0 {
+		queryStr += fmt.Sprintf(" WHERE EXISTS (%v)", sqlUnit)
+		argsLs = append(argsLs, argsUnit...)
+	}
+
+	sql, args := sqlbuilder.Build(queryStr, argsLs...).Build()
+	sqSql := utils.SequelizePlaceholders(sql)
+	sqSql += fmt.Sprintf(" ORDER BY %v %v", *query.SortBy, *query.Order)
+	sqSql += fmt.Sprintf(" LIMIT %v", *query.Limit)
+	sqSql += fmt.Sprintf(" OFFSET %v", *query.Offset)
+
+	return sqSql, args
 }

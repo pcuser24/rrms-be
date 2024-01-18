@@ -1,11 +1,11 @@
 package dto
 
 import (
-	"database/sql"
 	"time"
 
 	"github.com/google/uuid"
 	"github.com/user2410/rrms-backend/internal/infrastructure/database"
+	"github.com/user2410/rrms-backend/internal/utils/types"
 )
 
 type CreateApplicationMinorModel struct {
@@ -17,31 +17,14 @@ type CreateApplicationMinorModel struct {
 }
 
 func (m *CreateApplicationMinorModel) ToCreateApplicationMinorDB(aid int64) *database.CreateApplicationMinorParams {
-	db := &database.CreateApplicationMinorParams{
+	return &database.CreateApplicationMinorParams{
 		ApplicationID: aid,
 		FullName:      m.FullName,
 		Dob:           m.Dob,
+		Email:         types.StrN(m.Email),
+		Phone:         types.StrN(m.Phone),
+		Description:   types.StrN(m.Description),
 	}
-	if m.Email != nil {
-		db.Email = sql.NullString{
-			String: *m.Email,
-			Valid:  true,
-		}
-	}
-	if m.Phone != nil {
-		db.Phone = sql.NullString{
-			String: *m.Phone,
-			Valid:  true,
-		}
-	}
-	if m.Description != nil {
-		db.Description = sql.NullString{
-			String: *m.Description,
-			Valid:  true,
-		}
-	}
-
-	return db
 }
 
 type CreateApplicationCoapModel struct {
@@ -55,60 +38,31 @@ type CreateApplicationCoapModel struct {
 }
 
 func (m *CreateApplicationCoapModel) ToCreateApplicationCoapDB(aid int64) *database.CreateApplicationCoapParams {
-	db := &database.CreateApplicationCoapParams{
+	return &database.CreateApplicationCoapParams{
 		ApplicationID: aid,
 		FullName:      m.FullName,
 		Dob:           m.Dob,
 		Job:           m.Job,
 		Income:        m.Income,
+		Email:         types.StrN(m.Email),
+		Phone:         types.StrN(m.Phone),
+		Description:   types.StrN(m.Description),
 	}
-	if m.Email != nil {
-		db.Email = sql.NullString{
-			String: *m.Email,
-			Valid:  true,
-		}
-	}
-	if m.Phone != nil {
-		db.Phone = sql.NullString{
-			String: *m.Phone,
-			Valid:  true,
-		}
-	}
-	if m.Description != nil {
-		db.Description = sql.NullString{
-			String: *m.Description,
-			Valid:  true,
-		}
-	}
-
-	return db
 }
 
 type CreateApplicationPetModel struct {
 	Type        string   `json:"type" validate:"required"`
-	Weight      *float64 `json:"weight" validate:"omitempty"`
+	Weight      *float32 `json:"weight" validate:"omitempty"`
 	Description *string  `json:"description" validate:"omitempty"`
 }
 
 func (m *CreateApplicationPetModel) ToCreateApplicationPetDB(aid int64) *database.CreateApplicationPetParams {
-	db := &database.CreateApplicationPetParams{
+	return &database.CreateApplicationPetParams{
 		ApplicationID: aid,
 		Type:          m.Type,
+		Weight:        types.Float32N(m.Weight),
+		Description:   types.StrN(m.Description),
 	}
-	if m.Weight != nil {
-		db.Weight = sql.NullFloat64{
-			Float64: *m.Weight,
-			Valid:   true,
-		}
-	}
-	if m.Description != nil {
-		db.Description = sql.NullString{
-			String: *m.Description,
-			Valid:  true,
-		}
-	}
-
-	return db
 }
 
 type CreateApplicationVehicle struct {
@@ -119,25 +73,13 @@ type CreateApplicationVehicle struct {
 }
 
 func (m *CreateApplicationVehicle) ToCreateApplicationVehicleDB(aid int64) *database.CreateApplicationVehicleParams {
-	db := &database.CreateApplicationVehicleParams{
+	return &database.CreateApplicationVehicleParams{
 		ApplicationID: aid,
 		Type:          m.Type,
 		Code:          m.Code,
+		Model:         types.StrN(m.Model),
+		Description:   types.StrN(m.Description),
 	}
-	if m.Model != nil {
-		db.Model = sql.NullString{
-			String: *m.Model,
-			Valid:  true,
-		}
-	}
-	if m.Description != nil {
-		db.Description = sql.NullString{
-			String: *m.Description,
-			Valid:  true,
-		}
-	}
-
-	return db
 }
 
 type CreateApplicationDto struct {
@@ -157,12 +99,12 @@ type CreateApplicationDto struct {
 	RhDistrict               *string     `json:"rhDistrict" validate:"omitempty"`
 	RhWard                   *string     `json:"rhWard" validate:"omitempty"`
 	RhRentalDuration         *int32      `json:"rhRentalDuration" validate:"omitempty,gt=0"`
-	RhMonthlyPayment         *float64    `json:"rhMonthlyPayment" validate:"omitempty,gt=0"`
+	RhMonthlyPayment         *float32    `json:"rhMonthlyPayment" validate:"omitempty,gt=0"`
 	RhReasonForLeaving       *string     `json:"rhReasonForLeaving" validate:"omitempty"`
 	EmploymentStatus         string      `json:"employmentStatus" validate:"required,oneof=UNEMPLOYED EMPLOYED SELF-EMPLOYED RETIRED STUDENT"`
 	EmploymentCompanyName    *string     `json:"employmentCompanyName" validate:"omitempty"`
 	EmploymentPosition       *string     `json:"employmentPosition" validate:"omitempty"`
-	EmploymentMonthlyIncome  *float64    `json:"employmentMonthlyIncome" validate:"omitempty,gt=0"`
+	EmploymentMonthlyIncome  *float32    `json:"employmentMonthlyIncome" validate:"omitempty,gt=0"`
 	EmploymentComment        *string     `json:"employmentComment" validate:"omitempty"`
 	EmploymentProofsOfIncome []string    `json:"employmentProofsOfIncome" validate:"omitempty"`
 	IdentityType             string      `json:"identityType" validate:"required,oneof=ID CITIZENIDENTIFICATION PASSPORT DRIVERLICENSE"`
@@ -177,7 +119,7 @@ type CreateApplicationDto struct {
 }
 
 func (a *CreateApplicationDto) ToCreateApplicationDB() *database.CreateApplicationParams {
-	adb := &database.CreateApplicationParams{
+	return &database.CreateApplicationParams{
 		PropertyID:               a.PropertyID,
 		UnitIds:                  a.UnitIds,
 		CreatorID:                a.CreatorID,
@@ -189,77 +131,21 @@ func (a *CreateApplicationDto) ToCreateApplicationDB() *database.CreateApplicati
 		MoveinDate:               a.MoveinDate,
 		PreferredTerm:            a.PreferredTerm,
 		EmploymentStatus:         a.EmploymentStatus,
+		EmploymentCompanyName:    types.StrN(a.EmploymentCompanyName),
+		EmploymentPosition:       types.StrN(a.EmploymentPosition),
+		EmploymentMonthlyIncome:  types.Float32N(a.EmploymentMonthlyIncome),
+		EmploymentComment:        types.StrN(a.EmploymentComment),
 		EmploymentProofsOfIncome: a.EmploymentProofsOfIncome,
+		RhAddress:                types.StrN(a.RhAddress),
+		RhCity:                   types.StrN(a.RhCity),
+		RhDistrict:               types.StrN(a.RhDistrict),
+		RhWard:                   types.StrN(a.RhWard),
+		RhRentalDuration:         types.Int32N(a.RhRentalDuration),
+		RhMonthlyPayment:         types.Float32N(a.RhMonthlyPayment),
+		RhReasonForLeaving:       types.StrN(a.RhReasonForLeaving),
 		IdentityType:             a.IdentityType,
 		IdentityNumber:           a.IdentityNumber,
 		IdentityIssuedDate:       a.IdentityIssuedDate,
 		IdentityIssuedBy:         a.IdentityIssuedBy,
 	}
-	if a.RhAddress != nil {
-		adb.RhAddress = sql.NullString{
-			String: *a.RhAddress,
-			Valid:  true,
-		}
-	}
-	if a.RhCity != nil {
-		adb.RhCity = sql.NullString{
-			String: *a.RhCity,
-			Valid:  true,
-		}
-	}
-	if a.RhDistrict != nil {
-		adb.RhDistrict = sql.NullString{
-			String: *a.RhDistrict,
-			Valid:  true,
-		}
-	}
-	if a.RhWard != nil {
-		adb.RhWard = sql.NullString{
-			String: *a.RhWard,
-			Valid:  true,
-		}
-	}
-	if a.RhRentalDuration != nil {
-		adb.RhRentalDuration = sql.NullInt32{
-			Int32: *a.RhRentalDuration,
-			Valid: true,
-		}
-	}
-	if a.RhMonthlyPayment != nil {
-		adb.RhMonthlyPayment = sql.NullFloat64{
-			Float64: *a.RhMonthlyPayment,
-			Valid:   true,
-		}
-	}
-	if a.RhReasonForLeaving != nil {
-		adb.RhReasonForLeaving = sql.NullString{
-			String: *a.RhReasonForLeaving,
-			Valid:  true,
-		}
-	}
-	if a.EmploymentCompanyName != nil {
-		adb.EmploymentCompanyName = sql.NullString{
-			String: *a.EmploymentCompanyName,
-			Valid:  true,
-		}
-	}
-	if a.EmploymentPosition != nil {
-		adb.EmploymentPosition = sql.NullString{
-			String: *a.EmploymentPosition,
-			Valid:  true,
-		}
-	}
-	if a.EmploymentMonthlyIncome != nil {
-		adb.EmploymentMonthlyIncome = sql.NullFloat64{
-			Float64: *a.EmploymentMonthlyIncome,
-			Valid:   true,
-		}
-	}
-	if a.EmploymentComment != nil {
-		adb.EmploymentComment = sql.NullString{
-			String: *a.EmploymentComment,
-			Valid:  true,
-		}
-	}
-	return adb
 }

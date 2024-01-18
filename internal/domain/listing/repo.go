@@ -2,8 +2,6 @@ package listing
 
 import (
 	"context"
-	"fmt"
-	"log"
 	"slices"
 
 	"github.com/google/uuid"
@@ -12,13 +10,12 @@ import (
 	"github.com/user2410/rrms-backend/internal/domain/listing/model"
 	"github.com/user2410/rrms-backend/internal/infrastructure/database"
 	sqlbuilders "github.com/user2410/rrms-backend/internal/infrastructure/database/sql_builders"
-	"github.com/user2410/rrms-backend/internal/utils"
 )
 
 type Repo interface {
 	CreateListing(ctx context.Context, data *dto.CreateListing) (*model.ListingModel, error)
 	SearchListingCombination(ctx context.Context, query *dto.SearchListingCombinationQuery) (*dto.SearchListingCombinationResponse, error)
-	GetListings(ctx context.Context, ids []string, fields []string) ([]model.ListingModel, error)
+	GetListingsByIds(ctx context.Context, ids []string, fields []string) ([]model.ListingModel, error)
 	GetListingByID(ctx context.Context, id uuid.UUID) (*model.ListingModel, error)
 	UpdateListing(ctx context.Context, data *dto.UpdateListing) error
 	DeleteListing(ctx context.Context, id uuid.UUID) error
@@ -77,7 +74,7 @@ func (r *repo) CreateListing(ctx context.Context, data *dto.CreateListing) (*mod
 	return l, nil
 }
 
-func (r *repo) GetListings(ctx context.Context, ids []string, fields []string) ([]model.ListingModel, error) {
+func (r *repo) GetListingsByIds(ctx context.Context, ids []string, fields []string) ([]model.ListingModel, error) {
 	var nonFKFields []string = []string{"id"}
 	var fkFields []string
 	for _, f := range fields {
@@ -93,8 +90,8 @@ func (r *repo) GetListings(ctx context.Context, ids []string, fields []string) (
 	ib.From("listings")
 	ib.Where(ib.In("id::text", sqlbuilder.List(ids)))
 	query, args := ib.Build()
-	log.Println(query, args)
-	rows, err := r.dao.QueryContext(ctx, query, args...)
+	// log.Println(query, args)
+	rows, err := r.dao.Query(ctx, query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -152,9 +149,7 @@ func (r *repo) GetListings(ctx context.Context, ids []string, fields []string) (
 		}
 		items = append(items, *model.ToListingModel(&i))
 	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
+	rows.Close()
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
@@ -243,38 +238,13 @@ func (r *repo) CheckValidUnitForListing(ctx context.Context, lid uuid.UUID, uid 
 }
 
 func (r *repo) SearchListingCombination(ctx context.Context, query *dto.SearchListingCombinationQuery) (*dto.SearchListingCombinationResponse, error) {
-	sqlListing, argsListing := sqlbuilders.SearchListingBuilder(
-		[]string{"listings.id", "count(*) OVER() AS full_count"},
-		&query.SearchListingQuery,
-		"", "", "",
-	)
-	sqlProp, argsProp := sqlbuilders.SearchPropertyBuilder([]string{"1"}, &query.SearchPropertyQuery, "listings.property_id", "")
-	sqlUnit, argsUnit := sqlbuilders.SearchUnitBuilder([]string{"1"}, &query.SearchUnitQuery, "", "properties.id")
-
-	var queryStr string = sqlListing
-	var argsLs []interface{} = argsListing
-	// build order: unit -> property -> listing
-	if len(sqlProp) > 0 {
-		var tmp string = sqlProp
-		argsLs = append(argsLs, argsProp...)
-		if len(sqlUnit) > 0 {
-			tmp += fmt.Sprintf(" AND EXISTS (%v) ", sqlUnit)
-			argsLs = append(argsLs, argsUnit...)
-		}
-		queryStr = fmt.Sprintf("%v AND EXISTS (%v) ", sqlListing, tmp)
-	}
-
-	sql, args := sqlbuilder.Build(queryStr, argsLs...).Build()
-	sqSql := utils.SequelizePlaceholders(sql)
-	sqSql += fmt.Sprintf(" ORDER BY %v %v", utils.PtrDerefence[string](query.SortBy, "created_at"), utils.PtrDerefence[string](query.Order, "desc"))
-	sqSql += fmt.Sprintf(" LIMIT %v", utils.PtrDerefence[int32](query.Limit, 1000))
-	sqSql += fmt.Sprintf(" OFFSET %v", utils.PtrDerefence[int32](query.Offset, 0))
-	rows, err := r.dao.QueryContext(context.Background(), sqSql, args...)
+	sqSql, args := sqlbuilders.SearchListingCombinationBuilder(query)
+	rows, err := r.dao.Query(context.Background(), sqSql, args...)
 	if err != nil {
 		return nil, err
 	}
 
-	res, err := func() (*dto.SearchListingCombinationResponse, error) {
+	res1, err := func() (*dto.SearchListingCombinationResponse, error) {
 		defer rows.Close()
 		var r dto.SearchListingCombinationResponse
 		for rows.Next() {
@@ -291,5 +261,12 @@ func (r *repo) SearchListingCombination(ctx context.Context, query *dto.SearchLi
 		return nil, err
 	}
 
-	return res, nil
+	return &dto.SearchListingCombinationResponse{
+		SortBy: *query.SortBy,
+		Order:  *query.Order,
+		Limit:  *query.Limit,
+		Offset: *query.Offset,
+		Items:  res1.Items,
+		Count:  res1.Count,
+	}, nil
 }

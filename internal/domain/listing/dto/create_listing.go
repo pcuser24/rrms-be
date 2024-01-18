@@ -1,12 +1,12 @@
 package dto
 
 import (
-	"database/sql"
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/user2410/rrms-backend/internal/infrastructure/database"
-	"github.com/user2410/rrms-backend/pkg/utils/types"
+	"github.com/user2410/rrms-backend/internal/utils/types"
 )
 
 type CreateListingPolicy struct {
@@ -37,10 +37,10 @@ type CreateListing struct {
 	ContactType       string                `json:"contactType" validate:"required"`
 	Price             int64                 `json:"price" validate:"required,gt=0"`
 	PriceNegotiable   bool                  `json:"priceNegotiable"`
-	SecurityDeposit   *int64                `json:"securityDeposit" validate:"omitempty,gt=0"`
+	SecurityDeposit   *int64                `json:"securityDeposit" validate:"omitempty,gte=0"`
 	LeaseTerm         *int32                `json:"leaseTerm" validate:"required,gt=0"`
 	PetsAllowed       *bool                 `json:"petsAllowed"`
-	NumberOfResidents *int32                `json:"numberOfResidents" validate:"omitempty,gt=0"`
+	NumberOfResidents *int32                `json:"numberOfResidents" validate:"omitempty,gte=0"`
 	Priority          int32                 `json:"priority" validate:"required,gte=1,lte=5"`
 	PostAt            time.Time             `json:"postAt" validate:"required"`
 	Active            bool                  `json:"active" validate:"required"`
@@ -60,7 +60,7 @@ func (c *CreateListing) ToCreateListingDB() *database.CreateListingParams {
 		Phone:             c.Phone,
 		ContactType:       c.ContactType,
 		Price:             c.Price,
-		PriceNegotiable:   sql.NullBool{Valid: true, Bool: c.PriceNegotiable},
+		PriceNegotiable:   pgtype.Bool{Valid: true, Bool: c.PriceNegotiable},
 		SecurityDeposit:   types.Int64N(c.SecurityDeposit),
 		LeaseTerm:         types.Int32N(c.LeaseTerm),
 		PetsAllowed:       types.BoolN(c.PetsAllowed),

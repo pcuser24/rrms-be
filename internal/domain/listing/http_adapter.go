@@ -1,8 +1,6 @@
 package listing
 
 import (
-	"log"
-
 	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
@@ -41,7 +39,7 @@ func (a *adapter) RegisterServer(router *fiber.Router, tokenMaker token.Maker) {
 	// non-required authorization routes
 	listingRoute.Get("/", a.searchListings())
 	listingRoute.Get("/listing/:id", a.getListingById())
-
+	listingRoute.Get("/ids", a.getListingsByIds())
 	listingRoute.Use(auth.AuthorizedMiddleware(tokenMaker))
 
 	listingRoute.Post("/", a.createListing())
@@ -59,7 +57,7 @@ func (a *adapter) createListing() fiber.Handler {
 			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": err.Error()})
 		}
 		payload.CreatorID = tkPayload.UserID
-		if errs := utils.ValidateStruct(nil, payload); len(errs) > 0 && errs[0].Error {
+		if errs := utils.ValidateStruct(nil, payload); len(errs) > 0 {
 			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": utils.GetValidationError(errs)})
 		}
 		// log.Println("Passed struct validation")
@@ -110,16 +108,16 @@ func (a *adapter) createListing() fiber.Handler {
 
 func (a *adapter) searchListings() fiber.Handler {
 	return func(ctx *fiber.Ctx) error {
-		var payload dto.SearchListingCombinationQuery
-		if err := ctx.QueryParser(&payload); err != nil {
+		payload := new(dto.SearchListingCombinationQuery)
+		if err := payload.QueryParser(ctx); err != nil {
 			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": err.Error()})
 		}
-		if errs := utils.ValidateStruct(nil, payload); len(errs) > 0 && errs[0].Error {
+		if errs := utils.ValidateStruct(nil, *payload); len(errs) > 0 {
 			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": utils.GetValidationError(errs)})
 		}
-		log.Println(payload)
+		// log.Println(payload)
 
-		res, err := a.lService.SearchListingCombination(&payload)
+		res, err := a.lService.SearchListingCombination(payload)
 		if err != nil {
 			if dbErr, ok := err.(*pgconn.PgError); ok {
 				return responses.DBErrorResponse(ctx, dbErr)
@@ -129,12 +127,7 @@ func (a *adapter) searchListings() fiber.Handler {
 			return nil
 		}
 
-		return ctx.JSON(fiber.Map{
-			"limit":  *payload.Limit,
-			"offset": *payload.Offset,
-			"count":  res.Count,
-			"items":  res.Items,
-		})
+		return ctx.JSON(res)
 	}
 }
 
@@ -146,7 +139,7 @@ func (a *adapter) getMyListings() fiber.Handler {
 		}
 		validator := validator.New()
 		validator.RegisterValidation("listingFields", dto.ValidateQuery)
-		if errs := utils.ValidateStruct(validator, query); len(errs) > 0 && errs[0].Error {
+		if errs := utils.ValidateStruct(validator, query); len(errs) > 0 {
 			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": utils.GetValidationError(errs)})
 		}
 
@@ -185,6 +178,28 @@ func (a *adapter) getListingById() fiber.Handler {
 	}
 }
 
+func (a *adapter) getListingsByIds() fiber.Handler {
+	return func(ctx *fiber.Ctx) error {
+		query := new(dto.GetListingsByIdsQuery)
+		if err := query.QueryParser(ctx); err != nil {
+			return fiber.NewError(fiber.StatusBadRequest)
+		}
+		validator := utils.GetDefaultValidator()
+		validator.RegisterValidation(dto.ListingFieldsLocalKey, dto.ValidateQuery)
+		if errs := utils.ValidateStruct(validator, *query); len(errs) > 0 {
+			return fiber.NewError(fiber.StatusBadRequest, utils.GetValidationError(errs))
+		}
+
+		res, err := a.lService.GetListingsByIds(query.IDs, query.Fields)
+		if err != nil {
+			ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
+			return nil
+		}
+
+		return ctx.JSON(res)
+	}
+}
+
 func (a *adapter) updateListing() fiber.Handler {
 	return func(ctx *fiber.Ctx) error {
 		lid, _ := uuid.Parse(ctx.Params("id"))
@@ -194,7 +209,7 @@ func (a *adapter) updateListing() fiber.Handler {
 			return err
 		}
 		payload.ID = lid
-		if errs := utils.ValidateStruct(nil, payload); len(errs) > 0 && errs[0].Error {
+		if errs := utils.ValidateStruct(nil, payload); len(errs) > 0 {
 			ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": utils.GetValidationError(errs)})
 			return nil
 		}

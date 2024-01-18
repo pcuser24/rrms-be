@@ -6,14 +6,15 @@ import (
 
 	"github.com/huandu/go-sqlbuilder"
 	"github.com/user2410/rrms-backend/internal/domain/listing/dto"
+	"github.com/user2410/rrms-backend/internal/utils"
 )
 
 func SearchListingBuilder(
 	searchFields []string, query *dto.SearchListingQuery,
 	connectID, connectCreator, connectProperty string,
 ) (string, []interface{}) {
-	var searchQuery string = "SELECT " + strings.Join(searchFields, ", ") + " FROM listings WHERE "
-	var searchQueries []string
+	var searchQuery string = "SELECT " + strings.Join(searchFields, ", ") + " FROM listings"
+	var searchQueries []string // WHERE field (=/ILIKE) ?
 	var args []interface{}
 
 	if query.LTitle != nil {
@@ -101,9 +102,11 @@ func SearchListingBuilder(
 		args = append(args, sqlbuilder.List(query.LPolicies))
 	}
 
-	if len(searchQueries) == 0 {
+	// no field is specified and check for exisence only
+	if len(searchQueries) == 0 && searchFields[0] == "1" {
 		return "", []interface{}{}
 	}
+
 	if len(connectID) > 0 {
 		searchQueries = append(searchQueries, fmt.Sprintf("listings.id = %v", connectID))
 	}
@@ -113,7 +116,57 @@ func SearchListingBuilder(
 	if len(connectProperty) > 0 {
 		searchQueries = append(searchQueries, fmt.Sprintf("listings.property_id = %v", connectProperty))
 	}
+	if len(searchQueries) > 0 {
+		// some fields are specified
+		searchQuery += " WHERE " + strings.Join(searchQueries, " AND ")
+	}
 
-	searchQuery += strings.Join(searchQueries, " AND \n")
 	return searchQuery, args
+}
+
+// Search listing combined with property and unit
+func SearchListingCombinationBuilder(query *dto.SearchListingCombinationQuery) (string, []any) {
+	sqlListing, argsListing := SearchListingBuilder(
+		[]string{"listings.id", "count(*) OVER() AS full_count"},
+		&query.SearchListingQuery,
+		"", "", "",
+	)
+	sqlProp, argsProp := SearchPropertyBuilder([]string{"1"}, &query.SearchPropertyQuery, "listings.property_id", "")
+	sqlUnit, argsUnit := SearchUnitBuilder([]string{"1"}, &query.SearchUnitQuery, "", "listings.property_id")
+
+	var queryStr string = sqlListing
+	var argsLs []any = argsListing
+	// NOTE: goofy code, will be refactored later
+	if len(argsListing) > 0 {
+		if len(sqlProp) > 0 {
+			queryStr += fmt.Sprintf(" AND EXISTS (%v)", sqlProp)
+			argsLs = append(argsLs, argsProp...)
+		}
+		if len(sqlUnit) > 0 {
+			queryStr += fmt.Sprintf(" AND EXISTS (%v)", sqlUnit)
+			argsLs = append(argsLs, argsUnit...)
+		}
+	} else if len(sqlProp) > 0 || len(sqlUnit) > 0 {
+		queryStr += " WHERE "
+		if len(sqlProp) > 0 {
+			queryStr += fmt.Sprintf("EXISTS (%v)", sqlProp)
+			argsLs = append(argsLs, argsProp...)
+		}
+		if len(sqlUnit) > 0 {
+			if len(sqlProp) > 0 {
+				queryStr += " AND "
+			}
+			queryStr += fmt.Sprintf("EXISTS (%v)", sqlUnit)
+			argsLs = append(argsLs, argsUnit...)
+		}
+	}
+
+	sql, args := sqlbuilder.Build(queryStr, argsLs...).Build()
+	sqSql := utils.SequelizePlaceholders(sql)
+
+	sqSql += fmt.Sprintf(" ORDER BY %v %v", *query.SortBy, *query.Order)
+	sqSql += fmt.Sprintf(" LIMIT %v", *query.Limit)
+	sqSql += fmt.Sprintf(" OFFSET %v", *query.Offset)
+
+	return sqSql, args
 }

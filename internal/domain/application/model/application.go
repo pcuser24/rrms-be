@@ -5,7 +5,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/user2410/rrms-backend/internal/infrastructure/database"
-	"github.com/user2410/rrms-backend/pkg/utils/types"
+	"github.com/user2410/rrms-backend/internal/utils/types"
 )
 
 /***/
@@ -61,14 +61,14 @@ func ToApplicationCoapModel(db *database.ApplicationCoap) ApplicationCoapModel {
 type ApplicationPetModel struct {
 	ApplicationID int64    `json:"applicationId" validate:"required"`
 	Type          string   `json:"type" validate:"required"`
-	Weight        *float64 `json:"weight" validate:"omitempty"`
+	Weight        *float32 `json:"weight" validate:"omitempty"`
 	Description   *string  `json:"description" validate:"omitempty"`
 }
 
 func ToApplicationPetModel(db *database.ApplicationPet) ApplicationPetModel {
 	return ApplicationPetModel{
 		ApplicationID: db.ApplicationID,
-		Weight:        types.PNFloat64(db.Weight),
+		Weight:        types.PNFloat32(db.Weight),
 		Description:   types.PNStr(db.Description),
 		Type:          db.Type,
 	}
@@ -113,12 +113,12 @@ type ApplicationModel struct {
 	RhDistrict               *string                    `json:"rhDistrict"`
 	RhWard                   *string                    `json:"rhWard"`
 	RhRentalDuration         *int32                     `json:"rhRentalDuration"`
-	RhMonthlyPayment         *float64                   `json:"rhMonthlyPayment"`
+	RhMonthlyPayment         *float32                   `json:"rhMonthlyPayment"`
 	RhReasonForLeaving       *string                    `json:"rhReasonForLeaving"`
 	EmploymentStatus         string                     `json:"employmentStatus"`
 	EmploymentCompanyName    *string                    `json:"employmentCompanyName"`
 	EmploymentPosition       *string                    `json:"employmentPosition"`
-	EmploymentMonthlyIncome  *float64                   `json:"employmentMonthlyIncome"`
+	EmploymentMonthlyIncome  *float32                   `json:"employmentMonthlyIncome"`
 	EmploymentComment        *string                    `json:"employmentComment"`
 	EmploymentProofsOfIncome []string                   `json:"employmentProofsOfIncome"`
 	IdentityType             string                     `json:"identityType"`
@@ -154,12 +154,12 @@ func ToApplicationModel(a *database.Application) *ApplicationModel {
 		RhDistrict:               types.PNStr(a.RhDistrict),
 		RhWard:                   types.PNStr(a.RhWard),
 		RhRentalDuration:         types.PNInt32(a.RhRentalDuration),
-		RhMonthlyPayment:         types.PNFloat64(a.RhMonthlyPayment),
+		RhMonthlyPayment:         types.PNFloat32(a.RhMonthlyPayment),
 		RhReasonForLeaving:       types.PNStr(a.RhReasonForLeaving),
 		EmploymentStatus:         a.EmploymentStatus,
 		EmploymentCompanyName:    types.PNStr(a.EmploymentCompanyName),
 		EmploymentPosition:       types.PNStr(a.EmploymentPosition),
-		EmploymentMonthlyIncome:  types.PNFloat64(a.EmploymentMonthlyIncome),
+		EmploymentMonthlyIncome:  types.PNFloat32(a.EmploymentMonthlyIncome),
 		EmploymentComment:        types.PNStr(a.EmploymentComment),
 		EmploymentProofsOfIncome: a.EmploymentProofsOfIncome,
 		IdentityType:             a.IdentityType,

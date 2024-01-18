@@ -5,7 +5,7 @@ import (
 
 	"github.com/user2410/rrms-backend/internal/domain/unit/dto"
 	sqlbuilders "github.com/user2410/rrms-backend/internal/infrastructure/database/sql_builders"
-	"github.com/user2410/rrms-backend/pkg/utils/types"
+	"github.com/user2410/rrms-backend/internal/utils/types"
 )
 
 func TestSearchUnit(t *testing.T) {

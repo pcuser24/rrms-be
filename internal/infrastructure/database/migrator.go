@@ -1,12 +1,10 @@
 package database
 
 import (
-	"database/sql"
 	"errors"
 	"fmt"
 
 	"github.com/golang-migrate/migrate/v4"
-	"github.com/golang-migrate/migrate/v4/database/postgres"
 )
 
 type Migrator interface {
@@ -19,25 +17,14 @@ type migrator struct {
 	m *migrate.Migrate
 }
 
-func NewMigrator(instance *sql.DB, migrationDir string) (Migrator, error) {
-	if instance == nil {
-		return nil, fmt.Errorf("the database connection passed in is invalid")
-	}
-	dbConf := &postgres.Config{}
-	dbIns, err := postgres.WithInstance(instance, dbConf)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create a database instance from the connection: %w", err)
-	}
-	m, err := migrate.NewWithDatabaseInstance(
-		fmt.Sprintf("file://%s", migrationDir),
-		"postgres",
-		dbIns,
-	)
+func NewMigrator(migrationDir, dbUrl string) (Migrator, error) {
+	migration, err := migrate.New(fmt.Sprintf("file://%s", migrationDir), dbUrl)
 	if err != nil {
 		return nil, err
 	}
+
 	return &migrator{
-		m: m,
+		m: migration,
 	}, err
 }
 

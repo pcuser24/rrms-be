@@ -7,9 +7,9 @@ package database
 
 import (
 	"context"
-	"database/sql"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 const changePropertyVisibility = `-- name: ChangePropertyVisibility :exec
@@ -24,7 +24,7 @@ type ChangePropertyVisibilityParams struct {
 }
 
 func (q *Queries) ChangePropertyVisibility(ctx context.Context, arg ChangePropertyVisibilityParams) error {
-	_, err := q.db.ExecContext(ctx, changePropertyVisibility, arg.ID, arg.IsPublic)
+	_, err := q.db.Exec(ctx, changePropertyVisibility, arg.ID, arg.IsPublic)
 	return err
 }
 
@@ -77,29 +77,29 @@ INSERT INTO properties (
 `
 
 type CreatePropertyParams struct {
-	CreatorID      uuid.UUID       `json:"creator_id"`
-	Name           sql.NullString  `json:"name"`
-	Building       sql.NullString  `json:"building"`
-	Project        sql.NullString  `json:"project"`
-	Area           float32         `json:"area"`
-	NumberOfFloors sql.NullInt32   `json:"number_of_floors"`
-	YearBuilt      sql.NullInt32   `json:"year_built"`
-	Orientation    sql.NullString  `json:"orientation"`
-	EntranceWidth  sql.NullFloat64 `json:"entrance_width"`
-	Facade         sql.NullFloat64 `json:"facade"`
-	FullAddress    string          `json:"full_address"`
-	District       string          `json:"district"`
-	City           string          `json:"city"`
-	Ward           sql.NullString  `json:"ward"`
-	Lat            sql.NullFloat64 `json:"lat"`
-	Lng            sql.NullFloat64 `json:"lng"`
-	PlaceUrl       string          `json:"place_url"`
-	Description    sql.NullString  `json:"description"`
-	Type           PROPERTYTYPE    `json:"type"`
+	CreatorID      uuid.UUID     `json:"creator_id"`
+	Name           pgtype.Text   `json:"name"`
+	Building       pgtype.Text   `json:"building"`
+	Project        pgtype.Text   `json:"project"`
+	Area           float32       `json:"area"`
+	NumberOfFloors pgtype.Int4   `json:"number_of_floors"`
+	YearBuilt      pgtype.Int4   `json:"year_built"`
+	Orientation    pgtype.Text   `json:"orientation"`
+	EntranceWidth  pgtype.Float4 `json:"entrance_width"`
+	Facade         pgtype.Float4 `json:"facade"`
+	FullAddress    string        `json:"full_address"`
+	District       string        `json:"district"`
+	City           string        `json:"city"`
+	Ward           pgtype.Text   `json:"ward"`
+	Lat            pgtype.Float8 `json:"lat"`
+	Lng            pgtype.Float8 `json:"lng"`
+	PlaceUrl       string        `json:"place_url"`
+	Description    pgtype.Text   `json:"description"`
+	Type           PROPERTYTYPE  `json:"type"`
 }
 
 func (q *Queries) CreateProperty(ctx context.Context, arg CreatePropertyParams) (Property, error) {
-	row := q.db.QueryRowContext(ctx, createProperty,
+	row := q.db.QueryRow(ctx, createProperty,
 		arg.CreatorID,
 		arg.Name,
 		arg.Building,
@@ -162,13 +162,13 @@ INSERT INTO property_features (
 `
 
 type CreatePropertyFeatureParams struct {
-	PropertyID  uuid.UUID      `json:"property_id"`
-	FeatureID   int64          `json:"feature_id"`
-	Description sql.NullString `json:"description"`
+	PropertyID  uuid.UUID   `json:"property_id"`
+	FeatureID   int64       `json:"feature_id"`
+	Description pgtype.Text `json:"description"`
 }
 
 func (q *Queries) CreatePropertyFeature(ctx context.Context, arg CreatePropertyFeatureParams) (PropertyFeature, error) {
-	row := q.db.QueryRowContext(ctx, createPropertyFeature, arg.PropertyID, arg.FeatureID, arg.Description)
+	row := q.db.QueryRow(ctx, createPropertyFeature, arg.PropertyID, arg.FeatureID, arg.Description)
 	var i PropertyFeature
 	err := row.Scan(&i.PropertyID, &i.FeatureID, &i.Description)
 	return i, err
@@ -193,7 +193,7 @@ type CreatePropertyManagerParams struct {
 }
 
 func (q *Queries) CreatePropertyManager(ctx context.Context, arg CreatePropertyManagerParams) (PropertyManager, error) {
-	row := q.db.QueryRowContext(ctx, createPropertyManager, arg.PropertyID, arg.ManagerID, arg.Role)
+	row := q.db.QueryRow(ctx, createPropertyManager, arg.PropertyID, arg.ManagerID, arg.Role)
 	var i PropertyManager
 	err := row.Scan(&i.PropertyID, &i.ManagerID, &i.Role)
 	return i, err
@@ -214,14 +214,14 @@ INSERT INTO property_media (
 `
 
 type CreatePropertyMediaParams struct {
-	PropertyID  uuid.UUID      `json:"property_id"`
-	Url         string         `json:"url"`
-	Type        MEDIATYPE      `json:"type"`
-	Description sql.NullString `json:"description"`
+	PropertyID  uuid.UUID   `json:"property_id"`
+	Url         string      `json:"url"`
+	Type        MEDIATYPE   `json:"type"`
+	Description pgtype.Text `json:"description"`
 }
 
 func (q *Queries) CreatePropertyMedia(ctx context.Context, arg CreatePropertyMediaParams) (PropertyMedium, error) {
-	row := q.db.QueryRowContext(ctx, createPropertyMedia,
+	row := q.db.QueryRow(ctx, createPropertyMedia,
 		arg.PropertyID,
 		arg.Url,
 		arg.Type,
@@ -254,7 +254,7 @@ type CreatePropertyTagParams struct {
 }
 
 func (q *Queries) CreatePropertyTag(ctx context.Context, arg CreatePropertyTagParams) (PropertyTag, error) {
-	row := q.db.QueryRowContext(ctx, createPropertyTag, arg.PropertyID, arg.Tag)
+	row := q.db.QueryRow(ctx, createPropertyTag, arg.PropertyID, arg.Tag)
 	var i PropertyTag
 	err := row.Scan(&i.ID, &i.PropertyID, &i.Tag)
 	return i, err
@@ -265,7 +265,7 @@ DELETE FROM properties WHERE id = $1
 `
 
 func (q *Queries) DeleteProperty(ctx context.Context, id uuid.UUID) error {
-	_, err := q.db.ExecContext(ctx, deleteProperty, id)
+	_, err := q.db.Exec(ctx, deleteProperty, id)
 	return err
 }
 
@@ -279,7 +279,7 @@ type DeletePropertyFeatureParams struct {
 }
 
 func (q *Queries) DeletePropertyFeature(ctx context.Context, arg DeletePropertyFeatureParams) error {
-	_, err := q.db.ExecContext(ctx, deletePropertyFeature, arg.PropertyID, arg.FeatureID)
+	_, err := q.db.Exec(ctx, deletePropertyFeature, arg.PropertyID, arg.FeatureID)
 	return err
 }
 
@@ -293,7 +293,7 @@ type DeletePropertyManagerParams struct {
 }
 
 func (q *Queries) DeletePropertyManager(ctx context.Context, arg DeletePropertyManagerParams) error {
-	_, err := q.db.ExecContext(ctx, deletePropertyManager, arg.PropertyID, arg.ManagerID)
+	_, err := q.db.Exec(ctx, deletePropertyManager, arg.PropertyID, arg.ManagerID)
 	return err
 }
 
@@ -307,7 +307,7 @@ type DeletePropertyMediaParams struct {
 }
 
 func (q *Queries) DeletePropertyMedia(ctx context.Context, arg DeletePropertyMediaParams) error {
-	_, err := q.db.ExecContext(ctx, deletePropertyMedia, arg.PropertyID, arg.ID)
+	_, err := q.db.Exec(ctx, deletePropertyMedia, arg.PropertyID, arg.ID)
 	return err
 }
 
@@ -321,7 +321,7 @@ type DeletePropertyTagParams struct {
 }
 
 func (q *Queries) DeletePropertyTag(ctx context.Context, arg DeletePropertyTagParams) error {
-	_, err := q.db.ExecContext(ctx, deletePropertyTag, arg.PropertyID, arg.ID)
+	_, err := q.db.Exec(ctx, deletePropertyTag, arg.PropertyID, arg.ID)
 	return err
 }
 
@@ -330,7 +330,7 @@ SELECT id, feature FROM p_features
 `
 
 func (q *Queries) GetAllPropertyFeatures(ctx context.Context) ([]PFeature, error) {
-	rows, err := q.db.QueryContext(ctx, getAllPropertyFeatures)
+	rows, err := q.db.Query(ctx, getAllPropertyFeatures)
 	if err != nil {
 		return nil, err
 	}
@@ -342,9 +342,6 @@ func (q *Queries) GetAllPropertyFeatures(ctx context.Context) ([]PFeature, error
 			return nil, err
 		}
 		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err
@@ -362,7 +359,7 @@ type GetManagedPropertiesRow struct {
 }
 
 func (q *Queries) GetManagedProperties(ctx context.Context, managerID uuid.UUID) ([]GetManagedPropertiesRow, error) {
-	rows, err := q.db.QueryContext(ctx, getManagedProperties, managerID)
+	rows, err := q.db.Query(ctx, getManagedProperties, managerID)
 	if err != nil {
 		return nil, err
 	}
@@ -375,9 +372,6 @@ func (q *Queries) GetManagedProperties(ctx context.Context, managerID uuid.UUID)
 		}
 		items = append(items, i)
 	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
@@ -389,7 +383,7 @@ SELECT id, creator_id, name, building, project, area, number_of_floors, year_bui
 `
 
 func (q *Queries) GetPropertyById(ctx context.Context, id uuid.UUID) (Property, error) {
-	row := q.db.QueryRowContext(ctx, getPropertyById, id)
+	row := q.db.QueryRow(ctx, getPropertyById, id)
 	var i Property
 	err := row.Scan(
 		&i.ID,
@@ -424,7 +418,7 @@ SELECT property_id, feature_id, description FROM property_features WHERE propert
 `
 
 func (q *Queries) GetPropertyFeatures(ctx context.Context, propertyID uuid.UUID) ([]PropertyFeature, error) {
-	rows, err := q.db.QueryContext(ctx, getPropertyFeatures, propertyID)
+	rows, err := q.db.Query(ctx, getPropertyFeatures, propertyID)
 	if err != nil {
 		return nil, err
 	}
@@ -437,9 +431,6 @@ func (q *Queries) GetPropertyFeatures(ctx context.Context, propertyID uuid.UUID)
 		}
 		items = append(items, i)
 	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
@@ -451,7 +442,7 @@ SELECT property_id, manager_id, role FROM property_managers WHERE property_id = 
 `
 
 func (q *Queries) GetPropertyManagers(ctx context.Context, propertyID uuid.UUID) ([]PropertyManager, error) {
-	rows, err := q.db.QueryContext(ctx, getPropertyManagers, propertyID)
+	rows, err := q.db.Query(ctx, getPropertyManagers, propertyID)
 	if err != nil {
 		return nil, err
 	}
@@ -464,9 +455,6 @@ func (q *Queries) GetPropertyManagers(ctx context.Context, propertyID uuid.UUID)
 		}
 		items = append(items, i)
 	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
@@ -478,7 +466,7 @@ SELECT id, property_id, url, type, description FROM property_media WHERE propert
 `
 
 func (q *Queries) GetPropertyMedia(ctx context.Context, propertyID uuid.UUID) ([]PropertyMedium, error) {
-	rows, err := q.db.QueryContext(ctx, getPropertyMedia, propertyID)
+	rows, err := q.db.Query(ctx, getPropertyMedia, propertyID)
 	if err != nil {
 		return nil, err
 	}
@@ -497,9 +485,6 @@ func (q *Queries) GetPropertyMedia(ctx context.Context, propertyID uuid.UUID) ([
 		}
 		items = append(items, i)
 	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
@@ -511,7 +496,7 @@ SELECT id, property_id, tag FROM property_tags WHERE property_id = $1
 `
 
 func (q *Queries) GetPropertyTags(ctx context.Context, propertyID uuid.UUID) ([]PropertyTag, error) {
-	rows, err := q.db.QueryContext(ctx, getPropertyTags, propertyID)
+	rows, err := q.db.Query(ctx, getPropertyTags, propertyID)
 	if err != nil {
 		return nil, err
 	}
@@ -524,9 +509,6 @@ func (q *Queries) GetPropertyTags(ctx context.Context, propertyID uuid.UUID) ([]
 		}
 		items = append(items, i)
 	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
@@ -538,7 +520,7 @@ SELECT is_public FROM properties WHERE id = $1 LIMIT 1
 `
 
 func (q *Queries) IsPropertyPublic(ctx context.Context, id uuid.UUID) (bool, error) {
-	row := q.db.QueryRowContext(ctx, isPropertyPublic, id)
+	row := q.db.QueryRow(ctx, isPropertyPublic, id)
 	var is_public bool
 	err := row.Scan(&is_public)
 	return is_public, err
@@ -568,28 +550,28 @@ WHERE id = $1
 `
 
 type UpdatePropertyParams struct {
-	ID             uuid.UUID       `json:"id"`
-	Name           sql.NullString  `json:"name"`
-	Building       sql.NullString  `json:"building"`
-	Project        sql.NullString  `json:"project"`
-	Area           sql.NullFloat64 `json:"area"`
-	NumberOfFloors sql.NullInt32   `json:"number_of_floors"`
-	YearBuilt      sql.NullInt32   `json:"year_built"`
-	Orientation    sql.NullString  `json:"orientation"`
-	EntranceWidth  sql.NullFloat64 `json:"entrance_width"`
-	Facade         sql.NullFloat64 `json:"facade"`
-	FullAddress    sql.NullString  `json:"full_address"`
-	District       sql.NullString  `json:"district"`
-	City           sql.NullString  `json:"city"`
-	Ward           sql.NullString  `json:"ward"`
-	Lat            sql.NullFloat64 `json:"lat"`
-	Lng            sql.NullFloat64 `json:"lng"`
-	PlaceUrl       sql.NullString  `json:"place_url"`
-	Description    sql.NullString  `json:"description"`
+	ID             uuid.UUID     `json:"id"`
+	Name           pgtype.Text   `json:"name"`
+	Building       pgtype.Text   `json:"building"`
+	Project        pgtype.Text   `json:"project"`
+	Area           pgtype.Float4 `json:"area"`
+	NumberOfFloors pgtype.Int4   `json:"number_of_floors"`
+	YearBuilt      pgtype.Int4   `json:"year_built"`
+	Orientation    pgtype.Text   `json:"orientation"`
+	EntranceWidth  pgtype.Float4 `json:"entrance_width"`
+	Facade         pgtype.Float4 `json:"facade"`
+	FullAddress    pgtype.Text   `json:"full_address"`
+	District       pgtype.Text   `json:"district"`
+	City           pgtype.Text   `json:"city"`
+	Ward           pgtype.Text   `json:"ward"`
+	Lat            pgtype.Float8 `json:"lat"`
+	Lng            pgtype.Float8 `json:"lng"`
+	PlaceUrl       pgtype.Text   `json:"place_url"`
+	Description    pgtype.Text   `json:"description"`
 }
 
 func (q *Queries) UpdateProperty(ctx context.Context, arg UpdatePropertyParams) error {
-	_, err := q.db.ExecContext(ctx, updateProperty,
+	_, err := q.db.Exec(ctx, updateProperty,
 		arg.ID,
 		arg.Name,
 		arg.Building,
@@ -625,6 +607,6 @@ type UpdatePropertyManagerParams struct {
 }
 
 func (q *Queries) UpdatePropertyManager(ctx context.Context, arg UpdatePropertyManagerParams) error {
-	_, err := q.db.ExecContext(ctx, updatePropertyManager, arg.PropertyID, arg.ManagerID, arg.Role)
+	_, err := q.db.Exec(ctx, updatePropertyManager, arg.PropertyID, arg.ManagerID, arg.Role)
 	return err
 }

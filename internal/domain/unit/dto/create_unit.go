@@ -1,10 +1,9 @@
 package dto
 
 import (
-	"database/sql"
-
 	"github.com/google/uuid"
 	"github.com/user2410/rrms-backend/internal/infrastructure/database"
+	"github.com/user2410/rrms-backend/internal/utils/types"
 )
 
 type CreateUnitAmenity struct {
@@ -36,58 +35,18 @@ type CreateUnit struct {
 }
 
 func (cu *CreateUnit) ToCreateUnitDB() *database.CreateUnitParams {
-	p := &database.CreateUnitParams{
-		PropertyID: cu.PropertyID,
-		Area:       cu.Area,
-		Type:       cu.Type,
+	return &database.CreateUnitParams{
+		PropertyID:          cu.PropertyID,
+		Name:                types.StrN(cu.Name),
+		Floor:               types.Int32N(cu.Floor),
+		Price:               types.Int64N(cu.Price),
+		NumberOfLivingRooms: types.Int32N(cu.NumberOfLivingRooms),
+		NumberOfBedrooms:    types.Int32N(cu.NumberOfBedrooms),
+		NumberOfBathrooms:   types.Int32N(cu.NumberOfBathrooms),
+		NumberOfToilets:     types.Int32N(cu.NumberOfToilets),
+		NumberOfKitchens:    types.Int32N(cu.NumberOfKitchens),
+		NumberOfBalconies:   types.Int32N(cu.NumberOfBalconies),
+		Area:                cu.Area,
+		Type:                cu.Type,
 	}
-	if cu.Name != nil {
-		p.Name = sql.NullString{
-			String: *cu.Name,
-			Valid:  true,
-		}
-	}
-	if cu.Floor != nil {
-		p.Floor = sql.NullInt32{
-			Int32: *cu.Floor,
-			Valid: true,
-		}
-	}
-	if cu.NumberOfLivingRooms != nil {
-		p.NumberOfLivingRooms = sql.NullInt32{
-			Int32: *cu.NumberOfLivingRooms,
-			Valid: true,
-		}
-	}
-	if cu.NumberOfBedrooms != nil {
-		p.NumberOfBedrooms = sql.NullInt32{
-			Int32: *cu.NumberOfBedrooms,
-			Valid: true,
-		}
-	}
-	if cu.NumberOfBathrooms != nil {
-		p.NumberOfBathrooms = sql.NullInt32{
-			Int32: *cu.NumberOfBathrooms,
-			Valid: true,
-		}
-	}
-	if cu.NumberOfToilets != nil {
-		p.NumberOfToilets = sql.NullInt32{
-			Int32: *cu.NumberOfToilets,
-			Valid: true,
-		}
-	}
-	if cu.NumberOfKitchens != nil {
-		p.NumberOfKitchens = sql.NullInt32{
-			Int32: *cu.NumberOfKitchens,
-			Valid: true,
-		}
-	}
-	if cu.NumberOfBalconies != nil {
-		p.NumberOfBalconies = sql.NullInt32{
-			Int32: *cu.NumberOfBalconies,
-			Valid: true,
-		}
-	}
-	return p
 }

@@ -8,15 +8,17 @@ import (
 	"github.com/google/uuid"
 	"github.com/user2410/rrms-backend/internal/domain/auth/dto"
 	"github.com/user2410/rrms-backend/internal/domain/auth/model"
+	"github.com/user2410/rrms-backend/internal/infrastructure/database"
 	"github.com/user2410/rrms-backend/internal/utils"
 	"github.com/user2410/rrms-backend/internal/utils/token"
 )
 
 type AuthService interface {
-	RegisterUser(data *dto.RegisterUser) (*model.UserModel, error)
+	Register(data *dto.RegisterUser) (*model.UserModel, error)
 	Login(data *dto.LoginUser, sessionData *dto.CreateSessionDto) (*LoginUserRes, error)
 	GetUserByEmail(email string) (*model.UserModel, error)
 	GetUserById(id uuid.UUID) (*model.UserModel, error)
+	RefreshAccessToken(accessToken, refreshToken string) (*LoginUserRes, error)
 	Logout(id uuid.UUID) error
 }
 
@@ -25,18 +27,25 @@ type authService struct {
 	tokenMaker      token.Maker
 	accessTokenTTL  time.Duration
 	refreshTokenTTL time.Duration
+	taskDistributor TaskDistributor
 }
 
-func NewUserService(repo AuthRepo, tokenMaker token.Maker, accessTokenTTL, refreshToken time.Duration) AuthService {
+func NewAuthService(
+	repo AuthRepo,
+	tokenMaker token.Maker,
+	accessTokenTTL, refreshToken time.Duration,
+	taskDistributor TaskDistributor,
+) AuthService {
 	return &authService{
 		repo:            repo,
 		tokenMaker:      tokenMaker,
 		accessTokenTTL:  accessTokenTTL,
 		refreshTokenTTL: refreshToken,
+		taskDistributor: taskDistributor,
 	}
 }
 
-func (u *authService) RegisterUser(data *dto.RegisterUser) (*model.UserModel, error) {
+func (u *authService) Register(data *dto.RegisterUser) (*model.UserModel, error) {
 	hash, err := utils.HashPassword(data.Password)
 	if err != nil {
 		return nil, err
@@ -67,7 +76,7 @@ var ErrInvalidCredential = fmt.Errorf("invalid password")
 func (u *authService) Login(data *dto.LoginUser, sessionData *dto.CreateSessionDto) (*LoginUserRes, error) {
 	user, err := u.repo.GetUserByEmail(context.Background(), data.Email)
 	if err != nil {
-		return nil, ErrInvalidCredential
+		return nil, err
 	}
 
 	err = utils.VerifyPassword(*user.Password, data.Password)
@@ -80,7 +89,7 @@ func (u *authService) Login(data *dto.LoginUser, sessionData *dto.CreateSessionD
 	var currentSession *model.SessionModel = nil
 	if sessionData.ID != uuid.Nil {
 		currentSession, err = u.repo.GetSessionById(context.Background(), sessionData.ID)
-		if err != nil {
+		if err != nil && err != database.ErrRecordNotFound {
 			return nil, err
 		}
 	}
@@ -152,6 +161,53 @@ func (u *authService) GetUserByEmail(email string) (*model.UserModel, error) {
 
 func (u *authService) GetUserById(id uuid.UUID) (*model.UserModel, error) {
 	return u.repo.GetUserById(context.Background(), id)
+}
+
+var ErrInvalidSession = fmt.Errorf("invalid session")
+
+func (u *authService) RefreshAccessToken(accessToken, refreshToken string) (*LoginUserRes, error) {
+	accessPayload, err := u.tokenMaker.VerifyToken(accessToken)
+	if err != nil && err != token.ErrExpiredToken {
+		return nil, token.ErrInvalidToken
+	}
+
+	session, err := u.repo.GetSessionById(context.Background(), accessPayload.ID)
+	if err != nil {
+		return nil, err
+	}
+
+	if session.SessionToken != refreshToken {
+		return nil, ErrInvalidSession
+	}
+
+	if session.IsBlocked {
+		return nil, ErrInvalidSession
+	}
+
+	if session.UserId != accessPayload.UserID {
+		return nil, ErrInvalidSession
+	}
+
+	if time.Now().After(session.Expires) {
+		return nil, ErrInvalidSession
+	}
+
+	newAccessToken, newAccessPayload, err := u.tokenMaker.CreateToken(
+		accessPayload.UserID,
+		u.accessTokenTTL,
+		token.CreateTokenOptions{
+			TokenType: token.AccessToken,
+			TokenID:   accessPayload.ID,
+		},
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	return &LoginUserRes{
+		AccessToken:   newAccessToken,
+		AccessPayload: newAccessPayload,
+	}, nil
 }
 
 func (u *authService) Logout(id uuid.UUID) error {

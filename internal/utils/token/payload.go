@@ -43,7 +43,7 @@ func NewPayload(userId uuid.UUID, duration time.Duration, options CreateTokenOpt
 
 func (p *Payload) Valid() error {
 	if time.Now().After(p.ExpiredAt) {
-		return ExpiredTokenErr
+		return ErrExpiredToken
 	}
 	return nil
 }

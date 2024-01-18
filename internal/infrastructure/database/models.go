@@ -5,12 +5,12 @@
 package database
 
 import (
-	"database/sql"
 	"database/sql/driver"
 	"fmt"
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 type APPLICATIONSTATUS string
@@ -193,18 +193,18 @@ func (ns NullUNITTYPE) Value() (driver.Value, error) {
 }
 
 type Account struct {
-	ID                uuid.UUID      `json:"id"`
-	UserId            uuid.UUID      `json:"userId"`
-	Type              string         `json:"type"`
-	Provider          string         `json:"provider"`
-	ProviderAccountId string         `json:"providerAccountId"`
-	RefreshToken      sql.NullString `json:"refresh_token"`
-	AccessToken       sql.NullString `json:"access_token"`
-	ExpiresAt         sql.NullInt32  `json:"expires_at"`
-	TokenType         sql.NullString `json:"token_type"`
-	Scope             sql.NullString `json:"scope"`
-	IDToken           sql.NullString `json:"id_token"`
-	SessionState      sql.NullString `json:"session_state"`
+	ID                uuid.UUID   `json:"id"`
+	UserId            uuid.UUID   `json:"userId"`
+	Type              string      `json:"type"`
+	Provider          string      `json:"provider"`
+	ProviderAccountId string      `json:"providerAccountId"`
+	RefreshToken      pgtype.Text `json:"refresh_token"`
+	AccessToken       pgtype.Text `json:"access_token"`
+	ExpiresAt         pgtype.Int4 `json:"expires_at"`
+	TokenType         pgtype.Text `json:"token_type"`
+	Scope             pgtype.Text `json:"scope"`
+	IDToken           pgtype.Text `json:"id_token"`
+	SessionState      pgtype.Text `json:"session_state"`
 }
 
 type Application struct {
@@ -223,18 +223,18 @@ type Application struct {
 	ProfileImage             string            `json:"profile_image"`
 	MoveinDate               time.Time         `json:"movein_date"`
 	PreferredTerm            int32             `json:"preferred_term"`
-	RhAddress                sql.NullString    `json:"rh_address"`
-	RhCity                   sql.NullString    `json:"rh_city"`
-	RhDistrict               sql.NullString    `json:"rh_district"`
-	RhWard                   sql.NullString    `json:"rh_ward"`
-	RhRentalDuration         sql.NullInt32     `json:"rh_rental_duration"`
-	RhMonthlyPayment         sql.NullFloat64   `json:"rh_monthly_payment"`
-	RhReasonForLeaving       sql.NullString    `json:"rh_reason_for_leaving"`
+	RhAddress                pgtype.Text       `json:"rh_address"`
+	RhCity                   pgtype.Text       `json:"rh_city"`
+	RhDistrict               pgtype.Text       `json:"rh_district"`
+	RhWard                   pgtype.Text       `json:"rh_ward"`
+	RhRentalDuration         pgtype.Int4       `json:"rh_rental_duration"`
+	RhMonthlyPayment         pgtype.Float4     `json:"rh_monthly_payment"`
+	RhReasonForLeaving       pgtype.Text       `json:"rh_reason_for_leaving"`
 	EmploymentStatus         string            `json:"employment_status"`
-	EmploymentCompanyName    sql.NullString    `json:"employment_company_name"`
-	EmploymentPosition       sql.NullString    `json:"employment_position"`
-	EmploymentMonthlyIncome  sql.NullFloat64   `json:"employment_monthly_income"`
-	EmploymentComment        sql.NullString    `json:"employment_comment"`
+	EmploymentCompanyName    pgtype.Text       `json:"employment_company_name"`
+	EmploymentPosition       pgtype.Text       `json:"employment_position"`
+	EmploymentMonthlyIncome  pgtype.Float4     `json:"employment_monthly_income"`
+	EmploymentComment        pgtype.Text       `json:"employment_comment"`
 	EmploymentProofsOfIncome []string          `json:"employment_proofs_of_income"`
 	IdentityType             string            `json:"identity_type"`
 	IdentityNumber           string            `json:"identity_number"`
@@ -243,38 +243,38 @@ type Application struct {
 }
 
 type ApplicationCoap struct {
-	ApplicationID int64          `json:"application_id"`
-	FullName      string         `json:"full_name"`
-	Dob           time.Time      `json:"dob"`
-	Job           string         `json:"job"`
-	Income        int32          `json:"income"`
-	Email         sql.NullString `json:"email"`
-	Phone         sql.NullString `json:"phone"`
-	Description   sql.NullString `json:"description"`
+	ApplicationID int64       `json:"application_id"`
+	FullName      string      `json:"full_name"`
+	Dob           time.Time   `json:"dob"`
+	Job           string      `json:"job"`
+	Income        int32       `json:"income"`
+	Email         pgtype.Text `json:"email"`
+	Phone         pgtype.Text `json:"phone"`
+	Description   pgtype.Text `json:"description"`
 }
 
 type ApplicationMinor struct {
-	ApplicationID int64          `json:"application_id"`
-	FullName      string         `json:"full_name"`
-	Dob           time.Time      `json:"dob"`
-	Email         sql.NullString `json:"email"`
-	Phone         sql.NullString `json:"phone"`
-	Description   sql.NullString `json:"description"`
+	ApplicationID int64       `json:"application_id"`
+	FullName      string      `json:"full_name"`
+	Dob           time.Time   `json:"dob"`
+	Email         pgtype.Text `json:"email"`
+	Phone         pgtype.Text `json:"phone"`
+	Description   pgtype.Text `json:"description"`
 }
 
 type ApplicationPet struct {
-	ApplicationID int64           `json:"application_id"`
-	Type          string          `json:"type"`
-	Weight        sql.NullFloat64 `json:"weight"`
-	Description   sql.NullString  `json:"description"`
+	ApplicationID int64         `json:"application_id"`
+	Type          string        `json:"type"`
+	Weight        pgtype.Float4 `json:"weight"`
+	Description   pgtype.Text   `json:"description"`
 }
 
 type ApplicationVehicle struct {
-	ApplicationID int64          `json:"application_id"`
-	Type          string         `json:"type"`
-	Model         sql.NullString `json:"model"`
-	Code          string         `json:"code"`
-	Description   sql.NullString `json:"description"`
+	ApplicationID int64       `json:"application_id"`
+	Type          string      `json:"type"`
+	Model         pgtype.Text `json:"model"`
+	Code          string      `json:"code"`
+	Description   pgtype.Text `json:"description"`
 }
 
 type Listing struct {
@@ -288,13 +288,13 @@ type Listing struct {
 	Phone       string    `json:"phone"`
 	ContactType string    `json:"contact_type"`
 	// Rental price per month in vietnamese dong
-	Price           int64         `json:"price"`
-	PriceNegotiable bool          `json:"price_negotiable"`
-	SecurityDeposit sql.NullInt64 `json:"security_deposit"`
+	Price           int64       `json:"price"`
+	PriceNegotiable bool        `json:"price_negotiable"`
+	SecurityDeposit pgtype.Int8 `json:"security_deposit"`
 	// Lease term in months
-	LeaseTerm         sql.NullInt32 `json:"lease_term"`
-	PetsAllowed       sql.NullBool  `json:"pets_allowed"`
-	NumberOfResidents sql.NullInt32 `json:"number_of_residents"`
+	LeaseTerm         pgtype.Int4 `json:"lease_term"`
+	PetsAllowed       pgtype.Bool `json:"pets_allowed"`
+	NumberOfResidents pgtype.Int4 `json:"number_of_residents"`
 	// Priority of the listing, range from 1 to 5, 1 is the lowest
 	Priority  int32     `json:"priority"`
 	Active    bool      `json:"active"`
@@ -305,9 +305,9 @@ type Listing struct {
 }
 
 type ListingPolicy struct {
-	ListingID uuid.UUID      `json:"listing_id"`
-	PolicyID  int64          `json:"policy_id"`
-	Note      sql.NullString `json:"note"`
+	ListingID uuid.UUID   `json:"listing_id"`
+	PolicyID  int64       `json:"policy_id"`
+	Note      pgtype.Text `json:"note"`
 }
 
 type ListingUnit struct {
@@ -322,36 +322,36 @@ type PFeature struct {
 }
 
 type Property struct {
-	ID             uuid.UUID      `json:"id"`
-	CreatorID      uuid.UUID      `json:"creator_id"`
-	Name           string         `json:"name"`
-	Building       sql.NullString `json:"building"`
-	Project        sql.NullString `json:"project"`
-	Area           float32        `json:"area"`
-	NumberOfFloors sql.NullInt32  `json:"number_of_floors"`
-	YearBuilt      sql.NullInt32  `json:"year_built"`
+	ID             uuid.UUID   `json:"id"`
+	CreatorID      uuid.UUID   `json:"creator_id"`
+	Name           string      `json:"name"`
+	Building       pgtype.Text `json:"building"`
+	Project        pgtype.Text `json:"project"`
+	Area           float32     `json:"area"`
+	NumberOfFloors pgtype.Int4 `json:"number_of_floors"`
+	YearBuilt      pgtype.Int4 `json:"year_built"`
 	// n,s,w,e,nw,ne,sw,se
-	Orientation   sql.NullString  `json:"orientation"`
-	EntranceWidth sql.NullFloat64 `json:"entrance_width"`
-	Facade        sql.NullFloat64 `json:"facade"`
-	FullAddress   string          `json:"full_address"`
-	City          string          `json:"city"`
-	District      string          `json:"district"`
-	Ward          sql.NullString  `json:"ward"`
-	Lat           sql.NullFloat64 `json:"lat"`
-	Lng           sql.NullFloat64 `json:"lng"`
-	PlaceUrl      string          `json:"place_url"`
-	Description   sql.NullString  `json:"description"`
-	Type          PROPERTYTYPE    `json:"type"`
-	IsPublic      bool            `json:"is_public"`
-	CreatedAt     time.Time       `json:"created_at"`
-	UpdatedAt     time.Time       `json:"updated_at"`
+	Orientation   pgtype.Text   `json:"orientation"`
+	EntranceWidth pgtype.Float4 `json:"entrance_width"`
+	Facade        pgtype.Float4 `json:"facade"`
+	FullAddress   string        `json:"full_address"`
+	City          string        `json:"city"`
+	District      string        `json:"district"`
+	Ward          pgtype.Text   `json:"ward"`
+	Lat           pgtype.Float8 `json:"lat"`
+	Lng           pgtype.Float8 `json:"lng"`
+	PlaceUrl      string        `json:"place_url"`
+	Description   pgtype.Text   `json:"description"`
+	Type          PROPERTYTYPE  `json:"type"`
+	IsPublic      bool          `json:"is_public"`
+	CreatedAt     time.Time     `json:"created_at"`
+	UpdatedAt     time.Time     `json:"updated_at"`
 }
 
 type PropertyFeature struct {
-	PropertyID  uuid.UUID      `json:"property_id"`
-	FeatureID   int64          `json:"feature_id"`
-	Description sql.NullString `json:"description"`
+	PropertyID  uuid.UUID   `json:"property_id"`
+	FeatureID   int64       `json:"feature_id"`
+	Description pgtype.Text `json:"description"`
 }
 
 type PropertyManager struct {
@@ -361,11 +361,11 @@ type PropertyManager struct {
 }
 
 type PropertyMedium struct {
-	ID          int64          `json:"id"`
-	PropertyID  uuid.UUID      `json:"property_id"`
-	Url         string         `json:"url"`
-	Type        MEDIATYPE      `json:"type"`
-	Description sql.NullString `json:"description"`
+	ID          int64       `json:"id"`
+	PropertyID  uuid.UUID   `json:"property_id"`
+	Url         string      `json:"url"`
+	Type        MEDIATYPE   `json:"type"`
+	Description pgtype.Text `json:"description"`
 }
 
 type PropertyTag struct {
@@ -380,14 +380,14 @@ type RentalPolicy struct {
 }
 
 type Session struct {
-	ID           uuid.UUID      `json:"id"`
-	SessionToken string         `json:"sessionToken"`
-	UserId       uuid.UUID      `json:"userId"`
-	Expires      time.Time      `json:"expires"`
-	UserAgent    sql.NullString `json:"user_agent"`
-	ClientIp     sql.NullString `json:"client_ip"`
-	IsBlocked    bool           `json:"is_blocked"`
-	CreatedAt    time.Time      `json:"created_at"`
+	ID           uuid.UUID   `json:"id"`
+	SessionToken string      `json:"sessionToken"`
+	UserId       uuid.UUID   `json:"userId"`
+	Expires      time.Time   `json:"expires"`
+	UserAgent    pgtype.Text `json:"user_agent"`
+	ClientIp     pgtype.Text `json:"client_ip"`
+	IsBlocked    bool        `json:"is_blocked"`
+	CreatedAt    time.Time   `json:"created_at"`
 }
 
 // Air conditioner, Fridge, Washing machine, ...
@@ -397,47 +397,47 @@ type UAmenity struct {
 }
 
 type Unit struct {
-	ID                  uuid.UUID     `json:"id"`
-	PropertyID          uuid.UUID     `json:"property_id"`
-	Name                string        `json:"name"`
-	Area                float32       `json:"area"`
-	Floor               sql.NullInt32 `json:"floor"`
-	Price               sql.NullInt64 `json:"price"`
-	NumberOfLivingRooms sql.NullInt32 `json:"number_of_living_rooms"`
-	NumberOfBedrooms    sql.NullInt32 `json:"number_of_bedrooms"`
-	NumberOfBathrooms   sql.NullInt32 `json:"number_of_bathrooms"`
-	NumberOfToilets     sql.NullInt32 `json:"number_of_toilets"`
-	NumberOfBalconies   sql.NullInt32 `json:"number_of_balconies"`
-	NumberOfKitchens    sql.NullInt32 `json:"number_of_kitchens"`
-	Type                UNITTYPE      `json:"type"`
-	CreatedAt           time.Time     `json:"created_at"`
-	UpdatedAt           time.Time     `json:"updated_at"`
+	ID                  uuid.UUID   `json:"id"`
+	PropertyID          uuid.UUID   `json:"property_id"`
+	Name                string      `json:"name"`
+	Area                float32     `json:"area"`
+	Floor               pgtype.Int4 `json:"floor"`
+	Price               pgtype.Int8 `json:"price"`
+	NumberOfLivingRooms pgtype.Int4 `json:"number_of_living_rooms"`
+	NumberOfBedrooms    pgtype.Int4 `json:"number_of_bedrooms"`
+	NumberOfBathrooms   pgtype.Int4 `json:"number_of_bathrooms"`
+	NumberOfToilets     pgtype.Int4 `json:"number_of_toilets"`
+	NumberOfBalconies   pgtype.Int4 `json:"number_of_balconies"`
+	NumberOfKitchens    pgtype.Int4 `json:"number_of_kitchens"`
+	Type                UNITTYPE    `json:"type"`
+	CreatedAt           time.Time   `json:"created_at"`
+	UpdatedAt           time.Time   `json:"updated_at"`
 }
 
 type UnitAmenity struct {
-	UnitID      uuid.UUID      `json:"unit_id"`
-	AmenityID   int64          `json:"amenity_id"`
-	Description sql.NullString `json:"description"`
+	UnitID      uuid.UUID   `json:"unit_id"`
+	AmenityID   int64       `json:"amenity_id"`
+	Description pgtype.Text `json:"description"`
 }
 
 type UnitMedium struct {
-	ID          int64          `json:"id"`
-	UnitID      uuid.UUID      `json:"unit_id"`
-	Url         string         `json:"url"`
-	Type        MEDIATYPE      `json:"type"`
-	Description sql.NullString `json:"description"`
+	ID          int64       `json:"id"`
+	UnitID      uuid.UUID   `json:"unit_id"`
+	Url         string      `json:"url"`
+	Type        MEDIATYPE   `json:"type"`
+	Description pgtype.Text `json:"description"`
 }
 
 // Bang user
 type User struct {
-	ID        uuid.UUID      `json:"id"`
-	Email     string         `json:"email"`
-	Password  sql.NullString `json:"password"`
-	GroupID   uuid.NullUUID  `json:"group_id"`
-	CreatedAt time.Time      `json:"created_at"`
-	UpdatedAt time.Time      `json:"updated_at"`
-	CreatedBy uuid.NullUUID  `json:"created_by"`
-	UpdatedBy uuid.NullUUID  `json:"updated_by"`
+	ID        uuid.UUID   `json:"id"`
+	Email     string      `json:"email"`
+	Password  pgtype.Text `json:"password"`
+	GroupID   pgtype.UUID `json:"group_id"`
+	CreatedAt time.Time   `json:"created_at"`
+	UpdatedAt time.Time   `json:"updated_at"`
+	CreatedBy pgtype.UUID `json:"created_by"`
+	UpdatedBy pgtype.UUID `json:"updated_by"`
 	// 1: deleted, 0: not deleted
 	DeletedF bool `json:"deleted_f"`
 }

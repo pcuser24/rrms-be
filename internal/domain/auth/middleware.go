@@ -14,9 +14,7 @@ const (
 	AuthorizationTypeBearer = "bearer"
 )
 
-/**
- * Middleware to check if the user is authorized to access the resource
- */
+// Middleware to check if the user is authorized to access the resource
 func AuthorizedMiddleware(tokenMaker token.Maker) fiber.Handler {
 	return func(ctx *fiber.Ctx) error {
 		authorizationHeader := ctx.Get(AuthorizationHeaderKey)
@@ -46,33 +44,27 @@ func AuthorizedMiddleware(tokenMaker token.Maker) fiber.Handler {
 	}
 }
 
-/**
- * Middleware to get token payload if exists
- */
+// Middleware to get token payload if exists
 func GetAuthorizationMiddleware(tokenMaker token.Maker) fiber.Handler {
 	return func(ctx *fiber.Ctx) error {
 		authorizationHeader := ctx.Get(AuthorizationHeaderKey)
 		if len(authorizationHeader) == 0 {
-			ctx.Next()
-			return nil
+			return ctx.Next()
 		}
 
 		fields := strings.Fields(authorizationHeader)
 		if len(fields) < 2 || (strings.ToLower(fields[0]) != AuthorizationTypeBearer) {
-			ctx.Next()
-			return nil
+			return ctx.Next()
 		}
 
 		accessToken := fields[1]
 		payload, err := tokenMaker.VerifyToken(accessToken)
 		if err != nil || payload.TokenType != token.AccessToken {
-			ctx.Next()
-			return nil
+			return ctx.Next()
 		}
 
 		ctx.Locals(AuthorizationPayloadKey, payload)
-		ctx.Next()
 
-		return nil
+		return ctx.Next()
 	}
 }

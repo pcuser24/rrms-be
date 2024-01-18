@@ -1,8 +1,10 @@
 package dto
 
 import (
+	"strings"
 	"time"
 
+	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
 	unitDTO "github.com/user2410/rrms-backend/internal/domain/unit/dto"
 	"github.com/user2410/rrms-backend/internal/interfaces/rest/requests"
@@ -39,11 +41,32 @@ type SearchPropertyCombinationQuery struct {
 	unitDTO.SearchUnitQuery
 }
 
+func (q *SearchPropertyCombinationQuery) QueryParser(ctx *fiber.Ctx) error {
+	err := ctx.QueryParser(q)
+	if err != nil {
+		return err
+	}
+	if len(q.PTypes) == 1 {
+		q.PTypes = strings.Split(q.PTypes[0], ",")
+	}
+	// if len(q.PFeatures) == 1 {
+	// 	q.PFeatures = strings.Split(q.PFeatures[0], ",")
+	// }
+	if len(q.PTags) == 1 {
+		q.PTags = strings.Split(q.PTags[0], ",")
+	}
+	return nil
+}
+
 type SearchPropertyCombinationItem struct {
 	LId uuid.UUID `json:"lid"`
 }
 
 type SearchPropertyCombinationResponse struct {
-	Count uint32                          `json:"count"`
-	Items []SearchPropertyCombinationItem `json:"items"`
+	Count  uint32                          `json:"count"`
+	Limit  int32                           `json:"limit"`
+	Offset int32                           `json:"offset"`
+	SortBy string                          `json:"sortby"`
+	Order  string                          `json:"order"`
+	Items  []SearchPropertyCombinationItem `json:"items"`
 }

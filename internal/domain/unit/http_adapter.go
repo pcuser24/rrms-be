@@ -50,7 +50,7 @@ func (a *adapter) createUnit() fiber.Handler {
 		if err := ctx.BodyParser(&payload); err != nil {
 			return err
 		}
-		if errs := utils.ValidateStruct(nil, payload); len(errs) > 0 && errs[0].Error {
+		if errs := utils.ValidateStruct(nil, payload); len(errs) > 0 {
 			ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": utils.GetValidationError(errs)})
 			return nil
 		}
@@ -108,7 +108,7 @@ func (a *adapter) searchUnits() fiber.Handler {
 		if err := ctx.QueryParser(&query); err != nil {
 			return fiber.NewError(fiber.StatusBadRequest)
 		}
-		if errs := utils.ValidateStruct(nil, query); len(errs) > 0 && errs[0].Error {
+		if errs := utils.ValidateStruct(nil, query); len(errs) > 0 {
 			return fiber.NewError(fiber.StatusBadRequest, utils.GetValidationError(errs))
 		}
 
@@ -126,13 +126,13 @@ func (a *adapter) searchUnits() fiber.Handler {
 
 func (a *adapter) getUnitsByIds() fiber.Handler {
 	return func(ctx *fiber.Ctx) error {
-		var query dto.GetUnitByIdsQuery
-		if err := ctx.QueryParser(&query); err != nil {
+		query := new(dto.GetUnitsByIdsQuery)
+		if err := query.QueryParser(ctx); err != nil {
 			return fiber.NewError(fiber.StatusBadRequest)
 		}
 		validator := utils.GetDefaultValidator()
-		validator.RegisterValidation(UnitFieldsLocalKey, dto.ValidateQuery)
-		if errs := utils.ValidateStruct(validator, query); len(errs) > 0 && errs[0].Error {
+		validator.RegisterValidation(dto.UnitFieldsLocalKey, dto.ValidateQuery)
+		if errs := utils.ValidateStruct(validator, *query); len(errs) > 0 {
 			return fiber.NewError(fiber.StatusBadRequest, utils.GetValidationError(errs))
 		}
 
@@ -142,9 +142,7 @@ func (a *adapter) getUnitsByIds() fiber.Handler {
 			return nil
 		}
 
-		return ctx.JSON(fiber.Map{
-			"items": res,
-		})
+		return ctx.JSON(res)
 	}
 }
 
@@ -157,7 +155,7 @@ func (a *adapter) updateUnit() fiber.Handler {
 			return err
 		}
 		payload.ID = uid
-		if errs := utils.ValidateStruct(nil, payload); len(errs) > 0 && errs[0].Error {
+		if errs := utils.ValidateStruct(nil, payload); len(errs) > 0 {
 			ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": utils.GetValidationError(errs)})
 			return nil
 		}

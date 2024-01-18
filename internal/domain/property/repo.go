@@ -3,17 +3,15 @@ package property
 import (
 	"context"
 	"database/sql"
-	"fmt"
-	"log"
 	"slices"
 
 	"github.com/google/uuid"
 	"github.com/huandu/go-sqlbuilder"
 	"github.com/user2410/rrms-backend/internal/domain/property/dto"
 	"github.com/user2410/rrms-backend/internal/domain/property/model"
+	unitModel "github.com/user2410/rrms-backend/internal/domain/unit/model"
 	"github.com/user2410/rrms-backend/internal/infrastructure/database"
 	sqlbuilders "github.com/user2410/rrms-backend/internal/infrastructure/database/sql_builders"
-	"github.com/user2410/rrms-backend/internal/utils"
 )
 
 type Repo interface {
@@ -21,7 +19,8 @@ type Repo interface {
 	GetPropertyManagers(ctx context.Context, id uuid.UUID) ([]model.PropertyManagerModel, error)
 	GetPropertyById(ctx context.Context, id uuid.UUID) (*model.PropertyModel, error)
 	// Get properties with custom fields by ids
-	GetProperties(ctx context.Context, ids []string, fields []string) ([]model.PropertyModel, error)
+	GetPropertiesByIds(ctx context.Context, ids []string, fields []string) ([]model.PropertyModel, error)
+	GetUnitsOfProperty(ctx context.Context, id uuid.UUID) ([]unitModel.UnitModel, error)
 	GetManagedProperties(ctx context.Context, userId uuid.UUID) ([]database.GetManagedPropertiesRow, error)
 	SearchPropertyCombination(ctx context.Context, query *dto.SearchPropertyCombinationQuery) (*dto.SearchPropertyCombinationResponse, error)
 	IsPublic(ctx context.Context, id uuid.UUID) (bool, error)
@@ -45,15 +44,15 @@ func (r *repo) CreateProperty(ctx context.Context, data *dto.CreateProperty) (*m
 
 		var pm *model.PropertyModel
 
-		res, err := d.CreateProperty(ctx, *data.ToCreatePropertyDB())
+		prop, err := d.CreateProperty(ctx, *data.ToCreatePropertyDB())
 		if err != nil {
 			return nil, err
 		}
-		pm = model.ToPropertyModel(&res)
+		pm = model.ToPropertyModel(&prop)
 
 		for _, m := range data.Managers {
 			res, err := d.CreatePropertyManager(ctx, database.CreatePropertyManagerParams{
-				PropertyID: res.ID,
+				PropertyID: prop.ID,
 				ManagerID:  m.ManagerID,
 				Role:       m.Role,
 			})
@@ -64,7 +63,7 @@ func (r *repo) CreateProperty(ctx context.Context, data *dto.CreateProperty) (*m
 		}
 
 		for _, f := range data.Features {
-			res, err := d.CreatePropertyFeature(ctx, *f.ToCreatePropertyFeatureDB())
+			res, err := d.CreatePropertyFeature(ctx, *f.ToCreatePropertyFeatureDB(prop.ID))
 			if err != nil {
 				return nil, err
 			}
@@ -72,7 +71,7 @@ func (r *repo) CreateProperty(ctx context.Context, data *dto.CreateProperty) (*m
 		}
 
 		for _, m := range data.Media {
-			res, err := d.CreatePropertyMedia(ctx, *m.ToCreatePropertyMediaDB())
+			res, err := d.CreatePropertyMedia(ctx, *m.ToCreatePropertyMediaDB(prop.ID))
 			if err != nil {
 				return nil, err
 			}
@@ -81,7 +80,7 @@ func (r *repo) CreateProperty(ctx context.Context, data *dto.CreateProperty) (*m
 
 		for _, t := range data.Tags {
 			res, err := d.CreatePropertyTag(ctx, database.CreatePropertyTagParams{
-				PropertyID: res.ID,
+				PropertyID: prop.ID,
 				Tag:        t.Tag,
 			})
 			if err != nil {
@@ -101,33 +100,13 @@ func (r *repo) CreateProperty(ctx context.Context, data *dto.CreateProperty) (*m
 }
 
 func (r *repo) SearchPropertyCombination(ctx context.Context, query *dto.SearchPropertyCombinationQuery) (*dto.SearchPropertyCombinationResponse, error) {
-	sqlProp, argsProp := sqlbuilders.SearchPropertyBuilder(
-		[]string{"properties.id", "count(*) OVER() AS full_count"},
-		&query.SearchPropertyQuery,
-		"", "",
-	)
-	sqlUnit, argsUnit := sqlbuilders.SearchUnitBuilder([]string{"1"}, &query.SearchUnitQuery, "", "properties.id")
-
-	var queryStr string = sqlProp
-	var argsLs []interface{} = argsProp
-	// build order: unit -> property
-	if len(sqlUnit) > 0 {
-		queryStr += fmt.Sprintf(" AND EXISTS (%v) ", sqlUnit)
-		argsLs = append(argsLs, argsUnit...)
-	}
-	log.Println(queryStr, argsLs)
-
-	sql, args := sqlbuilder.Build(queryStr, argsLs...).Build()
-	sqSql := utils.SequelizePlaceholders(sql)
-	sqSql += fmt.Sprintf(" ORDER BY %v %v", utils.PtrDerefence[string](query.SortBy, "created_at"), utils.PtrDerefence[string](query.Order, "desc"))
-	sqSql += fmt.Sprintf(" LIMIT %v", utils.PtrDerefence[int32](query.Limit, 1000))
-	sqSql += fmt.Sprintf(" OFFSET %v", utils.PtrDerefence[int32](query.Offset, 0))
-	rows, err := r.dao.QueryContext(context.Background(), sqSql, args...)
+	sqSql, args := sqlbuilders.SearchPropertyCombinationBuilder(query)
+	rows, err := r.dao.Query(context.Background(), sqSql, args...)
 	if err != nil {
 		return nil, err
 	}
 
-	res, err := func() (*dto.SearchPropertyCombinationResponse, error) {
+	res1, err := func() (*dto.SearchPropertyCombinationResponse, error) {
 		defer rows.Close()
 		var r dto.SearchPropertyCombinationResponse
 		for rows.Next() {
@@ -144,10 +123,17 @@ func (r *repo) SearchPropertyCombination(ctx context.Context, query *dto.SearchP
 		return nil, err
 	}
 
-	return res, nil
+	return &dto.SearchPropertyCombinationResponse{
+		Count:  res1.Count,
+		SortBy: *query.SortBy,
+		Order:  *query.Order,
+		Offset: *query.Offset,
+		Limit:  *query.Limit,
+		Items:  res1.Items,
+	}, nil
 }
 
-func (r *repo) GetProperties(ctx context.Context, ids []string, fields []string) ([]model.PropertyModel, error) {
+func (r *repo) GetPropertiesByIds(ctx context.Context, ids []string, fields []string) ([]model.PropertyModel, error) {
 	var nonFKFields []string = []string{"id"}
 	var fkFields []string
 	for _, f := range fields {
@@ -165,8 +151,8 @@ func (r *repo) GetProperties(ctx context.Context, ids []string, fields []string)
 	ib.From("properties")
 	ib.Where(ib.In("id::text", sqlbuilder.List(ids)))
 	query, args := ib.Build()
-	log.Println(query, args)
-	rows, err := r.dao.QueryContext(ctx, query, args...)
+	// log.Println(query, args)
+	rows, err := r.dao.Query(ctx, query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -226,9 +212,7 @@ func (r *repo) GetProperties(ctx context.Context, ids []string, fields []string)
 		}
 		items = append(items, *model.ToPropertyModel(&i))
 	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
+	rows.Close()
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
@@ -304,6 +288,18 @@ func (r *repo) GetPropertyById(ctx context.Context, id uuid.UUID) (*model.Proper
 	}
 
 	return pm, nil
+}
+
+func (r *repo) GetUnitsOfProperty(ctx context.Context, id uuid.UUID) ([]unitModel.UnitModel, error) {
+	_res, err := r.dao.GetUnitsOfProperty(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	resm := make([]unitModel.UnitModel, len(_res))
+	for _, res := range _res {
+		resm = append(resm, *unitModel.ToUnitModel(&res))
+	}
+	return resm, nil
 }
 
 func (r *repo) GetPropertyManagers(ctx context.Context, id uuid.UUID) ([]model.PropertyManagerModel, error) {

@@ -5,25 +5,25 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/user2410/rrms-backend/internal/infrastructure/database"
-	"github.com/user2410/rrms-backend/pkg/utils/types"
+	"github.com/user2410/rrms-backend/internal/utils/types"
 )
 
 type UnitModel struct {
 	ID                  uuid.UUID          `json:"id"`
-	PropertyID          uuid.UUID          `json:"property_id"`
+	PropertyID          uuid.UUID          `json:"propertyId"`
 	Name                string             `json:"name"`
 	Area                float32            `json:"area"`
 	Floor               *int32             `json:"floor"`
 	Price               *int64             `json:"price"`
-	NumberOfLivingRooms *int32             `json:"number_of_living_rooms"`
-	NumberOfBedrooms    *int32             `json:"number_of_bedrooms"`
-	NumberOfBathrooms   *int32             `json:"number_of_bathrooms"`
-	NumberOfToilets     *int32             `json:"number_of_toilets"`
-	NumberOfKitchens    *int32             `json:"number_of_kitchens"`
-	NumberOfBalconies   *int32             `json:"number_of_balconies"`
+	NumberOfLivingRooms *int32             `json:"numberOfLivingRooms"`
+	NumberOfBedrooms    *int32             `json:"numberOfBedrooms"`
+	NumberOfBathrooms   *int32             `json:"numberOfBathrooms"`
+	NumberOfToilets     *int32             `json:"numberOfToilets"`
+	NumberOfKitchens    *int32             `json:"numberOfKitchens"`
+	NumberOfBalconies   *int32             `json:"numberOfBalconies"`
 	Type                database.UNITTYPE  `json:"type"`
-	CreatedAt           time.Time          `json:"created_at"`
-	UpdatedAt           time.Time          `json:"updated_at"`
+	CreatedAt           time.Time          `json:"createdAt"`
+	UpdatedAt           time.Time          `json:"updatedAt"`
 	Amenities           []UnitAmenityModel `json:"amenities"`
 	Media               []UnitMediaModel   `json:"media"`
 }

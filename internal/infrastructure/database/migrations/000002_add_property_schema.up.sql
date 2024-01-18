@@ -52,6 +52,18 @@ CREATE TABLE IF NOT EXISTS "p_features" (
 );
 COMMENT ON TABLE "p_features" IS 'Security guard, Parking, Gym, ...';
 ALTER TABLE "p_features" ADD CONSTRAINT "p_features_feature_unique" UNIQUE ("feature");
+INSERT INTO p_features (feature) VALUES 
+('p-feature_security'),
+('p-feature_fire-alarm'),
+('p-feature_gym'),
+('p-feature_fitness-center'),
+('p-feature_swimming-pool'),
+('p-feature_community-rooms'),
+('p-feature_public-library'),
+('p-feature_parking'),
+('p-feature_outdoor-common-area'),
+('p-feature_services'),
+('p-feature_facilities');
 
 CREATE TABLE IF NOT EXISTS "property_features" (
   "property_id" UUID NOT NULL,

@@ -7,10 +7,10 @@ package database
 
 import (
 	"context"
-	"database/sql"
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 const createSession = `-- name: CreateSession :one
@@ -20,17 +20,17 @@ RETURNING id, "sessionToken", "userId", expires, user_agent, client_ip, is_block
 `
 
 type CreateSessionParams struct {
-	ID           uuid.UUID      `json:"id"`
-	Userid       uuid.UUID      `json:"userid"`
-	Sessiontoken string         `json:"sessiontoken"`
-	Expires      time.Time      `json:"expires"`
-	UserAgent    sql.NullString `json:"user_agent"`
-	ClientIp     sql.NullString `json:"client_ip"`
-	CreatedAt    time.Time      `json:"created_at"`
+	ID           uuid.UUID   `json:"id"`
+	Userid       uuid.UUID   `json:"userid"`
+	Sessiontoken string      `json:"sessiontoken"`
+	Expires      time.Time   `json:"expires"`
+	UserAgent    pgtype.Text `json:"user_agent"`
+	ClientIp     pgtype.Text `json:"client_ip"`
+	CreatedAt    time.Time   `json:"created_at"`
 }
 
 func (q *Queries) CreateSession(ctx context.Context, arg CreateSessionParams) (Session, error) {
-	row := q.db.QueryRowContext(ctx, createSession,
+	row := q.db.QueryRow(ctx, createSession,
 		arg.ID,
 		arg.Userid,
 		arg.Sessiontoken,
@@ -58,7 +58,7 @@ SELECT id, "sessionToken", "userId", expires, user_agent, client_ip, is_blocked,
 `
 
 func (q *Queries) GetSessionById(ctx context.Context, id uuid.UUID) (Session, error) {
-	row := q.db.QueryRowContext(ctx, getSessionById, id)
+	row := q.db.QueryRow(ctx, getSessionById, id)
 	var i Session
 	err := row.Scan(
 		&i.ID,
@@ -78,7 +78,7 @@ SELECT id, email, password, group_id, created_at, updated_at, created_by, update
 `
 
 func (q *Queries) GetUserByEmail(ctx context.Context, email string) (User, error) {
-	row := q.db.QueryRowContext(ctx, getUserByEmail, email)
+	row := q.db.QueryRow(ctx, getUserByEmail, email)
 	var i User
 	err := row.Scan(
 		&i.ID,
@@ -99,7 +99,7 @@ SELECT id, email, password, group_id, created_at, updated_at, created_by, update
 `
 
 func (q *Queries) GetUserById(ctx context.Context, id uuid.UUID) (User, error) {
-	row := q.db.QueryRowContext(ctx, getUserById, id)
+	row := q.db.QueryRow(ctx, getUserById, id)
 	var i User
 	err := row.Scan(
 		&i.ID,
@@ -122,12 +122,12 @@ RETURNING id, email, password, group_id, created_at, updated_at, created_by, upd
 `
 
 type InsertUserParams struct {
-	Email    string         `json:"email"`
-	Password sql.NullString `json:"password"`
+	Email    string      `json:"email"`
+	Password pgtype.Text `json:"password"`
 }
 
 func (q *Queries) InsertUser(ctx context.Context, arg InsertUserParams) (User, error) {
-	row := q.db.QueryRowContext(ctx, insertUser, arg.Email, arg.Password)
+	row := q.db.QueryRow(ctx, insertUser, arg.Email, arg.Password)
 	var i User
 	err := row.Scan(
 		&i.ID,
@@ -153,6 +153,6 @@ type UpdateSessionBlockingStatusParams struct {
 }
 
 func (q *Queries) UpdateSessionBlockingStatus(ctx context.Context, arg UpdateSessionBlockingStatusParams) error {
-	_, err := q.db.ExecContext(ctx, updateSessionBlockingStatus, arg.IsBlocked, arg.ID)
+	_, err := q.db.Exec(ctx, updateSessionBlockingStatus, arg.IsBlocked, arg.ID)
 	return err
 }

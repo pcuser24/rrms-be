@@ -1,10 +1,6 @@
 package property
 
 import (
-	"database/sql"
-	"errors"
-	"fmt"
-
 	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
@@ -35,14 +31,16 @@ func (a *adapter) RegisterServer(router *fiber.Router, tokenMaker token.Maker) {
 	propertyRoute := (*router).Group("/properties")
 
 	propertyRoute.Get("/property/features", a.getAllFeatures())
-	propertyRoute.Get("/property/:id", a.getPropertyById())
+	propertyRoute.Get("/property/:id", CheckPropertyVisibility(a.service), a.getPropertyById())
+	propertyRoute.Get("/property/:id/units", CheckPropertyVisibility(a.service), a.getUnitsOfProperty())
+	propertyRoute.Get("/ids", a.getPropertiesByIds())
 
 	propertyRoute.Use(auth.AuthorizedMiddleware(tokenMaker))
 
 	propertyRoute.Post("/", a.createProperty())
 	propertyRoute.Get("/my-properties", a.getMyProperties())
-	propertyRoute.Patch("/property/:id", checkPropertyManageability(a.service), a.updateProperty())
-	propertyRoute.Delete("/property/:id", checkPropertyManageability(a.service), a.deleteProperty())
+	propertyRoute.Patch("/property/:id", CheckPropertyManageability(a.service), a.updateProperty())
+	propertyRoute.Delete("/property/:id", CheckPropertyManageability(a.service), a.deleteProperty())
 }
 
 func (a *adapter) createProperty() fiber.Handler {
@@ -53,7 +51,7 @@ func (a *adapter) createProperty() fiber.Handler {
 		if err := ctx.BodyParser(&payload); err != nil {
 			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": err.Error()})
 		}
-		if errs := utils.ValidateStruct(nil, payload); len(errs) > 0 && errs[0].Error {
+		if errs := utils.ValidateStruct(nil, payload); len(errs) > 0 {
 			ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": utils.GetValidationError(errs)})
 			return nil
 		}
@@ -78,48 +76,56 @@ func (a *adapter) createProperty() fiber.Handler {
 
 func (a *adapter) getPropertyById() fiber.Handler {
 	return func(ctx *fiber.Ctx) error {
-		puid, err := uuid.Parse(ctx.Params("id"))
-		if err != nil {
-			return ctx.SendStatus(fiber.StatusBadRequest)
-		}
-
-		var userID uuid.UUID
-		tkPayload, ok := ctx.Locals(auth.AuthorizationPayloadKey).(*token.Payload)
-		if ok {
-			userID = tkPayload.UserID
-		} else {
-			userID = uuid.Nil
-		}
-
-		isVisible, err := a.service.CheckVisibility(puid, userID)
-		if err != nil {
-			if dbErr, ok := err.(*pgconn.PgError); ok {
-				return responses.DBErrorResponse(ctx, dbErr)
-			}
-
-			return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
-		}
-		if !isVisible {
-			return ctx.Status(fiber.StatusForbidden).JSON(fiber.Map{"message": "property is not visible to you"})
-		}
+		puid := ctx.Locals(PropertyIDLocalKey).(uuid.UUID)
 
 		res, err := a.service.GetPropertyById(puid)
 		if err != nil {
-			var pgErr *pgconn.PgError
-			if errors.As(err, &pgErr) {
-				return responses.DBErrorResponse(ctx, pgErr)
-			}
-
-			if errors.Is(err, sql.ErrNoRows) {
-				return ctx.Status(fiber.StatusNotFound).JSON(fiber.Map{"message": fmt.Sprintf("property with id=%s not found", puid.String())})
+			if err == database.ErrRecordNotFound {
+				return ctx.Status(fiber.StatusConflict).JSON(fiber.Map{"message": "property not found"})
 			}
 
 			return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
 		}
 
-		// if res.CreatorID != ctx.Locals(auth.AuthorizationPayloadKey).(*token.Payload).UserID {
-		// 	return ctx.Status(fiber.StatusForbidden).JSON(fiber.Map{"message": "you are not authorized to view this property"})
-		// }
+		return ctx.JSON(res)
+	}
+}
+
+func (a *adapter) getUnitsOfProperty() fiber.Handler {
+	return func(ctx *fiber.Ctx) error {
+		puid := ctx.Locals(PropertyIDLocalKey).(uuid.UUID)
+
+		res, err := a.service.GetUnitsOfProperty(puid)
+		if err != nil {
+			if err == database.ErrRecordNotFound {
+				return ctx.Status(fiber.StatusConflict).JSON(fiber.Map{"message": "property not found"})
+			}
+
+			return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
+		}
+
+		return ctx.JSON(res)
+	}
+}
+
+func (a *adapter) getPropertiesByIds() fiber.Handler {
+	return func(ctx *fiber.Ctx) error {
+		query := new(dto.GetPropertiesByIdsQuery)
+		if err := query.QueryParser(ctx); err != nil {
+			return fiber.NewError(fiber.StatusBadRequest)
+		}
+		validator := utils.GetDefaultValidator()
+		validator.RegisterValidation(dto.PropertyFieldsLocalKey, dto.ValidateQuery)
+		if errs := utils.ValidateStruct(validator, *query); len(errs) > 0 {
+			return fiber.NewError(fiber.StatusBadRequest, utils.GetValidationError(errs))
+		}
+
+		res, err := a.service.GetPropertiesByIds(query.IDs, query.Fields)
+		if err != nil {
+			ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
+			return nil
+		}
+
 		return ctx.JSON(res)
 	}
 }
@@ -131,8 +137,8 @@ func (a *adapter) getMyProperties() fiber.Handler {
 			return ctx.SendStatus(fiber.StatusBadRequest)
 		}
 		validator := validator.New()
-		validator.RegisterValidation("propertyFields", dto.ValidQuery)
-		if errs := utils.ValidateStruct(validator, query); len(errs) > 0 && errs[0].Error {
+		validator.RegisterValidation("propertyFields", dto.ValidateQuery)
+		if errs := utils.ValidateStruct(validator, query); len(errs) > 0 {
 			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": utils.GetValidationError(errs)})
 		}
 
@@ -160,7 +166,7 @@ func (a *adapter) updateProperty() fiber.Handler {
 			return ctx.SendStatus(fiber.StatusBadRequest)
 		}
 		payload.ID = puid
-		if errs := utils.ValidateStruct(nil, payload); len(errs) > 0 && errs[0].Error {
+		if errs := utils.ValidateStruct(nil, payload); len(errs) > 0 {
 			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": utils.GetValidationError(errs)})
 		}
 
