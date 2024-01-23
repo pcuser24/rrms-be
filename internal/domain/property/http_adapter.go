@@ -132,13 +132,13 @@ func (a *adapter) getPropertiesByIds() fiber.Handler {
 
 func (a *adapter) getMyProperties() fiber.Handler {
 	return func(ctx *fiber.Ctx) error {
-		var query dto.GetPropertiesQuery
-		if err := ctx.QueryParser(&query); err != nil {
+		query := new(dto.GetPropertiesQuery)
+		if err := query.QueryParser(ctx); err != nil {
 			return ctx.SendStatus(fiber.StatusBadRequest)
 		}
 		validator := validator.New()
 		validator.RegisterValidation("propertyFields", dto.ValidateQuery)
-		if errs := utils.ValidateStruct(validator, query); len(errs) > 0 {
+		if errs := utils.ValidateStruct(validator, *query); len(errs) > 0 {
 			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": utils.GetValidationError(errs)})
 		}
 

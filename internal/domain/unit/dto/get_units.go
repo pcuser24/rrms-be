@@ -12,8 +12,8 @@ import (
 const UnitFieldsLocalKey = "unitFields"
 
 type GetUnitsByIdsQuery struct {
-	Fields []string    `query:"fields" validate:"unitFields"`
-	IDs    []uuid.UUID `query:"unitIds" validate:"required,dive,uuid4"`
+	UnitFieldQuery
+	IDs []uuid.UUID `query:"unitIds" validate:"required,dive,uuid4"`
 }
 
 func (q *GetUnitsByIdsQuery) QueryParser(ctx *fiber.Ctx) error {
@@ -29,6 +29,17 @@ func (q *GetUnitsByIdsQuery) QueryParser(ctx *fiber.Ctx) error {
 
 type UnitFieldQuery struct {
 	Fields []string `query:"fields" validate:"unitFields"`
+}
+
+func (q *UnitFieldQuery) QueryParser(ctx *fiber.Ctx) error {
+	err := ctx.QueryParser(q)
+	if err != nil {
+		return err
+	}
+	if len(q.Fields) == 1 {
+		q.Fields = strings.Split(q.Fields[0], ",")
+	}
+	return nil
 }
 
 func ValidateQuery(fl validator.FieldLevel) bool {

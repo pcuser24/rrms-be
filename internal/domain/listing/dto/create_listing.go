@@ -24,6 +24,7 @@ func (c *CreateListingPolicy) ToCreateListingPolicyDB(lid uuid.UUID) *database.C
 
 type CreateListingUnit struct {
 	UnitID uuid.UUID `json:"unitId" validate:"required,uuid4"`
+	Price  int64     `json:"price" validate:"required,gt=0"`
 }
 
 type CreateListing struct {

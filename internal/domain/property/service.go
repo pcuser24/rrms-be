@@ -6,6 +6,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/user2410/rrms-backend/internal/domain/property/dto"
 	"github.com/user2410/rrms-backend/internal/domain/property/model"
+	unitDto "github.com/user2410/rrms-backend/internal/domain/unit/dto"
 	unitModel "github.com/user2410/rrms-backend/internal/domain/unit/model"
 	"github.com/user2410/rrms-backend/internal/utils"
 	"github.com/user2410/rrms-backend/internal/utils/types"
@@ -18,20 +19,28 @@ type Service interface {
 	GetPropertyById(id uuid.UUID) (*model.PropertyModel, error)
 	GetPropertiesByIds(ids []uuid.UUID, fields []string) ([]model.PropertyModel, error)
 	GetUnitsOfProperty(id uuid.UUID) ([]unitModel.UnitModel, error)
-	GetPropertiesOfUser(userId uuid.UUID, fields []string) ([]getPropertiesOfUserResponse, error)
+	GetPropertiesOfUser(userId uuid.UUID, fields []string) ([]GetPropertiesOfUserItem, error)
 	SearchListingCombination(data *dto.SearchPropertyCombinationQuery) (*dto.SearchPropertyCombinationResponse, error)
 	UpdateProperty(data *dto.UpdateProperty) error
 	DeleteProperty(id uuid.UUID) error
 	GetAllFeatures() ([]model.PFeature, error)
 }
 
-type service struct {
-	repo Repo
+// import cycle is not allowed
+type unitRepo interface {
+	GetUnitById(ctx context.Context, id uuid.UUID) (*unitModel.UnitModel, error)
+	SearchUnitCombination(ctx context.Context, query *unitDto.SearchUnitCombinationQuery) (*unitDto.SearchUnitCombinationResponse, error)
 }
 
-func NewService(repo Repo) Service {
+type service struct {
+	pRepo Repo
+	uRepo unitRepo
+}
+
+func NewService(pRepo Repo, uRepo unitRepo) Service {
 	return &service{
-		repo: repo,
+		pRepo: pRepo,
+		uRepo: uRepo,
 	}
 }
 
@@ -39,13 +48,13 @@ func (s *service) CreateProperty(data *dto.CreateProperty, creatorID uuid.UUID) 
 	data.CreatorID = creatorID
 	data.Managers = append(data.Managers, dto.CreatePropertyManager{
 		ManagerID: creatorID,
-		Role:      "OWNER",
+		Role:      "OWNER", // TODO: add role to user
 	})
-	return s.repo.CreateProperty(context.Background(), data)
+	return s.pRepo.CreateProperty(context.Background(), data)
 }
 
 func (s *service) GetPropertyById(id uuid.UUID) (*model.PropertyModel, error) {
-	return s.repo.GetPropertyById(context.Background(), id)
+	return s.pRepo.GetPropertyById(context.Background(), id)
 }
 
 func (s *service) GetPropertiesByIds(ids []uuid.UUID, fields []string) ([]model.PropertyModel, error) {
@@ -53,19 +62,39 @@ func (s *service) GetPropertiesByIds(ids []uuid.UUID, fields []string) ([]model.
 	for i, id := range ids {
 		idsStr[i] = id.String()
 	}
-	return s.repo.GetPropertiesByIds(context.Background(), idsStr, fields)
+	return s.pRepo.GetPropertiesByIds(context.Background(), idsStr, fields)
 }
 
 func (s *service) GetUnitsOfProperty(id uuid.UUID) ([]unitModel.UnitModel, error) {
-	return s.repo.GetUnitsOfProperty(context.Background(), id)
+	ids, err := s.uRepo.SearchUnitCombination(
+		context.Background(),
+		&unitDto.SearchUnitCombinationQuery{
+			SearchUnitQuery: unitDto.SearchUnitQuery{
+				UPropertyID: types.Ptr[string](id.String()),
+			},
+		},
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	res := make([]unitModel.UnitModel, 0, len(ids.Items))
+	for _, id := range ids.Items {
+		_res, err := s.uRepo.GetUnitById(context.Background(), id.UId)
+		if err != nil {
+			return nil, err
+		}
+		res = append(res, *_res)
+	}
+	return res, nil
 }
 
 func (s *service) UpdateProperty(data *dto.UpdateProperty) error {
-	return s.repo.UpdateProperty(context.Background(), data)
+	return s.pRepo.UpdateProperty(context.Background(), data)
 }
 
 func (s *service) CheckManageability(id uuid.UUID, userId uuid.UUID) (bool, error) {
-	managers, err := s.repo.GetPropertyManagers(context.Background(), id)
+	managers, err := s.pRepo.GetPropertyManagers(context.Background(), id)
 	if err != nil {
 		return false, err
 	}
@@ -77,14 +106,14 @@ func (s *service) CheckManageability(id uuid.UUID, userId uuid.UUID) (bool, erro
 	return false, nil
 }
 func (s *service) CheckVisibility(id uuid.UUID, uid uuid.UUID) (bool, error) {
-	isPublic, err := s.repo.IsPublic(context.Background(), id)
+	isPublic, err := s.pRepo.IsPublic(context.Background(), id)
 	if err != nil {
 		return false, err
 	}
 	if isPublic {
 		return true, nil
 	}
-	managers, err := s.repo.GetPropertyManagers(context.Background(), id)
+	managers, err := s.pRepo.GetPropertyManagers(context.Background(), id)
 	if err != nil {
 		return false, err
 	}
@@ -97,20 +126,20 @@ func (s *service) CheckVisibility(id uuid.UUID, uid uuid.UUID) (bool, error) {
 }
 
 func (s *service) DeleteProperty(id uuid.UUID) error {
-	return s.repo.DeleteProperty(context.Background(), id)
+	return s.pRepo.DeleteProperty(context.Background(), id)
 }
 
 func (s *service) GetAllFeatures() ([]model.PFeature, error) {
-	return s.repo.GetAllFeatures(context.Background())
+	return s.pRepo.GetAllFeatures(context.Background())
 }
 
-type getPropertiesOfUserResponse struct {
+type GetPropertiesOfUserItem struct {
 	Role     string              `json:"role"`
 	Property model.PropertyModel `json:"property"`
 }
 
-func (s *service) GetPropertiesOfUser(userId uuid.UUID, fields []string) ([]getPropertiesOfUserResponse, error) {
-	managedProps, err := s.repo.GetManagedProperties(context.Background(), userId)
+func (s *service) GetPropertiesOfUser(userId uuid.UUID, fields []string) ([]GetPropertiesOfUserItem, error) {
+	managedProps, err := s.pRepo.GetManagedProperties(context.Background(), userId)
 	if err != nil {
 		return nil, err
 	}
@@ -121,14 +150,14 @@ func (s *service) GetPropertiesOfUser(userId uuid.UUID, fields []string) ([]getP
 		pids = append(pids, pid)
 	}
 
-	ps, err := s.repo.GetPropertiesByIds(context.Background(), pids, fields)
+	ps, err := s.pRepo.GetPropertiesByIds(context.Background(), pids, fields)
 	if err != nil {
 		return nil, err
 	}
 
-	var res []getPropertiesOfUserResponse
+	var res []GetPropertiesOfUserItem
 	for _, p := range managedProps {
-		r := getPropertiesOfUserResponse{Role: p.Role}
+		r := GetPropertiesOfUserItem{Role: p.Role}
 		for i, pp := range ps {
 			if pp.ID == p.PropertyID {
 				r.Property = ps[i]
@@ -145,5 +174,5 @@ func (s *service) SearchListingCombination(data *dto.SearchPropertyCombinationQu
 	data.Order = types.Ptr(utils.PtrDerefence[string](data.Order, "desc"))
 	data.Limit = types.Ptr(utils.PtrDerefence[int32](data.Limit, 1000))
 	data.Offset = types.Ptr(utils.PtrDerefence[int32](data.Offset, 0))
-	return s.repo.SearchPropertyCombination(context.Background(), data)
+	return s.pRepo.SearchPropertyCombination(context.Background(), data)
 }

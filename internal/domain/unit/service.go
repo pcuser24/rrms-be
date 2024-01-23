@@ -12,7 +12,6 @@ type Service interface {
 	CreateUnit(data *dto.CreateUnit) (*model.UnitModel, error)
 	GetUnitById(id uuid.UUID) (*model.UnitModel, error)
 	GetUnitsByIds(ids []uuid.UUID, fields []string) ([]model.UnitModel, error)
-	GetUnitsOfProperty(id uuid.UUID) ([]model.UnitModel, error)
 	SearchUnit(query *dto.SearchUnitCombinationQuery) (*dto.SearchUnitCombinationResponse, error)
 	UpdateUnit(data *dto.UpdateUnit) error
 	DeleteUnit(id uuid.UUID) error
@@ -46,10 +45,6 @@ func (s *service) GetUnitsByIds(ids []uuid.UUID, fields []string) ([]model.UnitM
 		idsStr[i] = id.String()
 	}
 	return s.repo.GetUnitsByIds(context.Background(), idsStr, fields)
-}
-
-func (s *service) GetUnitsOfProperty(id uuid.UUID) ([]model.UnitModel, error) {
-	return s.repo.GetUnitsOfProperty(context.Background(), id)
 }
 
 func (s *service) UpdateUnit(data *dto.UpdateUnit) error {

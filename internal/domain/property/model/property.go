@@ -64,5 +64,9 @@ func ToPropertyModel(p *database.Property) *PropertyModel {
 		CreatedAt:      p.CreatedAt,
 		UpdatedAt:      p.UpdatedAt,
 		Description:    types.PNStr(p.Description),
+		Managers:       make([]PropertyManagerModel, 0),
+		Features:       make([]PropertyFeatureModel, 0),
+		Media:          make([]PropertyMediaModel, 0),
+		Tags:           make([]PropertyTagModel, 0),
 	}
 }

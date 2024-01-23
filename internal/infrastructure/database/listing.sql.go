@@ -185,24 +185,27 @@ func (q *Queries) CreateListingPolicy(ctx context.Context, arg CreateListingPoli
 }
 
 const createListingUnit = `-- name: CreateListingUnit :one
-INSERT INTO listing_unit (
+INSERT INTO listing_units (
   listing_id,
-  unit_id
+  unit_id,
+  price
 ) VALUES (
   $1,
-  $2
-) RETURNING listing_id, unit_id
+  $2,
+  $3
+) RETURNING listing_id, unit_id, price
 `
 
 type CreateListingUnitParams struct {
 	ListingID uuid.UUID `json:"listing_id"`
 	UnitID    uuid.UUID `json:"unit_id"`
+	Price     int64     `json:"price"`
 }
 
 func (q *Queries) CreateListingUnit(ctx context.Context, arg CreateListingUnitParams) (ListingUnit, error) {
-	row := q.db.QueryRow(ctx, createListingUnit, arg.ListingID, arg.UnitID)
+	row := q.db.QueryRow(ctx, createListingUnit, arg.ListingID, arg.UnitID, arg.Price)
 	var i ListingUnit
-	err := row.Scan(&i.ListingID, &i.UnitID)
+	err := row.Scan(&i.ListingID, &i.UnitID, &i.Price)
 	return i, err
 }
 
@@ -297,7 +300,7 @@ func (q *Queries) GetListingPolicies(ctx context.Context, listingID uuid.UUID) (
 }
 
 const getListingUnits = `-- name: GetListingUnits :many
-SELECT listing_id, unit_id FROM listing_unit WHERE listing_id = $1
+SELECT listing_id, unit_id, price FROM listing_units WHERE listing_id = $1
 `
 
 func (q *Queries) GetListingUnits(ctx context.Context, listingID uuid.UUID) ([]ListingUnit, error) {
@@ -309,7 +312,7 @@ func (q *Queries) GetListingUnits(ctx context.Context, listingID uuid.UUID) ([]L
 	var items []ListingUnit
 	for rows.Next() {
 		var i ListingUnit
-		if err := rows.Scan(&i.ListingID, &i.UnitID); err != nil {
+		if err := rows.Scan(&i.ListingID, &i.UnitID, &i.Price); err != nil {
 			return nil, err
 		}
 		items = append(items, i)

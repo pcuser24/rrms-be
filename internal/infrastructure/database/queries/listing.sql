@@ -54,12 +54,14 @@ INSERT INTO listing_policies (
 ) RETURNING *;
 
 -- name: CreateListingUnit :one
-INSERT INTO listing_unit (
+INSERT INTO listing_units (
   listing_id,
-  unit_id
+  unit_id,
+  price
 ) VALUES (
   sqlc.arg(listing_id),
-  sqlc.arg(unit_id)
+  sqlc.arg(unit_id),
+  sqlc.arg(price)
 ) RETURNING *;
 
 -- name: GetListingByID :one
@@ -69,7 +71,7 @@ SELECT * FROM listings WHERE id = $1 LIMIT 1;
 SELECT * FROM listing_policies WHERE listing_id = $1;
 
 -- name: GetListingUnits :many
-SELECT * FROM listing_unit WHERE listing_id = $1;
+SELECT * FROM listing_units WHERE listing_id = $1;
 
 -- name: GetAllRentalPolicies :many
 SELECT * FROM rental_policies;

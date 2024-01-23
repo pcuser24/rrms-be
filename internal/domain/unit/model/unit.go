@@ -14,7 +14,6 @@ type UnitModel struct {
 	Name                string             `json:"name"`
 	Area                float32            `json:"area"`
 	Floor               *int32             `json:"floor"`
-	Price               *int64             `json:"price"`
 	NumberOfLivingRooms *int32             `json:"numberOfLivingRooms"`
 	NumberOfBedrooms    *int32             `json:"numberOfBedrooms"`
 	NumberOfBathrooms   *int32             `json:"numberOfBathrooms"`
@@ -36,13 +35,14 @@ func ToUnitModel(u *database.Unit) *UnitModel {
 		Area:                u.Area,
 		Type:                u.Type,
 		Floor:               types.PNInt32(u.Floor),
-		Price:               types.PNInt64(u.Price),
 		NumberOfLivingRooms: types.PNInt32(u.NumberOfLivingRooms),
 		NumberOfBedrooms:    types.PNInt32(u.NumberOfBedrooms),
 		NumberOfBathrooms:   types.PNInt32(u.NumberOfBathrooms),
 		NumberOfToilets:     types.PNInt32(u.NumberOfToilets),
 		NumberOfKitchens:    types.PNInt32(u.NumberOfKitchens),
 		NumberOfBalconies:   types.PNInt32(u.NumberOfBalconies),
+		Media:               make([]UnitMediaModel, 0),
+		Amenities:           make([]UnitAmenityModel, 0),
 		CreatedAt:           u.CreatedAt,
 		UpdatedAt:           u.UpdatedAt,
 	}

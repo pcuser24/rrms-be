@@ -93,9 +93,6 @@ func (a *adapter) createListing() fiber.Handler {
 
 		res, err := a.lService.CreateListing(&payload)
 		if err != nil {
-			if dbErr, ok := err.(*pgconn.PgError); ok {
-				return responses.DBErrorResponse(ctx, dbErr)
-			}
 			if dbErr, ok := err.(*database.TXError); ok {
 				return responses.DBTXErrorResponse(ctx, dbErr)
 			}
@@ -119,8 +116,8 @@ func (a *adapter) searchListings() fiber.Handler {
 
 		res, err := a.lService.SearchListingCombination(payload)
 		if err != nil {
-			if dbErr, ok := err.(*pgconn.PgError); ok {
-				return responses.DBErrorResponse(ctx, dbErr)
+			if err == database.ErrRecordNotFound {
+				return ctx.SendStatus(fiber.StatusNotFound)
 			}
 
 			ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
@@ -133,21 +130,21 @@ func (a *adapter) searchListings() fiber.Handler {
 
 func (a *adapter) getMyListings() fiber.Handler {
 	return func(ctx *fiber.Ctx) error {
-		var query dto.GetListingsQuery
-		if err := ctx.QueryParser(&query); err != nil {
+		query := new(dto.GetListingsQuery)
+		if err := query.QueryParser(ctx); err != nil {
 			return ctx.SendStatus(fiber.StatusBadRequest)
 		}
 		validator := validator.New()
 		validator.RegisterValidation("listingFields", dto.ValidateQuery)
-		if errs := utils.ValidateStruct(validator, query); len(errs) > 0 {
+		if errs := utils.ValidateStruct(validator, *query); len(errs) > 0 {
 			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": utils.GetValidationError(errs)})
 		}
 
 		tokenPayload := ctx.Locals(auth.AuthorizationPayloadKey).(*token.Payload)
 		res, err := a.lService.GetListingsOfUser(tokenPayload.UserID, query.Fields)
 		if err != nil {
-			if dbErr, ok := err.(*pgconn.PgError); ok {
-				return responses.DBErrorResponse(ctx, dbErr)
+			if err == database.ErrRecordNotFound {
+				return ctx.SendStatus(fiber.StatusNotFound)
 			}
 
 			return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
@@ -167,8 +164,8 @@ func (a *adapter) getListingById() fiber.Handler {
 		}
 		res, err := a.lService.GetListingByID(lid)
 		if err != nil {
-			if dbErr, ok := err.(*pgconn.PgError); ok {
-				return responses.DBErrorResponse(ctx, dbErr)
+			if err == database.ErrRecordNotFound {
+				return ctx.SendStatus(fiber.StatusNotFound)
 			}
 
 			ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})

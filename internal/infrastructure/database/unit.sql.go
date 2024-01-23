@@ -50,7 +50,6 @@ INSERT INTO units (
   name,
   area,
   floor,
-  price,
   number_of_living_rooms,
   number_of_bedrooms,
   number_of_bathrooms,
@@ -72,10 +71,9 @@ INSERT INTO units (
   $9,
   $10,
   $11,
-  $12,
   NOW(),
   NOW()
-) RETURNING id, property_id, name, area, floor, price, number_of_living_rooms, number_of_bedrooms, number_of_bathrooms, number_of_toilets, number_of_balconies, number_of_kitchens, type, created_at, updated_at
+) RETURNING id, property_id, name, area, floor, number_of_living_rooms, number_of_bedrooms, number_of_bathrooms, number_of_toilets, number_of_balconies, number_of_kitchens, type, created_at, updated_at
 `
 
 type CreateUnitParams struct {
@@ -83,7 +81,6 @@ type CreateUnitParams struct {
 	Name                pgtype.Text `json:"name"`
 	Area                float32     `json:"area"`
 	Floor               pgtype.Int4 `json:"floor"`
-	Price               pgtype.Int8 `json:"price"`
 	NumberOfLivingRooms pgtype.Int4 `json:"number_of_living_rooms"`
 	NumberOfBedrooms    pgtype.Int4 `json:"number_of_bedrooms"`
 	NumberOfBathrooms   pgtype.Int4 `json:"number_of_bathrooms"`
@@ -99,7 +96,6 @@ func (q *Queries) CreateUnit(ctx context.Context, arg CreateUnitParams) (Unit, e
 		arg.Name,
 		arg.Area,
 		arg.Floor,
-		arg.Price,
 		arg.NumberOfLivingRooms,
 		arg.NumberOfBedrooms,
 		arg.NumberOfBathrooms,
@@ -115,7 +111,6 @@ func (q *Queries) CreateUnit(ctx context.Context, arg CreateUnitParams) (Unit, e
 		&i.Name,
 		&i.Area,
 		&i.Floor,
-		&i.Price,
 		&i.NumberOfLivingRooms,
 		&i.NumberOfBedrooms,
 		&i.NumberOfBathrooms,
@@ -279,7 +274,7 @@ func (q *Queries) GetUnitAmenities(ctx context.Context, unitID uuid.UUID) ([]Uni
 }
 
 const getUnitById = `-- name: GetUnitById :one
-SELECT id, property_id, name, area, floor, price, number_of_living_rooms, number_of_bedrooms, number_of_bathrooms, number_of_toilets, number_of_balconies, number_of_kitchens, type, created_at, updated_at FROM units WHERE id = $1 LIMIT 1
+SELECT id, property_id, name, area, floor, number_of_living_rooms, number_of_bedrooms, number_of_bathrooms, number_of_toilets, number_of_balconies, number_of_kitchens, type, created_at, updated_at FROM units WHERE id = $1 LIMIT 1
 `
 
 func (q *Queries) GetUnitById(ctx context.Context, id uuid.UUID) (Unit, error) {
@@ -291,7 +286,6 @@ func (q *Queries) GetUnitById(ctx context.Context, id uuid.UUID) (Unit, error) {
 		&i.Name,
 		&i.Area,
 		&i.Floor,
-		&i.Price,
 		&i.NumberOfLivingRooms,
 		&i.NumberOfBedrooms,
 		&i.NumberOfBathrooms,
@@ -359,77 +353,6 @@ func (q *Queries) GetUnitMedia(ctx context.Context, unitID uuid.UUID) ([]UnitMed
 	return items, nil
 }
 
-const getUnitsOfProperty = `-- name: GetUnitsOfProperty :many
-SELECT id, property_id, name, area, floor, price, number_of_living_rooms, number_of_bedrooms, number_of_bathrooms, number_of_toilets, number_of_balconies, number_of_kitchens, type, created_at, updated_at FROM units WHERE property_id = $1
-`
-
-func (q *Queries) GetUnitsOfProperty(ctx context.Context, propertyID uuid.UUID) ([]Unit, error) {
-	rows, err := q.db.Query(ctx, getUnitsOfProperty, propertyID)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []Unit
-	for rows.Next() {
-		var i Unit
-		if err := rows.Scan(
-			&i.ID,
-			&i.PropertyID,
-			&i.Name,
-			&i.Area,
-			&i.Floor,
-			&i.Price,
-			&i.NumberOfLivingRooms,
-			&i.NumberOfBedrooms,
-			&i.NumberOfBathrooms,
-			&i.NumberOfToilets,
-			&i.NumberOfBalconies,
-			&i.NumberOfKitchens,
-			&i.Type,
-			&i.CreatedAt,
-			&i.UpdatedAt,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
-const insertUnitMedia = `-- name: InsertUnitMedia :one
-INSERT INTO unit_media (
-  unit_id,
-  url,
-  type
-) VALUES (
-  $1,
-  $2,
-  $3
-) RETURNING id, unit_id, url, type, description
-`
-
-type InsertUnitMediaParams struct {
-	UnitID uuid.UUID `json:"unit_id"`
-	Url    string    `json:"url"`
-	Type   MEDIATYPE `json:"type"`
-}
-
-func (q *Queries) InsertUnitMedia(ctx context.Context, arg InsertUnitMediaParams) (UnitMedium, error) {
-	row := q.db.QueryRow(ctx, insertUnitMedia, arg.UnitID, arg.Url, arg.Type)
-	var i UnitMedium
-	err := row.Scan(
-		&i.ID,
-		&i.UnitID,
-		&i.Url,
-		&i.Type,
-		&i.Description,
-	)
-	return i, err
-}
-
 const isUnitPublic = `-- name: IsUnitPublic :one
 SELECT is_public FROM properties WHERE properties.id IN (SELECT property_id from units WHERE units.id = $1 LIMIT 1) LIMIT 1
 `
@@ -446,13 +369,12 @@ UPDATE units SET
   name = coalesce($2, name),
   area = coalesce($3, area),
   floor = coalesce($4, floor),
-  price = coalesce($5, price),
-  number_of_living_rooms = coalesce($6, number_of_living_rooms),
-  number_of_bedrooms = coalesce($7, number_of_bedrooms),
-  number_of_bathrooms = coalesce($8, number_of_bathrooms),
-  number_of_toilets = coalesce($9, number_of_toilets),
-  number_of_kitchens = coalesce($10, number_of_kitchens),
-  number_of_balconies = coalesce($11, number_of_balconies),
+  number_of_living_rooms = coalesce($5, number_of_living_rooms),
+  number_of_bedrooms = coalesce($6, number_of_bedrooms),
+  number_of_bathrooms = coalesce($7, number_of_bathrooms),
+  number_of_toilets = coalesce($8, number_of_toilets),
+  number_of_kitchens = coalesce($9, number_of_kitchens),
+  number_of_balconies = coalesce($10, number_of_balconies),
   updated_at = NOW()
 WHERE id = $1
 `
@@ -462,7 +384,6 @@ type UpdateUnitParams struct {
 	Name                pgtype.Text   `json:"name"`
 	Area                pgtype.Float4 `json:"area"`
 	Floor               pgtype.Int4   `json:"floor"`
-	Price               pgtype.Int8   `json:"price"`
 	NumberOfLivingRooms pgtype.Int4   `json:"number_of_living_rooms"`
 	NumberOfBedrooms    pgtype.Int4   `json:"number_of_bedrooms"`
 	NumberOfBathrooms   pgtype.Int4   `json:"number_of_bathrooms"`
@@ -477,7 +398,6 @@ func (q *Queries) UpdateUnit(ctx context.Context, arg UpdateUnitParams) error {
 		arg.Name,
 		arg.Area,
 		arg.Floor,
-		arg.Price,
 		arg.NumberOfLivingRooms,
 		arg.NumberOfBedrooms,
 		arg.NumberOfBathrooms,

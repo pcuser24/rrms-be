@@ -72,9 +72,6 @@ func (a *adapter) createUnit() fiber.Handler {
 
 		res, err := a.uService.CreateUnit(&payload)
 		if err != nil {
-			if dbErr, ok := err.(*pgconn.PgError); ok {
-				return responses.DBErrorResponse(ctx, dbErr)
-			}
 			if dbErr, ok := err.(*database.TXError); ok {
 				return responses.DBTXErrorResponse(ctx, dbErr)
 			}

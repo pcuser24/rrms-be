@@ -168,5 +168,9 @@ func ToApplicationModel(a *database.Application) *ApplicationModel {
 		IdentityIssuedBy:         a.IdentityIssuedBy,
 		CreatedAt:                a.CreatedAt,
 		UpdatedAt:                a.UpdatedAt,
+		Minors:                   make([]ApplicationMinorModel, 0),
+		Coaps:                    make([]ApplicationCoapModel, 0),
+		Pets:                     make([]ApplicationPetModel, 0),
+		Vehicles:                 make([]ApplicationVehicle, 0),
 	}
 }

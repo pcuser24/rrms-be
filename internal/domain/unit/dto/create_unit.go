@@ -22,7 +22,6 @@ type CreateUnit struct {
 	Name                *string             `json:"name"`
 	Area                float32             `json:"area" validate:"required"`
 	Floor               *int32              `json:"floor"`
-	Price               *int64              `json:"price"`
 	NumberOfLivingRooms *int32              `json:"numberOfLivingRooms"`
 	NumberOfBedrooms    *int32              `json:"numberOfBedrooms"`
 	NumberOfBathrooms   *int32              `json:"numberOfBathrooms"`
@@ -39,7 +38,6 @@ func (cu *CreateUnit) ToCreateUnitDB() *database.CreateUnitParams {
 		PropertyID:          cu.PropertyID,
 		Name:                types.StrN(cu.Name),
 		Floor:               types.Int32N(cu.Floor),
-		Price:               types.Int64N(cu.Price),
 		NumberOfLivingRooms: types.Int32N(cu.NumberOfLivingRooms),
 		NumberOfBedrooms:    types.Int32N(cu.NumberOfBedrooms),
 		NumberOfBathrooms:   types.Int32N(cu.NumberOfBathrooms),

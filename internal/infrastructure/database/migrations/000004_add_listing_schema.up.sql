@@ -34,13 +34,14 @@ COMMENT ON COLUMN "listings"."price" IS 'Rental price per month in vietnamese do
 COMMENT ON COLUMN "listings"."priority" IS 'Priority of the listing, range from 1 to 5, 1 is the lowest';
 COMMENT ON COLUMN "listings"."lease_term" IS 'Lease term in months';
 
-CREATE TABLE IF NOT EXISTS "listing_unit" (
+CREATE TABLE IF NOT EXISTS "listing_units" (
   "listing_id" UUID NOT NULL,
   "unit_id" UUID NOT NULL,
+  "price" BIGINT NOT NULL CHECK (price >= 0),
   PRIMARY KEY("listing_id", "unit_id")
 );
-ALTER TABLE "listing_unit" ADD CONSTRAINT "listing_unit_listing_id_fkey" FOREIGN KEY ("listing_id") REFERENCES "listings"("id") ON DELETE CASCADE;
-ALTER TABLE "listing_unit" ADD CONSTRAINT "listing_unit_unit_id_fkey" FOREIGN KEY ("unit_id") REFERENCES "units"("id") ON DELETE CASCADE;
+ALTER TABLE "listing_units" ADD CONSTRAINT "listing_units_listing_id_fkey" FOREIGN KEY ("listing_id") REFERENCES "listings"("id") ON DELETE CASCADE;
+ALTER TABLE "listing_units" ADD CONSTRAINT "listing_units_unit_id_fkey" FOREIGN KEY ("unit_id") REFERENCES "units"("id") ON DELETE CASCADE;
 
 CREATE TABLE IF NOT EXISTS "rental_policies" (
   "id" BIGSERIAL PRIMARY KEY,

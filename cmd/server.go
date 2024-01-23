@@ -216,14 +216,15 @@ func (c *serverCommand) setupInternalServices(
 		authTaskDistributor,
 	)
 	propertyRepo := property.NewRepo(dao)
-	c.internalServices.PropertyService = property.NewService(propertyRepo)
 	unitRepo := unit.NewRepo(dao)
-	c.internalServices.UnitService = unit.NewService(unitRepo)
 	listingRepo := listing.NewRepo(dao)
-	c.internalServices.ListingService = listing.NewService(listingRepo)
 	rentalRepo := rental.NewRepo(dao)
-	c.internalServices.RentalService = rental.NewService(rentalRepo)
 	applicationRepo := application.NewRepo(dao)
+
+	c.internalServices.PropertyService = property.NewService(propertyRepo, unitRepo)
+	c.internalServices.UnitService = unit.NewService(unitRepo)
+	c.internalServices.ListingService = listing.NewService(listingRepo)
+	c.internalServices.RentalService = rental.NewService(rentalRepo)
 	applicationTaskDistributor := application.NewTaskDistributor(c.asyncTaskDistributor)
 	c.internalServices.ApplicationService = application.NewService(
 		applicationRepo,

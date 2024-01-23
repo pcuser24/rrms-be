@@ -12,8 +12,8 @@ import (
 const PropertyFieldsLocalKey = "propertyFields"
 
 type GetPropertiesByIdsQuery struct {
-	Fields []string    `query:"fields" validate:"propertyFields"`
-	IDs    []uuid.UUID `query:"propIds" validate:"required,dive,uuid4"`
+	GetPropertiesQuery
+	IDs []uuid.UUID `query:"propIds" validate:"required,dive,uuid4"`
 }
 
 func (q *GetPropertiesByIdsQuery) QueryParser(ctx *fiber.Ctx) error {
@@ -29,6 +29,17 @@ func (q *GetPropertiesByIdsQuery) QueryParser(ctx *fiber.Ctx) error {
 
 type GetPropertiesQuery struct {
 	Fields []string `query:"fields" validate:"propertyFields"`
+}
+
+func (q *GetPropertiesQuery) QueryParser(ctx *fiber.Ctx) error {
+	err := ctx.QueryParser(q)
+	if err != nil {
+		return err
+	}
+	if len(q.Fields) == 1 {
+		q.Fields = strings.Split(q.Fields[0], ",")
+	}
+	return nil
 }
 
 func ValidateQuery(fl validator.FieldLevel) bool {

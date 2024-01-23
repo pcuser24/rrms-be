@@ -81,6 +81,8 @@ func (s *service) GetListingsOfUser(userId uuid.UUID, fields []string) ([]model.
 		SearchSortPaginationQuery: requests.SearchSortPaginationQuery{
 			Limit:  types.Ptr[int32](1000),
 			Offset: types.Ptr[int32](0),
+			SortBy: types.Ptr[string]("created_at"),
+			Order:  types.Ptr[string]("desc"),
 		},
 	})
 	if err != nil {

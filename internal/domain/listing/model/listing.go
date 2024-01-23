@@ -5,6 +5,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/user2410/rrms-backend/internal/infrastructure/database"
+	"github.com/user2410/rrms-backend/internal/utils/types"
 )
 
 type ListingModel struct {
@@ -38,42 +39,28 @@ type ListingModel struct {
 
 func ToListingModel(ldb *database.Listing) *ListingModel {
 	lm := &ListingModel{
-		ID:          ldb.ID,
-		CreatorID:   ldb.CreatorID,
-		PropertyID:  ldb.PropertyID,
-		Title:       ldb.Title,
-		Description: ldb.Description,
-		FullName:    ldb.FullName,
-		Email:       ldb.Email,
-		Phone:       ldb.Phone,
-		ContactType: ldb.ContactType,
-		Price:       ldb.Price,
-		Priority:    ldb.Priority,
-		Active:      ldb.Active,
-		CreatedAt:   ldb.CreatedAt,
-		UpdatedAt:   ldb.UpdatedAt,
-		ExpiredAt:   ldb.ExpiredAt,
-		PostAt:      ldb.PostAt,
-	}
-
-	if ldb.SecurityDeposit.Valid {
-		val := ldb.SecurityDeposit.Int64
-		lm.SecurityDeposit = &val
-	}
-
-	if ldb.LeaseTerm.Valid {
-		val := ldb.LeaseTerm.Int32
-		lm.LeaseTerm = &val
-	}
-
-	if ldb.PetsAllowed.Valid {
-		val := ldb.PetsAllowed.Bool
-		lm.PetsAllowed = &val
-	}
-
-	if ldb.NumberOfResidents.Valid {
-		val := ldb.NumberOfResidents.Int32
-		lm.NumberOfResidents = &val
+		ID:                ldb.ID,
+		CreatorID:         ldb.CreatorID,
+		PropertyID:        ldb.PropertyID,
+		Title:             ldb.Title,
+		Description:       ldb.Description,
+		FullName:          ldb.FullName,
+		Email:             ldb.Email,
+		Phone:             ldb.Phone,
+		ContactType:       ldb.ContactType,
+		Price:             ldb.Price,
+		Priority:          ldb.Priority,
+		Active:            ldb.Active,
+		CreatedAt:         ldb.CreatedAt,
+		UpdatedAt:         ldb.UpdatedAt,
+		ExpiredAt:         ldb.ExpiredAt,
+		PostAt:            ldb.PostAt,
+		SecurityDeposit:   types.PNInt64(ldb.SecurityDeposit),
+		LeaseTerm:         types.PNInt32(ldb.LeaseTerm),
+		PetsAllowed:       types.PNBool(ldb.PetsAllowed),
+		NumberOfResidents: types.PNInt32(ldb.NumberOfResidents),
+		Policies:          make([]ListingPolicyModel, 0),
+		Units:             make([]ListingUnitModel, 0),
 	}
 
 	return lm

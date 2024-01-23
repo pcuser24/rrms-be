@@ -313,6 +313,7 @@ type ListingPolicy struct {
 type ListingUnit struct {
 	ListingID uuid.UUID `json:"listing_id"`
 	UnitID    uuid.UUID `json:"unit_id"`
+	Price     int64     `json:"price"`
 }
 
 // Security guard, Parking, Gym, ...
@@ -402,7 +403,6 @@ type Unit struct {
 	Name                string      `json:"name"`
 	Area                float32     `json:"area"`
 	Floor               pgtype.Int4 `json:"floor"`
-	Price               pgtype.Int8 `json:"price"`
 	NumberOfLivingRooms pgtype.Int4 `json:"number_of_living_rooms"`
 	NumberOfBedrooms    pgtype.Int4 `json:"number_of_bedrooms"`
 	NumberOfBathrooms   pgtype.Int4 `json:"number_of_bathrooms"`

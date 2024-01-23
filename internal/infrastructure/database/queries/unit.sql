@@ -4,7 +4,6 @@ INSERT INTO units (
   name,
   area,
   floor,
-  price,
   number_of_living_rooms,
   number_of_bedrooms,
   number_of_bathrooms,
@@ -19,7 +18,6 @@ INSERT INTO units (
   sqlc.narg(name),
   sqlc.arg(area),
   sqlc.narg(floor),
-  sqlc.narg(price),
   sqlc.narg(number_of_living_rooms),
   sqlc.narg(number_of_bedrooms),
   sqlc.narg(number_of_bathrooms),
@@ -29,17 +27,6 @@ INSERT INTO units (
   sqlc.arg(type),
   NOW(),
   NOW()
-) RETURNING *;
-
--- name: InsertUnitMedia :one
-INSERT INTO unit_media (
-  unit_id,
-  url,
-  type
-) VALUES (
-  sqlc.arg(unit_id),
-  sqlc.arg(url),
-  sqlc.arg(type)
 ) RETURNING *;
 
 -- name: CreateUnitAmenity :one
@@ -69,9 +56,6 @@ INSERT INTO unit_media (
 -- name: GetUnitById :one
 SELECT * FROM units WHERE id = $1 LIMIT 1;
 
--- name: GetUnitsOfProperty :many
-SELECT * FROM units WHERE property_id = $1;
-
 -- name: GetUnitMedia :many
 SELECT * FROM unit_media WHERE unit_id = $1;
 
@@ -98,7 +82,6 @@ UPDATE units SET
   name = coalesce(sqlc.narg(name), name),
   area = coalesce(sqlc.narg(area), area),
   floor = coalesce(sqlc.narg(floor), floor),
-  price = coalesce(sqlc.narg(price), price),
   number_of_living_rooms = coalesce(sqlc.narg(number_of_living_rooms), number_of_living_rooms),
   number_of_bedrooms = coalesce(sqlc.narg(number_of_bedrooms), number_of_bedrooms),
   number_of_bathrooms = coalesce(sqlc.narg(number_of_bathrooms), number_of_bathrooms),

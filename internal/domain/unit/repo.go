@@ -19,7 +19,6 @@ type Repo interface {
 	CreateUnit(ctx context.Context, data *dto.CreateUnit) (*model.UnitModel, error)
 	GetUnitById(ctx context.Context, id uuid.UUID) (*model.UnitModel, error)
 	GetUnitsByIds(ctx context.Context, ids []string, fields []string) ([]model.UnitModel, error)
-	GetUnitsOfProperty(ctx context.Context, id uuid.UUID) ([]model.UnitModel, error)
 	SearchUnitCombination(ctx context.Context, query *dto.SearchUnitCombinationQuery) (*dto.SearchUnitCombinationResponse, error)
 	CheckUnitManageability(ctx context.Context, uid uuid.UUID, userId uuid.UUID) (bool, error)
 	CheckUnitOfProperty(ctx context.Context, pid, uid uuid.UUID) (bool, error)
@@ -108,34 +107,6 @@ func (r *repo) GetUnitById(ctx context.Context, id uuid.UUID) (*model.UnitModel,
 	}
 
 	return um, nil
-}
-
-func (r *repo) GetUnitsOfProperty(ctx context.Context, id uuid.UUID) ([]model.UnitModel, error) {
-	resDb, err := r.dao.GetUnitsOfProperty(ctx, id)
-	if err != nil {
-		return nil, err
-	}
-
-	var res []model.UnitModel
-	for _, i := range resDb {
-		um := *model.ToUnitModel(&i)
-		a, err := r.dao.GetUnitAmenities(ctx, i.ID)
-		if err != nil {
-			return nil, err
-		}
-		for _, adb := range a {
-			um.Amenities = append(um.Amenities, *model.ToUnitAmenityModel(&adb))
-		}
-		m, err := r.dao.GetUnitMedia(ctx, i.ID)
-		if err != nil {
-			return nil, err
-		}
-		for _, mdb := range m {
-			um.Media = append(um.Media, *model.ToUnitMediaModel(&mdb))
-		}
-		res = append(res, um)
-	}
-	return res, nil
 }
 
 func (r *repo) SearchUnitCombination(ctx context.Context, query *dto.SearchUnitCombinationQuery) (*dto.SearchUnitCombinationResponse, error) {
@@ -258,8 +229,6 @@ func (r *repo) GetUnitsByIds(ctx context.Context, ids []string, fields []string)
 			scanningFields = append(scanningFields, &i.Area)
 		case "floor":
 			scanningFields = append(scanningFields, &i.Floor)
-		case "price":
-			scanningFields = append(scanningFields, &i.Price)
 		case "number_of_living_rooms":
 			scanningFields = append(scanningFields, &i.NumberOfLivingRooms)
 		case "number_of_bedrooms":

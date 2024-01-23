@@ -172,6 +172,13 @@ func BoolN(b *bool) pgtype.Bool {
 	}
 }
 
+func PNBool(n pgtype.Bool) *bool {
+	if !n.Valid {
+		return nil
+	}
+	return &n.Bool
+}
+
 func NUUID(n pgtype.Text) uuid.UUID {
 	if !n.Valid {
 		return uuid.New()

@@ -9,7 +9,6 @@ import (
 	"github.com/huandu/go-sqlbuilder"
 	"github.com/user2410/rrms-backend/internal/domain/property/dto"
 	"github.com/user2410/rrms-backend/internal/domain/property/model"
-	unitModel "github.com/user2410/rrms-backend/internal/domain/unit/model"
 	"github.com/user2410/rrms-backend/internal/infrastructure/database"
 	sqlbuilders "github.com/user2410/rrms-backend/internal/infrastructure/database/sql_builders"
 )
@@ -20,7 +19,6 @@ type Repo interface {
 	GetPropertyById(ctx context.Context, id uuid.UUID) (*model.PropertyModel, error)
 	// Get properties with custom fields by ids
 	GetPropertiesByIds(ctx context.Context, ids []string, fields []string) ([]model.PropertyModel, error)
-	GetUnitsOfProperty(ctx context.Context, id uuid.UUID) ([]unitModel.UnitModel, error)
 	GetManagedProperties(ctx context.Context, userId uuid.UUID) ([]database.GetManagedPropertiesRow, error)
 	SearchPropertyCombination(ctx context.Context, query *dto.SearchPropertyCombinationQuery) (*dto.SearchPropertyCombinationResponse, error)
 	IsPublic(ctx context.Context, id uuid.UUID) (bool, error)
@@ -288,18 +286,6 @@ func (r *repo) GetPropertyById(ctx context.Context, id uuid.UUID) (*model.Proper
 	}
 
 	return pm, nil
-}
-
-func (r *repo) GetUnitsOfProperty(ctx context.Context, id uuid.UUID) ([]unitModel.UnitModel, error) {
-	_res, err := r.dao.GetUnitsOfProperty(ctx, id)
-	if err != nil {
-		return nil, err
-	}
-	resm := make([]unitModel.UnitModel, len(_res))
-	for _, res := range _res {
-		resm = append(resm, *unitModel.ToUnitModel(&res))
-	}
-	return resm, nil
 }
 
 func (r *repo) GetPropertyManagers(ctx context.Context, id uuid.UUID) ([]model.PropertyManagerModel, error) {

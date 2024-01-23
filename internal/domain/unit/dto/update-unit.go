@@ -11,7 +11,6 @@ type UpdateUnit struct {
 	Name                *string   `json:"name"`
 	Area                *float32  `json:"area"`
 	Floor               *int32    `json:"floor"`
-	Price               *int64    `json:"price"`
 	NumberOfLivingRooms *int32    `json:"number_of_living_rooms"`
 	NumberOfBedrooms    *int32    `json:"number_of_bedrooms"`
 	NumberOfBathrooms   *int32    `json:"number_of_bathrooms"`
@@ -26,7 +25,6 @@ func (u *UpdateUnit) ToUpdateUnitDB() *database.UpdateUnitParams {
 		Name:                types.StrN(u.Name),
 		Area:                types.Float32N(u.Area),
 		Floor:               types.Int32N(u.Floor),
-		Price:               types.Int64N(u.Price),
 		NumberOfLivingRooms: types.Int32N(u.NumberOfLivingRooms),
 		NumberOfBedrooms:    types.Int32N(u.NumberOfBedrooms),
 		NumberOfBathrooms:   types.Int32N(u.NumberOfBathrooms),
