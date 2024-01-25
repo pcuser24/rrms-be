@@ -32,6 +32,7 @@ type PropertyModel struct {
 	PlaceUrl      string                 `json:"placeUrl"`
 	Description   *string                `json:"description"`
 	Type          database.PROPERTYTYPE  `json:"type"`
+	IsPublic      bool                   `json:"isPublic"`
 	CreatedAt     time.Time              `json:"createdAt"`
 	UpdatedAt     time.Time              `json:"updatedAt"`
 	Managers      []PropertyManagerModel `json:"managers"`
@@ -61,6 +62,7 @@ func ToPropertyModel(p *database.Property) *PropertyModel {
 		Lng:            types.PNFloat64(p.Lng),
 		PlaceUrl:       p.PlaceUrl,
 		Type:           p.Type,
+		IsPublic:       p.IsPublic,
 		CreatedAt:      p.CreatedAt,
 		UpdatedAt:      p.UpdatedAt,
 		Description:    types.PNStr(p.Description),

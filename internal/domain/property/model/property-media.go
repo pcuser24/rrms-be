@@ -3,6 +3,7 @@ package model
 import (
 	"github.com/google/uuid"
 	"github.com/user2410/rrms-backend/internal/infrastructure/database"
+	"github.com/user2410/rrms-backend/internal/utils/types"
 )
 
 type PropertyMediaModel struct {
@@ -13,16 +14,12 @@ type PropertyMediaModel struct {
 	Description *string            `json:"description"`
 }
 
-func ToPropertyMediaModel(pm *database.PropertyMedium) *PropertyMediaModel {
-	m := PropertyMediaModel{
-		ID:         pm.ID,
-		PropertyID: pm.PropertyID,
-		Url:        pm.Url,
-		Type:       pm.Type,
+func ToPropertyMediaModel(pm *database.PropertyMedium) PropertyMediaModel {
+	return PropertyMediaModel{
+		ID:          pm.ID,
+		PropertyID:  pm.PropertyID,
+		Url:         pm.Url,
+		Type:        pm.Type,
+		Description: types.PNStr(pm.Description),
 	}
-	if pm.Description.Valid {
-		desc := pm.Description.String
-		m.Description = &desc
-	}
-	return &m
 }

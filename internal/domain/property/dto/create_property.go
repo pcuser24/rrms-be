@@ -49,7 +49,7 @@ type CreatePropertyTag struct {
 
 type CreateProperty struct {
 	CreatorID      uuid.UUID               `json:"creatorId"`
-	Name           *string                 `json:"name" validate:"omitempty"`
+	Name           string                  `json:"name" validate:"required"`
 	Building       *string                 `json:"building" validate:"omitempty"`
 	Project        *string                 `json:"project" validate:"omitempty"`
 	Area           float32                 `json:"area" validate:"required,gt=0"`
@@ -76,7 +76,7 @@ type CreateProperty struct {
 func (c *CreateProperty) ToCreatePropertyDB() *database.CreatePropertyParams {
 	return &database.CreatePropertyParams{
 		CreatorID:      c.CreatorID,
-		Name:           types.StrN(c.Name),
+		Name:           c.Name,
 		Building:       types.StrN(c.Building),
 		Project:        types.StrN(c.Project),
 		NumberOfFloors: types.Int32N(c.NumberOfFloors),

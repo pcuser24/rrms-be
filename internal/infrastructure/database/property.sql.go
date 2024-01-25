@@ -78,7 +78,7 @@ INSERT INTO properties (
 
 type CreatePropertyParams struct {
 	CreatorID      uuid.UUID     `json:"creator_id"`
-	Name           pgtype.Text   `json:"name"`
+	Name           string        `json:"name"`
 	Building       pgtype.Text   `json:"building"`
 	Project        pgtype.Text   `json:"project"`
 	Area           float32       `json:"area"`
@@ -545,6 +545,7 @@ UPDATE properties SET
   lng = coalesce($16, lng),
   place_url = coalesce($17, place_url),
   description = coalesce($18, description),
+  is_public = coalesce($19, is_public),
   updated_at = NOW()
 WHERE id = $1
 `
@@ -568,6 +569,7 @@ type UpdatePropertyParams struct {
 	Lng            pgtype.Float8 `json:"lng"`
 	PlaceUrl       pgtype.Text   `json:"place_url"`
 	Description    pgtype.Text   `json:"description"`
+	IsPublic       pgtype.Bool   `json:"is_public"`
 }
 
 func (q *Queries) UpdateProperty(ctx context.Context, arg UpdatePropertyParams) error {
@@ -590,6 +592,7 @@ func (q *Queries) UpdateProperty(ctx context.Context, arg UpdatePropertyParams) 
 		arg.Lng,
 		arg.PlaceUrl,
 		arg.Description,
+		arg.IsPublic,
 	)
 	return err
 }

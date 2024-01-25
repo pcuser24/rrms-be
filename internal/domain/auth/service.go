@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"time"
 
+	repo2 "github.com/user2410/rrms-backend/internal/domain/auth/repo"
+
 	"github.com/google/uuid"
 	"github.com/user2410/rrms-backend/internal/domain/auth/dto"
 	"github.com/user2410/rrms-backend/internal/domain/auth/model"
@@ -23,7 +25,7 @@ type AuthService interface {
 }
 
 type authService struct {
-	repo            AuthRepo
+	repo            repo2.Repo
 	tokenMaker      token.Maker
 	accessTokenTTL  time.Duration
 	refreshTokenTTL time.Duration
@@ -31,7 +33,7 @@ type authService struct {
 }
 
 func NewAuthService(
-	repo AuthRepo,
+	repo repo2.Repo,
 	tokenMaker token.Maker,
 	accessTokenTTL, refreshToken time.Duration,
 	taskDistributor TaskDistributor,

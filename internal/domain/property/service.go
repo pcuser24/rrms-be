@@ -3,6 +3,8 @@ package property
 import (
 	"context"
 
+	"github.com/user2410/rrms-backend/internal/domain/property/repo"
+
 	"github.com/google/uuid"
 	"github.com/user2410/rrms-backend/internal/domain/property/dto"
 	"github.com/user2410/rrms-backend/internal/domain/property/model"
@@ -23,7 +25,6 @@ type Service interface {
 	SearchListingCombination(data *dto.SearchPropertyCombinationQuery) (*dto.SearchPropertyCombinationResponse, error)
 	UpdateProperty(data *dto.UpdateProperty) error
 	DeleteProperty(id uuid.UUID) error
-	GetAllFeatures() ([]model.PFeature, error)
 }
 
 // import cycle is not allowed
@@ -33,11 +34,11 @@ type unitRepo interface {
 }
 
 type service struct {
-	pRepo Repo
+	pRepo repo.Repo
 	uRepo unitRepo
 }
 
-func NewService(pRepo Repo, uRepo unitRepo) Service {
+func NewService(pRepo repo.Repo, uRepo unitRepo) Service {
 	return &service{
 		pRepo: pRepo,
 		uRepo: uRepo,
@@ -127,10 +128,6 @@ func (s *service) CheckVisibility(id uuid.UUID, uid uuid.UUID) (bool, error) {
 
 func (s *service) DeleteProperty(id uuid.UUID) error {
 	return s.pRepo.DeleteProperty(context.Background(), id)
-}
-
-func (s *service) GetAllFeatures() ([]model.PFeature, error) {
-	return s.pRepo.GetAllFeatures(context.Background())
 }
 
 type GetPropertiesOfUserItem struct {

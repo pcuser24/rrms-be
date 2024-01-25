@@ -9,6 +9,9 @@ import (
 	"syscall"
 	"time"
 
+	auth_repo "github.com/user2410/rrms-backend/internal/domain/auth/repo"
+	property_repo "github.com/user2410/rrms-backend/internal/domain/property/repo"
+
 	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
@@ -208,14 +211,14 @@ func (c *serverCommand) setupInternalServices(
 		Addr: c.config.AsynqRedisAddress,
 	})
 
-	authRepo := auth.NewUserRepo(dao)
+	authRepo := auth_repo.NewRepo(dao)
 	authTaskDistributor := auth.NewTaskDistributor(c.asyncTaskDistributor)
 	c.internalServices.AuthService = auth.NewAuthService(
 		authRepo,
 		c.tokenMaker, c.config.AccessTokenTTL, c.config.RefreshTokenTTL,
 		authTaskDistributor,
 	)
-	propertyRepo := property.NewRepo(dao)
+	propertyRepo := property_repo.NewRepo(dao)
 	unitRepo := unit.NewRepo(dao)
 	listingRepo := listing.NewRepo(dao)
 	rentalRepo := rental.NewRepo(dao)

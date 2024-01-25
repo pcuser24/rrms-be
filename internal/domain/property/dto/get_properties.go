@@ -11,6 +11,8 @@ import (
 
 const PropertyFieldsLocalKey = "propertyFields"
 
+var RetrievableFields = []string{"name", "building", "project", "area", "number_of_floors", "year_built", "orientation", "entrance_width", "facade", "full_address", "city", "district", "ward", "lat", "lng", "place_url", "description", "type", "is_public", "created_at", "updated_at", "features", "tags", "media"}
+
 type GetPropertiesByIdsQuery struct {
 	GetPropertiesQuery
 	IDs []uuid.UUID `query:"propIds" validate:"required,dive,uuid4"`
@@ -45,7 +47,7 @@ func (q *GetPropertiesQuery) QueryParser(ctx *fiber.Ctx) error {
 func ValidateQuery(fl validator.FieldLevel) bool {
 	if fields, ok := fl.Field().Interface().([]string); ok {
 		for _, f := range fields {
-			if !slices.Contains([]string{"name", "building", "project", "area", "number_of_floors", "year_built", "orientation", "entrance_width", "facade", "full_address", "city", "district", "ward", "lat", "lng", "place_url", "description", "type", "is_public", "created_at", "updated_at", "features", "tags", "media"}, f) {
+			if !slices.Contains(RetrievableFields, f) {
 				return false
 			}
 		}

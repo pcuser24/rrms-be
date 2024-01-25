@@ -1,4 +1,4 @@
-package property
+package repo
 
 import (
 	"context"
@@ -24,7 +24,6 @@ type Repo interface {
 	IsPublic(ctx context.Context, id uuid.UUID) (bool, error)
 	UpdateProperty(ctx context.Context, data *dto.UpdateProperty) error
 	DeleteProperty(ctx context.Context, id uuid.UUID) error
-	GetAllFeatures(ctx context.Context) ([]model.PFeature, error)
 }
 
 type repo struct {
@@ -65,7 +64,7 @@ func (r *repo) CreateProperty(ctx context.Context, data *dto.CreateProperty) (*m
 			if err != nil {
 				return nil, err
 			}
-			pm.Features = append(pm.Features, *model.ToPropertyFeatureModel(&res))
+			pm.Features = append(pm.Features, model.ToPropertyFeatureModel(&res))
 		}
 
 		for _, m := range data.Media {
@@ -73,7 +72,7 @@ func (r *repo) CreateProperty(ctx context.Context, data *dto.CreateProperty) (*m
 			if err != nil {
 				return nil, err
 			}
-			pm.Media = append(pm.Media, *model.ToPropertyMediaModel(&res))
+			pm.Media = append(pm.Media, model.ToPropertyMediaModel(&res))
 		}
 
 		for _, t := range data.Tags {
@@ -224,7 +223,7 @@ func (r *repo) GetPropertiesByIds(ctx context.Context, ids []string, fields []st
 				return nil, err
 			}
 			for _, fdb := range f {
-				p.Features = append(p.Features, *model.ToPropertyFeatureModel(&fdb))
+				p.Features = append(p.Features, model.ToPropertyFeatureModel(&fdb))
 			}
 		}
 		if slices.Contains(fkFields, "media") {
@@ -233,7 +232,7 @@ func (r *repo) GetPropertiesByIds(ctx context.Context, ids []string, fields []st
 				return nil, err
 			}
 			for _, mdb := range m {
-				p.Media = append(p.Media, *model.ToPropertyMediaModel(&mdb))
+				p.Media = append(p.Media, model.ToPropertyMediaModel(&mdb))
 			}
 		}
 		if slices.Contains(fkFields, "tags") {
@@ -261,12 +260,20 @@ func (r *repo) GetPropertyById(ctx context.Context, id uuid.UUID) (*model.Proper
 
 	pm := model.ToPropertyModel(&p)
 
+	mn, err := r.dao.GetPropertyManagers(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	for _, mdb := range mn {
+		pm.Managers = append(pm.Managers, model.PropertyManagerModel(mdb))
+	}
+
 	f, err := r.dao.GetPropertyFeatures(ctx, id)
 	if err != nil {
 		return nil, err
 	}
 	for _, fdb := range f {
-		pm.Features = append(pm.Features, *model.ToPropertyFeatureModel(&fdb))
+		pm.Features = append(pm.Features, model.ToPropertyFeatureModel(&fdb))
 	}
 
 	t, err := r.dao.GetPropertyTags(ctx, id)
@@ -282,7 +289,7 @@ func (r *repo) GetPropertyById(ctx context.Context, id uuid.UUID) (*model.Proper
 		return nil, err
 	}
 	for _, mdb := range m {
-		pm.Media = append(pm.Media, *model.ToPropertyMediaModel(&mdb))
+		pm.Media = append(pm.Media, model.ToPropertyMediaModel(&mdb))
 	}
 
 	return pm, nil
@@ -304,24 +311,12 @@ func (r *repo) GetManagedProperties(ctx context.Context, userId uuid.UUID) ([]da
 	return r.dao.GetManagedProperties(ctx, userId)
 }
 
-func (r *repo) GetAllFeatures(ctx context.Context) ([]model.PFeature, error) {
-	resDb, err := r.dao.GetAllPropertyFeatures(ctx)
-	if err != nil {
-		return nil, err
-	}
-	var res []model.PFeature
-	for _, i := range resDb {
-		res = append(res, model.PFeature(i))
-	}
-	return res, nil
-}
-
 func (r *repo) IsPublic(ctx context.Context, id uuid.UUID) (bool, error) {
 	return r.dao.IsPropertyPublic(ctx, id)
 }
 
 func (r *repo) UpdateProperty(ctx context.Context, data *dto.UpdateProperty) error {
-	return r.dao.UpdateProperty(ctx, *data.ToUpdatePropertyDB())
+	return r.dao.UpdateProperty(ctx, data.ToUpdatePropertyDB())
 }
 
 func (r *repo) DeleteProperty(ctx context.Context, id uuid.UUID) error {

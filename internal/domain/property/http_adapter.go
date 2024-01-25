@@ -30,7 +30,6 @@ func NewAdapter(service Service) Adapter {
 func (a *adapter) RegisterServer(router *fiber.Router, tokenMaker token.Maker) {
 	propertyRoute := (*router).Group("/properties")
 
-	propertyRoute.Get("/property/features", a.getAllFeatures())
 	propertyRoute.Get("/property/:id", CheckPropertyVisibility(a.service), a.getPropertyById())
 	propertyRoute.Get("/property/:id/units", CheckPropertyVisibility(a.service), a.getUnitsOfProperty())
 	propertyRoute.Get("/ids", a.getPropertiesByIds())
@@ -196,19 +195,5 @@ func (a *adapter) deleteProperty() fiber.Handler {
 			ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
 		}
 		return nil
-	}
-}
-
-func (a *adapter) getAllFeatures() fiber.Handler {
-	return func(ctx *fiber.Ctx) error {
-		res, err := a.service.GetAllFeatures()
-		if err != nil {
-			ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
-			return nil
-		}
-
-		return ctx.JSON(fiber.Map{
-			"items": res,
-		})
 	}
 }

@@ -23,7 +23,7 @@ INSERT INTO properties (
   updated_at
 ) VALUES (
   sqlc.arg(creator_id),
-  sqlc.narg(name),
+  sqlc.arg(name),
   sqlc.narg(building),
   sqlc.narg(project),
   sqlc.arg(area),
@@ -132,6 +132,7 @@ UPDATE properties SET
   lng = coalesce(sqlc.narg(lng), lng),
   place_url = coalesce(sqlc.narg(place_url), place_url),
   description = coalesce(sqlc.narg(description), description),
+  is_public = coalesce(sqlc.narg(is_public), is_public),
   updated_at = NOW()
 WHERE id = $1;
 

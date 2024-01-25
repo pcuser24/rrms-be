@@ -11,28 +11,28 @@ import (
 )
 
 type SearchPropertyQuery struct {
-	PTypes          []string   `query:"ptypes"`
-	PCreatorID      *string    `query:"pcreatorId"`
-	PName           *string    `query:"pname"`
-	PBuilding       *string    `query:"pbuilding"`
-	PProject        *string    `query:"pproject"`
-	PFullAddress    *string    `query:"pfullAddress"`
-	PCity           *string    `query:"pcity"`
-	PDistrict       *string    `query:"pdistrict"`
-	PWard           *string    `query:"pward"`
-	PMinArea        *float32   `query:"pminArea"`
-	PMaxArea        *float32   `query:"pmaxArea"`
-	PNumberOfFloors *int32     `query:"pnumberOfFloors"`
-	PYearBuilt      *int32     `query:"pyearBuilt"`
-	POrientation    *string    `query:"porientation"`
-	PMinFacade      *int32     `query:"pfacade"`
-	PIsPublic       *bool      `query:"pisPublic"`
-	PFeatures       []int32    `query:"pfeatures"`
-	PTags           []string   `query:"ptags"`
-	PMinCreatedAt   *time.Time `query:"pminCreatedAt"`
-	PMaxCreatedAt   *time.Time `query:"pmaxCreatedAt"`
-	PMinUpdatedAt   *time.Time `query:"pminUpdatedAt"`
-	PMaxUpdatedAt   *time.Time `query:"pmaxUpdatedAt"`
+	PTypes          []string   `query:"ptypes" validate:"omitempty"`
+	PCreatorID      *string    `query:"pcreatorId" validate:"omitempty"`
+	PName           *string    `query:"pname" validate:"omitempty"`
+	PBuilding       *string    `query:"pbuilding" validate:"omitempty"`
+	PProject        *string    `query:"pproject" validate:"omitempty"`
+	PFullAddress    *string    `query:"pfullAddress" validate:"omitempty"`
+	PCity           *string    `query:"pcity" validate:"omitempty"`
+	PDistrict       *string    `query:"pdistrict" validate:"omitempty"`
+	PWard           *string    `query:"pward" validate:"omitempty"`
+	PMinArea        *float32   `query:"pminArea" validate:"omitempty"`
+	PMaxArea        *float32   `query:"pmaxArea" validate:"omitempty"`
+	PNumberOfFloors *int32     `query:"pnumberOfFloors" validate:"omitempty"`
+	PYearBuilt      *int32     `query:"pyearBuilt" validate:"omitempty"`
+	POrientation    *string    `query:"porientation" validate:"omitempty"`
+	PMinFacade      *int32     `query:"pfacade" validate:"omitempty"`
+	PIsPublic       *bool      `query:"pisPublic" validate:"omitempty"`
+	PFeatures       []int32    `query:"pfeatures" validate:"omitempty"`
+	PTags           []string   `query:"ptags" validate:"omitempty"`
+	PMinCreatedAt   *time.Time `query:"pminCreatedAt" validate:"omitempty"`
+	PMaxCreatedAt   *time.Time `query:"pmaxCreatedAt" validate:"omitempty"`
+	PMinUpdatedAt   *time.Time `query:"pminUpdatedAt" validate:"omitempty"`
+	PMaxUpdatedAt   *time.Time `query:"pmaxUpdatedAt" validate:"omitempty"`
 }
 
 type SearchPropertyCombinationQuery struct {

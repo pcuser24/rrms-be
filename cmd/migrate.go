@@ -95,13 +95,11 @@ func newMigrateUpCommand() *migrateUpCommand {
 func (c *migrateUpCommand) run(cmd *cobra.Command, args []string) {
 	m, err := initMigrator(c.config)
 	if err != nil {
-		log.Println(err.Error())
-		os.Exit(1)
+		log.Fatal(err.Error())
 	}
 	res, err := m.Upgrade()
 	if err != nil {
-		log.Println(err.Error())
-		os.Exit(1)
+		log.Fatal(err.Error())
 	}
 	if !res {
 		log.Println("The database is already up to date")

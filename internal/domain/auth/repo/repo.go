@@ -1,4 +1,4 @@
-package auth
+package repo
 
 import (
 	"context"
@@ -10,7 +10,7 @@ import (
 	"github.com/user2410/rrms-backend/internal/utils/types"
 )
 
-type AuthRepo interface {
+type Repo interface {
 	InsertUser(ctx context.Context, data *dto.RegisterUser) (*model.UserModel, error)
 	CreateSession(ctx context.Context, data *dto.CreateSessionDto) (*model.SessionModel, error)
 	GetUserByEmail(ctx context.Context, email string) (*model.UserModel, error)
@@ -23,7 +23,7 @@ type authRepo struct {
 	dao db.DAO
 }
 
-func NewUserRepo(d db.DAO) AuthRepo {
+func NewRepo(d db.DAO) Repo {
 	return &authRepo{
 		dao: d,
 	}

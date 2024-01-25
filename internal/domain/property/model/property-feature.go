@@ -3,6 +3,7 @@ package model
 import (
 	"github.com/google/uuid"
 	"github.com/user2410/rrms-backend/internal/infrastructure/database"
+	"github.com/user2410/rrms-backend/internal/utils/types"
 )
 
 // Security guard, Parking, Gym, ...
@@ -17,14 +18,10 @@ type PropertyFeatureModel struct {
 	Description *string   `json:"description"`
 }
 
-func ToPropertyFeatureModel(pa *database.PropertyFeature) *PropertyFeatureModel {
-	f := PropertyFeatureModel{
-		PropertyID: pa.PropertyID,
-		FeatureID:  pa.FeatureID,
+func ToPropertyFeatureModel(pa *database.PropertyFeature) PropertyFeatureModel {
+	return PropertyFeatureModel{
+		PropertyID:  pa.PropertyID,
+		FeatureID:   pa.FeatureID,
+		Description: types.PNStr(pa.Description),
 	}
-	if pa.Description.Valid {
-		desc := pa.Description.String
-		f.Description = &desc
-	}
-	return &f
 }
