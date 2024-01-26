@@ -3,6 +3,7 @@ package auth
 import (
 	"context"
 	"fmt"
+	"github.com/user2410/rrms-backend/internal/domain/auth/asynctask"
 	"time"
 
 	repo2 "github.com/user2410/rrms-backend/internal/domain/auth/repo"
@@ -29,14 +30,14 @@ type authService struct {
 	tokenMaker      token.Maker
 	accessTokenTTL  time.Duration
 	refreshTokenTTL time.Duration
-	taskDistributor TaskDistributor
+	taskDistributor asynctask.TaskDistributor
 }
 
 func NewAuthService(
 	repo repo2.Repo,
 	tokenMaker token.Maker,
 	accessTokenTTL, refreshToken time.Duration,
-	taskDistributor TaskDistributor,
+	taskDistributor asynctask.TaskDistributor,
 ) AuthService {
 	return &authService{
 		repo:            repo,

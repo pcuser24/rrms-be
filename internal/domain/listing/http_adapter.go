@@ -11,8 +11,8 @@ import (
 	"github.com/user2410/rrms-backend/internal/domain/unit"
 	"github.com/user2410/rrms-backend/internal/infrastructure/database"
 	"github.com/user2410/rrms-backend/internal/interfaces/rest/responses"
-	"github.com/user2410/rrms-backend/internal/utils"
 	"github.com/user2410/rrms-backend/internal/utils/token"
+	"github.com/user2410/rrms-backend/internal/utils/validation"
 )
 
 type Adapter interface {
@@ -57,8 +57,8 @@ func (a *adapter) createListing() fiber.Handler {
 			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": err.Error()})
 		}
 		payload.CreatorID = tkPayload.UserID
-		if errs := utils.ValidateStruct(nil, payload); len(errs) > 0 {
-			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": utils.GetValidationError(errs)})
+		if errs := validation.ValidateStruct(nil, payload); len(errs) > 0 {
+			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": validation.GetValidationError(errs)})
 		}
 		// log.Println("Passed struct validation")
 
@@ -109,8 +109,8 @@ func (a *adapter) searchListings() fiber.Handler {
 		if err := payload.QueryParser(ctx); err != nil {
 			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": err.Error()})
 		}
-		if errs := utils.ValidateStruct(nil, *payload); len(errs) > 0 {
-			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": utils.GetValidationError(errs)})
+		if errs := validation.ValidateStruct(nil, *payload); len(errs) > 0 {
+			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": validation.GetValidationError(errs)})
 		}
 		// log.Println(payload)
 
@@ -136,8 +136,8 @@ func (a *adapter) getMyListings() fiber.Handler {
 		}
 		validator := validator.New()
 		validator.RegisterValidation("listingFields", dto.ValidateQuery)
-		if errs := utils.ValidateStruct(validator, *query); len(errs) > 0 {
-			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": utils.GetValidationError(errs)})
+		if errs := validation.ValidateStruct(validator, *query); len(errs) > 0 {
+			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": validation.GetValidationError(errs)})
 		}
 
 		tokenPayload := ctx.Locals(auth.AuthorizationPayloadKey).(*token.Payload)
@@ -181,10 +181,10 @@ func (a *adapter) getListingsByIds() fiber.Handler {
 		if err := query.QueryParser(ctx); err != nil {
 			return fiber.NewError(fiber.StatusBadRequest)
 		}
-		validator := utils.GetDefaultValidator()
+		validator := validation.GetDefaultValidator()
 		validator.RegisterValidation(dto.ListingFieldsLocalKey, dto.ValidateQuery)
-		if errs := utils.ValidateStruct(validator, *query); len(errs) > 0 {
-			return fiber.NewError(fiber.StatusBadRequest, utils.GetValidationError(errs))
+		if errs := validation.ValidateStruct(validator, *query); len(errs) > 0 {
+			return fiber.NewError(fiber.StatusBadRequest, validation.GetValidationError(errs))
 		}
 
 		res, err := a.lService.GetListingsByIds(query.IDs, query.Fields)
@@ -206,8 +206,8 @@ func (a *adapter) updateListing() fiber.Handler {
 			return err
 		}
 		payload.ID = lid
-		if errs := utils.ValidateStruct(nil, payload); len(errs) > 0 {
-			ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": utils.GetValidationError(errs)})
+		if errs := validation.ValidateStruct(nil, payload); len(errs) > 0 {
+			ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": validation.GetValidationError(errs)})
 			return nil
 		}
 

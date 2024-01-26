@@ -7,13 +7,11 @@ import (
 )
 
 type CreatePropertyManager struct {
-	PropertyID uuid.UUID `json:"propertyId" validate:"required,uuid"`
-	ManagerID  uuid.UUID `json:"managerId" validate:"required,uuid"`
-	Role       string    `json:"role" validate:"required"`
+	ManagerID uuid.UUID `json:"managerId" validate:"required,uuid4"`
+	Role      string    `json:"role" validate:"required"`
 }
 
 type CreatePropertyMedia struct {
-	// PropertyID uuid.UUID          `json:"property_id" validate:"required,uuid"`
 	Url         string             `json:"url" validate:"required,url"`
 	Type        database.MEDIATYPE `json:"type" validate:"required,oneof=IMAGE VIDEO"`
 	Description *string            `json:"description"`
@@ -29,7 +27,6 @@ func (m *CreatePropertyMedia) ToCreatePropertyMediaDB(propertyId uuid.UUID) *dat
 }
 
 type CreatePropertyFeature struct {
-	// PropertyID  uuid.UUID `json:"property_id" validate:"required,uuid"`
 	FeatureID   int64   `json:"featureId" validate:"required"`
 	Description *string `json:"description"`
 }
@@ -43,7 +40,6 @@ func (f *CreatePropertyFeature) ToCreatePropertyFeatureDB(propertyId uuid.UUID) 
 }
 
 type CreatePropertyTag struct {
-	// PropertyID uuid.UUID `json:"property_id" validate:"required,uuid"`
 	Tag string `json:"tag" validate:"required"`
 }
 

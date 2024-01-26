@@ -5,5 +5,5 @@ import (
 )
 
 func TestInsertUser(t *testing.T) {
-	NewRandomUser(t, testRepo)
+	NewRandomUserDB(t, testRepo)
 }

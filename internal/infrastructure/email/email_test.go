@@ -1,8 +1,14 @@
 package email
 
 import (
+	"log"
 	"os"
 	"testing"
+
+	"github.com/go-playground/validator/v10"
+	"github.com/spf13/viper"
+	"github.com/stretchr/testify/require"
+	"github.com/user2410/rrms-backend/internal/utils"
 )
 
 type Data struct {
@@ -11,23 +17,48 @@ type Data struct {
 	ListingTitle  string
 }
 
+type TestSendEmailConfig struct {
+	EmailSenderName     string `mapstructure:"EMAIL_SENDER_NAME" validate:"required"`
+	EmailSenderAddress  string `mapstructure:"EMAIL_SENDER_ADDRESS" validate:"required"`
+	EmailSenderPassword string `mapstructure:"EMAIL_SENDER_PASSWORD" validate:"required"`
+}
+
+var conf TestSendEmailConfig
+
+func TestMain(t *testing.M) {
+	viper.AddConfigPath(utils.GetBasePath())
+	viper.SetConfigName("app")
+	viper.SetConfigType("env")
+	viper.AutomaticEnv()
+
+	err := viper.ReadInConfig()
+	if err != nil {
+		log.Fatalf("failed to read config file: %v", err)
+	}
+	err = viper.Unmarshal(&conf)
+	if err != nil {
+		log.Fatalf("failed to unmarshal config file: %v", err)
+	}
+
+	v := validator.New()
+	err = v.Struct(&conf)
+	if err != nil {
+		log.Fatalf("invalid or missing fields in config file: %v", err)
+	}
+
+	os.Exit(t.Run())
+}
+
 func TestSendEmailWithGmail(t *testing.T) {
 	if testing.Short() {
 		t.Skip()
 	}
 
-	EmailSenderName := os.Getenv("EMAIL_SENDER_NAME")
-	EmailSenderAddress := os.Getenv("EMAIL_SENDER_ADDRESS")
-	EmailSenderPassword := os.Getenv("EMAIL_SENDER_PASSWORD")
-	t.Log("EMAIL_SENDER_NAME", EmailSenderName)
-	t.Log("EMAIL_SENDER_ADDRESS", EmailSenderAddress)
-	t.Log("EMAIL_SENDER_PASSWORD", EmailSenderPassword)
-
-	sender := NewGmailSender(EmailSenderName, EmailSenderAddress, EmailSenderPassword)
+	sender := NewGmailSender(conf.EmailSenderName, conf.EmailSenderAddress, conf.EmailSenderPassword)
 
 	subject := "A test email"
-	to := []string{EmailSenderAddress}
-	attachFiles := []string{"./email_test.go"}
+	to := []string{conf.EmailSenderAddress}
+	attachFiles := []string{"./email.go"}
 
 	err := sender.SendEmail(
 		subject,
@@ -38,9 +69,6 @@ func TestSendEmailWithGmail(t *testing.T) {
 		},
 		"templates/test.html",
 		to, nil, nil, attachFiles)
-	if err != nil {
-		t.Fatalf("failed to send email: %v", err)
-	}
 
-	t.Log("Email sent successfully")
+	require.NoError(t, err)
 }

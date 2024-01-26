@@ -3,6 +3,8 @@ package application
 import (
 	"context"
 	"fmt"
+	"github.com/user2410/rrms-backend/internal/domain/application/asynctask"
+	repo2 "github.com/user2410/rrms-backend/internal/domain/application/repo"
 
 	"github.com/gofiber/fiber/v2/log"
 	"github.com/google/uuid"
@@ -21,13 +23,13 @@ type Service interface {
 }
 
 type service struct {
-	repo            Repo
-	taskDistributor TaskDistributor
+	repo            repo2.Repo
+	taskDistributor asynctask.TaskDistributor
 }
 
 func NewService(
-	repo Repo,
-	taskDistributor TaskDistributor,
+	repo repo2.Repo,
+	taskDistributor asynctask.TaskDistributor,
 ) Service {
 	return &service{
 		repo:            repo,

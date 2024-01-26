@@ -1,7 +1,7 @@
 # Variables:
 # DB_URL=postgresql://root:mysecret@localhost:32755/rrms?sslmode=disable
 
-# migration
+# Migration
 migratecreate:
 	migrate create -ext sql -dir internal/infrastructure/database/migrations -seq ${NAME}
 
@@ -18,18 +18,37 @@ migratedownn:
 	migrate -path internal/infrastructure/database/migrations -database "${DB_URL}" -verbose down ${n}
 
 
+# SQLC
 sqlcgen:
 	sqlc generate
 
 
+# Operations
 build:
 	go build -o rrmsd
-
-# Operations
-
 serve:
 	go run main.go serve
 
+
+# Mocking:
+mock_repo:
+	@directory_path="internal/domain"; \
+	subdirectories=$$(find "$$directory_path" -mindepth 1 -maxdepth 1 -type d); \
+	for subdir in $$subdirectories; do \
+		mockgen -package repo -destination $$subdir/repo/mock.go github.com/user2410/rrms-backend/$$subdir/repo Repo; \
+	done; \
+	true;
+
+mock_asynctask:
+	@directory_path="internal/domain"; \
+	subdirectories=$$(find "$$directory_path" -mindepth 1 -maxdepth 1 -type d); \
+	for subdir in $$subdirectories; do \
+		mockgen -package asynctask -destination $$subdir/asynctask/mock.go github.com/user2410/rrms-backend/$$subdir/asynctask TaskDistributor,TaskProcessor; \
+	done; \
+	true;
+
+
+# Test
 # Test db container for local development
 test_db:
 	docker start rrms_test; \
@@ -44,4 +63,6 @@ test:
 test_pkg:
 	go test -v -cover github.com/user2410/rrms-backend/${PKG}
 
-.PHONY: sqlcgen build serve migratecreate migrateup migrateup1 migratedown migratedown1 test test_db test_pkg
+
+
+.PHONY: sqlcgen build serve migratecreate migrateup migrateup1 migratedown migratedown1 mock_repo mock_asynctask test test_db test_pkg

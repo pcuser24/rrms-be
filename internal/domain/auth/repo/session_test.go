@@ -14,7 +14,7 @@ import (
 
 func newRandomSession(t *testing.T) *model.SessionModel {
 	if testUser == nil {
-		testUser = NewRandomUser(t, testRepo)
+		testUser = NewRandomUserDB(t, testRepo)
 	}
 
 	randUUID, err := uuid.NewRandom()

@@ -1,10 +1,15 @@
 package auth
 
 import (
+	"fmt"
 	"net/http"
 	"strings"
+	"testing"
+	"time"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/google/uuid"
+	"github.com/stretchr/testify/require"
 	"github.com/user2410/rrms-backend/internal/utils/token"
 )
 
@@ -67,4 +72,21 @@ func GetAuthorizationMiddleware(tokenMaker token.Maker) fiber.Handler {
 
 		return ctx.Next()
 	}
+}
+
+func AddAuthorization(
+	t *testing.T,
+	request *http.Request,
+	tokenMaker token.Maker,
+	authorizationType string,
+	userID uuid.UUID,
+	duration time.Duration,
+	options token.CreateTokenOptions,
+) {
+	token, payload, err := tokenMaker.CreateToken(userID, duration, options)
+	require.NoError(t, err)
+	require.NotEmpty(t, payload)
+
+	authorizationHeader := fmt.Sprintf("%s %s", authorizationType, token)
+	request.Header.Set(AuthorizationHeaderKey, authorizationHeader)
 }

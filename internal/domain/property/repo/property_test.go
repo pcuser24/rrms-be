@@ -16,12 +16,12 @@ import (
 
 func TestCreateProperty(t *testing.T) {
 	// case 0: all fields are valid
-	NewRandomProperty(t, testPropertyRepo, testAuthRepo)
+	NewRandomPropertyDB(t, testPropertyRepo, testAuthRepo)
 	// case 2: an error causes rollback
 }
 
 func TestGetPropertyManagers(t *testing.T) {
-	p := NewRandomProperty(t, testPropertyRepo, testAuthRepo)
+	p := NewRandomPropertyDB(t, testPropertyRepo, testAuthRepo)
 
 	managers, err := testPropertyRepo.GetPropertyManagers(context.Background(), p.ID)
 	require.NoError(t, err)
@@ -34,7 +34,7 @@ func TestGetPropertyManagers(t *testing.T) {
 }
 
 func TestGetPropertyById(t *testing.T) {
-	p := NewRandomProperty(t, testPropertyRepo, testAuthRepo)
+	p := NewRandomPropertyDB(t, testPropertyRepo, testAuthRepo)
 
 	p_1, err := testPropertyRepo.GetPropertyById(context.Background(), p.ID)
 	require.NoError(t, err)
@@ -42,9 +42,9 @@ func TestGetPropertyById(t *testing.T) {
 }
 
 func TestGetPropertyByIds(t *testing.T) {
-	selectedFields := random.RandomlyPickNFromSlice[string](dto.RetrievableFields, 5)
-	p1 := NewRandomProperty(t, testPropertyRepo, testAuthRepo)
-	p2 := NewRandomProperty(t, testPropertyRepo, testAuthRepo)
+	selectedFields := random.RandomlyPickNFromSlice[string](dto.GetRetrievableFields(), 5)
+	p1 := NewRandomPropertyDB(t, testPropertyRepo, testAuthRepo)
+	p2 := NewRandomPropertyDB(t, testPropertyRepo, testAuthRepo)
 
 	ps, err := testPropertyRepo.GetPropertiesByIds(
 		context.Background(),
@@ -120,7 +120,7 @@ func TestGetPropertyByIds(t *testing.T) {
 }
 
 func TestPublicity(t *testing.T) {
-	p := NewRandomProperty(t, testPropertyRepo, testAuthRepo)
+	p := NewRandomPropertyDB(t, testPropertyRepo, testAuthRepo)
 	require.False(t, p.IsPublic)
 
 	err := testPropertyRepo.UpdateProperty(context.Background(), &dto.UpdateProperty{
@@ -135,7 +135,7 @@ func TestPublicity(t *testing.T) {
 }
 
 func TestUpdateProperty(t *testing.T) {
-	p := NewRandomProperty(t, testPropertyRepo, testAuthRepo)
+	p := NewRandomPropertyDB(t, testPropertyRepo, testAuthRepo)
 
 	// case 0: all fields are valid
 	arg := dto.UpdateProperty{
@@ -185,7 +185,7 @@ func TestUpdateProperty(t *testing.T) {
 }
 
 func TestDeleteProperty(t *testing.T) {
-	p := NewRandomProperty(t, testPropertyRepo, testAuthRepo)
+	p := NewRandomPropertyDB(t, testPropertyRepo, testAuthRepo)
 
 	err := testPropertyRepo.DeleteProperty(context.Background(), p.ID)
 	require.NoError(t, err)

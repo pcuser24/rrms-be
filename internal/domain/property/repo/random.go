@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 	auth_model "github.com/user2410/rrms-backend/internal/domain/auth/model"
 	auth_repo "github.com/user2410/rrms-backend/internal/domain/auth/repo"
@@ -23,17 +24,21 @@ var (
 
 var testingUsers []*auth_model.UserModel = make([]*auth_model.UserModel, 0, 3)
 
-func prepareRandomProperty(
+func PrepareRandomProperty(
 	t *testing.T,
 	testAuthRepo auth_repo.Repo,
+	creatorId uuid.UUID,
 ) dto.CreateProperty {
-	for len(testingUsers) < 3 {
-		user := auth_repo.NewRandomUser(t, testAuthRepo)
-		testingUsers = append(testingUsers, user)
+	if testAuthRepo != nil {
+		for len(testingUsers) < 3 {
+			user := auth_repo.NewRandomUserDB(t, testAuthRepo)
+			testingUsers = append(testingUsers, user)
+		}
+		creatorId = testingUsers[0].ID
 	}
 
-	return dto.CreateProperty{
-		CreatorID:      testingUsers[0].ID,
+	ret := dto.CreateProperty{
+		CreatorID:      creatorId,
 		Name:           random.RandomAlphabetStr(10),
 		Building:       types.Ptr[string](random.RandomAlphabetStr(10)),
 		Project:        types.Ptr[string](random.RandomAlphabetStr(10)),
@@ -52,20 +57,6 @@ func prepareRandomProperty(
 		Lng:            types.Ptr[float64](random.RandomFloat64(10, 50)),
 		Description:    types.Ptr[string](random.RandomAlphanumericStr(100)),
 		Type:           database.PROPERTYTYPE(propertyTypes[random.RandomInt32(0, int32(len(propertyTypes)-1))]),
-		Managers: []dto.CreatePropertyManager{
-			{
-				ManagerID: testingUsers[0].ID,
-				Role:      roles[random.RandomInt32(0, 1)],
-			},
-			{
-				ManagerID: testingUsers[1].ID,
-				Role:      roles[random.RandomInt32(0, 1)],
-			},
-			{
-				ManagerID: testingUsers[2].ID,
-				Role:      roles[random.RandomInt32(0, 1)],
-			},
-		},
 		Media: []dto.CreatePropertyMedia{
 			{
 				Url:         random.RandomURL(),
@@ -108,6 +99,32 @@ func prepareRandomProperty(
 			{Tag: random.RandomAlphanumericStr(10)},
 		},
 	}
+
+	if testAuthRepo != nil {
+		ret.Managers = []dto.CreatePropertyManager{
+			{
+				ManagerID: testingUsers[0].ID,
+				Role:      roles[random.RandomInt32(0, 1)],
+			},
+			{
+				ManagerID: testingUsers[1].ID,
+				Role:      roles[random.RandomInt32(0, 1)],
+			},
+			{
+				ManagerID: testingUsers[2].ID,
+				Role:      roles[random.RandomInt32(0, 1)],
+			},
+		}
+	} else {
+		ret.Managers = []dto.CreatePropertyManager{
+			{
+				ManagerID: creatorId,
+				Role:      "OWNER",
+			},
+		}
+	}
+
+	return ret
 }
 
 func sameProperties(t *testing.T, p1, p2 *model.PropertyModel) {
@@ -207,12 +224,12 @@ func comparePropertyAndCreateDto(t *testing.T, p *model.PropertyModel, arg *dto.
 	}
 }
 
-func NewRandomProperty(
+func NewRandomPropertyDB(
 	t *testing.T,
 	testPropertyRepo Repo,
 	testAuthRepo auth_repo.Repo,
 ) *model.PropertyModel {
-	arg := prepareRandomProperty(t, testAuthRepo)
+	arg := PrepareRandomProperty(t, testAuthRepo, uuid.Nil)
 
 	p, err := testPropertyRepo.CreateProperty(context.Background(), &arg)
 	require.NoError(t, err)
@@ -221,7 +238,95 @@ func NewRandomProperty(
 	return p
 }
 
-func newRandomPropertyFromArg(
+func NewRandomPropertyModel(t *testing.T, creatorId uuid.UUID) *model.PropertyModel {
+	id, err := uuid.NewRandom()
+	require.NoError(t, err)
+
+	return &model.PropertyModel{
+		ID:             id,
+		CreatorID:      creatorId,
+		Name:           random.RandomAlphabetStr(10),
+		Building:       types.Ptr[string](random.RandomAlphabetStr(10)),
+		Project:        types.Ptr[string](random.RandomAlphabetStr(10)),
+		Area:           random.RandomFloat32(10, 50),
+		NumberOfFloors: types.Ptr[int32](random.RandomInt32(1, 10)),
+		YearBuilt:      types.Ptr[int32](random.RandomInt32(1990, 2020)),
+		Orientation:    types.Ptr[string](orientations[random.RandomInt32(0, int32(len(orientations)-1))]),
+		EntranceWidth:  types.Ptr[float32](random.RandomFloat32(1, 10)),
+		Facade:         types.Ptr[float32](random.RandomFloat32(1, 10)),
+		FullAddress:    random.RandomAddress(),
+		District:       random.RandomDistrict(),
+		City:           random.RandomCity(),
+		Ward:           types.Ptr[string](random.RandomWard()),
+		PlaceUrl:       fmt.Sprintf("https://maps.app.goo.gl/%s", random.RandomAlphanumericStr(17)),
+		Lat:            types.Ptr[float64](random.RandomFloat64(10, 50)),
+		Lng:            types.Ptr[float64](random.RandomFloat64(10, 50)),
+		Description:    types.Ptr[string](random.RandomAlphanumericStr(100)),
+		Type:           database.PROPERTYTYPE(propertyTypes[random.RandomInt32(0, int32(len(propertyTypes)-1))]),
+		IsPublic:       false,
+		// CreatedAt:      time.Now(),
+		// UpdatedAt:      time.Now(),
+		Managers: []model.PropertyManagerModel{
+			{
+				PropertyID: id,
+				ManagerID:  creatorId,
+				Role:       "OWNER",
+			},
+		},
+		Media: []model.PropertyMediaModel{
+			{
+				ID:          1,
+				PropertyID:  id,
+				Url:         random.RandomURL(),
+				Type:        "IMAGE",
+				Description: types.Ptr[string](random.RandomAlphanumericStr(100)),
+			},
+			{
+				ID:          2,
+				PropertyID:  id,
+				Url:         random.RandomURL(),
+				Type:        "VIDEO",
+				Description: types.Ptr[string](random.RandomAlphanumericStr(100)),
+			},
+		},
+		Features: []model.PropertyFeatureModel{
+			{
+				PropertyID:  id,
+				FeatureID:   7,
+				Description: types.Ptr[string](random.RandomAlphanumericStr(100)),
+			},
+			{
+				PropertyID:  id,
+				FeatureID:   9,
+				Description: types.Ptr[string](random.RandomAlphanumericStr(100)),
+			},
+			{
+				PropertyID:  id,
+				FeatureID:   8,
+				Description: types.Ptr[string](random.RandomAlphanumericStr(100)),
+			},
+		},
+		Tags: []model.PropertyTagModel{
+			{
+				ID:         1,
+				PropertyID: id,
+				Tag:        random.RandomAlphanumericStr(10),
+			},
+			{
+				ID:         2,
+				PropertyID: id,
+				Tag:        random.RandomAlphanumericStr(10),
+			},
+			{
+				ID:         3,
+				PropertyID: id,
+				Tag:        random.RandomAlphanumericStr(10),
+			},
+		},
+	}
+}
+
+func newRandomPropertyDBFromArg(
 	t *testing.T,
 	testPropertyRepo Repo,
 	arg *dto.CreateProperty,

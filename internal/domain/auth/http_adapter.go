@@ -3,13 +3,13 @@ package auth
 import (
 	"errors"
 	"fmt"
+	"github.com/user2410/rrms-backend/internal/utils/validation"
 	"net/http"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
 	"github.com/user2410/rrms-backend/internal/domain/auth/dto"
 	"github.com/user2410/rrms-backend/internal/infrastructure/database"
-	"github.com/user2410/rrms-backend/internal/utils"
 	"github.com/user2410/rrms-backend/internal/utils/token"
 )
 
@@ -61,8 +61,8 @@ func (a *adapter) credentialRegister() fiber.Handler {
 		if err := ctx.BodyParser(&payload); err != nil {
 			return ctx.SendStatus(fiber.StatusBadRequest)
 		}
-		if errs := utils.ValidateStruct(nil, payload); len(errs) > 0 {
-			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": utils.GetValidationError(errs)})
+		if errs := validation.ValidateStruct(nil, payload); len(errs) > 0 {
+			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": validation.GetValidationError(errs)})
 		}
 
 		res, err := a.service.Register(&payload)
@@ -85,8 +85,8 @@ func (a *adapter) credentialLogin() fiber.Handler {
 		if err := ctx.BodyParser(&payload); err != nil {
 			return ctx.SendStatus(fiber.StatusBadRequest)
 		}
-		if errs := utils.ValidateStruct(nil, payload); len(errs) > 0 {
-			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": utils.GetValidationError(errs)})
+		if errs := validation.ValidateStruct(nil, payload); len(errs) > 0 {
+			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": validation.GetValidationError(errs)})
 		}
 
 		session := &dto.CreateSessionDto{

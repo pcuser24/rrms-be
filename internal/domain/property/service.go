@@ -19,9 +19,9 @@ type Service interface {
 	CheckVisibility(id uuid.UUID, uid uuid.UUID) (bool, error)
 	CheckManageability(id uuid.UUID, userId uuid.UUID) (bool, error)
 	GetPropertyById(id uuid.UUID) (*model.PropertyModel, error)
-	GetPropertiesByIds(ids []uuid.UUID, fields []string) ([]model.PropertyModel, error)
+	GetPropertiesByIds(ids []uuid.UUID, fields []string, userId uuid.UUID) ([]model.PropertyModel, error)
 	GetUnitsOfProperty(id uuid.UUID) ([]unitModel.UnitModel, error)
-	GetPropertiesOfUser(userId uuid.UUID, fields []string) ([]GetPropertiesOfUserItem, error)
+	GetManagedProperties(userId uuid.UUID, fields []string) ([]GetManagedPropertiesItem, error)
 	SearchListingCombination(data *dto.SearchPropertyCombinationQuery) (*dto.SearchPropertyCombinationResponse, error)
 	UpdateProperty(data *dto.UpdateProperty) error
 	DeleteProperty(id uuid.UUID) error
@@ -47,10 +47,20 @@ func NewService(pRepo repo.Repo, uRepo unitRepo) Service {
 
 func (s *service) CreateProperty(data *dto.CreateProperty, creatorID uuid.UUID) (*model.PropertyModel, error) {
 	data.CreatorID = creatorID
-	data.Managers = append(data.Managers, dto.CreatePropertyManager{
-		ManagerID: creatorID,
-		Role:      "OWNER", // TODO: add role to user
-	})
+	foundCreator := false
+	for _, m := range data.Managers {
+		if m.ManagerID == creatorID {
+			foundCreator = true
+			// m.Role = "OWNER"
+			break
+		}
+	}
+	if !foundCreator {
+		data.Managers = append(data.Managers, dto.CreatePropertyManager{
+			ManagerID: creatorID,
+			Role:      "MANAGER", // TODO: add role to user
+		})
+	}
 	return s.pRepo.CreateProperty(context.Background(), data)
 }
 
@@ -58,9 +68,19 @@ func (s *service) GetPropertyById(id uuid.UUID) (*model.PropertyModel, error) {
 	return s.pRepo.GetPropertyById(context.Background(), id)
 }
 
-func (s *service) GetPropertiesByIds(ids []uuid.UUID, fields []string) ([]model.PropertyModel, error) {
-	idsStr := make([]string, len(ids))
-	for i, id := range ids {
+func (s *service) GetPropertiesByIds(ids []uuid.UUID, fields []string, userId uuid.UUID) ([]model.PropertyModel, error) {
+	var _ids []uuid.UUID
+	for _, id := range ids {
+		isVisible, err := s.CheckVisibility(id, userId)
+		if err != nil {
+			return nil, err
+		}
+		if isVisible {
+			_ids = append(_ids, id)
+		}
+	}
+	idsStr := make([]string, len(_ids))
+	for i, id := range _ids {
 		idsStr[i] = id.String()
 	}
 	return s.pRepo.GetPropertiesByIds(context.Background(), idsStr, fields)
@@ -94,8 +114,8 @@ func (s *service) UpdateProperty(data *dto.UpdateProperty) error {
 	return s.pRepo.UpdateProperty(context.Background(), data)
 }
 
-func (s *service) CheckManageability(id uuid.UUID, userId uuid.UUID) (bool, error) {
-	managers, err := s.pRepo.GetPropertyManagers(context.Background(), id)
+func (s *service) CheckManageability(pid uuid.UUID, userId uuid.UUID) (bool, error) {
+	managers, err := s.pRepo.GetPropertyManagers(context.Background(), pid)
 	if err != nil {
 		return false, err
 	}
@@ -130,12 +150,12 @@ func (s *service) DeleteProperty(id uuid.UUID) error {
 	return s.pRepo.DeleteProperty(context.Background(), id)
 }
 
-type GetPropertiesOfUserItem struct {
+type GetManagedPropertiesItem struct {
 	Role     string              `json:"role"`
 	Property model.PropertyModel `json:"property"`
 }
 
-func (s *service) GetPropertiesOfUser(userId uuid.UUID, fields []string) ([]GetPropertiesOfUserItem, error) {
+func (s *service) GetManagedProperties(userId uuid.UUID, fields []string) ([]GetManagedPropertiesItem, error) {
 	managedProps, err := s.pRepo.GetManagedProperties(context.Background(), userId)
 	if err != nil {
 		return nil, err
@@ -152,12 +172,12 @@ func (s *service) GetPropertiesOfUser(userId uuid.UUID, fields []string) ([]GetP
 		return nil, err
 	}
 
-	var res []GetPropertiesOfUserItem
+	var res []GetManagedPropertiesItem
 	for _, p := range managedProps {
-		r := GetPropertiesOfUserItem{Role: p.Role}
-		for i, pp := range ps {
+		r := GetManagedPropertiesItem{Role: p.Role}
+		for _, pp := range ps {
 			if pp.ID == p.PropertyID {
-				r.Property = ps[i]
+				r.Property = pp
 			}
 		}
 		res = append(res, r)

@@ -9,7 +9,7 @@ import (
 
 func TestGetUserById(t *testing.T) {
 	if testUser == nil {
-		testUser = NewRandomUser(t, testRepo)
+		testUser = NewRandomUserDB(t, testRepo)
 	}
 
 	user, err := testRepo.GetUserById(
@@ -29,7 +29,7 @@ func TestGetUserById(t *testing.T) {
 
 func TestGetUserByEmail(t *testing.T) {
 	if testUser == nil {
-		testUser = NewRandomUser(t, testRepo)
+		testUser = NewRandomUserDB(t, testRepo)
 	}
 
 	user, err := testRepo.GetUserByEmail(

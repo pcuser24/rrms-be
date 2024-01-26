@@ -9,8 +9,16 @@ import (
 	"syscall"
 	"time"
 
+	application_asynctask "github.com/user2410/rrms-backend/internal/domain/application/asynctask"
+	auth_asynctask "github.com/user2410/rrms-backend/internal/domain/auth/asynctask"
+
+	application_repo "github.com/user2410/rrms-backend/internal/domain/application/repo"
 	auth_repo "github.com/user2410/rrms-backend/internal/domain/auth/repo"
+	listing_repo "github.com/user2410/rrms-backend/internal/domain/listing/repo"
 	property_repo "github.com/user2410/rrms-backend/internal/domain/property/repo"
+	unit_repo "github.com/user2410/rrms-backend/internal/domain/unit/repo"
+
+	property_http "github.com/user2410/rrms-backend/internal/domain/property/http"
 
 	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
@@ -27,7 +35,7 @@ import (
 	"github.com/user2410/rrms-backend/internal/domain/unit"
 	"github.com/user2410/rrms-backend/internal/infrastructure/asynctask"
 	"github.com/user2410/rrms-backend/internal/infrastructure/aws/s3"
-	db "github.com/user2410/rrms-backend/internal/infrastructure/database"
+	"github.com/user2410/rrms-backend/internal/infrastructure/database"
 	"github.com/user2410/rrms-backend/internal/infrastructure/email"
 	"github.com/user2410/rrms-backend/internal/infrastructure/http"
 	"github.com/user2410/rrms-backend/internal/utils/token"
@@ -70,7 +78,7 @@ type serverCommand struct {
 	tokenMaker           token.Maker
 	emailSender          email.EmailSender
 	config               *ServerConfig
-	dao                  db.DAO
+	dao                  database.DAO
 	internalServices     internalServices
 	httpServer           http.Server
 	asyncTaskDistributor asynctask.Distributor
@@ -152,20 +160,19 @@ func (c *serverCommand) shutdown() {
 
 func (c *serverCommand) setup(cmd *cobra.Command, args []string) {
 	// setup database
-	dao, err := db.NewDAO(c.config.DatabaseURL)
+	dao, err := database.NewDAO(c.config.DatabaseURL)
 	if err != nil {
 		log.Fatal("Error while initializing database connection: ", err)
 	}
 	c.dao = dao
 
 	// setup token maker
-	switch strings.ToUpper(c.config.DatabaseURL) {
-	case "PASETO":
+	if strings.ToUpper(c.config.TokenMaker) == "PASETO" {
 		c.tokenMaker, err = token.NewPasetoMaker(c.config.TokenSecreteKey)
 		if err != nil {
 			log.Fatal(err)
 		}
-	default:
+	} else {
 		c.tokenMaker, err = token.NewJWTMaker(c.config.TokenSecreteKey)
 		if err != nil {
 			log.Fatal(err)
@@ -204,7 +211,7 @@ func (c *serverCommand) setup(cmd *cobra.Command, args []string) {
 }
 
 func (c *serverCommand) setupInternalServices(
-	dao db.DAO,
+	dao database.DAO,
 	s3Storage storage.StorageService,
 ) {
 	c.asyncTaskDistributor = asynctask.NewRedisTaskDistributor(asynq.RedisClientOpt{
@@ -212,23 +219,23 @@ func (c *serverCommand) setupInternalServices(
 	})
 
 	authRepo := auth_repo.NewRepo(dao)
-	authTaskDistributor := auth.NewTaskDistributor(c.asyncTaskDistributor)
+	authTaskDistributor := auth_asynctask.NewTaskDistributor(c.asyncTaskDistributor)
 	c.internalServices.AuthService = auth.NewAuthService(
 		authRepo,
 		c.tokenMaker, c.config.AccessTokenTTL, c.config.RefreshTokenTTL,
 		authTaskDistributor,
 	)
 	propertyRepo := property_repo.NewRepo(dao)
-	unitRepo := unit.NewRepo(dao)
-	listingRepo := listing.NewRepo(dao)
+	unitRepo := unit_repo.NewRepo(dao)
+	listingRepo := listing_repo.NewRepo(dao)
 	rentalRepo := rental.NewRepo(dao)
-	applicationRepo := application.NewRepo(dao)
+	applicationRepo := application_repo.NewRepo(dao)
 
 	c.internalServices.PropertyService = property.NewService(propertyRepo, unitRepo)
 	c.internalServices.UnitService = unit.NewService(unitRepo)
 	c.internalServices.ListingService = listing.NewService(listingRepo)
 	c.internalServices.RentalService = rental.NewService(rentalRepo)
-	applicationTaskDistributor := application.NewTaskDistributor(c.asyncTaskDistributor)
+	applicationTaskDistributor := application_asynctask.NewTaskDistributor(c.asyncTaskDistributor)
 	c.internalServices.ApplicationService = application.NewService(
 		applicationRepo,
 		applicationTaskDistributor,
@@ -242,8 +249,8 @@ func (c *serverCommand) setupAsyncTaskProcessor(
 		Addr: c.config.AsynqRedisAddress,
 	})
 
-	auth.NewTaskProcessor(c.asyncTaskProcessor, mailer).RegisterProcessor()
-	application.NewTaskProcessor(c.asyncTaskProcessor, mailer).RegisterProcessor()
+	auth_asynctask.NewTaskProcessor(c.asyncTaskProcessor, mailer).RegisterProcessor()
+	application_asynctask.NewTaskProcessor(c.asyncTaskProcessor, mailer).RegisterProcessor()
 }
 
 func (c *serverCommand) setupHttpServer() {
@@ -262,7 +269,7 @@ func (c *serverCommand) setupHttpServer() {
 	auth.
 		NewAdapter(c.internalServices.AuthService).
 		RegisterServer(apiRoute, c.tokenMaker)
-	property.
+	property_http.
 		NewAdapter(c.internalServices.PropertyService).
 		RegisterServer(apiRoute, c.tokenMaker)
 	unit.

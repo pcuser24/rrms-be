@@ -35,7 +35,7 @@ func TestSearchPropertyCombination(t *testing.T) {
 		{
 			name: "test exact fields",
 			dataset: func() []dto.CreateProperty {
-				dataset := []dto.CreateProperty{prepareRandomProperty(t, testAuthRepo)}
+				dataset := []dto.CreateProperty{PrepareRandomProperty(t, testAuthRepo, uuid.Nil)}
 				dataset[0].City = "HCM"
 				dataset = append(dataset, dataset[0])
 				return dataset
@@ -62,7 +62,7 @@ func TestSearchPropertyCombination(t *testing.T) {
 		{
 			name: "test FK fields",
 			dataset: func() []dto.CreateProperty {
-				dataset := []dto.CreateProperty{prepareRandomProperty(t, testAuthRepo)}
+				dataset := []dto.CreateProperty{PrepareRandomProperty(t, testAuthRepo, uuid.Nil)}
 				dataset[0].Features[0].FeatureID = 2
 				dataset[0].Features[1].FeatureID = 5
 				dataset[0].Features[2].FeatureID = 6
@@ -91,7 +91,7 @@ func TestSearchPropertyCombination(t *testing.T) {
 		{
 			name: "test ILIKE fields",
 			dataset: func() []dto.CreateProperty {
-				dataset := []dto.CreateProperty{prepareRandomProperty(t, testAuthRepo)}
+				dataset := []dto.CreateProperty{PrepareRandomProperty(t, testAuthRepo, uuid.Nil)}
 				dataset[0].Name = "testproperty1"
 				dataset = append(dataset, func() dto.CreateProperty {
 					p := dataset[0]
@@ -127,7 +127,7 @@ func TestSearchPropertyCombination(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			ps := make([]*model.PropertyModel, 0, len(tc.dataset))
 			for _, d := range tc.dataset {
-				ps = append(ps, newRandomPropertyFromArg(t, testPropertyRepo, &d))
+				ps = append(ps, newRandomPropertyDBFromArg(t, testPropertyRepo, &d))
 			}
 
 			res, err := testPropertyRepo.SearchPropertyCombination(

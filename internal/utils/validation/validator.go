@@ -1,4 +1,4 @@
-package utils
+package validation
 
 import (
 	"fmt"
@@ -19,6 +19,10 @@ type ErrorResponse struct {
 	FailedField string
 	Tag         string
 	Value       interface{}
+}
+
+type ErrorMessage struct {
+	Message string `json:"message"`
 }
 
 var defaultStructValidator = validator.New()

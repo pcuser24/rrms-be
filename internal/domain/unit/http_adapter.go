@@ -9,8 +9,8 @@ import (
 	"github.com/user2410/rrms-backend/internal/domain/unit/dto"
 	"github.com/user2410/rrms-backend/internal/infrastructure/database"
 	"github.com/user2410/rrms-backend/internal/interfaces/rest/responses"
-	"github.com/user2410/rrms-backend/internal/utils"
 	"github.com/user2410/rrms-backend/internal/utils/token"
+	"github.com/user2410/rrms-backend/internal/utils/validation"
 )
 
 type Adapter interface {
@@ -50,8 +50,8 @@ func (a *adapter) createUnit() fiber.Handler {
 		if err := ctx.BodyParser(&payload); err != nil {
 			return err
 		}
-		if errs := utils.ValidateStruct(nil, payload); len(errs) > 0 {
-			ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": utils.GetValidationError(errs)})
+		if errs := validation.ValidateStruct(nil, payload); len(errs) > 0 {
+			ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": validation.GetValidationError(errs)})
 			return nil
 		}
 
@@ -105,8 +105,8 @@ func (a *adapter) searchUnits() fiber.Handler {
 		if err := ctx.QueryParser(&query); err != nil {
 			return fiber.NewError(fiber.StatusBadRequest)
 		}
-		if errs := utils.ValidateStruct(nil, query); len(errs) > 0 {
-			return fiber.NewError(fiber.StatusBadRequest, utils.GetValidationError(errs))
+		if errs := validation.ValidateStruct(nil, query); len(errs) > 0 {
+			return fiber.NewError(fiber.StatusBadRequest, validation.GetValidationError(errs))
 		}
 
 		res, err := a.uService.SearchUnit(&query)
@@ -127,10 +127,10 @@ func (a *adapter) getUnitsByIds() fiber.Handler {
 		if err := query.QueryParser(ctx); err != nil {
 			return fiber.NewError(fiber.StatusBadRequest)
 		}
-		validator := utils.GetDefaultValidator()
+		validator := validation.GetDefaultValidator()
 		validator.RegisterValidation(dto.UnitFieldsLocalKey, dto.ValidateQuery)
-		if errs := utils.ValidateStruct(validator, *query); len(errs) > 0 {
-			return fiber.NewError(fiber.StatusBadRequest, utils.GetValidationError(errs))
+		if errs := validation.ValidateStruct(validator, *query); len(errs) > 0 {
+			return fiber.NewError(fiber.StatusBadRequest, validation.GetValidationError(errs))
 		}
 
 		res, err := a.uService.GetUnitsByIds(query.IDs, query.Fields)
@@ -152,8 +152,8 @@ func (a *adapter) updateUnit() fiber.Handler {
 			return err
 		}
 		payload.ID = uid
-		if errs := utils.ValidateStruct(nil, payload); len(errs) > 0 {
-			ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": utils.GetValidationError(errs)})
+		if errs := validation.ValidateStruct(nil, payload); len(errs) > 0 {
+			ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": validation.GetValidationError(errs)})
 			return nil
 		}
 

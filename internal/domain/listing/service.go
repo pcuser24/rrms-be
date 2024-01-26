@@ -2,6 +2,7 @@ package listing
 
 import (
 	"context"
+	repo2 "github.com/user2410/rrms-backend/internal/domain/listing/repo"
 
 	"github.com/google/uuid"
 	"github.com/user2410/rrms-backend/internal/domain/listing/dto"
@@ -24,10 +25,10 @@ type Service interface {
 }
 
 type service struct {
-	repo Repo
+	repo repo2.Repo
 }
 
-func NewService(repo Repo) Service {
+func NewService(repo repo2.Repo) Service {
 	return &service{
 		repo: repo,
 	}

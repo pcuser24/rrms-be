@@ -8,24 +8,24 @@ import (
 
 type UpdateProperty struct {
 	ID             uuid.UUID
-	Name           *string  `json:"name"`
-	Building       *string  `json:"building"`
-	Project        *string  `json:"project"`
-	Area           *float32 `json:"area" validate:"gte:0"`
-	NumberOfFloors *int32   `json:"numberOfFloors" validate:"gte:0"`
-	YearBuilt      *int32   `json:"yearBuilt" validate:"gte:0"`
-	Orientation    *string  `json:"orientation" validate:"oneof:n,s,e,w,ne,nw,se,sw"`
-	EntranceWidth  *float32 `json:"entranceWidth" validate:"gte:0"`
-	Facade         *float32 `json:"facade" validate:"gte:0"`
-	FullAddress    *string  `json:"fullAddress"`
-	District       *string  `json:"district"`
-	City           *string  `json:"city"`
-	Ward           *string  `json:"ward"`
-	Lat            *float64 `json:"lat"`
-	Lng            *float64 `json:"lng"`
-	PlaceUrl       *string  `json:"placeUrl"`
-	Description    *string  `json:"description"`
-	IsPublic       *bool    `json:"isPublic"`
+	Name           *string  `json:"name" validate:"omitempty"`
+	Building       *string  `json:"building" validate:"omitempty"`
+	Project        *string  `json:"project" validate:"omitempty"`
+	Area           *float32 `json:"area" validate:"omitempty,gte=0"`
+	NumberOfFloors *int32   `json:"numberOfFloors" validate:"omitempty,gte=0"`
+	YearBuilt      *int32   `json:"yearBuilt" validate:"omitempty,gte=0"`
+	Orientation    *string  `json:"orientation" validate:"omitempty,oneof=n s e w ne nw se sw"`
+	EntranceWidth  *float32 `json:"entranceWidth" validate:"omitempty,gte=0"`
+	Facade         *float32 `json:"facade" validate:"omitempty,gte=0"`
+	FullAddress    *string  `json:"fullAddress" validate:"omitempty"`
+	District       *string  `json:"district" validate:"omitempty"`
+	City           *string  `json:"city" validate:"omitempty"`
+	Ward           *string  `json:"ward" validate:"omitempty"`
+	Lat            *float64 `json:"lat" validate:"omitempty"`
+	Lng            *float64 `json:"lng" validate:"omitempty"`
+	PlaceUrl       *string  `json:"placeUrl" validate:"omitempty"`
+	Description    *string  `json:"description" validate:"omitempty"`
+	IsPublic       *bool    `json:"isPublic" validate:"omitempty"`
 }
 
 func (u *UpdateProperty) ToUpdatePropertyDB() database.UpdatePropertyParams {

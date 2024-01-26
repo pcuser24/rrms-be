@@ -1,10 +1,10 @@
-package auth
+package asynctask
 
 import (
 	"context"
 
 	"github.com/hibiken/asynq"
-	"github.com/user2410/rrms-backend/internal/domain/auth/dto"
+	"github.com/user2410/rrms-backend/internal/domain/application/dto"
 	"github.com/user2410/rrms-backend/internal/infrastructure/asynctask"
 	"github.com/user2410/rrms-backend/internal/infrastructure/email"
 )
@@ -14,7 +14,7 @@ import (
 /* -------------------------------------------------------------------------- */
 
 const (
-	TaskSendVerifyEmail = "auth:renew_password"
+	TaskSendEmailOnNewApplication = "application:new:succesful"
 )
 
 /* -------------------------------------------------------------------------- */
@@ -22,31 +22,31 @@ const (
 /* -------------------------------------------------------------------------- */
 
 type TaskDistributor interface {
-	DistributeTaskSendVerifyEmail(
+	DistributeTaskSendEmailOnNewApplication(
 		ctx context.Context,
-		payload *dto.TaskSendVerifyEmailPayload,
+		payload *dto.TaskSendEmailOnNewApplicationPayload,
 		opts ...asynq.Option,
 	) error
 }
 
-type distributor struct {
+type taskDistributor struct {
 	distributor asynctask.Distributor
 }
 
 func NewTaskDistributor(d asynctask.Distributor) TaskDistributor {
-	return &distributor{
+	return &taskDistributor{
 		distributor: d,
 	}
 }
 
-func (d *distributor) DistributeTaskSendVerifyEmail(
+func (d *taskDistributor) DistributeTaskSendEmailOnNewApplication(
 	ctx context.Context,
-	payload *dto.TaskSendVerifyEmailPayload,
+	payload *dto.TaskSendEmailOnNewApplicationPayload,
 	opts ...asynq.Option,
 ) error {
 	return d.distributor.DistributeTaskJSON(
 		ctx,
-		TaskSendVerifyEmail,
+		TaskSendEmailOnNewApplication,
 		payload,
 		opts...,
 	)
@@ -57,26 +57,29 @@ func (d *distributor) DistributeTaskSendVerifyEmail(
 /* -------------------------------------------------------------------------- */
 
 type TaskProcessor interface {
-	ProcessTaskSendVerifyEmail(ctx context.Context, task *asynq.Task) error
+	ProcessTaskSendEmailOnNewApplication(ctx context.Context, task *asynq.Task) error
 	RegisterProcessor()
 }
 
-type processor struct {
+type taskProcessor struct {
 	processor asynctask.Processor
 	mailer    email.EmailSender
 }
 
 func NewTaskProcessor(p asynctask.Processor, m email.EmailSender) TaskProcessor {
-	return &processor{
+	return &taskProcessor{
 		processor: p,
 		mailer:    m,
 	}
 }
 
-func (p *processor) RegisterProcessor() {
-	p.processor.RegisterHandler(TaskSendVerifyEmail, p.ProcessTaskSendVerifyEmail)
+func (p *taskProcessor) RegisterProcessor() {
+	p.processor.RegisterHandler(
+		TaskSendEmailOnNewApplication,
+		p.ProcessTaskSendEmailOnNewApplication,
+	)
 }
 
-func (p *processor) ProcessTaskSendVerifyEmail(ctx context.Context, task *asynq.Task) error {
+func (p *taskProcessor) ProcessTaskSendEmailOnNewApplication(ctx context.Context, task *asynq.Task) error {
 	return nil
 }
