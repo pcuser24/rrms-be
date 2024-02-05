@@ -12,7 +12,7 @@ import (
 
 type Repo interface {
 	InsertUser(ctx context.Context, data *dto.RegisterUser) (*model.UserModel, error)
-	CreateSession(ctx context.Context, data *dto.CreateSessionDto) (*model.SessionModel, error)
+	CreateSession(ctx context.Context, data *dto.CreateSession) (*model.SessionModel, error)
 	GetUserByEmail(ctx context.Context, email string) (*model.UserModel, error)
 	GetUserById(ctx context.Context, id uuid.UUID) (*model.UserModel, error)
 	GetSessionById(ctx context.Context, id uuid.UUID) (*model.SessionModel, error)
@@ -41,7 +41,7 @@ func (u *authRepo) InsertUser(ctx context.Context, data *dto.RegisterUser) (*mod
 	return model.ToUserModel(&res), nil
 }
 
-func (u *authRepo) CreateSession(ctx context.Context, data *dto.CreateSessionDto) (*model.SessionModel, error) {
+func (u *authRepo) CreateSession(ctx context.Context, data *dto.CreateSession) (*model.SessionModel, error) {
 	res, err := u.dao.CreateSession(ctx, *data.ToCreateSessionParams())
 	if err != nil {
 		return nil, err

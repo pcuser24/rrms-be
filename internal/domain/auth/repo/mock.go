@@ -43,7 +43,7 @@ func (m *MockRepo) EXPECT() *MockRepoMockRecorder {
 }
 
 // CreateSession mocks base method.
-func (m *MockRepo) CreateSession(arg0 context.Context, arg1 *dto.CreateSessionDto) (*model.SessionModel, error) {
+func (m *MockRepo) CreateSession(arg0 context.Context, arg1 *dto.CreateSession) (*model.SessionModel, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CreateSession", arg0, arg1)
 	ret0, _ := ret[0].(*model.SessionModel)

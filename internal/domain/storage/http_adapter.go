@@ -35,7 +35,7 @@ func (a *adapter) RegisterServer(route *fiber.Router, tokenMaker token.Maker) {
 
 func (a *adapter) getPresignUrl() fiber.Handler {
 	return func(ctx *fiber.Ctx) error {
-		var payload dto.PutObjectPresign
+		var payload dto.PutObjectPresignRequest
 		if err := ctx.BodyParser(&payload); err != nil {
 			return err
 		}
@@ -46,6 +46,6 @@ func (a *adapter) getPresignUrl() fiber.Handler {
 		if err != nil {
 			return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
 		}
-		return ctx.Status(fiber.StatusOK).JSON(presignUrl)
+		return ctx.Status(fiber.StatusCreated).JSON(presignUrl)
 	}
 }

@@ -82,7 +82,7 @@ func (m *CreateApplicationVehicle) ToCreateApplicationVehicleDB(aid int64) *data
 	}
 }
 
-type CreateApplicationDto struct {
+type CreateApplication struct {
 	ListingID                uuid.UUID   `json:"listingId" validate:"required,uuid4"`
 	PropertyID               uuid.UUID   `json:"propertyId" validate:"required,uuid4"`
 	UnitIds                  []uuid.UUID `json:"unitIds" validate:"required,dive,uuid4"`
@@ -118,7 +118,7 @@ type CreateApplicationDto struct {
 	Vehicles []CreateApplicationVehicle    `json:"vehicles" validate:"dive"`
 }
 
-func (a *CreateApplicationDto) ToCreateApplicationDB() *database.CreateApplicationParams {
+func (a *CreateApplication) ToCreateApplicationDB() *database.CreateApplicationParams {
 	return &database.CreateApplicationParams{
 		PropertyID:               a.PropertyID,
 		UnitIds:                  a.UnitIds,

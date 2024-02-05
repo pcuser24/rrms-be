@@ -20,7 +20,7 @@ func newRandomSession(t *testing.T) *model.SessionModel {
 	randUUID, err := uuid.NewRandom()
 	require.NoError(t, err)
 
-	arg := dto.CreateSessionDto{
+	arg := dto.CreateSession{
 		ID:           randUUID,
 		UserId:       testUser.ID,
 		SessionToken: randUUID.String(),

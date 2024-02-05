@@ -51,10 +51,11 @@ type ServerConfig struct {
 	AccessTokenTTL  time.Duration `mapstructure:"ACCESS_TOKEN_TTL" validate:"required"`
 	RefreshTokenTTL time.Duration `mapstructure:"REFRESH_TOKEN_TTL" validate:"required"`
 
-	AWSRegion          string `mapstructure:"AWS_REGION" validate:"required"`
-	AWSAccessKeyID     string `mapstructure:"AWS_ACCESS_KEY_ID" validate:"required"`
-	AWSSecretAccessKey string `mapstructure:"AWS_SECRET_ACCESS_KEY" validate:"required"`
-	AWSS3BucketName    string `mapstructure:"AWS_S3_BUCKET_NAME" validate:"required"`
+	AWSRegion          string  `mapstructure:"AWS_REGION" validate:"required"`
+	AWSAccessKeyID     string  `mapstructure:"AWS_ACCESS_KEY_ID" validate:"required"`
+	AWSSecretAccessKey string  `mapstructure:"AWS_SECRET_ACCESS_KEY" validate:"required"`
+	AWSS3Endpoint      *string `mapstructure:"AWS_S3_ENDPOINT" validate:"omitempty"`
+	AWSS3ImageBucket   string  `mapstructure:"AWS_S3_IMAGE_BUCKET" validate:"required"`
 
 	EmailSenderName     string `mapstructure:"EMAIL_SENDER_NAME" validate:"required"`
 	EmailSenderAddress  string `mapstructure:"EMAIL_SENDER_ADDRESS" validate:"required"`
@@ -160,7 +161,7 @@ func (c *serverCommand) shutdown() {
 
 func (c *serverCommand) setup(cmd *cobra.Command, args []string) {
 	// setup database
-	dao, err := database.NewDAO(c.config.DatabaseURL)
+	dao, err := database.NewPostgresDAO(c.config.DatabaseURL)
 	if err != nil {
 		log.Fatal("Error while initializing database connection: ", err)
 	}
@@ -187,11 +188,11 @@ func (c *serverCommand) setup(cmd *cobra.Command, args []string) {
 	)
 
 	// setup S3 client
-	s3Storage, err := s3.NewAWSS3StorageService(
+	s3Client, err := s3.NewS3Client(
 		c.config.AWSRegion,
 		c.config.AWSAccessKeyID,
 		c.config.AWSSecretAccessKey,
-		c.config.AWSS3BucketName,
+		c.config.AWSS3Endpoint,
 	)
 	if err != nil {
 		log.Fatal("Error while initializing AWS S3 client", err)
@@ -203,7 +204,7 @@ func (c *serverCommand) setup(cmd *cobra.Command, args []string) {
 	// setup internal services
 	c.setupInternalServices(
 		dao,
-		s3Storage,
+		s3Client,
 	)
 
 	// setup http server
@@ -212,7 +213,7 @@ func (c *serverCommand) setup(cmd *cobra.Command, args []string) {
 
 func (c *serverCommand) setupInternalServices(
 	dao database.DAO,
-	s3Storage storage.StorageService,
+	s3Client *s3.S3Client,
 ) {
 	c.asyncTaskDistributor = asynctask.NewRedisTaskDistributor(asynq.RedisClientOpt{
 		Addr: c.config.AsynqRedisAddress,
@@ -231,6 +232,8 @@ func (c *serverCommand) setupInternalServices(
 	rentalRepo := rental.NewRepo(dao)
 	applicationRepo := application_repo.NewRepo(dao)
 
+	s := storage.NewStorage(s3Client, c.config.AWSS3ImageBucket)
+
 	c.internalServices.PropertyService = property.NewService(propertyRepo, unitRepo)
 	c.internalServices.UnitService = unit.NewService(unitRepo)
 	c.internalServices.ListingService = listing.NewService(listingRepo)
@@ -240,6 +243,7 @@ func (c *serverCommand) setupInternalServices(
 		applicationRepo,
 		applicationTaskDistributor,
 	)
+	c.internalServices.StorageService = storage.NewService(s)
 }
 
 func (c *serverCommand) setupAsyncTaskProcessor(

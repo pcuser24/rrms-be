@@ -44,7 +44,7 @@ func (m *MockRepo) EXPECT() *MockRepoMockRecorder {
 }
 
 // CreateApplication mocks base method.
-func (m *MockRepo) CreateApplication(arg0 context.Context, arg1 *dto.CreateApplicationDto) (*model.ApplicationModel, error) {
+func (m *MockRepo) CreateApplication(arg0 context.Context, arg1 *dto.CreateApplication) (*model.ApplicationModel, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CreateApplication", arg0, arg1)
 	ret0, _ := ret[0].(*model.ApplicationModel)

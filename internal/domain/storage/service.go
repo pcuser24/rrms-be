@@ -2,39 +2,30 @@ package storage
 
 import (
 	"fmt"
-	"net/http"
 	"strings"
 	"time"
 
 	"github.com/google/uuid"
 	"github.com/user2410/rrms-backend/internal/domain/storage/dto"
+	"github.com/user2410/rrms-backend/internal/domain/storage/object"
 )
 
-type PresignURL struct {
-	URL          string        `json:"url"`
-	Method       string        `json:"method"`
-	SignedHeader http.Header   `json:"signedHeader"`
-	LifeTime     time.Duration `json:"lifeTime"`
-}
-
-type StorageService interface {
-	GetPutObjectPresignURL(object *dto.PutObjectPresign, lifeTime time.Duration) (*PresignURL, error)
-}
-
 type Service interface {
-	GetPresignUrl(data *dto.PutObjectPresign, userID uuid.UUID) (*PresignURL, error)
+	// GetPresignUrl returns a presigned URL for a specific client to upload an object to the storage
+	GetPresignUrl(data *dto.PutObjectPresignRequest, userID uuid.UUID) (*object.PresignURL, error)
 }
 
 type service struct {
-	storageService StorageService
+	storage Storage
 }
 
-func NewService(storageService StorageService) *service {
+func NewService(s Storage) *service {
 	return &service{
-		storageService: storageService,
+		storage: s,
 	}
 }
 
+// processFilename processes the filename to remove spaces and dots and add a timestamp
 func processFilename(fileName string) string {
 	// remove extension
 	if pos := strings.LastIndexByte(fileName, '.'); pos != -1 {
@@ -48,7 +39,7 @@ func processFilename(fileName string) string {
 	return fmt.Sprintf("%s-%d", fileName, time.Now().UnixMilli())
 }
 
-func (s *service) GetPresignUrl(data *dto.PutObjectPresign, userID uuid.UUID) (*PresignURL, error) {
+func (s *service) GetPresignUrl(data *dto.PutObjectPresignRequest, userID uuid.UUID) (*object.PresignURL, error) {
 	data.Name = fmt.Sprintf("%s/%s", userID, processFilename(data.Name))
-	return s.storageService.GetPutObjectPresignURL(data, 5*time.Minute)
+	return s.storage.GetPutObjectPresignURL(data, time.Minute) // default lifetime of 1 minutes
 }

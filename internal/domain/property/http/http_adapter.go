@@ -33,11 +33,11 @@ func (a *adapter) RegisterServer(router *fiber.Router, tokenMaker token.Maker) {
 
 	propertyRoute.Get("/property/:id",
 		auth.GetAuthorizationMiddleware(tokenMaker),
-		property.CheckPropertyVisibility(a.service),
+		CheckPropertyVisibility(a.service),
 		a.getPropertyById(),
 	)
 	propertyRoute.Get("/property/:id/units",
-		property.CheckPropertyVisibility(a.service),
+		CheckPropertyVisibility(a.service),
 		a.getUnitsOfProperty(),
 	)
 	propertyRoute.Get("/ids",
@@ -50,11 +50,11 @@ func (a *adapter) RegisterServer(router *fiber.Router, tokenMaker token.Maker) {
 	propertyRoute.Post("/", a.createProperty())
 	propertyRoute.Get("/my-properties", a.getManagedProperties())
 	propertyRoute.Patch("/property/:id",
-		property.CheckPropertyManageability(a.service),
+		CheckPropertyManageability(a.service),
 		a.updateProperty(),
 	)
 	propertyRoute.Delete("/property/:id",
-		property.CheckPropertyManageability(a.service),
+		CheckPropertyManageability(a.service),
 		a.deleteProperty(),
 	)
 }
@@ -90,7 +90,7 @@ func (a *adapter) createProperty() fiber.Handler {
 
 func (a *adapter) getPropertyById() fiber.Handler {
 	return func(ctx *fiber.Ctx) error {
-		puid := ctx.Locals(property.PropertyIDLocalKey).(uuid.UUID)
+		puid := ctx.Locals(PropertyIDLocalKey).(uuid.UUID)
 
 		res, err := a.service.GetPropertyById(puid)
 		if err != nil {
@@ -107,7 +107,7 @@ func (a *adapter) getPropertyById() fiber.Handler {
 
 func (a *adapter) getUnitsOfProperty() fiber.Handler {
 	return func(ctx *fiber.Ctx) error {
-		puid := ctx.Locals(property.PropertyIDLocalKey).(uuid.UUID)
+		puid := ctx.Locals(PropertyIDLocalKey).(uuid.UUID)
 
 		res, err := a.service.GetUnitsOfProperty(puid)
 		if err != nil {

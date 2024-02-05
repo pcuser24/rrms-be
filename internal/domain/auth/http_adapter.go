@@ -3,8 +3,9 @@ package auth
 import (
 	"errors"
 	"fmt"
-	"github.com/user2410/rrms-backend/internal/utils/validation"
 	"net/http"
+
+	"github.com/user2410/rrms-backend/internal/utils/validation"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
@@ -89,7 +90,7 @@ func (a *adapter) credentialLogin() fiber.Handler {
 			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": validation.GetValidationError(errs)})
 		}
 
-		session := &dto.CreateSessionDto{
+		session := &dto.CreateSession{
 			ID:        uuid.Nil,
 			UserAgent: ctx.Context().UserAgent(),
 			ClientIp:  ctx.IP(),
@@ -125,7 +126,7 @@ func (a *adapter) credentialLogin() fiber.Handler {
 
 func (a *adapter) credentialRefresh() fiber.Handler {
 	return func(ctx *fiber.Ctx) error {
-		var payload dto.RefreshTokenDto
+		var payload dto.RefreshToken
 		if err := ctx.BodyParser(&payload); err != nil {
 			return ctx.SendStatus(fiber.StatusBadRequest)
 		}

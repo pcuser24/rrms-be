@@ -24,7 +24,7 @@ func NewMigrateSeedCommand() *migrateSeedCommand {
 }
 
 func (c *migrateSeedCommand) run(cmd *cobra.Command, args []string) {
-	dao, err := database.NewDAO(c.config.DatabaseURL)
+	dao, err := database.NewPostgresDAO(c.config.DatabaseURL)
 	if err != nil {
 		log.Fatal("failed to create the database connection", err)
 	}

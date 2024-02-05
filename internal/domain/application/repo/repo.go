@@ -10,7 +10,7 @@ import (
 )
 
 type Repo interface {
-	CreateApplication(ctx context.Context, data *dto.CreateApplicationDto) (*model.ApplicationModel, error)
+	CreateApplication(ctx context.Context, data *dto.CreateApplication) (*model.ApplicationModel, error)
 	GetApplicationById(ctx context.Context, id int64) (*model.ApplicationModel, error)
 	GetApplicationsByUserId(ctx context.Context, uid uuid.UUID) ([]model.ApplicationModel, error)
 	GetApplicationsToUser(ctx context.Context, uid uuid.UUID) ([]model.ApplicationModel, error)
@@ -28,7 +28,7 @@ func NewRepo(d database.DAO) Repo {
 	}
 }
 
-func (r *repo) CreateApplication(ctx context.Context, data *dto.CreateApplicationDto) (*model.ApplicationModel, error) {
+func (r *repo) CreateApplication(ctx context.Context, data *dto.CreateApplication) (*model.ApplicationModel, error) {
 
 	res, err := r.dao.QueryTx(ctx, func(d database.DAO) (interface{}, error) {
 		var am *model.ApplicationModel

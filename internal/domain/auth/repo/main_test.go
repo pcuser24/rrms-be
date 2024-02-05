@@ -21,7 +21,7 @@ func TestMain(m *testing.M) {
 	if err != nil {
 		log.Fatalf("failed to load config: %v", err)
 	}
-	dao, err := database.NewDAO(conf.DatabaseURL)
+	dao, err := database.NewPostgresDAO(conf.DatabaseURL)
 	if err != nil {
 		log.Fatalf("failed to connect to database: %v", err)
 	}

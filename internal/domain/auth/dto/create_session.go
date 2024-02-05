@@ -8,7 +8,7 @@ import (
 	"github.com/user2410/rrms-backend/internal/utils/types"
 )
 
-type CreateSessionDto struct {
+type CreateSession struct {
 	ID           uuid.UUID `json:"id"`
 	UserId       uuid.UUID `json:"userId"`
 	SessionToken string    `json:"sessionToken"`
@@ -18,7 +18,7 @@ type CreateSessionDto struct {
 	CreatedAt    time.Time `json:"createdAt"`
 }
 
-func (d *CreateSessionDto) ToCreateSessionParams() *database.CreateSessionParams {
+func (d *CreateSession) ToCreateSessionParams() *database.CreateSessionParams {
 	return &database.CreateSessionParams{
 		ID:           d.ID,
 		Userid:       d.UserId,

@@ -3,6 +3,7 @@ package application
 import (
 	"context"
 	"fmt"
+
 	"github.com/user2410/rrms-backend/internal/domain/application/asynctask"
 	repo2 "github.com/user2410/rrms-backend/internal/domain/application/repo"
 
@@ -14,7 +15,7 @@ import (
 )
 
 type Service interface {
-	CreateApplication(data *dto.CreateApplicationDto) (*model.ApplicationModel, error)
+	CreateApplication(data *dto.CreateApplication) (*model.ApplicationModel, error)
 	GetApplicationById(id int64) (*model.ApplicationModel, error)
 	GetApplicationsByUserId(uid uuid.UUID) ([]model.ApplicationModel, error)
 	GetApplicationsToUser(uid uuid.UUID) ([]model.ApplicationModel, error)
@@ -37,7 +38,7 @@ func NewService(
 	}
 }
 
-func (s *service) CreateApplication(data *dto.CreateApplicationDto) (*model.ApplicationModel, error) {
+func (s *service) CreateApplication(data *dto.CreateApplication) (*model.ApplicationModel, error) {
 	a, err := s.repo.CreateApplication(context.Background(), data)
 	if err != nil {
 		return nil, err

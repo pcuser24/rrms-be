@@ -1,13 +1,16 @@
 package application
 
 import (
-	"github.com/user2410/rrms-backend/internal/utils/validation"
 	"log"
 	"strconv"
+
+	"github.com/user2410/rrms-backend/internal/utils"
+	"github.com/user2410/rrms-backend/internal/utils/validation"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/user2410/rrms-backend/internal/domain/application/dto"
+	"github.com/user2410/rrms-backend/internal/domain/application/model"
 	"github.com/user2410/rrms-backend/internal/domain/auth"
 	"github.com/user2410/rrms-backend/internal/infrastructure/database"
 	"github.com/user2410/rrms-backend/internal/interfaces/rest/responses"
@@ -58,7 +61,7 @@ func (a *adapter) createApplications() fiber.Handler {
 	return func(ctx *fiber.Ctx) error {
 		tkPayload := ctx.Locals(auth.AuthorizationPayloadKey).(*token.Payload)
 
-		var payload dto.CreateApplicationDto
+		var payload dto.CreateApplication
 		if err := ctx.BodyParser(&payload); err != nil {
 			return err
 		}
@@ -112,7 +115,7 @@ func (a *adapter) getApplicationsToMe() fiber.Handler {
 			return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
 		}
 
-		return ctx.Status(fiber.StatusOK).JSON(applications)
+		return ctx.Status(fiber.StatusOK).JSON(utils.Ternary(applications == nil, []model.ApplicationModel{}, applications))
 	}
 }
 

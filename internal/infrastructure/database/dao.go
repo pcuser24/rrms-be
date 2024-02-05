@@ -30,12 +30,12 @@ type DAO interface {
 }
 
 // extend Queries struct ability
-type dao struct {
+type postgresDAO struct {
 	*Queries
 	db *pgxpool.Pool
 }
 
-func NewDAO(dbUrl string) (DAO, error) {
+func NewPostgresDAO(dbUrl string) (DAO, error) {
 	// 5 seconds timeout
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
@@ -45,29 +45,29 @@ func NewDAO(dbUrl string) (DAO, error) {
 		return nil, err
 	}
 
-	return &dao{
+	return &postgresDAO{
 		Queries: New(conn),
 		db:      conn,
 	}, nil
 }
 
-func (d *dao) GetConn() *pgxpool.Pool {
+func (d *postgresDAO) GetConn() *pgxpool.Pool {
 	return d.db
 }
 
-func (d *dao) Exec(ctx context.Context, query string, params ...interface{}) (pgconn.CommandTag, error) {
+func (d *postgresDAO) Exec(ctx context.Context, query string, params ...interface{}) (pgconn.CommandTag, error) {
 	return d.db.Exec(ctx, query, params...)
 }
 
-func (d *dao) Query(ctx context.Context, query string, params ...interface{}) (pgx.Rows, error) {
+func (d *postgresDAO) Query(ctx context.Context, query string, params ...interface{}) (pgx.Rows, error) {
 	return d.db.Query(ctx, query, params...)
 }
 
-func (d *dao) QueryRow(ctx context.Context, query string, params ...interface{}) pgx.Row {
+func (d *postgresDAO) QueryRow(ctx context.Context, query string, params ...interface{}) pgx.Row {
 	return d.db.QueryRow(ctx, query, params...)
 }
 
-func (d *dao) ExecTx(ctx context.Context, fn func(DAO) error) *TXError {
+func (d *postgresDAO) ExecTx(ctx context.Context, fn func(DAO) error) *TXError {
 	tx, err := d.db.Begin(ctx)
 	if err != nil {
 		return &TXError{Err: err}
@@ -88,7 +88,7 @@ func (d *dao) ExecTx(ctx context.Context, fn func(DAO) error) *TXError {
 	return nil
 }
 
-func (d *dao) QueryTx(ctx context.Context, fn func(DAO) (interface{}, error)) (interface{}, *TXError) {
+func (d *postgresDAO) QueryTx(ctx context.Context, fn func(DAO) (interface{}, error)) (interface{}, *TXError) {
 	tx, err := d.db.Begin(ctx)
 	if err != nil {
 		return nil, &TXError{Err: err}
@@ -110,6 +110,6 @@ func (d *dao) QueryTx(ctx context.Context, fn func(DAO) (interface{}, error)) (i
 	return res, nil
 }
 
-func (d *dao) Close() {
+func (d *postgresDAO) Close() {
 	d.db.Close()
 }

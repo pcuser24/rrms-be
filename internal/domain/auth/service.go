@@ -3,8 +3,9 @@ package auth
 import (
 	"context"
 	"fmt"
-	"github.com/user2410/rrms-backend/internal/domain/auth/asynctask"
 	"time"
+
+	"github.com/user2410/rrms-backend/internal/domain/auth/asynctask"
 
 	repo2 "github.com/user2410/rrms-backend/internal/domain/auth/repo"
 
@@ -18,7 +19,7 @@ import (
 
 type AuthService interface {
 	Register(data *dto.RegisterUser) (*model.UserModel, error)
-	Login(data *dto.LoginUser, sessionData *dto.CreateSessionDto) (*LoginUserRes, error)
+	Login(data *dto.LoginUser, sessionData *dto.CreateSession) (*LoginUserRes, error)
 	GetUserByEmail(email string) (*model.UserModel, error)
 	GetUserById(id uuid.UUID) (*model.UserModel, error)
 	RefreshAccessToken(accessToken, refreshToken string) (*LoginUserRes, error)
@@ -76,7 +77,7 @@ type LoginUserRes struct {
 
 var ErrInvalidCredential = fmt.Errorf("invalid password")
 
-func (u *authService) Login(data *dto.LoginUser, sessionData *dto.CreateSessionDto) (*LoginUserRes, error) {
+func (u *authService) Login(data *dto.LoginUser, sessionData *dto.CreateSession) (*LoginUserRes, error) {
 	user, err := u.repo.GetUserByEmail(context.Background(), data.Email)
 	if err != nil {
 		return nil, err
