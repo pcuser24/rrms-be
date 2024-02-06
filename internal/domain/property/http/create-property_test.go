@@ -9,15 +9,18 @@ import (
 	"testing"
 	"time"
 
+	property_repo "github.com/user2410/rrms-backend/internal/domain/property/repo"
+	unit_repo "github.com/user2410/rrms-backend/internal/domain/unit/repo"
+
+	auth_http "github.com/user2410/rrms-backend/internal/domain/auth/http"
+
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/user2410/rrms-backend/internal/domain/auth"
 	"github.com/user2410/rrms-backend/internal/domain/property/dto"
 	"github.com/user2410/rrms-backend/internal/domain/property/model"
-	property_repo "github.com/user2410/rrms-backend/internal/domain/property/repo"
-	unit_repo "github.com/user2410/rrms-backend/internal/domain/unit/repo"
+
 	"github.com/user2410/rrms-backend/internal/utils/token"
 	"github.com/user2410/rrms-backend/internal/utils/validation"
 	"go.uber.org/mock/gomock"
@@ -40,8 +43,8 @@ func TestCreateProperty(t *testing.T) {
 			name: "OK",
 			body: createPropertyToMap(defaultArg),
 			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
-				auth.AddAuthorization(t, request,
-					tokenMaker, auth.AuthorizationTypeBearer,
+				auth_http.AddAuthorization(t, request,
+					tokenMaker, auth_http.AuthorizationTypeBearer,
 					userId, time.Minute, token.CreateTokenOptions{TokenType: token.AccessToken})
 			},
 			buildStubs: func(pRepo *property_repo.MockRepo, uRepo *unit_repo.MockRepo) {
@@ -84,8 +87,8 @@ func TestCreateProperty(t *testing.T) {
 				return m
 			}(),
 			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
-				auth.AddAuthorization(t, request,
-					tokenMaker, auth.AuthorizationTypeBearer,
+				auth_http.AddAuthorization(t, request,
+					tokenMaker, auth_http.AuthorizationTypeBearer,
 					userId, time.Minute, token.CreateTokenOptions{TokenType: token.AccessToken})
 			},
 			buildStubs: func(pRepo *property_repo.MockRepo, uRepo *unit_repo.MockRepo) {
@@ -131,8 +134,8 @@ func TestCreateProperty(t *testing.T) {
 				return m
 			}(),
 			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
-				auth.AddAuthorization(t, request,
-					tokenMaker, auth.AuthorizationTypeBearer,
+				auth_http.AddAuthorization(t, request,
+					tokenMaker, auth_http.AuthorizationTypeBearer,
 					userId, time.Minute, token.CreateTokenOptions{TokenType: token.AccessToken})
 			},
 			buildStubs: func(pRepo *property_repo.MockRepo, uRepo *unit_repo.MockRepo) {
@@ -160,8 +163,8 @@ func TestCreateProperty(t *testing.T) {
 				return m
 			}(),
 			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
-				auth.AddAuthorization(t, request,
-					tokenMaker, auth.AuthorizationTypeBearer,
+				auth_http.AddAuthorization(t, request,
+					tokenMaker, auth_http.AuthorizationTypeBearer,
 					userId, time.Minute, token.CreateTokenOptions{TokenType: token.AccessToken})
 			},
 			buildStubs: func(pRepo *property_repo.MockRepo, uRepo *unit_repo.MockRepo) {
@@ -192,8 +195,8 @@ func TestCreateProperty(t *testing.T) {
 				return m
 			}(),
 			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
-				auth.AddAuthorization(t, request,
-					tokenMaker, auth.AuthorizationTypeBearer,
+				auth_http.AddAuthorization(t, request,
+					tokenMaker, auth_http.AuthorizationTypeBearer,
 					userId, time.Minute, token.CreateTokenOptions{TokenType: token.AccessToken})
 			},
 			buildStubs: func(pRepo *property_repo.MockRepo, uRepo *unit_repo.MockRepo) {
@@ -229,8 +232,8 @@ func TestCreateProperty(t *testing.T) {
 				return m
 			}(),
 			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
-				auth.AddAuthorization(t, request,
-					tokenMaker, auth.AuthorizationTypeBearer,
+				auth_http.AddAuthorization(t, request,
+					tokenMaker, auth_http.AuthorizationTypeBearer,
 					userId, time.Minute, token.CreateTokenOptions{TokenType: token.AccessToken})
 			},
 			buildStubs: func(pRepo *property_repo.MockRepo, uRepo *unit_repo.MockRepo) {

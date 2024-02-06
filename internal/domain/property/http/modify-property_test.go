@@ -9,14 +9,16 @@ import (
 	"testing"
 	"time"
 
+	property_repo "github.com/user2410/rrms-backend/internal/domain/property/repo"
+	unit_repo "github.com/user2410/rrms-backend/internal/domain/unit/repo"
+
+	auth_http "github.com/user2410/rrms-backend/internal/domain/auth/http"
+
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/user2410/rrms-backend/internal/domain/auth"
 	"github.com/user2410/rrms-backend/internal/domain/property/dto"
-	property_repo "github.com/user2410/rrms-backend/internal/domain/property/repo"
-	unit_repo "github.com/user2410/rrms-backend/internal/domain/unit/repo"
 	"github.com/user2410/rrms-backend/internal/utils/token"
 	"github.com/user2410/rrms-backend/internal/utils/types"
 	"go.uber.org/mock/gomock"
@@ -43,8 +45,8 @@ func TestUpdateProperty(t *testing.T) {
 				"project": "xyz",
 			},
 			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
-				auth.AddAuthorization(t, request,
-					tokenMaker, auth.AuthorizationTypeBearer,
+				auth_http.AddAuthorization(t, request,
+					tokenMaker, auth_http.AuthorizationTypeBearer,
 					userId, time.Minute, token.CreateTokenOptions{TokenType: token.AccessToken})
 			},
 			buildStubs: func(pRepo *property_repo.MockRepo, uRepo *unit_repo.MockRepo) {
@@ -90,8 +92,8 @@ func TestUpdateProperty(t *testing.T) {
 				"name": "abc",
 			},
 			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
-				auth.AddAuthorization(t, request,
-					tokenMaker, auth.AuthorizationTypeBearer,
+				auth_http.AddAuthorization(t, request,
+					tokenMaker, auth_http.AuthorizationTypeBearer,
 					uuid.Nil, time.Minute, token.CreateTokenOptions{TokenType: token.AccessToken})
 			},
 			buildStubs: func(pRepo *property_repo.MockRepo, uRepo *unit_repo.MockRepo) {
@@ -155,8 +157,8 @@ func TestDeleteProperty(t *testing.T) {
 			name: "OK",
 			id:   property.ID.String(),
 			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
-				auth.AddAuthorization(t, request,
-					tokenMaker, auth.AuthorizationTypeBearer,
+				auth_http.AddAuthorization(t, request,
+					tokenMaker, auth_http.AuthorizationTypeBearer,
 					userId, time.Minute, token.CreateTokenOptions{TokenType: token.AccessToken})
 			},
 			buildStubs: func(pRepo *property_repo.MockRepo, uRepo *unit_repo.MockRepo) {
@@ -193,8 +195,8 @@ func TestDeleteProperty(t *testing.T) {
 			name: "Forbidden/PrivateProperty",
 			id:   property.ID.String(),
 			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
-				auth.AddAuthorization(t, request,
-					tokenMaker, auth.AuthorizationTypeBearer,
+				auth_http.AddAuthorization(t, request,
+					tokenMaker, auth_http.AuthorizationTypeBearer,
 					uuid.Nil, time.Minute, token.CreateTokenOptions{TokenType: token.AccessToken})
 			},
 			buildStubs: func(pRepo *property_repo.MockRepo, uRepo *unit_repo.MockRepo) {

@@ -18,6 +18,7 @@ import (
 	property_repo "github.com/user2410/rrms-backend/internal/domain/property/repo"
 	unit_repo "github.com/user2410/rrms-backend/internal/domain/unit/repo"
 
+	auth_http "github.com/user2410/rrms-backend/internal/domain/auth/http"
 	property_http "github.com/user2410/rrms-backend/internal/domain/property/http"
 
 	"github.com/go-playground/validator/v10"
@@ -65,7 +66,7 @@ type ServerConfig struct {
 }
 
 type internalServices struct {
-	AuthService        auth.AuthService
+	AuthService        auth.Service
 	PropertyService    property.Service
 	UnitService        unit.Service
 	ListingService     listing.Service
@@ -221,7 +222,7 @@ func (c *serverCommand) setupInternalServices(
 
 	authRepo := auth_repo.NewRepo(dao)
 	authTaskDistributor := auth_asynctask.NewTaskDistributor(c.asyncTaskDistributor)
-	c.internalServices.AuthService = auth.NewAuthService(
+	c.internalServices.AuthService = auth.NewService(
 		authRepo,
 		c.tokenMaker, c.config.AccessTokenTTL, c.config.RefreshTokenTTL,
 		authTaskDistributor,
@@ -270,7 +271,7 @@ func (c *serverCommand) setupHttpServer() {
 	)
 	apiRoute := c.httpServer.GetApiRoute()
 
-	auth.
+	auth_http.
 		NewAdapter(c.internalServices.AuthService).
 		RegisterServer(apiRoute, c.tokenMaker)
 	property_http.

@@ -4,7 +4,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgconn"
-	"github.com/user2410/rrms-backend/internal/domain/auth"
+	"github.com/user2410/rrms-backend/internal/domain/auth/http"
 	"github.com/user2410/rrms-backend/internal/domain/property"
 	"github.com/user2410/rrms-backend/internal/interfaces/rest/responses"
 	"github.com/user2410/rrms-backend/internal/utils/token"
@@ -21,7 +21,7 @@ func CheckPropertyManageability(s property.Service) fiber.Handler {
 			return ctx.SendStatus(fiber.StatusBadRequest)
 		}
 
-		tkPayload, ok := ctx.Locals(auth.AuthorizationPayloadKey).(*token.Payload)
+		tkPayload, ok := ctx.Locals(http.AuthorizationPayloadKey).(*token.Payload)
 		if !ok {
 			return ctx.SendStatus(fiber.StatusForbidden)
 		}
@@ -52,7 +52,7 @@ func CheckPropertyVisibility(service property.Service) fiber.Handler {
 		ctx.Locals(PropertyIDLocalKey, puid)
 
 		var userID uuid.UUID
-		tkPayload, ok := ctx.Locals(auth.AuthorizationPayloadKey).(*token.Payload)
+		tkPayload, ok := ctx.Locals(http.AuthorizationPayloadKey).(*token.Payload)
 		if ok {
 			userID = tkPayload.UserID
 		} else {

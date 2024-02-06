@@ -5,7 +5,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgconn"
-	"github.com/user2410/rrms-backend/internal/domain/auth"
+	"github.com/user2410/rrms-backend/internal/domain/auth/http"
 	"github.com/user2410/rrms-backend/internal/domain/listing/dto"
 	"github.com/user2410/rrms-backend/internal/domain/property"
 	"github.com/user2410/rrms-backend/internal/domain/unit"
@@ -40,7 +40,7 @@ func (a *adapter) RegisterServer(router *fiber.Router, tokenMaker token.Maker) {
 	listingRoute.Get("/", a.searchListings())
 	listingRoute.Get("/listing/:id", a.getListingById())
 	listingRoute.Get("/ids", a.getListingsByIds())
-	listingRoute.Use(auth.AuthorizedMiddleware(tokenMaker))
+	listingRoute.Use(http.AuthorizedMiddleware(tokenMaker))
 
 	listingRoute.Post("/", a.createListing())
 	listingRoute.Get("/my-listings", a.getMyListings())
@@ -50,7 +50,7 @@ func (a *adapter) RegisterServer(router *fiber.Router, tokenMaker token.Maker) {
 
 func (a *adapter) createListing() fiber.Handler {
 	return func(ctx *fiber.Ctx) error {
-		tkPayload := ctx.Locals(auth.AuthorizationPayloadKey).(*token.Payload)
+		tkPayload := ctx.Locals(http.AuthorizationPayloadKey).(*token.Payload)
 
 		var payload dto.CreateListing
 		if err := ctx.BodyParser(&payload); err != nil {
@@ -140,7 +140,7 @@ func (a *adapter) getMyListings() fiber.Handler {
 			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": validation.GetValidationError(errs)})
 		}
 
-		tokenPayload := ctx.Locals(auth.AuthorizationPayloadKey).(*token.Payload)
+		tokenPayload := ctx.Locals(http.AuthorizationPayloadKey).(*token.Payload)
 		res, err := a.lService.GetListingsOfUser(tokenPayload.UserID, query.Fields)
 		if err != nil {
 			if err == database.ErrRecordNotFound {

@@ -1,4 +1,4 @@
-package auth
+package http
 
 import (
 	"fmt"
@@ -50,6 +50,7 @@ func AuthorizedMiddleware(tokenMaker token.Maker) fiber.Handler {
 }
 
 // Middleware to get token payload if exists
+// If the token is decoded successfully, the payload will be added to the context, whether it's valid or not
 func GetAuthorizationMiddleware(tokenMaker token.Maker) fiber.Handler {
 	return func(ctx *fiber.Ctx) error {
 		authorizationHeader := ctx.Get(AuthorizationHeaderKey)
@@ -63,8 +64,8 @@ func GetAuthorizationMiddleware(tokenMaker token.Maker) fiber.Handler {
 		}
 
 		accessToken := fields[1]
-		payload, err := tokenMaker.VerifyToken(accessToken)
-		if err != nil || payload.TokenType != token.AccessToken {
+		payload, _ := tokenMaker.VerifyToken(accessToken)
+		if payload == nil { // skip any logical error
 			return ctx.Next()
 		}
 

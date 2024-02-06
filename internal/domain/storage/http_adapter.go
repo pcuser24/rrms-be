@@ -2,9 +2,9 @@ package storage
 
 import (
 	"fmt"
+	"github.com/user2410/rrms-backend/internal/domain/auth/http"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/user2410/rrms-backend/internal/domain/auth"
 	"github.com/user2410/rrms-backend/internal/domain/storage/dto"
 
 	// "github.com/user2410/rrms-backend/internal/utils"
@@ -28,7 +28,7 @@ func NewAdapter(service Service) Adapter {
 func (a *adapter) RegisterServer(route *fiber.Router, tokenMaker token.Maker) {
 	storageRoute := (*route).Group("/storage")
 
-	storageRoute.Use(auth.AuthorizedMiddleware(tokenMaker))
+	storageRoute.Use(http.AuthorizedMiddleware(tokenMaker))
 
 	storageRoute.Post("/presign", a.getPresignUrl())
 }
@@ -40,7 +40,7 @@ func (a *adapter) getPresignUrl() fiber.Handler {
 			return err
 		}
 		fmt.Println(payload)
-		tkPayload := ctx.Locals(auth.AuthorizationPayloadKey).(*token.Payload)
+		tkPayload := ctx.Locals(http.AuthorizationPayloadKey).(*token.Payload)
 
 		presignUrl, err := a.service.GetPresignUrl(&payload, tkPayload.UserID)
 		if err != nil {

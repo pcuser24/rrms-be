@@ -5,7 +5,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgconn"
-	"github.com/user2410/rrms-backend/internal/domain/auth"
+	"github.com/user2410/rrms-backend/internal/domain/auth/http"
 	"github.com/user2410/rrms-backend/internal/domain/property"
 	"github.com/user2410/rrms-backend/internal/domain/property/dto"
 	"github.com/user2410/rrms-backend/internal/infrastructure/database"
@@ -32,7 +32,7 @@ func (a *adapter) RegisterServer(router *fiber.Router, tokenMaker token.Maker) {
 	propertyRoute := (*router).Group("/properties")
 
 	propertyRoute.Get("/property/:id",
-		auth.GetAuthorizationMiddleware(tokenMaker),
+		http.GetAuthorizationMiddleware(tokenMaker),
 		CheckPropertyVisibility(a.service),
 		a.getPropertyById(),
 	)
@@ -41,11 +41,11 @@ func (a *adapter) RegisterServer(router *fiber.Router, tokenMaker token.Maker) {
 		a.getUnitsOfProperty(),
 	)
 	propertyRoute.Get("/ids",
-		auth.GetAuthorizationMiddleware(tokenMaker),
+		http.GetAuthorizationMiddleware(tokenMaker),
 		a.getPropertiesByIds(),
 	)
 
-	propertyRoute.Use(auth.AuthorizedMiddleware(tokenMaker))
+	propertyRoute.Use(http.AuthorizedMiddleware(tokenMaker))
 
 	propertyRoute.Post("/", a.createProperty())
 	propertyRoute.Get("/my-properties", a.getManagedProperties())
@@ -61,7 +61,7 @@ func (a *adapter) RegisterServer(router *fiber.Router, tokenMaker token.Maker) {
 
 func (a *adapter) createProperty() fiber.Handler {
 	return func(ctx *fiber.Ctx) error {
-		tkPayload := ctx.Locals(auth.AuthorizationPayloadKey).(*token.Payload)
+		tkPayload := ctx.Locals(http.AuthorizationPayloadKey).(*token.Payload)
 
 		var payload dto.CreateProperty
 		if err := ctx.BodyParser(&payload); err != nil {
@@ -136,7 +136,7 @@ func (a *adapter) getPropertiesByIds() fiber.Handler {
 		}
 
 		var userId uuid.UUID
-		tkPayload, ok := ctx.Locals(auth.AuthorizationPayloadKey).(*token.Payload)
+		tkPayload, ok := ctx.Locals(http.AuthorizationPayloadKey).(*token.Payload)
 		if ok {
 			userId = tkPayload.UserID
 		} else {
@@ -165,7 +165,7 @@ func (a *adapter) getManagedProperties() fiber.Handler {
 			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": validation.GetValidationError(errs)})
 		}
 
-		tokenPayload := ctx.Locals(auth.AuthorizationPayloadKey).(*token.Payload)
+		tokenPayload := ctx.Locals(http.AuthorizationPayloadKey).(*token.Payload)
 		res, err := a.service.GetManagedProperties(tokenPayload.UserID, query.Fields)
 		if err != nil {
 			if dbErr, ok := err.(*pgconn.PgError); ok {

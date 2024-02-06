@@ -4,7 +4,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgconn"
-	"github.com/user2410/rrms-backend/internal/domain/auth"
+	"github.com/user2410/rrms-backend/internal/domain/auth/http"
 	"github.com/user2410/rrms-backend/internal/domain/property"
 	"github.com/user2410/rrms-backend/internal/domain/unit/dto"
 	"github.com/user2410/rrms-backend/internal/infrastructure/database"
@@ -37,7 +37,7 @@ func (a *adapter) RegisterServer(router *fiber.Router, tokenMaker token.Maker) {
 	unitRoute.Get("/search", a.searchUnits())
 	unitRoute.Get("/ids", a.getUnitsByIds())
 
-	unitRoute.Use(auth.AuthorizedMiddleware(tokenMaker))
+	unitRoute.Use(http.AuthorizedMiddleware(tokenMaker))
 
 	unitRoute.Post("/", a.createUnit())
 	unitRoute.Patch("/unit/:id", CheckUnitManageability(a.uService), a.updateUnit())
@@ -56,7 +56,7 @@ func (a *adapter) createUnit() fiber.Handler {
 		}
 
 		// check ownership of target property
-		tkPayload := ctx.Locals(auth.AuthorizationPayloadKey).(*token.Payload)
+		tkPayload := ctx.Locals(http.AuthorizationPayloadKey).(*token.Payload)
 		isManageable, err := a.pService.CheckManageability(payload.PropertyID, tkPayload.UserID)
 		if err != nil {
 			if dbErr, ok := err.(*pgconn.PgError); ok {

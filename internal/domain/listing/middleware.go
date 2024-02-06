@@ -4,7 +4,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgconn"
-	"github.com/user2410/rrms-backend/internal/domain/auth"
+	"github.com/user2410/rrms-backend/internal/domain/auth/http"
 	"github.com/user2410/rrms-backend/internal/interfaces/rest/responses"
 	"github.com/user2410/rrms-backend/internal/utils/token"
 )
@@ -17,7 +17,7 @@ func (a *adapter) checkListingManageability() fiber.Handler {
 			return ctx.SendStatus(fiber.StatusBadRequest)
 		}
 
-		tkPayload := ctx.Locals(auth.AuthorizationPayloadKey).(*token.Payload)
+		tkPayload := ctx.Locals(http.AuthorizationPayloadKey).(*token.Payload)
 
 		isCreator, err := a.lService.CheckListingOwnership(lid, tkPayload.UserID)
 		if err != nil {

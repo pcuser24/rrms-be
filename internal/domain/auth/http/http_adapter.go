@@ -1,9 +1,11 @@
-package auth
+package http
 
 import (
 	"errors"
 	"fmt"
 	"net/http"
+
+	"github.com/user2410/rrms-backend/internal/domain/auth"
 
 	"github.com/user2410/rrms-backend/internal/utils/validation"
 
@@ -19,10 +21,10 @@ type Adapter interface {
 }
 
 type adapter struct {
-	service AuthService
+	service auth.Service
 }
 
-func NewAdapter(service AuthService) Adapter {
+func NewAdapter(service auth.Service) Adapter {
 	return &adapter{
 		service: service,
 	}
@@ -76,7 +78,7 @@ func (a *adapter) credentialRegister() fiber.Handler {
 			return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
 		}
 
-		return ctx.Status(fiber.StatusOK).JSON(res)
+		return ctx.Status(fiber.StatusCreated).JSON(res)
 	}
 }
 
@@ -106,21 +108,14 @@ func (a *adapter) credentialLogin() fiber.Handler {
 				return ctx.Status(http.StatusNotFound).JSON(fiber.Map{"message": "no user with such email"})
 			}
 
-			if errors.Is(err, ErrInvalidCredential) {
+			if errors.Is(err, auth.ErrInvalidCredential) {
 				return ctx.Status(http.StatusUnauthorized).JSON(fiber.Map{"message": err.Error()})
 			}
 
 			return ctx.Status(http.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
 		}
 
-		return ctx.JSON(fiber.Map{
-			"sessionId":    res.SessionID,
-			"accessToken":  res.AccessToken,
-			"accessExp":    res.AccessPayload.ExpiredAt,
-			"refreshToken": res.RefreshToken,
-			"refreshExp":   res.RefreshPayload.ExpiredAt,
-			"user":         res.User.ToUserResponse(),
-		})
+		return ctx.Status(fiber.StatusOK).JSON(res)
 	}
 }
 
@@ -134,7 +129,7 @@ func (a *adapter) credentialRefresh() fiber.Handler {
 		res, err := a.service.RefreshAccessToken(payload.AccessToken, payload.RefreshToken)
 		if err != nil {
 			switch err {
-			case ErrInvalidCredential, ErrInvalidSession:
+			case auth.ErrInvalidCredential, auth.ErrInvalidSession:
 				return ctx.Status(http.StatusForbidden).JSON(fiber.Map{"message": err.Error()})
 			case token.ErrInvalidToken:
 				return ctx.Status(http.StatusUnauthorized).JSON(fiber.Map{"message": err.Error()})
@@ -145,7 +140,7 @@ func (a *adapter) credentialRefresh() fiber.Handler {
 
 		return ctx.Status(http.StatusOK).JSON(fiber.Map{
 			"accessToken": res.AccessToken,
-			"accessExp":   res.AccessPayload.ExpiredAt,
+			"accessExp":   res.AccessExp,
 		})
 	}
 }

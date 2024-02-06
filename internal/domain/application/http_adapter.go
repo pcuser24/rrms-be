@@ -1,6 +1,7 @@
 package application
 
 import (
+	"github.com/user2410/rrms-backend/internal/domain/auth/http"
 	"log"
 	"strconv"
 
@@ -11,7 +12,6 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/user2410/rrms-backend/internal/domain/application/dto"
 	"github.com/user2410/rrms-backend/internal/domain/application/model"
-	"github.com/user2410/rrms-backend/internal/domain/auth"
 	"github.com/user2410/rrms-backend/internal/infrastructure/database"
 	"github.com/user2410/rrms-backend/internal/interfaces/rest/responses"
 	"github.com/user2410/rrms-backend/internal/utils/token"
@@ -28,7 +28,7 @@ type adapter struct {
 func (a *adapter) RegisterServer(route *fiber.Router, tokenMaker token.Maker) {
 	applicationRoute := (*route).Group("/applications")
 
-	applicationRoute.Use(auth.AuthorizedMiddleware(tokenMaker))
+	applicationRoute.Use(http.AuthorizedMiddleware(tokenMaker))
 
 	applicationRoute.Post("/", a.createApplications())
 	applicationRoute.Get("/my-applications",
@@ -59,7 +59,7 @@ func NewAdapter(service Service) Adapter {
 
 func (a *adapter) createApplications() fiber.Handler {
 	return func(ctx *fiber.Ctx) error {
-		tkPayload := ctx.Locals(auth.AuthorizationPayloadKey).(*token.Payload)
+		tkPayload := ctx.Locals(http.AuthorizationPayloadKey).(*token.Payload)
 
 		var payload dto.CreateApplication
 		if err := ctx.BodyParser(&payload); err != nil {
@@ -86,7 +86,7 @@ func (a *adapter) createApplications() fiber.Handler {
 
 func (a *adapter) getMyApplications() fiber.Handler {
 	return func(ctx *fiber.Ctx) error {
-		tkPayload := ctx.Locals(auth.AuthorizationPayloadKey).(*token.Payload)
+		tkPayload := ctx.Locals(http.AuthorizationPayloadKey).(*token.Payload)
 
 		applications, err := a.service.GetApplicationsByUserId(tkPayload.UserID)
 		if err != nil {
@@ -104,7 +104,7 @@ func (a *adapter) getMyApplications() fiber.Handler {
 // Get applications to properties that I manage
 func (a *adapter) getApplicationsToMe() fiber.Handler {
 	return func(ctx *fiber.Ctx) error {
-		tkPayload := ctx.Locals(auth.AuthorizationPayloadKey).(*token.Payload)
+		tkPayload := ctx.Locals(http.AuthorizationPayloadKey).(*token.Payload)
 
 		applications, err := a.service.GetApplicationsToUser(tkPayload.UserID)
 		if err != nil {
