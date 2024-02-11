@@ -54,7 +54,7 @@ func TestGetPropertyByIds(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, len(ps), 2)
 
-	compare := func(p_1, p_2 *model.PropertyModel) {
+	compareFn := func(p_1, p_2 *model.PropertyModel) {
 		for _, f := range selectedFields {
 			switch f {
 			case "name":
@@ -110,9 +110,9 @@ func TestGetPropertyByIds(t *testing.T) {
 	}
 	for _, p := range ps {
 		if p.ID == p1.ID {
-			compare(&p, p1)
+			compareFn(&p, p1)
 		} else if p.ID == p2.ID {
-			compare(&p, p2)
+			compareFn(&p, p2)
 		} else {
 			t.Error("unexpected property", p)
 		}

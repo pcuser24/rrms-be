@@ -136,16 +136,6 @@ UPDATE properties SET
   updated_at = NOW()
 WHERE id = $1;
 
--- name: UpdatePropertyManager :exec
-UPDATE property_managers SET
-  role = sqlc.arg(role)
-WHERE property_id = $1 AND manager_id = $2;
-
--- name: ChangePropertyVisibility :exec
-UPDATE properties SET
-  is_public = sqlc.arg(is_public)
-WHERE id = $1;
-
 -- name: DeletePropertyManager :exec
 DELETE FROM property_managers WHERE property_id = $1 AND manager_id = $2;
 

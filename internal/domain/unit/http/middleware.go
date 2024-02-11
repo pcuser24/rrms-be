@@ -1,15 +1,16 @@
-package unit
+package http
 
 import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/user2410/rrms-backend/internal/domain/auth/http"
+	"github.com/user2410/rrms-backend/internal/domain/unit"
 	"github.com/user2410/rrms-backend/internal/interfaces/rest/responses"
 	"github.com/user2410/rrms-backend/internal/utils/token"
 )
 
-func CheckUnitManageability(s Service) fiber.Handler {
+func CheckUnitManageability(s unit.Service) fiber.Handler {
 	return func(ctx *fiber.Ctx) error {
 		puid, err := uuid.Parse(ctx.Params("id"))
 		if err != nil {
@@ -39,7 +40,7 @@ func CheckUnitManageability(s Service) fiber.Handler {
 
 const UnitIDLocalKey = "unitId"
 
-func CheckUnitVisiblitiy(s Service) fiber.Handler {
+func CheckUnitVisiblitiy(service unit.Service) fiber.Handler {
 	return func(ctx *fiber.Ctx) error {
 		unitId, err := uuid.Parse(ctx.Params("id"))
 		if err != nil {
@@ -53,17 +54,17 @@ func CheckUnitVisiblitiy(s Service) fiber.Handler {
 			userId = tkPayload.UserID
 		}
 
-		isVisible, err := s.CheckVisibility(unitId, userId)
+		isVisible, err := service.CheckVisibility(unitId, userId)
 		if err != nil {
 			if dbErr, ok := err.(*pgconn.PgError); ok {
 				return responses.DBErrorResponse(ctx, dbErr)
 			}
-			return fiber.NewError(fiber.StatusInternalServerError, err.Error())
+			return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
 		}
-		if isVisible {
-			return ctx.Next()
-		} else {
-			return fiber.NewError(fiber.StatusForbidden, "not allowed to get this unit")
+		if !isVisible {
+			return fiber.NewError(fiber.StatusForbidden, "this unit is not visible to you")
 		}
+
+		return ctx.Next()
 	}
 }

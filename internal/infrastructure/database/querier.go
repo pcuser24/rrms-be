@@ -11,7 +11,6 @@ import (
 )
 
 type Querier interface {
-	ChangePropertyVisibility(ctx context.Context, arg ChangePropertyVisibilityParams) error
 	CheckListingOwnership(ctx context.Context, arg CheckListingOwnershipParams) (int64, error)
 	CheckUnitManageability(ctx context.Context, arg CheckUnitManageabilityParams) (int64, error)
 	CheckUnitOfProperty(ctx context.Context, arg CheckUnitOfPropertyParams) (int64, error)
@@ -76,7 +75,6 @@ type Querier interface {
 	UpdateListing(ctx context.Context, arg UpdateListingParams) error
 	UpdateListingStatus(ctx context.Context, arg UpdateListingStatusParams) error
 	UpdateProperty(ctx context.Context, arg UpdatePropertyParams) error
-	UpdatePropertyManager(ctx context.Context, arg UpdatePropertyManagerParams) error
 	UpdateSessionBlockingStatus(ctx context.Context, arg UpdateSessionBlockingStatusParams) error
 	UpdateUnit(ctx context.Context, arg UpdateUnitParams) error
 }

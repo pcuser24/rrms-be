@@ -20,6 +20,7 @@ import (
 
 	auth_http "github.com/user2410/rrms-backend/internal/domain/auth/http"
 	property_http "github.com/user2410/rrms-backend/internal/domain/property/http"
+	unit_http "github.com/user2410/rrms-backend/internal/domain/unit/http"
 
 	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
@@ -277,8 +278,7 @@ func (c *serverCommand) setupHttpServer() {
 	property_http.
 		NewAdapter(c.internalServices.PropertyService).
 		RegisterServer(apiRoute, c.tokenMaker)
-	unit.
-		NewAdapter(c.internalServices.UnitService, c.internalServices.PropertyService).
+	unit_http.NewAdapter(c.internalServices.UnitService, c.internalServices.PropertyService).
 		RegisterServer(apiRoute, c.tokenMaker)
 	listing.
 		NewAdapter(c.internalServices.ListingService, c.internalServices.PropertyService, c.internalServices.UnitService).

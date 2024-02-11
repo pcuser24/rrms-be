@@ -176,7 +176,7 @@ func sameProperties(t *testing.T, p1, p2 *model.PropertyModel) {
 	}
 }
 
-func comparePropertyAndCreate(t *testing.T, p *model.PropertyModel, arg *dto.CreateProperty) {
+func comparePropertyAndCreateDto(t *testing.T, p *model.PropertyModel, arg *dto.CreateProperty) {
 	require.NotEmpty(t, p)
 	require.Equal(t, arg.CreatorID, p.CreatorID)
 	require.Equal(t, arg.Name, p.Name)
@@ -233,7 +233,7 @@ func NewRandomPropertyDB(
 
 	p, err := testPropertyRepo.CreateProperty(context.Background(), &arg)
 	require.NoError(t, err)
-	comparePropertyAndCreate(t, p, &arg)
+	comparePropertyAndCreateDto(t, p, &arg)
 
 	return p
 }
@@ -326,7 +326,7 @@ func NewRandomPropertyModel(t *testing.T, creatorId uuid.UUID) *model.PropertyMo
 	}
 }
 
-func newRandomPropertyDBFromArg(
+func NewRandomPropertyDBFromArg(
 	t *testing.T,
 	testPropertyRepo Repo,
 	arg *dto.CreateProperty,
@@ -334,7 +334,7 @@ func newRandomPropertyDBFromArg(
 
 	p, err := testPropertyRepo.CreateProperty(context.Background(), arg)
 	require.NoError(t, err)
-	comparePropertyAndCreate(t, p, arg)
+	comparePropertyAndCreateDto(t, p, arg)
 
 	return p
 }

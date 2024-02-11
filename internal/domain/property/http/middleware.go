@@ -51,12 +51,10 @@ func CheckPropertyVisibility(service property.Service) fiber.Handler {
 		}
 		ctx.Locals(PropertyIDLocalKey, puid)
 
-		var userID uuid.UUID
+		var userID uuid.UUID = uuid.Nil
 		tkPayload, ok := ctx.Locals(http.AuthorizationPayloadKey).(*token.Payload)
 		if ok {
 			userID = tkPayload.UserID
-		} else {
-			userID = uuid.Nil
 		}
 
 		isVisible, err := service.CheckVisibility(puid, userID)
@@ -68,7 +66,7 @@ func CheckPropertyVisibility(service property.Service) fiber.Handler {
 			return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
 		}
 		if !isVisible {
-			return ctx.Status(fiber.StatusForbidden).JSON(fiber.Map{"message": "property is not visible to you"})
+			return ctx.Status(fiber.StatusForbidden).JSON(fiber.Map{"message": "this property is not visible to you"})
 		}
 
 		return ctx.Next()

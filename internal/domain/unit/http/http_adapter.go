@@ -1,11 +1,12 @@
-package unit
+package http
 
 import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgconn"
-	"github.com/user2410/rrms-backend/internal/domain/auth/http"
+	auth_http "github.com/user2410/rrms-backend/internal/domain/auth/http"
 	"github.com/user2410/rrms-backend/internal/domain/property"
+	"github.com/user2410/rrms-backend/internal/domain/unit"
 	"github.com/user2410/rrms-backend/internal/domain/unit/dto"
 	"github.com/user2410/rrms-backend/internal/infrastructure/database"
 	"github.com/user2410/rrms-backend/internal/interfaces/rest/responses"
@@ -18,11 +19,11 @@ type Adapter interface {
 }
 
 type adapter struct {
-	uService Service
+	uService unit.Service
 	pService property.Service
 }
 
-func NewAdapter(uService Service, pService property.Service) Adapter {
+func NewAdapter(uService unit.Service, pService property.Service) Adapter {
 	return &adapter{
 		uService: uService,
 		pService: pService,
@@ -32,12 +33,18 @@ func NewAdapter(uService Service, pService property.Service) Adapter {
 func (a *adapter) RegisterServer(router *fiber.Router, tokenMaker token.Maker) {
 	unitRoute := (*router).Group("/units")
 
-	unitRoute.Get("/unit/amenities", a.getAllAmenities())
-	unitRoute.Get("/unit/:id", a.getUnitById())
+	unitRoute.Get("/unit/:id",
+		auth_http.GetAuthorizationMiddleware(tokenMaker),
+		CheckUnitVisiblitiy(a.uService),
+		a.getUnitById(),
+	)
 	unitRoute.Get("/search", a.searchUnits())
-	unitRoute.Get("/ids", a.getUnitsByIds())
+	unitRoute.Get("/ids",
+		auth_http.GetAuthorizationMiddleware(tokenMaker),
+		a.getUnitsByIds(),
+	)
 
-	unitRoute.Use(http.AuthorizedMiddleware(tokenMaker))
+	unitRoute.Use(auth_http.AuthorizedMiddleware(tokenMaker))
 
 	unitRoute.Post("/", a.createUnit())
 	unitRoute.Patch("/unit/:id", CheckUnitManageability(a.uService), a.updateUnit())
@@ -48,23 +55,24 @@ func (a *adapter) createUnit() fiber.Handler {
 	return func(ctx *fiber.Ctx) error {
 		var payload dto.CreateUnit
 		if err := ctx.BodyParser(&payload); err != nil {
-			return err
+			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": err.Error()})
 		}
 		if errs := validation.ValidateStruct(nil, payload); len(errs) > 0 {
-			ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": validation.GetValidationError(errs)})
-			return nil
+			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": validation.GetValidationError(errs)})
 		}
 
-		// check ownership of target property
-		tkPayload := ctx.Locals(http.AuthorizationPayloadKey).(*token.Payload)
+		// check manageability of the target property
+		tkPayload := ctx.Locals(auth_http.AuthorizationPayloadKey).(*token.Payload)
 		isManageable, err := a.pService.CheckManageability(payload.PropertyID, tkPayload.UserID)
 		if err != nil {
 			if dbErr, ok := err.(*pgconn.PgError); ok {
 				return responses.DBErrorResponse(ctx, dbErr)
 			}
+			if dbErr, ok := err.(*database.TXError); ok {
+				return responses.DBTXErrorResponse(ctx, dbErr)
+			}
 
-			ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
-			return nil
+			return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
 		}
 		if !isManageable {
 			return ctx.Status(fiber.StatusForbidden).JSON(fiber.Map{"message": "operation not permitted on this property"})
@@ -89,13 +97,13 @@ func (a *adapter) getUnitById() fiber.Handler {
 
 		res, err := a.uService.GetUnitById(unitId)
 		if err != nil {
-			if dbErr, ok := err.(*pgconn.PgError); ok {
-				return responses.DBErrorResponse(ctx, dbErr)
+			if err == database.ErrRecordNotFound {
+				return ctx.Status(fiber.StatusConflict).JSON(fiber.Map{"message": "property not found"})
 			}
 
 			return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
 		}
-		return ctx.JSON(res)
+		return ctx.Status(fiber.StatusOK).JSON(res)
 	}
 }
 
@@ -133,13 +141,19 @@ func (a *adapter) getUnitsByIds() fiber.Handler {
 			return fiber.NewError(fiber.StatusBadRequest, validation.GetValidationError(errs))
 		}
 
-		res, err := a.uService.GetUnitsByIds(query.IDs, query.Fields)
+		var userId uuid.UUID = uuid.Nil
+		tkPayload, ok := ctx.Locals(auth_http.AuthorizationPayloadKey).(*token.Payload)
+		if ok {
+			userId = tkPayload.UserID
+		}
+
+		res, err := a.uService.GetUnitsByIds(query.IDs, query.Fields, userId)
 		if err != nil {
 			ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
 			return nil
 		}
 
-		return ctx.JSON(res)
+		return ctx.Status(fiber.StatusOK).JSON(res)
 	}
 }
 
@@ -185,19 +199,5 @@ func (a *adapter) deleteUnit() fiber.Handler {
 			ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
 		}
 		return nil
-	}
-}
-
-func (a *adapter) getAllAmenities() fiber.Handler {
-	return func(ctx *fiber.Ctx) error {
-		res, err := a.uService.GetAllAmenities()
-		if err != nil {
-			ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
-			return nil
-		}
-
-		return ctx.JSON(fiber.Map{
-			"items": res,
-		})
 	}
 }

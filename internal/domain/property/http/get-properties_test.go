@@ -192,10 +192,13 @@ func TestGetPropertyByIds(t *testing.T) {
 			name: "OK/CustomFields",
 			query: fiber.Map{
 				"propIds": fmt.Sprintf("propIds=%s&propIds=%s", properties[0].ID.String(), properties[1].ID.String()),
-				"fields": fmt.Sprintf("fields=%s", strings.Join(append(
-					dto.GetRetrievableFields()[:4],
-					dto.GetRetrievableFields()[len(dto.GetRetrievableFields())-3:]...,
-				), ",")),
+				"fields": func() string {
+					fs := dto.GetRetrievableFields()
+					return fmt.Sprintf("fields=%s", strings.Join(append(
+						fs[:4],
+						fs[len(fs)-3:]...,
+					), ","))
+				}(),
 			},
 			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
 				auth_http.AddAuthorization(t, request,
@@ -220,10 +223,13 @@ func TestGetPropertyByIds(t *testing.T) {
 					Times(1).
 					Return(properties[1].Managers, nil)
 				pRepo.EXPECT().
-					GetPropertiesByIds(gomock.Any(), gomock.Eq([]string{properties[0].ID.String(), properties[1].ID.String()}), gomock.Eq(append(
-						dto.GetRetrievableFields()[:4],
-						dto.GetRetrievableFields()[len(dto.GetRetrievableFields())-3:]...,
-					))).
+					GetPropertiesByIds(gomock.Any(), gomock.Eq([]string{properties[0].ID.String(), properties[1].ID.String()}), gomock.Eq(func() []string {
+						fs := dto.GetRetrievableFields()
+						return append(
+							fs[:4],
+							fs[len(fs)-3:]...,
+						)
+					}())).
 					Times(1).
 					Return([]model.PropertyModel{
 						{ID: properties[0].ID, Name: properties[0].Name, Building: properties[0].Building, Project: properties[0].Project, Area: properties[0].Area, Features: properties[0].Features, Tags: properties[0].Tags, Media: properties[0].Media},
@@ -240,7 +246,7 @@ func TestGetPropertyByIds(t *testing.T) {
 				var gotProperties []model.PropertyModel
 				err = json.Unmarshal(data, &gotProperties)
 				require.NoError(t, err)
-				match := func(t *testing.T, p1, p2 model.PropertyModel) {
+				match := func(t *testing.T, p1, p2 *model.PropertyModel) {
 					require.Equal(t, p1.Name, p2.Name)
 					require.Equal(t, *p1.Building, *p2.Building)
 					require.Equal(t, *p1.Project, *p2.Project)
@@ -250,11 +256,11 @@ func TestGetPropertyByIds(t *testing.T) {
 					require.Equal(t, p1.Media, p2.Media)
 				}
 				if gotProperties[0].ID == properties[0].ID {
-					match(t, gotProperties[0], *properties[0])
-					match(t, gotProperties[1], *properties[1])
+					match(t, &gotProperties[0], properties[0])
+					match(t, &gotProperties[1], properties[1])
 				} else {
-					match(t, gotProperties[1], *properties[0])
-					match(t, gotProperties[0], *properties[1])
+					match(t, &gotProperties[1], properties[0])
+					match(t, &gotProperties[0], properties[1])
 				}
 			},
 		},

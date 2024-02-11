@@ -25,7 +25,6 @@ type Repo interface {
 	IsPublic(ctx context.Context, id uuid.UUID) (bool, error)
 	UpdateUnit(ctx context.Context, data *dto.UpdateUnit) error
 	DeleteUnit(ctx context.Context, id uuid.UUID) error
-	GetAllAmenities(ctx context.Context) ([]model.UAmenity, error)
 }
 
 type repo struct {
@@ -152,18 +151,6 @@ func (r *repo) UpdateUnit(ctx context.Context, data *dto.UpdateUnit) error {
 
 func (r *repo) DeleteUnit(ctx context.Context, id uuid.UUID) error {
 	return r.dao.DeleteUnit(ctx, id)
-}
-
-func (r *repo) GetAllAmenities(ctx context.Context) ([]model.UAmenity, error) {
-	resDb, err := r.dao.GetAllUnitAmenities(ctx)
-	if err != nil {
-		return nil, err
-	}
-	var res []model.UAmenity
-	for _, i := range resDb {
-		res = append(res, model.UAmenity(i))
-	}
-	return res, nil
 }
 
 func (r *repo) CheckUnitManageability(ctx context.Context, id uuid.UUID, userId uuid.UUID) (bool, error) {

@@ -127,7 +127,7 @@ func TestSearchPropertyCombination(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			ps := make([]*model.PropertyModel, 0, len(tc.dataset))
 			for _, d := range tc.dataset {
-				ps = append(ps, newRandomPropertyDBFromArg(t, testPropertyRepo, &d))
+				ps = append(ps, NewRandomPropertyDBFromArg(t, testPropertyRepo, &d))
 			}
 
 			res, err := testPropertyRepo.SearchPropertyCombination(

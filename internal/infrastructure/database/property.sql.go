@@ -12,22 +12,6 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
-const changePropertyVisibility = `-- name: ChangePropertyVisibility :exec
-UPDATE properties SET
-  is_public = $2
-WHERE id = $1
-`
-
-type ChangePropertyVisibilityParams struct {
-	ID       uuid.UUID `json:"id"`
-	IsPublic bool      `json:"is_public"`
-}
-
-func (q *Queries) ChangePropertyVisibility(ctx context.Context, arg ChangePropertyVisibilityParams) error {
-	_, err := q.db.Exec(ctx, changePropertyVisibility, arg.ID, arg.IsPublic)
-	return err
-}
-
 const createProperty = `-- name: CreateProperty :one
 INSERT INTO properties (
   creator_id,
@@ -594,22 +578,5 @@ func (q *Queries) UpdateProperty(ctx context.Context, arg UpdatePropertyParams) 
 		arg.Description,
 		arg.IsPublic,
 	)
-	return err
-}
-
-const updatePropertyManager = `-- name: UpdatePropertyManager :exec
-UPDATE property_managers SET
-  role = $3
-WHERE property_id = $1 AND manager_id = $2
-`
-
-type UpdatePropertyManagerParams struct {
-	PropertyID uuid.UUID `json:"property_id"`
-	ManagerID  uuid.UUID `json:"manager_id"`
-	Role       string    `json:"role"`
-}
-
-func (q *Queries) UpdatePropertyManager(ctx context.Context, arg UpdatePropertyManagerParams) error {
-	_, err := q.db.Exec(ctx, updatePropertyManager, arg.PropertyID, arg.ManagerID, arg.Role)
 	return err
 }

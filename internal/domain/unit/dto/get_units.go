@@ -9,6 +9,14 @@ import (
 	"github.com/google/uuid"
 )
 
+var retrievableFields = []string{"name", "property_id", "area", "floor", "price", "number_of_living_rooms", "number_of_bedrooms", "number_of_bathrooms", "number_of_toilets", "number_of_balconies", "number_of_kitchens", "type", "created_at", "updated_at", "amenities", "media"}
+
+func GetRetrievableFields() []string {
+	rfs := make([]string, len(retrievableFields))
+	copy(rfs, retrievableFields)
+	return rfs
+}
+
 const UnitFieldsLocalKey = "unitFields"
 
 type GetUnitsByIdsQuery struct {
@@ -45,7 +53,7 @@ func (q *UnitFieldQuery) QueryParser(ctx *fiber.Ctx) error {
 func ValidateQuery(fl validator.FieldLevel) bool {
 	if fields, ok := fl.Field().Interface().([]string); ok {
 		for _, f := range fields {
-			if !slices.Contains([]string{"name", "property_id", "area", "floor", "price", "number_of_living_rooms", "number_of_bedrooms", "number_of_bathrooms", "number_of_toilets", "number_of_balconies", "number_of_kitchens", "type", "created_at", "updated_at", "amenities", "media"}, f) {
+			if !slices.Contains(retrievableFields, f) {
 				return false
 			}
 		}

@@ -19,18 +19,18 @@ type CreateUnitMedia struct {
 
 type CreateUnit struct {
 	PropertyID          uuid.UUID           `json:"propertyId" validate:"required,uuid4"`
-	Name                *string             `json:"name"`
-	Area                float32             `json:"area" validate:"required"`
-	Floor               *int32              `json:"floor"`
-	NumberOfLivingRooms *int32              `json:"numberOfLivingRooms"`
-	NumberOfBedrooms    *int32              `json:"numberOfBedrooms"`
-	NumberOfBathrooms   *int32              `json:"numberOfBathrooms"`
-	NumberOfToilets     *int32              `json:"numberOfToilets"`
-	NumberOfKitchens    *int32              `json:"numberOfKitchens"`
-	NumberOfBalconies   *int32              `json:"numberOfBalconies"`
+	Name                *string             `json:"name" validate:"omitempty"`
+	Area                float32             `json:"area" validate:"required,gt=0"`
+	Floor               *int32              `json:"floor" validate:"omitempty,gt=0"`
+	NumberOfLivingRooms *int32              `json:"numberOfLivingRooms" validate:"omitempty,gt=0"`
+	NumberOfBedrooms    *int32              `json:"numberOfBedrooms" validate:"omitempty,gt=0"`
+	NumberOfBathrooms   *int32              `json:"numberOfBathrooms" validate:"omitempty,gt=0"`
+	NumberOfToilets     *int32              `json:"numberOfToilets" validate:"omitempty,gt=0"`
+	NumberOfKitchens    *int32              `json:"numberOfKitchens" validate:"omitempty,gt=0"`
+	NumberOfBalconies   *int32              `json:"numberOfBalconies" validate:"omitempty,gt=0"`
 	Type                database.UNITTYPE   `json:"type" validate:"required,oneof=APARTMENT ROOM STUDIO"`
-	Amenities           []CreateUnitAmenity `json:"amenities"`
-	Media               []CreateUnitMedia   `json:"media"`
+	Amenities           []CreateUnitAmenity `json:"amenities" validate:"dive"`
+	Media               []CreateUnitMedia   `json:"media" validate:"dive"`
 }
 
 func (cu *CreateUnit) ToCreateUnitDB() *database.CreateUnitParams {

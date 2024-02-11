@@ -126,6 +126,7 @@ func (s *service) CheckManageability(pid uuid.UUID, userId uuid.UUID) (bool, err
 	}
 	return false, nil
 }
+
 func (s *service) CheckVisibility(id uuid.UUID, uid uuid.UUID) (bool, error) {
 	isPublic, err := s.pRepo.IsPublic(context.Background(), id)
 	if err != nil {

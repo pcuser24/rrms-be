@@ -2,6 +2,7 @@ package unit
 
 import (
 	"context"
+
 	repo2 "github.com/user2410/rrms-backend/internal/domain/unit/repo"
 
 	"github.com/google/uuid"
@@ -12,14 +13,13 @@ import (
 type Service interface {
 	CreateUnit(data *dto.CreateUnit) (*model.UnitModel, error)
 	GetUnitById(id uuid.UUID) (*model.UnitModel, error)
-	GetUnitsByIds(ids []uuid.UUID, fields []string) ([]model.UnitModel, error)
+	GetUnitsByIds(ids []uuid.UUID, fields []string, userId uuid.UUID) ([]model.UnitModel, error)
 	SearchUnit(query *dto.SearchUnitCombinationQuery) (*dto.SearchUnitCombinationResponse, error)
 	UpdateUnit(data *dto.UpdateUnit) error
 	DeleteUnit(id uuid.UUID) error
 	CheckVisibility(id uuid.UUID, uid uuid.UUID) (bool, error)
 	CheckUnitManageability(id uuid.UUID, userId uuid.UUID) (bool, error)
 	CheckUnitOfProperty(pid, uid uuid.UUID) (bool, error)
-	GetAllAmenities() ([]model.UAmenity, error)
 }
 
 type service struct {
@@ -40,9 +40,19 @@ func (s *service) GetUnitById(id uuid.UUID) (*model.UnitModel, error) {
 	return s.repo.GetUnitById(context.Background(), id)
 }
 
-func (s *service) GetUnitsByIds(ids []uuid.UUID, fields []string) ([]model.UnitModel, error) {
-	idsStr := make([]string, len(ids))
-	for i, id := range ids {
+func (s *service) GetUnitsByIds(ids []uuid.UUID, fields []string, userId uuid.UUID) ([]model.UnitModel, error) {
+	var _ids []uuid.UUID
+	for _, id := range ids {
+		isVisible, err := s.CheckVisibility(id, userId)
+		if err != nil {
+			return nil, err
+		}
+		if isVisible {
+			_ids = append(_ids, id)
+		}
+	}
+	idsStr := make([]string, len(_ids))
+	for i, id := range _ids {
 		idsStr[i] = id.String()
 	}
 	return s.repo.GetUnitsByIds(context.Background(), idsStr, fields)
@@ -54,10 +64,6 @@ func (s *service) UpdateUnit(data *dto.UpdateUnit) error {
 
 func (s *service) DeleteUnit(id uuid.UUID) error {
 	return s.repo.DeleteUnit(context.Background(), id)
-}
-
-func (s *service) GetAllAmenities() ([]model.UAmenity, error) {
-	return s.repo.GetAllAmenities(context.Background())
 }
 
 func (s *service) CheckUnitManageability(id uuid.UUID, userId uuid.UUID) (bool, error) {
