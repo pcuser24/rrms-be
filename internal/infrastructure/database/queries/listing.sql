@@ -73,6 +73,9 @@ SELECT * FROM listing_policies WHERE listing_id = $1;
 -- name: GetListingUnits :many
 SELECT * FROM listing_units WHERE listing_id = $1;
 
+-- name: GetListingsOfProperty :many
+SELECT * FROM listings WHERE property_id = $1;
+
 -- name: GetAllRentalPolicies :many
 SELECT * FROM rental_policies;
 

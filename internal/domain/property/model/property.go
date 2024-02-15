@@ -29,7 +29,7 @@ type PropertyModel struct {
 	Ward          *string                `json:"ward"`
 	Lat           *float64               `json:"lat"`
 	Lng           *float64               `json:"lng"`
-	PlaceUrl      string                 `json:"placeUrl"`
+	PrimaryImage  int64                  `json:"primaryImage"`
 	Description   *string                `json:"description"`
 	Type          database.PROPERTYTYPE  `json:"type"`
 	IsPublic      bool                   `json:"isPublic"`
@@ -60,7 +60,7 @@ func ToPropertyModel(p *database.Property) *PropertyModel {
 		Ward:           types.PNStr(p.Ward),
 		Lat:            types.PNFloat64(p.Lat),
 		Lng:            types.PNFloat64(p.Lng),
-		PlaceUrl:       p.PlaceUrl,
+		PrimaryImage:   p.PrimaryImage.Int64,
 		Type:           p.Type,
 		IsPublic:       p.IsPublic,
 		CreatedAt:      p.CreatedAt,

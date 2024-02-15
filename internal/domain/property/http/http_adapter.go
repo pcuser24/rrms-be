@@ -37,6 +37,7 @@ func (a *adapter) RegisterServer(router *fiber.Router, tokenMaker token.Maker) {
 		a.getPropertyById(),
 	)
 	propertyRoute.Get("/property/:id/units",
+		auth_http.GetAuthorizationMiddleware(tokenMaker),
 		CheckPropertyVisibility(a.service),
 		a.getUnitsOfProperty(),
 	)
@@ -48,6 +49,14 @@ func (a *adapter) RegisterServer(router *fiber.Router, tokenMaker token.Maker) {
 	propertyRoute.Use(auth_http.AuthorizedMiddleware(tokenMaker))
 
 	propertyRoute.Post("/", a.createProperty())
+	propertyRoute.Get("/property/:id/listings",
+		CheckPropertyManageability(a.service),
+		a.getApplicationsOfProperty(),
+	)
+	propertyRoute.Get("/property/:id/applications",
+		CheckPropertyManageability(a.service),
+		a.getListingsOfProperty(),
+	)
 	propertyRoute.Get("/my-properties", a.getManagedProperties())
 	propertyRoute.Patch("/property/:id",
 		CheckPropertyManageability(a.service),
@@ -118,6 +127,40 @@ func (a *adapter) getUnitsOfProperty() fiber.Handler {
 		}
 
 		return ctx.JSON(res)
+	}
+}
+
+func (a *adapter) getApplicationsOfProperty() fiber.Handler {
+	return func(ctx *fiber.Ctx) error {
+		puid := ctx.Locals(PropertyIDLocalKey).(uuid.UUID)
+
+		res, err := a.service.GetApplicationsOfProperty(puid)
+		if err != nil {
+			if err == database.ErrRecordNotFound {
+				return ctx.Status(fiber.StatusConflict).JSON(fiber.Map{"message": "property not found"})
+			}
+
+			return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
+		}
+
+		return ctx.Status(fiber.StatusOK).JSON(res)
+	}
+}
+
+func (a *adapter) getListingsOfProperty() fiber.Handler {
+	return func(ctx *fiber.Ctx) error {
+		puid := ctx.Locals(PropertyIDLocalKey).(uuid.UUID)
+
+		res, err := a.service.GetApplicationsOfProperty(puid)
+		if err != nil {
+			if err == database.ErrRecordNotFound {
+				return ctx.Status(fiber.StatusConflict).JSON(fiber.Map{"message": "property not found"})
+			}
+
+			return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
+		}
+
+		return ctx.Status(fiber.StatusOK).JSON(res)
 	}
 }
 

@@ -323,6 +323,52 @@ func (q *Queries) GetListingUnits(ctx context.Context, listingID uuid.UUID) ([]L
 	return items, nil
 }
 
+const getListingsOfProperty = `-- name: GetListingsOfProperty :many
+SELECT id, creator_id, property_id, title, description, full_name, email, phone, contact_type, price, price_negotiable, security_deposit, lease_term, pets_allowed, number_of_residents, priority, active, created_at, updated_at, post_at, expired_at FROM listings WHERE property_id = $1
+`
+
+func (q *Queries) GetListingsOfProperty(ctx context.Context, propertyID uuid.UUID) ([]Listing, error) {
+	rows, err := q.db.Query(ctx, getListingsOfProperty, propertyID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Listing
+	for rows.Next() {
+		var i Listing
+		if err := rows.Scan(
+			&i.ID,
+			&i.CreatorID,
+			&i.PropertyID,
+			&i.Title,
+			&i.Description,
+			&i.FullName,
+			&i.Email,
+			&i.Phone,
+			&i.ContactType,
+			&i.Price,
+			&i.PriceNegotiable,
+			&i.SecurityDeposit,
+			&i.LeaseTerm,
+			&i.PetsAllowed,
+			&i.NumberOfResidents,
+			&i.Priority,
+			&i.Active,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.PostAt,
+			&i.ExpiredAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const updateListing = `-- name: UpdateListing :exec
 UPDATE listings SET
   title = coalesce($1, title),

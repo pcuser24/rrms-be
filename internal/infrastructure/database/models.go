@@ -102,16 +102,12 @@ func (ns NullMEDIATYPE) Value() (driver.Value, error) {
 type PROPERTYTYPE string
 
 const (
-	PROPERTYTYPEAPARTMENT PROPERTYTYPE = "APARTMENT"
-	PROPERTYTYPEPRIVATE   PROPERTYTYPE = "PRIVATE"
-	PROPERTYTYPETOWNHOUSE PROPERTYTYPE = "TOWNHOUSE"
-	PROPERTYTYPESHOPHOUSE PROPERTYTYPE = "SHOPHOUSE"
-	PROPERTYTYPEVILLA     PROPERTYTYPE = "VILLA"
-	PROPERTYTYPEROOM      PROPERTYTYPE = "ROOM"
-	PROPERTYTYPESTORE     PROPERTYTYPE = "STORE"
-	PROPERTYTYPEOFFICE    PROPERTYTYPE = "OFFICE"
-	PROPERTYTYPEBLOCK     PROPERTYTYPE = "BLOCK"
-	PROPERTYTYPECOMPLEX   PROPERTYTYPE = "COMPLEX"
+	PROPERTYTYPEAPARTMENT     PROPERTYTYPE = "APARTMENT"
+	PROPERTYTYPEPRIVATE       PROPERTYTYPE = "PRIVATE"
+	PROPERTYTYPEROOM          PROPERTYTYPE = "ROOM"
+	PROPERTYTYPESTORE         PROPERTYTYPE = "STORE"
+	PROPERTYTYPEOFFICE        PROPERTYTYPE = "OFFICE"
+	PROPERTYTYPEMINIAPARTMENT PROPERTYTYPE = "MINIAPARTMENT"
 )
 
 func (e *PROPERTYTYPE) Scan(src interface{}) error {
@@ -341,7 +337,7 @@ type Property struct {
 	Ward          pgtype.Text   `json:"ward"`
 	Lat           pgtype.Float8 `json:"lat"`
 	Lng           pgtype.Float8 `json:"lng"`
-	PlaceUrl      string        `json:"place_url"`
+	PrimaryImage  pgtype.Int8   `json:"primary_image"`
 	Description   pgtype.Text   `json:"description"`
 	Type          PROPERTYTYPE  `json:"type"`
 	IsPublic      bool          `json:"is_public"`

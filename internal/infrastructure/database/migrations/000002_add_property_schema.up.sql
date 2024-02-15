@@ -1,11 +1,10 @@
 BEGIN;
 
 CREATE TYPE "PROPERTYTYPE" AS ENUM (
-  'APARTMENT',
-  'PRIVATE', 'TOWNHOUSE', 'SHOPHOUSE', 'VILLA',
-  'ROOM', 'STORE',
-  'OFFICE',
-  'BLOCK', 'COMPLEX'
+  'APARTMENT', 'PRIVATE',
+  'ROOM', 
+  'STORE', 'OFFICE',
+  'MINIAPARTMENT'
 );
 
 CREATE TABLE IF NOT EXISTS "properties" (
@@ -26,7 +25,7 @@ CREATE TABLE IF NOT EXISTS "properties" (
   "ward" TEXT,
   "lat" DOUBLE PRECISION,
   "lng" DOUBLE PRECISION,
-  "place_url" TEXT NOT NULL,
+  "primary_image" BIGINT,
   "description" TEXT,
   "type" "PROPERTYTYPE" NOT NULL,
   "is_public" BOOLEAN NOT NULL DEFAULT FALSE,
@@ -34,6 +33,7 @@ CREATE TABLE IF NOT EXISTS "properties" (
   "updated_at" TIMESTAMPTZ DEFAULT NOW() NOT NULL
 );
 ALTER TABLE "properties" ADD CONSTRAINT "property_user_fkey" FOREIGN KEY ("creator_id") REFERENCES "User"("id") ON DELETE CASCADE;
+ALTER TABLE "properties" ADD CONSTRAINT "property_primary_image_fkey" FOREIGN KEY ("primary_image") REFERENCES "property_media"("id") ON DELETE CASCADE;
 COMMENT ON COLUMN "properties"."orientation" IS 'n,s,w,e,nw,ne,sw,se';
 
 CREATE TABLE IF NOT EXISTS "property_managers" (

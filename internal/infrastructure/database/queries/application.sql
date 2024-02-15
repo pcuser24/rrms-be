@@ -156,6 +156,9 @@ SELECT * FROM applications WHERE property_id IN (
   SELECT property_id FROM property_managers WHERE manager_id = $1
 );
 
+-- name: GetApplicationsOfProperty :many
+SELECT * FROM applications WHERE property_id = $1;
+
 -- name: UpdateApplicationStatus :exec
 UPDATE applications SET status = $1, updated_at = NOW() WHERE id = $2;
 

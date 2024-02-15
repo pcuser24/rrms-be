@@ -1,7 +1,9 @@
 package repo
 
 import (
+	"cmp"
 	"context"
+	"slices"
 	"testing"
 	"time"
 
@@ -25,6 +27,14 @@ func TestGetPropertyManagers(t *testing.T) {
 
 	managers, err := testPropertyRepo.GetPropertyManagers(context.Background(), p.ID)
 	require.NoError(t, err)
+	require.Equal(t, len(p.Managers), len(managers))
+	pmaCmp := func(a, b model.PropertyManagerModel) int {
+		return cmp.Compare[string](a.ManagerID.String(), b.ManagerID.String())
+	}
+	slices.SortFunc(p.Managers, pmaCmp)
+	slices.SortFunc(managers, pmaCmp)
+	require.Equal(t, p.Managers, managers)
+
 	require.Equal(t, len(managers), len(p.Managers))
 	for i := 0; i < len(managers); i++ {
 		require.Equal(t, managers[i].PropertyID, p.ID)
@@ -69,8 +79,8 @@ func TestGetPropertyByIds(t *testing.T) {
 				require.Equal(t, p_1.City, p_2.City)
 			case "district":
 				require.Equal(t, p_1.District, p_2.District)
-			case "place_url":
-				require.Equal(t, p_1.PlaceUrl, p_2.PlaceUrl)
+			case "primary_image":
+				require.Equal(t, p_1.PrimaryImage, p_2.PrimaryImage)
 			case "type":
 				require.Equal(t, p_1.Type, p_2.Type)
 			case "is_public":
@@ -155,7 +165,7 @@ func TestUpdateProperty(t *testing.T) {
 		Ward:           types.Ptr[string](random.RandomAlphanumericStr(100)),
 		Lat:            types.Ptr[float64](random.RandomFloat64(10, 50)),
 		Lng:            types.Ptr[float64](random.RandomFloat64(10, 50)),
-		PlaceUrl:       types.Ptr[string](random.RandomAlphanumericStr(100)),
+		PrimaryImage:   types.Ptr[int64](random.RandomInt64(1, 10)),
 		Description:    types.Ptr[string](random.RandomAlphanumericStr(100)),
 		IsPublic:       utils.Ternary(p.IsPublic, types.Ptr[bool](false), types.Ptr[bool](true)).(*bool),
 	}
@@ -177,7 +187,7 @@ func TestUpdateProperty(t *testing.T) {
 	require.Equal(t, *arg.District, p1.District)
 	require.Equal(t, *arg.City, p1.City)
 	require.Equal(t, *arg.Ward, *p1.Ward)
-	require.Equal(t, *arg.PlaceUrl, p1.PlaceUrl)
+	require.Equal(t, *arg.PrimaryImage, p1.PrimaryImage)
 	require.Equal(t, *arg.Lat, *p1.Lat)
 	require.Equal(t, *arg.Lng, *p1.Lng)
 	require.Equal(t, *arg.Description, *p1.Description)

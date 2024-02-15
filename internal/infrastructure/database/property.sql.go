@@ -30,7 +30,6 @@ INSERT INTO properties (
   ward,
   lat,
   lng,
-  place_url,
   description,
   type,
   created_at,
@@ -54,10 +53,9 @@ INSERT INTO properties (
   $16,
   $17,
   $18,
-  $19,
   NOW(),
   NOW()
-) RETURNING id, creator_id, name, building, project, area, number_of_floors, year_built, orientation, entrance_width, facade, full_address, city, district, ward, lat, lng, place_url, description, type, is_public, created_at, updated_at
+) RETURNING id, creator_id, name, building, project, area, number_of_floors, year_built, orientation, entrance_width, facade, full_address, city, district, ward, lat, lng, primary_image, description, type, is_public, created_at, updated_at
 `
 
 type CreatePropertyParams struct {
@@ -77,7 +75,6 @@ type CreatePropertyParams struct {
 	Ward           pgtype.Text   `json:"ward"`
 	Lat            pgtype.Float8 `json:"lat"`
 	Lng            pgtype.Float8 `json:"lng"`
-	PlaceUrl       string        `json:"place_url"`
 	Description    pgtype.Text   `json:"description"`
 	Type           PROPERTYTYPE  `json:"type"`
 }
@@ -100,7 +97,6 @@ func (q *Queries) CreateProperty(ctx context.Context, arg CreatePropertyParams) 
 		arg.Ward,
 		arg.Lat,
 		arg.Lng,
-		arg.PlaceUrl,
 		arg.Description,
 		arg.Type,
 	)
@@ -123,7 +119,7 @@ func (q *Queries) CreateProperty(ctx context.Context, arg CreatePropertyParams) 
 		&i.Ward,
 		&i.Lat,
 		&i.Lng,
-		&i.PlaceUrl,
+		&i.PrimaryImage,
 		&i.Description,
 		&i.Type,
 		&i.IsPublic,
@@ -363,7 +359,7 @@ func (q *Queries) GetManagedProperties(ctx context.Context, managerID uuid.UUID)
 }
 
 const getPropertyById = `-- name: GetPropertyById :one
-SELECT id, creator_id, name, building, project, area, number_of_floors, year_built, orientation, entrance_width, facade, full_address, city, district, ward, lat, lng, place_url, description, type, is_public, created_at, updated_at FROM properties WHERE id = $1 LIMIT 1
+SELECT id, creator_id, name, building, project, area, number_of_floors, year_built, orientation, entrance_width, facade, full_address, city, district, ward, lat, lng, primary_image, description, type, is_public, created_at, updated_at FROM properties WHERE id = $1 LIMIT 1
 `
 
 func (q *Queries) GetPropertyById(ctx context.Context, id uuid.UUID) (Property, error) {
@@ -387,7 +383,7 @@ func (q *Queries) GetPropertyById(ctx context.Context, id uuid.UUID) (Property, 
 		&i.Ward,
 		&i.Lat,
 		&i.Lng,
-		&i.PlaceUrl,
+		&i.PrimaryImage,
 		&i.Description,
 		&i.Type,
 		&i.IsPublic,
@@ -527,7 +523,7 @@ UPDATE properties SET
   ward = coalesce($14, ward),
   lat = coalesce($15, lat),
   lng = coalesce($16, lng),
-  place_url = coalesce($17, place_url),
+  primary_image = coalesce($17, primary_image),
   description = coalesce($18, description),
   is_public = coalesce($19, is_public),
   updated_at = NOW()
@@ -551,7 +547,7 @@ type UpdatePropertyParams struct {
 	Ward           pgtype.Text   `json:"ward"`
 	Lat            pgtype.Float8 `json:"lat"`
 	Lng            pgtype.Float8 `json:"lng"`
-	PlaceUrl       pgtype.Text   `json:"place_url"`
+	PrimaryImage   pgtype.Int8   `json:"primary_image"`
 	Description    pgtype.Text   `json:"description"`
 	IsPublic       pgtype.Bool   `json:"is_public"`
 }
@@ -574,7 +570,7 @@ func (q *Queries) UpdateProperty(ctx context.Context, arg UpdatePropertyParams) 
 		arg.Ward,
 		arg.Lat,
 		arg.Lng,
-		arg.PlaceUrl,
+		arg.PrimaryImage,
 		arg.Description,
 		arg.IsPublic,
 	)

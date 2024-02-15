@@ -101,21 +101,6 @@ func (mr *MockRepoMockRecorder) DeleteUnit(arg0, arg1 any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteUnit", reflect.TypeOf((*MockRepo)(nil).DeleteUnit), arg0, arg1)
 }
 
-// GetAllAmenities mocks base method.
-func (m *MockRepo) GetAllAmenities(arg0 context.Context) ([]model.UAmenity, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetAllAmenities", arg0)
-	ret0, _ := ret[0].([]model.UAmenity)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetAllAmenities indicates an expected call of GetAllAmenities.
-func (mr *MockRepoMockRecorder) GetAllAmenities(arg0 any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAllAmenities", reflect.TypeOf((*MockRepo)(nil).GetAllAmenities), arg0)
-}
-
 // GetUnitById mocks base method.
 func (m *MockRepo) GetUnitById(arg0 context.Context, arg1 uuid.UUID) (*model.UnitModel, error) {
 	m.ctrl.T.Helper()

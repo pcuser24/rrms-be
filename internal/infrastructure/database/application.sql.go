@@ -603,6 +603,63 @@ func (q *Queries) GetApplicationsByUserId(ctx context.Context, creatorID uuid.UU
 	return items, nil
 }
 
+const getApplicationsOfProperty = `-- name: GetApplicationsOfProperty :many
+SELECT id, creator_id, listing_id, property_id, unit_ids, status, created_at, updated_at, full_name, email, phone, dob, profile_image, movein_date, preferred_term, rh_address, rh_city, rh_district, rh_ward, rh_rental_duration, rh_monthly_payment, rh_reason_for_leaving, employment_status, employment_company_name, employment_position, employment_monthly_income, employment_comment, employment_proofs_of_income, identity_type, identity_number, identity_issued_date, identity_issued_by FROM applications WHERE property_id = $1
+`
+
+func (q *Queries) GetApplicationsOfProperty(ctx context.Context, propertyID uuid.UUID) ([]Application, error) {
+	rows, err := q.db.Query(ctx, getApplicationsOfProperty, propertyID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Application
+	for rows.Next() {
+		var i Application
+		if err := rows.Scan(
+			&i.ID,
+			&i.CreatorID,
+			&i.ListingID,
+			&i.PropertyID,
+			&i.UnitIds,
+			&i.Status,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.FullName,
+			&i.Email,
+			&i.Phone,
+			&i.Dob,
+			&i.ProfileImage,
+			&i.MoveinDate,
+			&i.PreferredTerm,
+			&i.RhAddress,
+			&i.RhCity,
+			&i.RhDistrict,
+			&i.RhWard,
+			&i.RhRentalDuration,
+			&i.RhMonthlyPayment,
+			&i.RhReasonForLeaving,
+			&i.EmploymentStatus,
+			&i.EmploymentCompanyName,
+			&i.EmploymentPosition,
+			&i.EmploymentMonthlyIncome,
+			&i.EmploymentComment,
+			&i.EmploymentProofsOfIncome,
+			&i.IdentityType,
+			&i.IdentityNumber,
+			&i.IdentityIssuedDate,
+			&i.IdentityIssuedBy,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getApplicationsToUser = `-- name: GetApplicationsToUser :many
 SELECT id, creator_id, listing_id, property_id, unit_ids, status, created_at, updated_at, full_name, email, phone, dob, profile_image, movein_date, preferred_term, rh_address, rh_city, rh_district, rh_ward, rh_rental_duration, rh_monthly_payment, rh_reason_for_leaving, employment_status, employment_company_name, employment_position, employment_monthly_income, employment_comment, employment_proofs_of_income, identity_type, identity_number, identity_issued_date, identity_issued_by FROM applications WHERE property_id IN (
   SELECT property_id FROM property_managers WHERE manager_id = $1

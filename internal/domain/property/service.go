@@ -6,10 +6,12 @@ import (
 	"github.com/user2410/rrms-backend/internal/domain/property/repo"
 
 	"github.com/google/uuid"
+	application_model "github.com/user2410/rrms-backend/internal/domain/application/model"
+	listing_model "github.com/user2410/rrms-backend/internal/domain/listing/model"
 	"github.com/user2410/rrms-backend/internal/domain/property/dto"
 	"github.com/user2410/rrms-backend/internal/domain/property/model"
-	unitDto "github.com/user2410/rrms-backend/internal/domain/unit/dto"
-	unitModel "github.com/user2410/rrms-backend/internal/domain/unit/model"
+	unit_dto "github.com/user2410/rrms-backend/internal/domain/unit/dto"
+	unit_model "github.com/user2410/rrms-backend/internal/domain/unit/model"
 	"github.com/user2410/rrms-backend/internal/utils"
 	"github.com/user2410/rrms-backend/internal/utils/types"
 )
@@ -20,7 +22,9 @@ type Service interface {
 	CheckManageability(id uuid.UUID, userId uuid.UUID) (bool, error)
 	GetPropertyById(id uuid.UUID) (*model.PropertyModel, error)
 	GetPropertiesByIds(ids []uuid.UUID, fields []string, userId uuid.UUID) ([]model.PropertyModel, error)
-	GetUnitsOfProperty(id uuid.UUID) ([]unitModel.UnitModel, error)
+	GetUnitsOfProperty(id uuid.UUID) ([]unit_model.UnitModel, error)
+	GetListingsOfProperty(id uuid.UUID) ([]listing_model.ListingModel, error)
+	GetApplicationsOfProperty(id uuid.UUID) ([]application_model.ApplicationModel, error)
 	GetManagedProperties(userId uuid.UUID, fields []string) ([]GetManagedPropertiesItem, error)
 	SearchListingCombination(data *dto.SearchPropertyCombinationQuery) (*dto.SearchPropertyCombinationResponse, error)
 	UpdateProperty(data *dto.UpdateProperty) error
@@ -29,8 +33,8 @@ type Service interface {
 
 // import cycle is not allowed
 type unitRepo interface {
-	GetUnitById(ctx context.Context, id uuid.UUID) (*unitModel.UnitModel, error)
-	SearchUnitCombination(ctx context.Context, query *unitDto.SearchUnitCombinationQuery) (*unitDto.SearchUnitCombinationResponse, error)
+	GetUnitById(ctx context.Context, id uuid.UUID) (*unit_model.UnitModel, error)
+	SearchUnitCombination(ctx context.Context, query *unit_dto.SearchUnitCombinationQuery) (*unit_dto.SearchUnitCombinationResponse, error)
 }
 
 type service struct {
@@ -86,11 +90,11 @@ func (s *service) GetPropertiesByIds(ids []uuid.UUID, fields []string, userId uu
 	return s.pRepo.GetPropertiesByIds(context.Background(), idsStr, fields)
 }
 
-func (s *service) GetUnitsOfProperty(id uuid.UUID) ([]unitModel.UnitModel, error) {
+func (s *service) GetUnitsOfProperty(id uuid.UUID) ([]unit_model.UnitModel, error) {
 	ids, err := s.uRepo.SearchUnitCombination(
 		context.Background(),
-		&unitDto.SearchUnitCombinationQuery{
-			SearchUnitQuery: unitDto.SearchUnitQuery{
+		&unit_dto.SearchUnitCombinationQuery{
+			SearchUnitQuery: unit_dto.SearchUnitQuery{
 				UPropertyID: types.Ptr[string](id.String()),
 			},
 		},
@@ -99,7 +103,7 @@ func (s *service) GetUnitsOfProperty(id uuid.UUID) ([]unitModel.UnitModel, error
 		return nil, err
 	}
 
-	res := make([]unitModel.UnitModel, 0, len(ids.Items))
+	res := make([]unit_model.UnitModel, 0, len(ids.Items))
 	for _, id := range ids.Items {
 		_res, err := s.uRepo.GetUnitById(context.Background(), id.UId)
 		if err != nil {
@@ -108,6 +112,14 @@ func (s *service) GetUnitsOfProperty(id uuid.UUID) ([]unitModel.UnitModel, error
 		res = append(res, *_res)
 	}
 	return res, nil
+}
+
+func (s *service) GetListingsOfProperty(id uuid.UUID) ([]listing_model.ListingModel, error) {
+	return s.pRepo.GetListingsOfProperty(context.Background(), id)
+}
+
+func (s *service) GetApplicationsOfProperty(id uuid.UUID) ([]application_model.ApplicationModel, error) {
+	return s.pRepo.GetApplicationsOfProperty(context.Background(), id)
 }
 
 func (s *service) UpdateProperty(data *dto.UpdateProperty) error {

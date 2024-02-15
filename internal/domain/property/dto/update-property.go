@@ -23,7 +23,7 @@ type UpdateProperty struct {
 	Ward           *string  `json:"ward" validate:"omitempty"`
 	Lat            *float64 `json:"lat" validate:"omitempty"`
 	Lng            *float64 `json:"lng" validate:"omitempty"`
-	PlaceUrl       *string  `json:"placeUrl" validate:"omitempty"`
+	PrimaryImage   *int64   `json:"primaryImage" validate:"omitempty"`
 	Description    *string  `json:"description" validate:"omitempty"`
 	IsPublic       *bool    `json:"isPublic" validate:"omitempty"`
 }
@@ -46,7 +46,7 @@ func (u *UpdateProperty) ToUpdatePropertyDB() database.UpdatePropertyParams {
 		Ward:           types.StrN(u.Ward),
 		Lat:            types.Float64N(u.Lat),
 		Lng:            types.Float64N(u.Lng),
-		PlaceUrl:       types.StrN(u.PlaceUrl),
+		PrimaryImage:   types.Int64N(u.PrimaryImage),
 		Description:    types.StrN(u.Description),
 		IsPublic:       types.BoolN(u.IsPublic),
 	}

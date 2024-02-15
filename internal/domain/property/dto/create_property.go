@@ -58,11 +58,11 @@ type CreateProperty struct {
 	District       string                  `json:"district" validate:"required"`
 	City           string                  `json:"city" validate:"required"`
 	Ward           *string                 `json:"ward" validate:"omitempty"`
-	PlaceUrl       string                  `json:"placeUrl" validate:"required,url"`
 	Lat            *float64                `json:"lat" validate:"omitempty"`
 	Lng            *float64                `json:"lng" validate:"omitempty"`
 	Description    *string                 `json:"description" validate:"omitempty"`
-	Type           database.PROPERTYTYPE   `json:"type" validate:"required,oneof=APARTMENT PRIVATE TOWNHOUSE SHOPHOUSE VILLA ROOM STORE OFFICE BLOCK COMPLEX"`
+	Type           database.PROPERTYTYPE   `json:"type" validate:"required,oneof=APARTMENT PRIVATE ROOM STORE OFFICE MINIAPARTMENT"`
+	PrimaryImage   string                  `json:"primaryImage" validate:"required,url"`
 	Managers       []CreatePropertyManager `json:"managers" validate:"dive"`
 	Media          []CreatePropertyMedia   `json:"media" validate:"dive"`
 	Features       []CreatePropertyFeature `json:"features" validate:"dive"`
@@ -87,8 +87,8 @@ func (c *CreateProperty) ToCreatePropertyDB() *database.CreatePropertyParams {
 		FullAddress:    c.FullAddress,
 		District:       c.District,
 		City:           c.City,
-		PlaceUrl:       c.PlaceUrl,
-		Type:           c.Type,
-		Description:    types.StrN(c.Description),
+		// PrimaryImage: omitted
+		Type:        c.Type,
+		Description: types.StrN(c.Description),
 	}
 }

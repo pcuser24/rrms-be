@@ -1,8 +1,9 @@
 package repo
 
 import (
+	"cmp"
 	"context"
-	"fmt"
+	"slices"
 	"testing"
 
 	"github.com/google/uuid"
@@ -17,7 +18,7 @@ import (
 )
 
 var (
-	propertyTypes = []string{"APARTMENT", "PRIVATE", "TOWNHOUSE", "SHOPHOUSE", "VILLA", "ROOM", "STORE", "OFFICE", "BLOCK", "COMPLEX"}
+	propertyTypes = []string{"APARTMENT", "PRIVATE", "ROOM", "STORE", "OFFICE", "MINIAPARTMENT"}
 	orientations  = []string{"se", "sw", "ne", "nw", "e", "w", "n", "s"}
 	roles         = []string{"OWNER", "MANAGER"}
 )
@@ -37,6 +38,7 @@ func PrepareRandomProperty(
 		creatorId = testingUsers[0].ID
 	}
 
+	primaryImageUrl := random.RandomURL()
 	ret := dto.CreateProperty{
 		CreatorID:      creatorId,
 		Name:           random.RandomAlphabetStr(10),
@@ -52,14 +54,14 @@ func PrepareRandomProperty(
 		District:       random.RandomDistrict(),
 		City:           random.RandomCity(),
 		Ward:           types.Ptr[string](random.RandomWard()),
-		PlaceUrl:       fmt.Sprintf("https://maps.app.goo.gl/%s", random.RandomAlphanumericStr(17)),
+		PrimaryImage:   primaryImageUrl,
 		Lat:            types.Ptr[float64](random.RandomFloat64(10, 50)),
 		Lng:            types.Ptr[float64](random.RandomFloat64(10, 50)),
 		Description:    types.Ptr[string](random.RandomAlphanumericStr(100)),
 		Type:           database.PROPERTYTYPE(propertyTypes[random.RandomInt32(0, int32(len(propertyTypes)-1))]),
 		Media: []dto.CreatePropertyMedia{
 			{
-				Url:         random.RandomURL(),
+				Url:         primaryImageUrl,
 				Type:        "IMAGE",
 				Description: types.Ptr[string](random.RandomAlphanumericStr(100)),
 			},
@@ -145,7 +147,7 @@ func sameProperties(t *testing.T, p1, p2 *model.PropertyModel) {
 	require.Equal(t, p1.District, p2.District)
 	require.Equal(t, p1.City, p2.City)
 	require.Equal(t, *p1.Ward, *p2.Ward)
-	require.Equal(t, p1.PlaceUrl, p2.PlaceUrl)
+	require.Equal(t, p1.PrimaryImage, p2.PrimaryImage)
 	require.Equal(t, *p1.Lat, *p2.Lat)
 	require.Equal(t, *p1.Lng, *p2.Lng)
 	require.Equal(t, *p1.Description, *p2.Description)
@@ -154,26 +156,30 @@ func sameProperties(t *testing.T, p1, p2 *model.PropertyModel) {
 	require.Equal(t, len(p1.Media), len(p2.Media))
 	require.Equal(t, len(p1.Features), len(p2.Features))
 	require.Equal(t, len(p1.Tags), len(p2.Tags))
-	for i := 0; i < len(p1.Managers); i++ {
-		require.Equal(t, p1.Managers[i].PropertyID, p2.ID)
-		require.Equal(t, p1.Managers[i].ManagerID, p2.Managers[i].ManagerID)
-		require.Equal(t, p1.Managers[i].Role, p2.Managers[i].Role)
+
+	require.Equal(t, len(p1.Managers), len(p2.Managers))
+	pmaCmp := func(a, b model.PropertyManagerModel) int {
+		return cmp.Compare[string](a.ManagerID.String(), b.ManagerID.String())
 	}
-	for i := 0; i < len(p1.Media); i++ {
-		require.Equal(t, p1.Media[i].PropertyID, p2.ID)
-		require.Equal(t, p1.Media[i].Url, p2.Media[i].Url)
-		require.Equal(t, p1.Media[i].Type, p2.Media[i].Type)
-		require.Equal(t, *p1.Media[i].Description, *p2.Media[i].Description)
+	slices.SortFunc(p1.Managers, pmaCmp)
+	slices.SortFunc(p2.Managers, pmaCmp)
+	require.Equal(t, p1.Managers, p2.Managers)
+
+	require.Equal(t, len(p1.Media), len(p2.Media))
+	pmCmp := func(a, b model.PropertyMediaModel) int {
+		return int(a.ID - b.ID)
 	}
-	for i := 0; i < len(p1.Features); i++ {
-		require.Equal(t, p1.Features[i].PropertyID, p2.ID)
-		require.Equal(t, p1.Features[i].FeatureID, p2.Features[i].FeatureID)
-		require.Equal(t, *p1.Features[i].Description, *p2.Features[i].Description)
+	slices.SortFunc(p1.Media, pmCmp)
+	slices.SortFunc(p2.Media, pmCmp)
+	require.Equal(t, p1.Media, p2.Media)
+
+	require.Equal(t, len(p1.Features), len(p2.Features))
+	pfCmp := func(a, b model.PropertyFeatureModel) int {
+		return cmp.Compare[int64](a.FeatureID, b.FeatureID)
 	}
-	for i := 0; i < len(p1.Tags); i++ {
-		require.Equal(t, p1.Tags[i].PropertyID, p2.ID)
-		require.Equal(t, p1.Tags[i].Tag, p2.Tags[i].Tag)
-	}
+	slices.SortFunc(p1.Features, pfCmp)
+	slices.SortFunc(p2.Features, pfCmp)
+	require.Equal(t, p1.Features, p2.Features)
 }
 
 func comparePropertyAndCreateDto(t *testing.T, p *model.PropertyModel, arg *dto.CreateProperty) {
@@ -192,7 +198,14 @@ func comparePropertyAndCreateDto(t *testing.T, p *model.PropertyModel, arg *dto.
 	require.Equal(t, arg.District, p.District)
 	require.Equal(t, arg.City, p.City)
 	require.Equal(t, *arg.Ward, *p.Ward)
-	require.Equal(t, arg.PlaceUrl, p.PlaceUrl)
+	require.Equal(t, arg.PrimaryImage, func(mediaId int64) string {
+		for _, m := range p.Media {
+			if m.ID == mediaId {
+				return m.Url
+			}
+		}
+		return ""
+	}(p.PrimaryImage))
 	require.Equal(t, *arg.Lat, *p.Lat)
 	require.Equal(t, *arg.Lng, *p.Lng)
 	require.Equal(t, *arg.Description, *p.Description)
@@ -258,7 +271,7 @@ func NewRandomPropertyModel(t *testing.T, creatorId uuid.UUID) *model.PropertyMo
 		District:       random.RandomDistrict(),
 		City:           random.RandomCity(),
 		Ward:           types.Ptr[string](random.RandomWard()),
-		PlaceUrl:       fmt.Sprintf("https://maps.app.goo.gl/%s", random.RandomAlphanumericStr(17)),
+		PrimaryImage:   1,
 		Lat:            types.Ptr[float64](random.RandomFloat64(10, 50)),
 		Lng:            types.Ptr[float64](random.RandomFloat64(10, 50)),
 		Description:    types.Ptr[string](random.RandomAlphanumericStr(100)),

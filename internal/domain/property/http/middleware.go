@@ -14,12 +14,14 @@ const (
 	PropertyIDLocalKey = "property_id"
 )
 
+// Check whether the property with given id is managed by the user of the current session
 func CheckPropertyManageability(s property.Service) fiber.Handler {
 	return func(ctx *fiber.Ctx) error {
 		puid, err := uuid.Parse(ctx.Params("id"))
 		if err != nil {
 			return ctx.SendStatus(fiber.StatusBadRequest)
 		}
+		ctx.Locals(PropertyIDLocalKey, puid)
 
 		tkPayload, ok := ctx.Locals(http.AuthorizationPayloadKey).(*token.Payload)
 		if !ok {
@@ -42,6 +44,7 @@ func CheckPropertyManageability(s property.Service) fiber.Handler {
 	}
 }
 
+// Check whether the property with given id  is visible or managed by the user of the current session
 // should be stacked on top of AuthorizedMiddleware middleware
 func CheckPropertyVisibility(service property.Service) fiber.Handler {
 	return func(ctx *fiber.Ctx) error {
