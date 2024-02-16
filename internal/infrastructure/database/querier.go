@@ -32,6 +32,7 @@ type Querier interface {
 	CreateUnit(ctx context.Context, arg CreateUnitParams) (Unit, error)
 	CreateUnitAmenity(ctx context.Context, arg CreateUnitAmenityParams) (UnitAmenity, error)
 	CreateUnitMedia(ctx context.Context, arg CreateUnitMediaParams) (UnitMedium, error)
+	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
 	DeleteApplication(ctx context.Context, id int64) error
 	DeleteListing(ctx context.Context, id uuid.UUID) error
 	DeleteProperty(ctx context.Context, id uuid.UUID) error
@@ -70,7 +71,6 @@ type Querier interface {
 	GetUnitMedia(ctx context.Context, unitID uuid.UUID) ([]UnitMedium, error)
 	GetUserByEmail(ctx context.Context, email string) (User, error)
 	GetUserById(ctx context.Context, id uuid.UUID) (User, error)
-	InsertUser(ctx context.Context, arg InsertUserParams) (User, error)
 	IsPropertyPublic(ctx context.Context, id uuid.UUID) (bool, error)
 	IsUnitPublic(ctx context.Context, id uuid.UUID) (bool, error)
 	UpdateApplicationStatus(ctx context.Context, arg UpdateApplicationStatusParams) error
@@ -79,6 +79,7 @@ type Querier interface {
 	UpdateProperty(ctx context.Context, arg UpdatePropertyParams) error
 	UpdateSessionBlockingStatus(ctx context.Context, arg UpdateSessionBlockingStatusParams) error
 	UpdateUnit(ctx context.Context, arg UpdateUnitParams) error
+	UpdateUser(ctx context.Context, arg UpdateUserParams) error
 }
 
 var _ Querier = (*Queries)(nil)

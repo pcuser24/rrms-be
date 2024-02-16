@@ -12,9 +12,19 @@ CREATE TABLE IF NOT EXISTS "User" (
   "updated_by" UUID DEFAULT NULL,
   "deleted_f" BOOL DEFAULT FALSE NOT NULL,
 
+-- User info fields
+  "first_name" VARCHAR(45) NOT NULL,
+  "last_name" VARCHAR(45) NOT NULL,
+  "phone" VARCHAR(45) DEFAULT NULL,
+  "avatar" TEXT DEFAULT NULL,
+  "address" TEXT DEFAULT NULL,
+  "city" VARCHAR(15) DEFAULT NULL,
+  "district" VARCHAR(15) DEFAULT NULL,
+  "ward" VARCHAR(15) DEFAULT NULL,
+  
   UNIQUE ("email")
 );
-COMMENT ON TABLE "User" IS 'Bang user';
+COMMENT ON TABLE "User" IS 'User info table';
 COMMENT ON COLUMN "User".deleted_f IS '1: deleted, 0: not deleted';
 
 CREATE TABLE "Account" (

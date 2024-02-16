@@ -57,6 +57,21 @@ func (mr *MockRepoMockRecorder) CreateSession(arg0, arg1 any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateSession", reflect.TypeOf((*MockRepo)(nil).CreateSession), arg0, arg1)
 }
 
+// CreateUser mocks base method.
+func (m *MockRepo) CreateUser(arg0 context.Context, arg1 *dto.RegisterUser) (*model.UserModel, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateUser", arg0, arg1)
+	ret0, _ := ret[0].(*model.UserModel)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CreateUser indicates an expected call of CreateUser.
+func (mr *MockRepoMockRecorder) CreateUser(arg0, arg1 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateUser", reflect.TypeOf((*MockRepo)(nil).CreateUser), arg0, arg1)
+}
+
 // GetSessionById mocks base method.
 func (m *MockRepo) GetSessionById(arg0 context.Context, arg1 uuid.UUID) (*model.SessionModel, error) {
 	m.ctrl.T.Helper()
@@ -102,21 +117,6 @@ func (mr *MockRepoMockRecorder) GetUserById(arg0, arg1 any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUserById", reflect.TypeOf((*MockRepo)(nil).GetUserById), arg0, arg1)
 }
 
-// InsertUser mocks base method.
-func (m *MockRepo) InsertUser(arg0 context.Context, arg1 *dto.RegisterUser) (*model.UserModel, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "InsertUser", arg0, arg1)
-	ret0, _ := ret[0].(*model.UserModel)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// InsertUser indicates an expected call of InsertUser.
-func (mr *MockRepoMockRecorder) InsertUser(arg0, arg1 any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "InsertUser", reflect.TypeOf((*MockRepo)(nil).InsertUser), arg0, arg1)
-}
-
 // UpdateSessionStatus mocks base method.
 func (m *MockRepo) UpdateSessionStatus(arg0 context.Context, arg1 uuid.UUID, arg2 bool) error {
 	m.ctrl.T.Helper()
@@ -129,4 +129,18 @@ func (m *MockRepo) UpdateSessionStatus(arg0 context.Context, arg1 uuid.UUID, arg
 func (mr *MockRepoMockRecorder) UpdateSessionStatus(arg0, arg1, arg2 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateSessionStatus", reflect.TypeOf((*MockRepo)(nil).UpdateSessionStatus), arg0, arg1, arg2)
+}
+
+// UpdateUser mocks base method.
+func (m *MockRepo) UpdateUser(arg0 context.Context, arg1 uuid.UUID, arg2 *dto.UpdateUser) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateUser", arg0, arg1, arg2)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpdateUser indicates an expected call of UpdateUser.
+func (mr *MockRepoMockRecorder) UpdateUser(arg0, arg1, arg2 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateUser", reflect.TypeOf((*MockRepo)(nil).UpdateUser), arg0, arg1, arg2)
 }

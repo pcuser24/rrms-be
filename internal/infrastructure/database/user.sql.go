@@ -53,6 +53,61 @@ func (q *Queries) CreateSession(ctx context.Context, arg CreateSessionParams) (S
 	return i, err
 }
 
+const createUser = `-- name: CreateUser :one
+INSERT INTO "User" (
+  email, 
+  password, 
+  created_at, 
+  updated_at,
+  first_name,
+  last_name
+) VALUES (
+  $1, 
+  $2, 
+  NOW(), 
+  NOW(),
+  $3,
+  $4
+) RETURNING id, email, password, group_id, created_at, updated_at, created_by, updated_by, deleted_f, first_name, last_name, phone, avatar, address, city, district, ward
+`
+
+type CreateUserParams struct {
+	Email     string      `json:"email"`
+	Password  pgtype.Text `json:"password"`
+	FirstName string      `json:"first_name"`
+	LastName  string      `json:"last_name"`
+}
+
+func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, error) {
+	row := q.db.QueryRow(ctx, createUser,
+		arg.Email,
+		arg.Password,
+		arg.FirstName,
+		arg.LastName,
+	)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.Email,
+		&i.Password,
+		&i.GroupID,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.CreatedBy,
+		&i.UpdatedBy,
+		&i.DeletedF,
+		&i.FirstName,
+		&i.LastName,
+		&i.Phone,
+		&i.Avatar,
+		&i.Address,
+		&i.City,
+		&i.District,
+		&i.Ward,
+	)
+	return i, err
+}
+
 const getSessionById = `-- name: GetSessionById :one
 SELECT id, "sessionToken", "userId", expires, user_agent, client_ip, is_blocked, created_at FROM "Session" WHERE id = $1 LIMIT 1
 `
@@ -74,7 +129,7 @@ func (q *Queries) GetSessionById(ctx context.Context, id uuid.UUID) (Session, er
 }
 
 const getUserByEmail = `-- name: GetUserByEmail :one
-SELECT id, email, password, group_id, created_at, updated_at, created_by, updated_by, deleted_f FROM "User" WHERE email = $1 LIMIT 1
+SELECT id, email, password, group_id, created_at, updated_at, created_by, updated_by, deleted_f, first_name, last_name, phone, avatar, address, city, district, ward FROM "User" WHERE email = $1 LIMIT 1
 `
 
 func (q *Queries) GetUserByEmail(ctx context.Context, email string) (User, error) {
@@ -90,12 +145,20 @@ func (q *Queries) GetUserByEmail(ctx context.Context, email string) (User, error
 		&i.CreatedBy,
 		&i.UpdatedBy,
 		&i.DeletedF,
+		&i.FirstName,
+		&i.LastName,
+		&i.Phone,
+		&i.Avatar,
+		&i.Address,
+		&i.City,
+		&i.District,
+		&i.Ward,
 	)
 	return i, err
 }
 
 const getUserById = `-- name: GetUserById :one
-SELECT id, email, password, group_id, created_at, updated_at, created_by, updated_by, deleted_f FROM "User" WHERE id = $1 LIMIT 1
+SELECT id, email, password, group_id, created_at, updated_at, created_by, updated_by, deleted_f, first_name, last_name, phone, avatar, address, city, district, ward FROM "User" WHERE id = $1 LIMIT 1
 `
 
 func (q *Queries) GetUserById(ctx context.Context, id uuid.UUID) (User, error) {
@@ -111,34 +174,14 @@ func (q *Queries) GetUserById(ctx context.Context, id uuid.UUID) (User, error) {
 		&i.CreatedBy,
 		&i.UpdatedBy,
 		&i.DeletedF,
-	)
-	return i, err
-}
-
-const insertUser = `-- name: InsertUser :one
-INSERT INTO "User" (email, password, created_at, updated_at)
-VALUES ($1, $2, NOW(), NOW())
-RETURNING id, email, password, group_id, created_at, updated_at, created_by, updated_by, deleted_f
-`
-
-type InsertUserParams struct {
-	Email    string      `json:"email"`
-	Password pgtype.Text `json:"password"`
-}
-
-func (q *Queries) InsertUser(ctx context.Context, arg InsertUserParams) (User, error) {
-	row := q.db.QueryRow(ctx, insertUser, arg.Email, arg.Password)
-	var i User
-	err := row.Scan(
-		&i.ID,
-		&i.Email,
-		&i.Password,
-		&i.GroupID,
-		&i.CreatedAt,
-		&i.UpdatedAt,
-		&i.CreatedBy,
-		&i.UpdatedBy,
-		&i.DeletedF,
+		&i.FirstName,
+		&i.LastName,
+		&i.Phone,
+		&i.Avatar,
+		&i.Address,
+		&i.City,
+		&i.District,
+		&i.Ward,
 	)
 	return i, err
 }
@@ -154,5 +197,55 @@ type UpdateSessionBlockingStatusParams struct {
 
 func (q *Queries) UpdateSessionBlockingStatus(ctx context.Context, arg UpdateSessionBlockingStatusParams) error {
 	_, err := q.db.Exec(ctx, updateSessionBlockingStatus, arg.IsBlocked, arg.ID)
+	return err
+}
+
+const updateUser = `-- name: UpdateUser :exec
+UPDATE "User" SET 
+  email = coalesce($3, email), 
+  password = coalesce($4, password), 
+  first_name = coalesce($5, first_name),
+  last_name = coalesce($6, last_name),
+  phone = coalesce($7, phone),
+  avatar = coalesce($8, avatar),
+  address = coalesce($9, address),
+  city = coalesce($10, city),
+  district = coalesce($11, district),
+  ward = coalesce($12, ward),
+  updated_at = NOW(),
+  updated_by = $1
+WHERE id = $2
+`
+
+type UpdateUserParams struct {
+	UpdatedBy pgtype.UUID `json:"updated_by"`
+	ID        uuid.UUID   `json:"id"`
+	Email     pgtype.Text `json:"email"`
+	Password  pgtype.Text `json:"password"`
+	FirstName pgtype.Text `json:"first_name"`
+	LastName  pgtype.Text `json:"last_name"`
+	Phone     pgtype.Text `json:"phone"`
+	Avatar    pgtype.Text `json:"avatar"`
+	Address   pgtype.Text `json:"address"`
+	City      pgtype.Text `json:"city"`
+	District  pgtype.Text `json:"district"`
+	Ward      pgtype.Text `json:"ward"`
+}
+
+func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) error {
+	_, err := q.db.Exec(ctx, updateUser,
+		arg.UpdatedBy,
+		arg.ID,
+		arg.Email,
+		arg.Password,
+		arg.FirstName,
+		arg.LastName,
+		arg.Phone,
+		arg.Avatar,
+		arg.Address,
+		arg.City,
+		arg.District,
+		arg.Ward,
+	)
 	return err
 }

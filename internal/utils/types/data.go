@@ -201,12 +201,12 @@ func UUIDStrN(s uuid.UUID) pgtype.Text {
 	}
 }
 
-func UUIDN(s *uuid.UUID) uuid.NullUUID {
-	nu := uuid.NullUUID{
-		Valid: s != nil,
+func UUIDN(s uuid.UUID) pgtype.UUID {
+	nu := pgtype.UUID{
+		Valid: s != uuid.Nil,
 	}
-	if s != nil {
-		nu.UUID = *s
+	if s != uuid.Nil {
+		nu.Bytes = s
 	}
 	return nu
 }

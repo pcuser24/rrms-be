@@ -21,9 +21,10 @@ type Service interface {
 	Register(data *dto.RegisterUser) (*model.UserModel, error)
 	Login(data *dto.LoginUser, sessionData *dto.CreateSession) (*dto.LoginUserRes, error)
 	GetUserByEmail(email string) (*model.UserModel, error)
-	GetUserById(id uuid.UUID) (*model.UserModel, error)
+	GetUserById(id uuid.UUID) (*dto.UserResponse, error)
 	RefreshAccessToken(accessToken, refreshToken string) (*dto.LoginUserRes, error)
 	Logout(id uuid.UUID) error
+	UpdateUser(currentUserId, targetUserId uuid.UUID, data *dto.UpdateUser) error
 }
 
 type service struct {
@@ -57,7 +58,7 @@ func (u *service) Register(data *dto.RegisterUser) (*model.UserModel, error) {
 	data.Password = hash
 
 	// Create a new entry in User table
-	user, err := u.repo.InsertUser(context.Background(), data)
+	user, err := u.repo.CreateUser(context.Background(), data)
 	if err != nil {
 		return nil, err
 	}
@@ -154,14 +155,18 @@ func (u *service) GetUserByEmail(email string) (*model.UserModel, error) {
 	return u.repo.GetUserByEmail(context.Background(), email)
 }
 
-func (u *service) GetUserById(id uuid.UUID) (*model.UserModel, error) {
-	return u.repo.GetUserById(context.Background(), id)
+func (u *service) GetUserById(id uuid.UUID) (*dto.UserResponse, error) {
+	res, err := u.repo.GetUserById(context.Background(), id)
+	if err != nil {
+		return nil, err
+	}
+	return res.ToUserResponse(), nil
 }
 
 var ErrInvalidSession = fmt.Errorf("invalid session")
 
 func (u *service) RefreshAccessToken(accessToken, refreshToken string) (*dto.LoginUserRes, error) {
-	accessPayload, err := u.tokenMaker.VerifyToken(accessToken)
+	accessPayload, _ := u.tokenMaker.VerifyToken(accessToken)
 	if accessPayload == nil { // Invalid access token
 		return nil, token.ErrInvalidToken
 	}
@@ -215,4 +220,26 @@ func (u *service) RefreshAccessToken(accessToken, refreshToken string) (*dto.Log
 
 func (u *service) Logout(id uuid.UUID) error {
 	return u.repo.UpdateSessionStatus(context.Background(), id, true)
+}
+
+func (u *service) UpdateUser(currentUserId, targetUserId uuid.UUID, data *dto.UpdateUser) error {
+	// Check if the user is updating his own information
+	// TODO: Managed user info can be modified by managing user
+	// if currentUserId != targetUserId {
+	// 	return fmt.Errorf("unauthorized")
+	// }
+
+	// Preprocess data
+	data.UpdatedBy = currentUserId
+
+	if data.Password != nil {
+		hash, err := utils.HashPassword(*data.Password)
+		if err != nil {
+			return err
+		}
+		data.Password = &hash
+	}
+
+	// Update user
+	return u.repo.UpdateUser(context.Background(), targetUserId, data)
 }

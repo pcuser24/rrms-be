@@ -1,9 +1,11 @@
-package cmd
+package migrate
 
 import (
 	"fmt"
 	"log"
 	"os"
+
+	"github.com/user2410/rrms-backend/cmd/version"
 
 	"github.com/go-playground/validator/v10"
 	"github.com/spf13/cobra"
@@ -24,9 +26,9 @@ func NewMigrateCommand() *migrateCommand {
 	c := &migrateCommand{}
 	c.Command = &cobra.Command{
 		Use:   "migrate",
-		Short: fmt.Sprintf("Database migration manager for %s", ReadableName),
+		Short: fmt.Sprintf("Database migration manager for %s", version.ReadableName),
 		Long: fmt.Sprintf(`%s
-			Manage the database migrations for %s from the command line`, Art(), ReadableName),
+			Manage the database migrations for %s from the command line`, version.Art(), version.ReadableName),
 		Run: c.run,
 	}
 	c.Command.AddCommand(

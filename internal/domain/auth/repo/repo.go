@@ -11,11 +11,12 @@ import (
 )
 
 type Repo interface {
-	InsertUser(ctx context.Context, data *dto.RegisterUser) (*model.UserModel, error)
+	CreateUser(ctx context.Context, data *dto.RegisterUser) (*model.UserModel, error)
 	CreateSession(ctx context.Context, data *dto.CreateSession) (*model.SessionModel, error)
 	GetUserByEmail(ctx context.Context, email string) (*model.UserModel, error)
 	GetUserById(ctx context.Context, id uuid.UUID) (*model.UserModel, error)
 	GetSessionById(ctx context.Context, id uuid.UUID) (*model.SessionModel, error)
+	UpdateUser(ctx context.Context, id uuid.UUID, data *dto.UpdateUser) error
 	UpdateSessionStatus(ctx context.Context, id uuid.UUID, isBlocked bool) error
 }
 
@@ -29,10 +30,12 @@ func NewRepo(d db.DAO) Repo {
 	}
 }
 
-func (u *authRepo) InsertUser(ctx context.Context, data *dto.RegisterUser) (*model.UserModel, error) {
-	res, err := u.dao.InsertUser(ctx, db.InsertUserParams{
-		Email:    data.Email,
-		Password: types.StrN(&data.Password),
+func (u *authRepo) CreateUser(ctx context.Context, data *dto.RegisterUser) (*model.UserModel, error) {
+	res, err := u.dao.CreateUser(ctx, db.CreateUserParams{
+		Email:     data.Email,
+		Password:  types.StrN(&data.Password),
+		FirstName: data.FirstName,
+		LastName:  data.LastName,
 	})
 	if err != nil {
 		return nil, err
@@ -80,5 +83,22 @@ func (u *authRepo) UpdateSessionStatus(ctx context.Context, id uuid.UUID, isBloc
 	return u.dao.UpdateSessionBlockingStatus(ctx, db.UpdateSessionBlockingStatusParams{
 		ID:        id,
 		IsBlocked: isBlocked,
+	})
+}
+
+func (u *authRepo) UpdateUser(ctx context.Context, id uuid.UUID, data *dto.UpdateUser) error {
+	return u.dao.UpdateUser(ctx, db.UpdateUserParams{
+		ID:        id,
+		UpdatedBy: types.UUIDN(data.UpdatedBy),
+		Email:     types.StrN(data.Email),
+		Password:  types.StrN(data.Password),
+		FirstName: types.StrN(data.FirstName),
+		LastName:  types.StrN(data.LastName),
+		Phone:     types.StrN(data.Phone),
+		Avatar:    types.StrN(data.Avatar),
+		Address:   types.StrN(data.Address),
+		City:      types.StrN(data.City),
+		District:  types.StrN(data.District),
+		Ward:      types.StrN(data.Ward),
 	})
 }

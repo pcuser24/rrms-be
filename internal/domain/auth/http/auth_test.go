@@ -28,6 +28,8 @@ import (
 func TestRegister(t *testing.T) {
 	randomEmail := random.RandomEmail()
 	randomPassword := random.RandomAlphanumericStr(10)
+	randomFirstName := random.RandomAlphabetStr(10)
+	randomLastName := random.RandomAlphabetStr(10)
 	hashedPassword, err := utils.HashPassword(randomPassword)
 	require.NoError(t, err)
 
@@ -40,17 +42,21 @@ func TestRegister(t *testing.T) {
 		{
 			name: "OK",
 			body: fiber.Map{
-				"email":    randomEmail,
-				"password": randomPassword,
+				"email":     randomEmail,
+				"password":  randomPassword,
+				"firstName": randomFirstName,
+				"lastName":  randomLastName,
 			},
 			buildStubs: func(repo *repo.MockRepo) {
 				repo.EXPECT().
-					InsertUser(gomock.Any(), gomock.Any()).
+					CreateUser(gomock.Any(), gomock.Any()).
 					Times(1).
 					Return(&model.UserModel{
 						ID:        uuid.MustParse("d2099b7d-c72f-4c11-aa64-630b836d750f"),
 						Email:     randomEmail,
 						Password:  &hashedPassword,
+						FirstName: randomFirstName,
+						LastName:  randomLastName,
 						CreatedAt: time.Now(),
 					}, nil)
 			},
@@ -66,6 +72,8 @@ func TestRegister(t *testing.T) {
 
 				require.NotZero(t, user.ID)
 				require.Equal(t, randomEmail, user.Email)
+				require.Equal(t, randomFirstName, user.FirstName)
+				require.Equal(t, randomLastName, user.LastName)
 				require.Nil(t, user.Password)
 				require.WithinDuration(t, user.CreatedAt, time.Now(), time.Second)
 			},
@@ -73,11 +81,12 @@ func TestRegister(t *testing.T) {
 		{
 			name: "BadRequest/MissingField",
 			body: fiber.Map{
-				"email": randomEmail,
+				"email":    randomEmail,
+				"password": randomPassword,
 			},
 			buildStubs: func(repo *repo.MockRepo) {
 				repo.EXPECT().
-					InsertUser(gomock.Any(), gomock.Any()).
+					CreateUser(gomock.Any(), gomock.Any()).
 					Times(0)
 			},
 			checkResponse: func(t *testing.T, res *http.Response) {
@@ -93,7 +102,7 @@ func TestRegister(t *testing.T) {
 			},
 			buildStubs: func(repo *repo.MockRepo) {
 				repo.EXPECT().
-					InsertUser(gomock.Any(), gomock.Any()).
+					CreateUser(gomock.Any(), gomock.Any()).
 					Times(0)
 			},
 			checkResponse: func(t *testing.T, res *http.Response) {
@@ -109,7 +118,7 @@ func TestRegister(t *testing.T) {
 			},
 			buildStubs: func(repo *repo.MockRepo) {
 				repo.EXPECT().
-					InsertUser(gomock.Any(), gomock.Any()).
+					CreateUser(gomock.Any(), gomock.Any()).
 					Times(0)
 			},
 			checkResponse: func(t *testing.T, res *http.Response) {
@@ -403,25 +412,7 @@ func TestLogin(t *testing.T) {
 }
 
 func TestRefreshAccessToken(t *testing.T) {
-	// randomPassword := random.RandomAlphanumericStr(10)
-	// hashedPassword, err := utils.HashPassword(randomPassword)
-	// require.NoError(t, err)
-
-	// user := &model.UserModel{
-	// 	ID:        uuid.MustParse("d2099b7d-c72f-4c11-aa64-630b836d750f"),
-	// 	Email:     random.RandomEmail(),
-	// 	Password:  &hashedPassword,
-	// 	GroupID:   uuid.Nil,
-	// 	CreatedAt: time.Now(),
-	// 	UpdatedAt: time.Now(),
-	// }
-
 	userId := uuid.MustParse("a2712956-2cbd-4c75-a57f-9d1d33a7fdcc")
-
-	// accessToken, accessPayload, err := tokenMaker.CreateToken(userId, time.Minute, token.CreateTokenOptions{
-	// 	TokenType: token.AccessToken,
-	// 	TokenID:   uuid.MustParse("12c7ab40-26f7-4c77-859d-b93707de7430"),
-	// })
 
 	testcases := []struct {
 		name          string
@@ -517,6 +508,150 @@ func TestRefreshAccessToken(t *testing.T) {
 			req := httptest.NewRequest(http.MethodPut, "/api/auth/credential/refresh", bytes.NewReader(data))
 			req.Header.Set("Content-Type", "application/json")
 
+			res, err := srv.router.GetFibApp().Test(req)
+			assert.NoError(t, err)
+
+			tc.checkResponse(t, res)
+		})
+	}
+}
+
+func TestUpdateUser(t *testing.T) {
+	user := repo.NewRandomUserModel(t)
+	randomPassword := random.RandomAlphanumericStr(15)
+	arg := dto.UpdateUser{
+		UpdatedBy: user.ID,
+		Email:     types.Ptr[string](random.RandomEmail()),
+		FirstName: types.Ptr[string](random.RandomAlphabetStr(15)),
+		LastName:  types.Ptr[string](random.RandomAlphabetStr(15)),
+		Phone:     types.Ptr[string](random.RandomNumericStr(10)),
+		Address:   types.Ptr[string](random.RandomAlphabetStr(20)),
+		City:      types.Ptr[string](random.RandomAlphabetStr(10)),
+		District:  types.Ptr[string](random.RandomAlphabetStr(10)),
+		Ward:      types.Ptr[string](random.RandomAlphabetStr(10)),
+	}
+
+	testcases := []struct {
+		name          string
+		body          fiber.Map
+		setupAuth     func(t *testing.T, req *http.Request, tokenMaker token.Maker)
+		buildStubs    func(repo *repo.MockRepo)
+		checkResponse func(t *testing.T, res *http.Response)
+	}{
+		{
+			name: "OK",
+			body: fiber.Map{
+				"email":      *arg.Email,
+				"first_name": *arg.FirstName,
+				"last_name":  *arg.LastName,
+				"phone":      *arg.Phone,
+				"address":    *arg.Address,
+				"city":       *arg.City,
+				"district":   *arg.District,
+				"ward":       *arg.Ward,
+			},
+			setupAuth: func(t *testing.T, req *http.Request, tokenMaker token.Maker) {
+				AddAuthorization(t, req,
+					tokenMaker, AuthorizationTypeBearer,
+					user.ID, time.Minute, token.CreateTokenOptions{TokenType: token.AccessToken})
+			},
+			buildStubs: func(repo *repo.MockRepo) {
+				repo.EXPECT().
+					UpdateUser(gomock.Any(), gomock.Eq(user.ID), gomock.Eq(&arg)). // hashedPassword doesn't match
+					Times(1).
+					Return(nil)
+			},
+			checkResponse: func(t *testing.T, res *http.Response) {
+				require.NotEmpty(t, res)
+				require.Equal(t, http.StatusOK, res.StatusCode)
+			},
+		},
+		{
+			name: "OK/WithPassword",
+			body: fiber.Map{
+				"email":      *arg.Email,
+				"password":   randomPassword,
+				"first_name": *arg.FirstName,
+				"last_name":  *arg.LastName,
+				"phone":      *arg.Phone,
+				"address":    *arg.Address,
+				"city":       *arg.City,
+				"district":   *arg.District,
+				"ward":       *arg.Ward,
+			},
+			setupAuth: func(t *testing.T, req *http.Request, tokenMaker token.Maker) {
+				AddAuthorization(t, req,
+					tokenMaker, AuthorizationTypeBearer,
+					user.ID, time.Minute, token.CreateTokenOptions{TokenType: token.AccessToken})
+			},
+			buildStubs: func(repo *repo.MockRepo) {
+				repo.EXPECT().
+					UpdateUser(gomock.Any(), gomock.Eq(user.ID), gomock.Any()). // hashedPassword doesn't match
+					Times(1).
+					Return(nil)
+			},
+			checkResponse: func(t *testing.T, res *http.Response) {
+				require.NotEmpty(t, res)
+				require.Equal(t, http.StatusOK, res.StatusCode)
+			},
+		},
+		{
+			name: "BadRequest/InvalidFieldValue",
+			body: fiber.Map{
+				"email": "invalid-email",
+			},
+			setupAuth: func(t *testing.T, req *http.Request, tokenMaker token.Maker) {
+				AddAuthorization(t, req,
+					tokenMaker, AuthorizationTypeBearer,
+					user.ID, time.Minute, token.CreateTokenOptions{TokenType: token.AccessToken})
+			},
+			buildStubs: func(repo *repo.MockRepo) {
+				repo.EXPECT().
+					UpdateUser(gomock.Any(), gomock.Any(), gomock.Any()).
+					Times(0)
+			},
+			checkResponse: func(t *testing.T, res *http.Response) {
+				require.NotEmpty(t, res)
+				require.Equal(t, http.StatusBadRequest, res.StatusCode)
+			},
+		},
+		{
+			name:      "Unauthorized",
+			body:      fiber.Map{},
+			setupAuth: func(t *testing.T, req *http.Request, tokenMaker token.Maker) {},
+			buildStubs: func(repo *repo.MockRepo) {
+				repo.EXPECT().
+					UpdateUser(gomock.Any(), gomock.Any(), gomock.Any()).
+					Times(0)
+			},
+			checkResponse: func(t *testing.T, res *http.Response) {
+				require.NotEmpty(t, res)
+				require.Equal(t, http.StatusUnauthorized, res.StatusCode)
+			},
+		},
+	}
+
+	for i := range testcases {
+		tc := &testcases[i]
+
+		t.Run(tc.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			repo := repo.NewMockRepo(ctrl)
+			tc.buildStubs(repo)
+
+			a := asynctask.NewMockTaskDistributor(ctrl)
+
+			srv := newTestServer(t, repo, a)
+
+			data, err := json.Marshal(tc.body)
+			require.NoError(t, err)
+
+			req := httptest.NewRequest(http.MethodPatch, "/api/auth/credential/update", bytes.NewReader(data))
+			req.Header.Set("Content-Type", "application/json")
+
+			tc.setupAuth(t, req, srv.tokenMaker)
 			res, err := srv.router.GetFibApp().Test(req)
 			assert.NoError(t, err)
 

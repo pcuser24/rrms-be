@@ -36,7 +36,9 @@ func (a *adapter) RegisterServer(router *fiber.Router, tokenMaker token.Maker) {
 	credentialGroup := authRoute.Group("/credential")
 	credentialGroup.Post("/register", a.credentialRegister())
 	credentialGroup.Post("/login", GetAuthorizationMiddleware(tokenMaker), a.credentialLogin())
+	credentialGroup.Get("/me", AuthorizedMiddleware(tokenMaker), a.credentialGetCurrentUser())
 	credentialGroup.Put("/refresh", a.credentialRefresh())
+	credentialGroup.Patch("/update", AuthorizedMiddleware(tokenMaker), a.credentialUpdate())
 	credentialGroup.Delete("/logout", AuthorizedMiddleware(tokenMaker), a.credentialLogout())
 
 	bffGroup := authRoute.Group("/bff")
@@ -62,7 +64,7 @@ func (a *adapter) credentialRegister() fiber.Handler {
 	return func(ctx *fiber.Ctx) error {
 		var payload dto.RegisterUser
 		if err := ctx.BodyParser(&payload); err != nil {
-			return ctx.SendStatus(fiber.StatusBadRequest)
+			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": err.Error()})
 		}
 		if errs := validation.ValidateStruct(nil, payload); len(errs) > 0 {
 			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": validation.GetValidationError(errs)})
@@ -119,6 +121,23 @@ func (a *adapter) credentialLogin() fiber.Handler {
 	}
 }
 
+func (a *adapter) credentialGetCurrentUser() fiber.Handler {
+	return func(ctx *fiber.Ctx) error {
+		tokenPayload := ctx.Locals(AuthorizationPayloadKey).(*token.Payload)
+
+		user, err := a.service.GetUserById(tokenPayload.UserID)
+		if err != nil {
+			if errors.Is(err, database.ErrRecordNotFound) {
+				return ctx.Status(http.StatusNotFound).JSON(fiber.Map{"message": "user not found"})
+			}
+			return ctx.Status(http.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
+		}
+
+		return ctx.Status(fiber.StatusOK).JSON(user)
+	}
+
+}
+
 func (a *adapter) credentialRefresh() fiber.Handler {
 	return func(ctx *fiber.Ctx) error {
 		var payload dto.RefreshToken
@@ -142,6 +161,27 @@ func (a *adapter) credentialRefresh() fiber.Handler {
 			"accessToken": res.AccessToken,
 			"accessExp":   res.AccessExp,
 		})
+	}
+}
+
+func (a *adapter) credentialUpdate() fiber.Handler {
+	return func(ctx *fiber.Ctx) error {
+		tokenPayload := ctx.Locals(AuthorizationPayloadKey).(*token.Payload)
+
+		var payload dto.UpdateUser
+		if err := ctx.BodyParser(&payload); err != nil {
+			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": err.Error()})
+		}
+		if errs := validation.ValidateStruct(nil, payload); len(errs) > 0 {
+			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": validation.GetValidationError(errs)})
+		}
+
+		err := a.service.UpdateUser(tokenPayload.UserID, tokenPayload.UserID, &payload)
+		if err != nil {
+			return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
+		}
+
+		return ctx.SendStatus(fiber.StatusOK)
 	}
 }
 

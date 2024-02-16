@@ -1,4 +1,4 @@
-package cmd
+package server
 
 import (
 	"fmt"
@@ -9,25 +9,10 @@ import (
 	"syscall"
 	"time"
 
-	application_asynctask "github.com/user2410/rrms-backend/internal/domain/application/asynctask"
-	auth_asynctask "github.com/user2410/rrms-backend/internal/domain/auth/asynctask"
-
-	application_repo "github.com/user2410/rrms-backend/internal/domain/application/repo"
-	auth_repo "github.com/user2410/rrms-backend/internal/domain/auth/repo"
-	listing_repo "github.com/user2410/rrms-backend/internal/domain/listing/repo"
-	property_repo "github.com/user2410/rrms-backend/internal/domain/property/repo"
-	unit_repo "github.com/user2410/rrms-backend/internal/domain/unit/repo"
-
-	auth_http "github.com/user2410/rrms-backend/internal/domain/auth/http"
-	property_http "github.com/user2410/rrms-backend/internal/domain/property/http"
-	unit_http "github.com/user2410/rrms-backend/internal/domain/unit/http"
-
-	"github.com/go-playground/validator/v10"
-	"github.com/gofiber/fiber/v2"
-	"github.com/gofiber/fiber/v2/middleware/cors"
-	"github.com/hibiken/asynq"
+	"github.com/go-playground/validator"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"github.com/user2410/rrms-backend/cmd/version"
 	"github.com/user2410/rrms-backend/internal/domain/application"
 	"github.com/user2410/rrms-backend/internal/domain/auth"
 	"github.com/user2410/rrms-backend/internal/domain/listing"
@@ -43,7 +28,7 @@ import (
 	"github.com/user2410/rrms-backend/internal/utils/token"
 )
 
-type ServerConfig struct {
+type serverConfig struct {
 	DatabaseURL string `mapstructure:"DB_URL" validate:"required,uri"`
 
 	AllowOrigins string `mapstructure:"ALLOW_ORIGINS" validate:"required"`
@@ -80,7 +65,7 @@ type serverCommand struct {
 	*cobra.Command
 	tokenMaker           token.Maker
 	emailSender          email.EmailSender
-	config               *ServerConfig
+	config               *serverConfig
 	dao                  database.DAO
 	internalServices     internalServices
 	httpServer           http.Server
@@ -92,18 +77,17 @@ func NewServerCommand() *serverCommand {
 	c := &serverCommand{}
 	c.Command = &cobra.Command{
 		Use:   "serve",
-		Short: fmt.Sprintf("Http serve for %s", ReadableName),
+		Short: fmt.Sprintf("Http serve for %s", version.ReadableName),
 		Long: fmt.Sprintf(`%s
-Manage the APIs for %s from the command line`, Art(), ReadableName),
+Manage the APIs for %s from the command line`, version.Art(), version.ReadableName),
 		Run: c.run,
 	}
 	c.config = newServerConfig(c.Command)
 	return c
 }
 
-func newServerConfig(cmd *cobra.Command) *ServerConfig {
-	//TODO parse env vars or flags
-	var conf ServerConfig
+func newServerConfig(cmd *cobra.Command) *serverConfig {
+	var conf serverConfig
 	viper.AddConfigPath(".")
 	viper.SetConfigName("app")
 	viper.SetConfigType("env")
@@ -211,103 +195,4 @@ func (c *serverCommand) setup(cmd *cobra.Command, args []string) {
 
 	// setup http server
 	c.setupHttpServer()
-}
-
-func (c *serverCommand) setupInternalServices(
-	dao database.DAO,
-	s3Client *s3.S3Client,
-) {
-	c.asyncTaskDistributor = asynctask.NewRedisTaskDistributor(asynq.RedisClientOpt{
-		Addr: c.config.AsynqRedisAddress,
-	})
-
-	authRepo := auth_repo.NewRepo(dao)
-	authTaskDistributor := auth_asynctask.NewTaskDistributor(c.asyncTaskDistributor)
-	c.internalServices.AuthService = auth.NewService(
-		authRepo,
-		c.tokenMaker, c.config.AccessTokenTTL, c.config.RefreshTokenTTL,
-		authTaskDistributor,
-	)
-	propertyRepo := property_repo.NewRepo(dao)
-	unitRepo := unit_repo.NewRepo(dao)
-	listingRepo := listing_repo.NewRepo(dao)
-	rentalRepo := rental.NewRepo(dao)
-	applicationRepo := application_repo.NewRepo(dao)
-
-	s := storage.NewStorage(s3Client, c.config.AWSS3ImageBucket)
-
-	c.internalServices.PropertyService = property.NewService(propertyRepo, unitRepo)
-	c.internalServices.UnitService = unit.NewService(unitRepo)
-	c.internalServices.ListingService = listing.NewService(listingRepo)
-	c.internalServices.RentalService = rental.NewService(rentalRepo)
-	applicationTaskDistributor := application_asynctask.NewTaskDistributor(c.asyncTaskDistributor)
-	c.internalServices.ApplicationService = application.NewService(
-		applicationRepo,
-		applicationTaskDistributor,
-	)
-	c.internalServices.StorageService = storage.NewService(s)
-}
-
-func (c *serverCommand) setupAsyncTaskProcessor(
-	mailer email.EmailSender,
-) {
-	c.asyncTaskProcessor = asynctask.NewRedisTaskProcessor(asynq.RedisClientOpt{
-		Addr: c.config.AsynqRedisAddress,
-	})
-
-	auth_asynctask.NewTaskProcessor(c.asyncTaskProcessor, mailer).RegisterProcessor()
-	application_asynctask.NewTaskProcessor(c.asyncTaskProcessor, mailer).RegisterProcessor()
-}
-
-func (c *serverCommand) setupHttpServer() {
-	c.httpServer = http.NewServer(
-		fiber.Config{
-			ReadTimeout:  1 * time.Second,
-			WriteTimeout: 1 * time.Second,
-		},
-		cors.Config{
-			AllowOrigins: c.config.AllowOrigins,
-			AllowHeaders: "Origin, Content-Type, Accept, Authorization",
-		},
-	)
-	apiRoute := c.httpServer.GetApiRoute()
-
-	auth_http.
-		NewAdapter(c.internalServices.AuthService).
-		RegisterServer(apiRoute, c.tokenMaker)
-	property_http.
-		NewAdapter(c.internalServices.PropertyService).
-		RegisterServer(apiRoute, c.tokenMaker)
-	unit_http.NewAdapter(c.internalServices.UnitService, c.internalServices.PropertyService).
-		RegisterServer(apiRoute, c.tokenMaker)
-	listing.
-		NewAdapter(c.internalServices.ListingService, c.internalServices.PropertyService, c.internalServices.UnitService).
-		RegisterServer(apiRoute, c.tokenMaker)
-	rental.
-		NewAdapter(c.internalServices.RentalService).
-		RegisterServer(apiRoute)
-	application.
-		NewAdapter(c.internalServices.ApplicationService).
-		RegisterServer(apiRoute, c.tokenMaker)
-	storage.
-		NewAdapter(c.internalServices.StorageService).
-		RegisterServer(apiRoute, c.tokenMaker)
-}
-
-/* -------------------------------------------------------------------------- */
-/*                        Run components of the server                        */
-/* -------------------------------------------------------------------------- */
-
-func (c *serverCommand) runAsyncTaskProcessor() {
-	log.Println("Starting async task processor...")
-	if err := c.asyncTaskProcessor.Start(); err != nil {
-		log.Fatal("Failed to start task processor:", err)
-	}
-}
-
-func (c *serverCommand) runHttpServer() {
-	log.Println("Starting HTTP server...")
-	if err := c.httpServer.Start(8000); err != nil {
-		log.Fatal("Failed to start HTTP server:", err)
-	}
 }

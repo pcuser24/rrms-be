@@ -424,7 +424,7 @@ type UnitMedium struct {
 	Description pgtype.Text `json:"description"`
 }
 
-// Bang user
+// User info table
 type User struct {
 	ID        uuid.UUID   `json:"id"`
 	Email     string      `json:"email"`
@@ -435,7 +435,15 @@ type User struct {
 	CreatedBy pgtype.UUID `json:"created_by"`
 	UpdatedBy pgtype.UUID `json:"updated_by"`
 	// 1: deleted, 0: not deleted
-	DeletedF bool `json:"deleted_f"`
+	DeletedF  bool        `json:"deleted_f"`
+	FirstName string      `json:"first_name"`
+	LastName  string      `json:"last_name"`
+	Phone     pgtype.Text `json:"phone"`
+	Avatar    pgtype.Text `json:"avatar"`
+	Address   pgtype.Text `json:"address"`
+	City      pgtype.Text `json:"city"`
+	District  pgtype.Text `json:"district"`
+	Ward      pgtype.Text `json:"ward"`
 }
 
 type VerificationToken struct {

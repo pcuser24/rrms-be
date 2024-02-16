@@ -10,15 +10,25 @@ import (
 )
 
 type UserModel struct {
-	ID        uuid.UUID
-	Email     string
+	ID        uuid.UUID `json:"id"`
+	Email     string    `json:"email"`
 	Password  *string
-	GroupID   uuid.UUID
-	CreatedAt time.Time
-	UpdatedAt time.Time
-	CreatedBy uuid.UUID
-	UpdatedBy uuid.UUID
-	DeletedF  bool
+	GroupID   uuid.UUID `json:"groupId"`
+	CreatedAt time.Time `json:"createdAt"`
+	UpdatedAt time.Time `json:"updatedAt"`
+	CreatedBy uuid.UUID `json:"createdBy"`
+	UpdatedBy uuid.UUID `json:"updatedBy"`
+	DeletedF  bool      `json:"deletedF"`
+
+	// User info
+	FirstName string  `json:"firstName"`
+	LastName  string  `json:"lastName"`
+	Phone     *string `json:"phone"`
+	Avatar    *string `json:"avatar"`
+	Address   *string `json:"address"`
+	City      *string `json:"city"`
+	District  *string `json:"district"`
+	Ward      *string `json:"ward"`
 }
 
 func (u *UserModel) ToUserResponse() *dto.UserResponse {
@@ -27,18 +37,26 @@ func (u *UserModel) ToUserResponse() *dto.UserResponse {
 		Email:     u.Email,
 		CreatedAt: u.CreatedAt,
 		UpdatedAt: u.UpdatedAt,
-		CreatedBy: nil,
-		UpdatedBy: nil,
+		// CreatedBy: nil,
+		// UpdatedBy: nil,
 		DeletedF:  u.DeletedF,
+		FirstName: u.FirstName,
+		LastName:  u.LastName,
+		Phone:     u.Phone,
+		Avatar:    u.Avatar,
+		Address:   u.Address,
+		City:      u.City,
+		District:  u.District,
+		Ward:      u.Ward,
 	}
-	if u.CreatedBy != uuid.Nil {
-		str := u.CreatedBy.String()
-		ur.CreatedBy = &str
-	}
-	if u.UpdatedBy != uuid.Nil {
-		str := u.UpdatedBy.String()
-		ur.UpdatedBy = &str
-	}
+	// if u.CreatedBy != uuid.Nil {
+	// 	str := u.CreatedBy.String()
+	// 	ur.CreatedBy = &str
+	// }
+	// if u.UpdatedBy != uuid.Nil {
+	// 	str := u.UpdatedBy.String()
+	// 	ur.UpdatedBy = &str
+	// }
 	return ur
 }
 
@@ -53,5 +71,13 @@ func ToUserModel(ud *database.User) *UserModel {
 		CreatedBy: types.PNUUID(ud.CreatedBy),
 		UpdatedBy: types.PNUUID(ud.UpdatedBy),
 		DeletedF:  ud.DeletedF,
+		FirstName: ud.FirstName,
+		LastName:  ud.LastName,
+		Phone:     types.PNStr(ud.Phone),
+		Avatar:    types.PNStr(ud.Avatar),
+		Address:   types.PNStr(ud.Address),
+		City:      types.PNStr(ud.City),
+		District:  types.PNStr(ud.District),
+		Ward:      types.PNStr(ud.Ward),
 	}
 }

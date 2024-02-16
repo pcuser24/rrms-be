@@ -7,6 +7,11 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/user2410/rrms-backend/cmd/migrate"
+	"github.com/user2410/rrms-backend/cmd/seed"
+	"github.com/user2410/rrms-backend/cmd/server"
+	"github.com/user2410/rrms-backend/cmd/version"
+
 	"github.com/spf13/cobra"
 )
 
@@ -27,8 +32,8 @@ func newRootCommand() *rootCommand {
 	rc := &rootCommand{}
 	rc.Command = &cobra.Command{
 		Use:           "rrmsd",
-		Short:         fmt.Sprintf(shortFormat, ReadableName),
-		Long:          fmt.Sprintf(longFormat, Art(), ReadableName),
+		Short:         fmt.Sprintf(shortFormat, version.ReadableName),
+		Long:          fmt.Sprintf(longFormat, version.Art(), version.ReadableName),
 		Run:           rc.run,
 		SilenceErrors: true,
 		SilenceUsage:  true,
@@ -41,14 +46,15 @@ func newRootCommand() *rootCommand {
 func Execute() {
 	root := newRootCommand()
 	root.Command.AddCommand(
-		NewVersionCommand().Command,
-		NewMigrateCommand().Command,
-		NewServerCommand().Command,
+		migrate.NewMigrateCommand().Command,
+		seed.NewSeedCommand().Command,
+		server.NewServerCommand().Command,
+		version.NewVersionCommand().Command,
 	)
 
 	c, err := root.Command.ExecuteC()
 	if err != nil {
-		c.Println(Art())
+		c.Println(version.Art())
 		c.Println(c.UsageString())
 		c.PrintErrf("ERROR: %v\n", err)
 		os.Exit(1)

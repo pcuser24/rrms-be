@@ -78,6 +78,7 @@ require (
 require (
 	github.com/andybalholm/brotli v1.1.0 // indirect
 	github.com/aws/aws-sdk-go-v2/feature/s3/manager v1.15.15
+	github.com/go-playground/validator v9.31.0+incompatible
 	github.com/go-playground/validator/v10 v10.17.0
 	github.com/google/uuid v1.5.0
 	github.com/hashicorp/errwrap v1.1.0 // indirect
