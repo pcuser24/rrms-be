@@ -4,9 +4,9 @@ import (
 	"log"
 	"time"
 
-	"github.com/user2410/rrms-backend/internal/domain/application"
+	application_http "github.com/user2410/rrms-backend/internal/domain/application"
 	auth_http "github.com/user2410/rrms-backend/internal/domain/auth/http"
-	"github.com/user2410/rrms-backend/internal/domain/listing"
+	listing_http "github.com/user2410/rrms-backend/internal/domain/listing/http"
 	property_http "github.com/user2410/rrms-backend/internal/domain/property/http"
 	"github.com/user2410/rrms-backend/internal/domain/rental"
 	"github.com/user2410/rrms-backend/internal/domain/storage"
@@ -39,13 +39,12 @@ func (c *serverCommand) setupHttpServer() {
 		RegisterServer(apiRoute, c.tokenMaker)
 	unit_http.NewAdapter(c.internalServices.UnitService, c.internalServices.PropertyService).
 		RegisterServer(apiRoute, c.tokenMaker)
-	listing.
-		NewAdapter(c.internalServices.ListingService, c.internalServices.PropertyService, c.internalServices.UnitService).
+	listing_http.NewAdapter(c.internalServices.ListingService, c.internalServices.PropertyService, c.internalServices.UnitService).
 		RegisterServer(apiRoute, c.tokenMaker)
 	rental.
 		NewAdapter(c.internalServices.RentalService).
 		RegisterServer(apiRoute)
-	application.
+	application_http.
 		NewAdapter(c.internalServices.ApplicationService).
 		RegisterServer(apiRoute, c.tokenMaker)
 	storage.

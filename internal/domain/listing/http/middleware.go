@@ -1,15 +1,16 @@
-package listing
+package http
 
 import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/user2410/rrms-backend/internal/domain/auth/http"
+	"github.com/user2410/rrms-backend/internal/domain/listing"
 	"github.com/user2410/rrms-backend/internal/interfaces/rest/responses"
 	"github.com/user2410/rrms-backend/internal/utils/token"
 )
 
-func (a *adapter) checkListingManageability() fiber.Handler {
+func CheckListingManageability(s listing.Service) fiber.Handler {
 	return func(ctx *fiber.Ctx) error {
 		id := ctx.Params("id")
 		lid, err := uuid.Parse(id)
@@ -19,7 +20,7 @@ func (a *adapter) checkListingManageability() fiber.Handler {
 
 		tkPayload := ctx.Locals(http.AuthorizationPayloadKey).(*token.Payload)
 
-		isCreator, err := a.lService.CheckListingOwnership(lid, tkPayload.UserID)
+		isCreator, err := s.CheckListingOwnership(lid, tkPayload.UserID)
 		if err != nil {
 			if dbErr, ok := err.(*pgconn.PgError); ok {
 				return responses.DBErrorResponse(ctx, dbErr)

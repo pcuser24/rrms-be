@@ -17,8 +17,6 @@ INSERT INTO listings (
   priority,
   created_at,
   updated_at,
-  post_at,
-  active,
   expired_at
 ) VALUES (
   sqlc.arg(creator_id),
@@ -37,9 +35,7 @@ INSERT INTO listings (
   sqlc.narg(number_of_residents),
   sqlc.arg(priority),
   NOW(), NOW(), 
-  sqlc.arg(post_at),
-  sqlc.arg(active),
-  sqlc.arg(expired_at)
+  NOW() + (INTERVAL'1 day' * sqlc.arg(post_duration))
 ) RETURNING *;
 
 -- name: CreateListingPolicy :one
@@ -99,8 +95,8 @@ UPDATE listings SET
   lease_term = coalesce(sqlc.narg(lease_term), lease_term),
   pets_allowed = coalesce(sqlc.narg(pets_allowed), pets_allowed),
   number_of_residents = coalesce(sqlc.narg(number_of_residents), number_of_residents),
-  updated_at = NOW(),
-  post_at = coalesce(sqlc.narg(post_at), post_at)
+  updated_at = NOW()
+  -- post_at = coalesce(sqlc.narg(post_at), post_at)
 WHERE id = sqlc.arg(id);
 
 -- name: UpdateListingStatus :exec

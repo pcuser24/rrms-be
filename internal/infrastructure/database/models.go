@@ -296,7 +296,7 @@ type Listing struct {
 	Active    bool      `json:"active"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
-	PostAt    time.Time `json:"post_at"`
+	// The time when the listing is expired. The listing is expired if the current time is greater than this time.
 	ExpiredAt time.Time `json:"expired_at"`
 }
 

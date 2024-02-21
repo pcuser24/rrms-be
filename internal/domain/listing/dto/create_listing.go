@@ -1,8 +1,6 @@
 package dto
 
 import (
-	"time"
-
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/user2410/rrms-backend/internal/infrastructure/database"
@@ -43,8 +41,6 @@ type CreateListing struct {
 	PetsAllowed       *bool                 `json:"petsAllowed"`
 	NumberOfResidents *int32                `json:"numberOfResidents" validate:"omitempty,gte=0"`
 	Priority          int32                 `json:"priority" validate:"required,gte=1,lte=5"`
-	PostAt            time.Time             `json:"postAt" validate:"required"`
-	Active            bool                  `json:"active" validate:"required"`
 	PostDuration      int                   `json:"postDuration" validate:"required"`
 	Policies          []CreateListingPolicy `json:"policies" validate:"dive"`
 	Units             []CreateListingUnit   `json:"units" validate:"dive"`
@@ -67,14 +63,7 @@ func (c *CreateListing) ToCreateListingDB() *database.CreateListingParams {
 		PetsAllowed:       types.BoolN(c.PetsAllowed),
 		NumberOfResidents: types.Int32N(c.NumberOfResidents),
 		Priority:          c.Priority,
-		PostAt:            c.PostAt,
-		Active:            c.Active,
-	}
-	// add duration to postAt to get expiry
-	ldb.ExpiredAt = c.PostAt.AddDate(0, 0, c.PostDuration)
-	// if the listing is not active but postAt is in the past, make it active
-	if !c.Active && c.PostAt.Before(time.Now()) {
-		ldb.Active = true
+		PostDuration:      c.PostDuration,
 	}
 	return ldb
 }

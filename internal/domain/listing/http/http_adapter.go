@@ -1,4 +1,4 @@
-package listing
+package http
 
 import (
 	"github.com/go-playground/validator/v10"
@@ -6,6 +6,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/user2410/rrms-backend/internal/domain/auth/http"
+	"github.com/user2410/rrms-backend/internal/domain/listing"
 	"github.com/user2410/rrms-backend/internal/domain/listing/dto"
 	"github.com/user2410/rrms-backend/internal/domain/property"
 	"github.com/user2410/rrms-backend/internal/domain/unit"
@@ -22,10 +23,10 @@ type Adapter interface {
 type adapter struct {
 	pService property.Service
 	uService unit.Service
-	lService Service
+	lService listing.Service
 }
 
-func NewAdapter(lService Service, pService property.Service, uService unit.Service) Adapter {
+func NewAdapter(lService listing.Service, pService property.Service, uService unit.Service) Adapter {
 	return &adapter{
 		lService: lService,
 		pService: pService,
@@ -44,8 +45,8 @@ func (a *adapter) RegisterServer(router *fiber.Router, tokenMaker token.Maker) {
 
 	listingRoute.Post("/", a.createListing())
 	listingRoute.Get("/my-listings", a.getMyListings())
-	listingRoute.Patch("/listing/:id", a.checkListingManageability(), a.updateListing())
-	listingRoute.Delete("/listing/:id", a.checkListingManageability(), a.deleteListing())
+	listingRoute.Patch("/listing/:id", CheckListingManageability(a.lService), a.updateListing())
+	listingRoute.Delete("/listing/:id", CheckListingManageability(a.lService), a.deleteListing())
 }
 
 func (a *adapter) createListing() fiber.Handler {
@@ -62,7 +63,7 @@ func (a *adapter) createListing() fiber.Handler {
 		}
 		// log.Println("Passed struct validation")
 
-		// check ownership of target property
+		// check managability of the target property
 		isManager, err := a.pService.CheckManageability(payload.PropertyID, tkPayload.UserID)
 		if err != nil {
 			if dbErr, ok := err.(*pgconn.PgError); ok {
@@ -74,7 +75,6 @@ func (a *adapter) createListing() fiber.Handler {
 		if !isManager {
 			return ctx.Status(fiber.StatusForbidden).JSON(fiber.Map{"message": "operation not permitted on this property"})
 		}
-		// log.Println("Passed property ownership check")
 
 		// validate units
 		for _, pu := range payload.Units {
@@ -89,7 +89,6 @@ func (a *adapter) createListing() fiber.Handler {
 				return ctx.Status(fiber.StatusForbidden).JSON(fiber.Map{"message": "operation not permitted on unit id = " + pu.UnitID.String()})
 			}
 		}
-		// log.Println("Passed unit validation")
 
 		res, err := a.lService.CreateListing(&payload)
 		if err != nil {

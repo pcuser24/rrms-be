@@ -7,7 +7,6 @@ package database
 
 import (
 	"context"
-	"time"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -64,8 +63,6 @@ INSERT INTO listings (
   priority,
   created_at,
   updated_at,
-  post_at,
-  active,
   expired_at
 ) VALUES (
   $1,
@@ -84,10 +81,8 @@ INSERT INTO listings (
   $14,
   $15,
   NOW(), NOW(), 
-  $16,
-  $17,
-  $18
-) RETURNING id, creator_id, property_id, title, description, full_name, email, phone, contact_type, price, price_negotiable, security_deposit, lease_term, pets_allowed, number_of_residents, priority, active, created_at, updated_at, post_at, expired_at
+  NOW() + (INTERVAL'1 day' * $16)
+) RETURNING id, creator_id, property_id, title, description, full_name, email, phone, contact_type, price, price_negotiable, security_deposit, lease_term, pets_allowed, number_of_residents, priority, active, created_at, updated_at, expired_at
 `
 
 type CreateListingParams struct {
@@ -106,9 +101,7 @@ type CreateListingParams struct {
 	PetsAllowed       pgtype.Bool `json:"pets_allowed"`
 	NumberOfResidents pgtype.Int4 `json:"number_of_residents"`
 	Priority          int32       `json:"priority"`
-	PostAt            time.Time   `json:"post_at"`
-	Active            bool        `json:"active"`
-	ExpiredAt         time.Time   `json:"expired_at"`
+	PostDuration      interface{} `json:"post_duration"`
 }
 
 func (q *Queries) CreateListing(ctx context.Context, arg CreateListingParams) (Listing, error) {
@@ -128,9 +121,7 @@ func (q *Queries) CreateListing(ctx context.Context, arg CreateListingParams) (L
 		arg.PetsAllowed,
 		arg.NumberOfResidents,
 		arg.Priority,
-		arg.PostAt,
-		arg.Active,
-		arg.ExpiredAt,
+		arg.PostDuration,
 	)
 	var i Listing
 	err := row.Scan(
@@ -153,7 +144,6 @@ func (q *Queries) CreateListing(ctx context.Context, arg CreateListingParams) (L
 		&i.Active,
 		&i.CreatedAt,
 		&i.UpdatedAt,
-		&i.PostAt,
 		&i.ExpiredAt,
 	)
 	return i, err
@@ -243,7 +233,7 @@ func (q *Queries) GetAllRentalPolicies(ctx context.Context) ([]RentalPolicy, err
 }
 
 const getListingByID = `-- name: GetListingByID :one
-SELECT id, creator_id, property_id, title, description, full_name, email, phone, contact_type, price, price_negotiable, security_deposit, lease_term, pets_allowed, number_of_residents, priority, active, created_at, updated_at, post_at, expired_at FROM listings WHERE id = $1 LIMIT 1
+SELECT id, creator_id, property_id, title, description, full_name, email, phone, contact_type, price, price_negotiable, security_deposit, lease_term, pets_allowed, number_of_residents, priority, active, created_at, updated_at, expired_at FROM listings WHERE id = $1 LIMIT 1
 `
 
 func (q *Queries) GetListingByID(ctx context.Context, id uuid.UUID) (Listing, error) {
@@ -269,7 +259,6 @@ func (q *Queries) GetListingByID(ctx context.Context, id uuid.UUID) (Listing, er
 		&i.Active,
 		&i.CreatedAt,
 		&i.UpdatedAt,
-		&i.PostAt,
 		&i.ExpiredAt,
 	)
 	return i, err
@@ -324,7 +313,7 @@ func (q *Queries) GetListingUnits(ctx context.Context, listingID uuid.UUID) ([]L
 }
 
 const getListingsOfProperty = `-- name: GetListingsOfProperty :many
-SELECT id, creator_id, property_id, title, description, full_name, email, phone, contact_type, price, price_negotiable, security_deposit, lease_term, pets_allowed, number_of_residents, priority, active, created_at, updated_at, post_at, expired_at FROM listings WHERE property_id = $1
+SELECT id, creator_id, property_id, title, description, full_name, email, phone, contact_type, price, price_negotiable, security_deposit, lease_term, pets_allowed, number_of_residents, priority, active, created_at, updated_at, expired_at FROM listings WHERE property_id = $1
 `
 
 func (q *Queries) GetListingsOfProperty(ctx context.Context, propertyID uuid.UUID) ([]Listing, error) {
@@ -356,7 +345,6 @@ func (q *Queries) GetListingsOfProperty(ctx context.Context, propertyID uuid.UUI
 			&i.Active,
 			&i.CreatedAt,
 			&i.UpdatedAt,
-			&i.PostAt,
 			&i.ExpiredAt,
 		); err != nil {
 			return nil, err
@@ -383,26 +371,25 @@ UPDATE listings SET
   lease_term = coalesce($10, lease_term),
   pets_allowed = coalesce($11, pets_allowed),
   number_of_residents = coalesce($12, number_of_residents),
-  updated_at = NOW(),
-  post_at = coalesce($13, post_at)
-WHERE id = $14
+  updated_at = NOW()
+  -- post_at = coalesce(sqlc.narg(post_at), post_at)
+WHERE id = $13
 `
 
 type UpdateListingParams struct {
-	Title             pgtype.Text        `json:"title"`
-	Description       pgtype.Text        `json:"description"`
-	FullName          pgtype.Text        `json:"full_name"`
-	Email             pgtype.Text        `json:"email"`
-	Phone             pgtype.Text        `json:"phone"`
-	ContactType       pgtype.Text        `json:"contact_type"`
-	Price             pgtype.Int8        `json:"price"`
-	PriceNegotiable   pgtype.Bool        `json:"price_negotiable"`
-	SecurityDeposit   pgtype.Int8        `json:"security_deposit"`
-	LeaseTerm         pgtype.Int4        `json:"lease_term"`
-	PetsAllowed       pgtype.Bool        `json:"pets_allowed"`
-	NumberOfResidents pgtype.Int4        `json:"number_of_residents"`
-	PostAt            pgtype.Timestamptz `json:"post_at"`
-	ID                uuid.UUID          `json:"id"`
+	Title             pgtype.Text `json:"title"`
+	Description       pgtype.Text `json:"description"`
+	FullName          pgtype.Text `json:"full_name"`
+	Email             pgtype.Text `json:"email"`
+	Phone             pgtype.Text `json:"phone"`
+	ContactType       pgtype.Text `json:"contact_type"`
+	Price             pgtype.Int8 `json:"price"`
+	PriceNegotiable   pgtype.Bool `json:"price_negotiable"`
+	SecurityDeposit   pgtype.Int8 `json:"security_deposit"`
+	LeaseTerm         pgtype.Int4 `json:"lease_term"`
+	PetsAllowed       pgtype.Bool `json:"pets_allowed"`
+	NumberOfResidents pgtype.Int4 `json:"number_of_residents"`
+	ID                uuid.UUID   `json:"id"`
 }
 
 func (q *Queries) UpdateListing(ctx context.Context, arg UpdateListingParams) error {
@@ -419,7 +406,6 @@ func (q *Queries) UpdateListing(ctx context.Context, arg UpdateListingParams) er
 		arg.LeaseTerm,
 		arg.PetsAllowed,
 		arg.NumberOfResidents,
-		arg.PostAt,
 		arg.ID,
 	)
 	return err

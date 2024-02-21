@@ -131,8 +131,6 @@ func (r *repo) GetListingsByIds(ctx context.Context, ids []string, fields []stri
 			scanningFields = append(scanningFields, &i.NumberOfResidents)
 		case "priority":
 			scanningFields = append(scanningFields, &i.Priority)
-		case "post_at":
-			scanningFields = append(scanningFields, &i.PostAt)
 		case "expired_at":
 			scanningFields = append(scanningFields, &i.ExpiredAt)
 		case "active":

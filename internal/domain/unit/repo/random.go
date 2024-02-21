@@ -87,8 +87,7 @@ func PrepareRandomUnit(
 }
 
 func NewRandomUnitModel(t *testing.T, propertyID uuid.UUID) *model.UnitModel {
-	id, err := uuid.NewRandom()
-	require.NoError(t, err)
+	id := uuid.MustParse("1b3a7930-401f-4c6d-8c7f-c5283f5430ad")
 
 	return &model.UnitModel{
 		ID:                  id,

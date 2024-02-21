@@ -22,10 +22,10 @@ CREATE TABLE IF NOT EXISTS "listings" (
   "number_of_residents" INTEGER CHECK (number_of_residents >= 0),
 
   "priority" INTEGER NOT NULL DEFAULT 1,
-  "active" BOOL NOT NULL DEFAULT FALSE,
+  "active" BOOL NOT NULL DEFAULT TRUE,
   "created_at" TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   "updated_at" TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  "post_at" TIMESTAMPTZ NOT NULL,
+  -- "post_at" TIMESTAMPTZ NOT NULL,
   "expired_at" TIMESTAMPTZ NOT NULL
 );
 ALTER TABLE "listings" ADD CONSTRAINT "listings_creator_id_fkey" FOREIGN KEY ("creator_id") REFERENCES "User"("id") ON DELETE CASCADE;
@@ -33,6 +33,8 @@ ALTER TABLE "listings" ADD CONSTRAINT "listings_property_id_fkey" FOREIGN KEY ("
 COMMENT ON COLUMN "listings"."price" IS 'Rental price per month in vietnamese dong';
 COMMENT ON COLUMN "listings"."priority" IS 'Priority of the listing, range from 1 to 5, 1 is the lowest';
 COMMENT ON COLUMN "listings"."lease_term" IS 'Lease term in months';
+-- COMMENT ON COLUMN "listings"."post_at" IS 'The time when the listing goes public';
+COMMENT ON COLUMN "listings"."expired_at" IS 'The time when the listing is expired. The listing is expired if the current time is greater than this time.';
 
 CREATE TABLE IF NOT EXISTS "listing_units" (
   "listing_id" UUID NOT NULL,
