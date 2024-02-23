@@ -8,6 +8,8 @@ import (
 	"github.com/google/uuid"
 	"github.com/user2410/rrms-backend/internal/domain/listing/dto"
 	"github.com/user2410/rrms-backend/internal/domain/listing/model"
+	property_dto "github.com/user2410/rrms-backend/internal/domain/property/dto"
+	property_repo "github.com/user2410/rrms-backend/internal/domain/property/repo"
 	"github.com/user2410/rrms-backend/internal/interfaces/rest/requests"
 	"github.com/user2410/rrms-backend/internal/utils"
 	"github.com/user2410/rrms-backend/internal/utils/types"
@@ -26,17 +28,30 @@ type Service interface {
 }
 
 type service struct {
-	repo repo.Repo
+	lRepo repo.Repo
+	pRepo property_repo.Repo
 }
 
-func NewService(repo repo.Repo) Service {
+func NewService(lRepo repo.Repo, pRepo property_repo.Repo) Service {
 	return &service{
-		repo: repo,
+		lRepo: lRepo,
+		pRepo: pRepo,
 	}
 }
 
 func (s *service) CreateListing(data *dto.CreateListing) (*model.ListingModel, error) {
-	return s.repo.CreateListing(context.Background(), data)
+	listing, err := s.lRepo.CreateListing(context.Background(), data)
+	if err != nil {
+		return nil, err
+	}
+	err = s.pRepo.UpdateProperty(context.Background(), &property_dto.UpdateProperty{
+		ID:       listing.PropertyID,
+		IsPublic: types.Ptr[bool](true),
+	})
+	if err != nil {
+		return listing, err
+	}
+	return listing, nil
 }
 
 func (s *service) SearchListingCombination(data *dto.SearchListingCombinationQuery) (*dto.SearchListingCombinationResponse, error) {
@@ -44,11 +59,11 @@ func (s *service) SearchListingCombination(data *dto.SearchListingCombinationQue
 	data.Order = types.Ptr(utils.PtrDerefence[string](data.Order, "desc"))
 	data.Limit = types.Ptr(utils.PtrDerefence[int32](data.Limit, 1000))
 	data.Offset = types.Ptr(utils.PtrDerefence[int32](data.Offset, 0))
-	return s.repo.SearchListingCombination(context.Background(), data)
+	return s.lRepo.SearchListingCombination(context.Background(), data)
 }
 
 func (s *service) GetListingByID(id uuid.UUID) (*model.ListingModel, error) {
-	return s.repo.GetListingByID(context.Background(), id)
+	return s.lRepo.GetListingByID(context.Background(), id)
 }
 
 func (s *service) GetListingsByIds(ids []uuid.UUID, fields []string) ([]model.ListingModel, error) {
@@ -56,27 +71,27 @@ func (s *service) GetListingsByIds(ids []uuid.UUID, fields []string) ([]model.Li
 	for i, id := range ids {
 		idsStr[i] = id.String()
 	}
-	return s.repo.GetListingsByIds(context.Background(), idsStr, fields)
+	return s.lRepo.GetListingsByIds(context.Background(), idsStr, fields)
 }
 
 func (s *service) UpdateListing(data *dto.UpdateListing) error {
-	return s.repo.UpdateListing(context.Background(), data)
+	return s.lRepo.UpdateListing(context.Background(), data)
 }
 
 func (s *service) DeleteListing(id uuid.UUID) error {
-	return s.repo.DeleteListing(context.Background(), id)
+	return s.lRepo.DeleteListing(context.Background(), id)
 }
 
 func (s *service) CheckListingOwnership(lid uuid.UUID, uid uuid.UUID) (bool, error) {
-	return s.repo.CheckListingOwnership(context.Background(), lid, uid)
+	return s.lRepo.CheckListingOwnership(context.Background(), lid, uid)
 }
 
 func (s *service) CheckValidUnitForListing(lid uuid.UUID, uid uuid.UUID) (bool, error) {
-	return s.repo.CheckValidUnitForListing(context.Background(), lid, uid)
+	return s.lRepo.CheckValidUnitForListing(context.Background(), lid, uid)
 }
 
 func (s *service) GetListingsOfUser(userId uuid.UUID, fields []string) ([]model.ListingModel, error) {
-	myListings, err := s.repo.SearchListingCombination(context.Background(), &dto.SearchListingCombinationQuery{
+	myListings, err := s.lRepo.SearchListingCombination(context.Background(), &dto.SearchListingCombinationQuery{
 		SearchListingQuery: dto.SearchListingQuery{
 			LCreatorID: types.Ptr[string](userId.String()),
 		},
@@ -96,6 +111,6 @@ func (s *service) GetListingsOfUser(userId uuid.UUID, fields []string) ([]model.
 		lids = append(lids, listing.LId.String())
 	}
 
-	return s.repo.GetListingsByIds(context.Background(), lids, fields)
+	return s.lRepo.GetListingsByIds(context.Background(), lids, fields)
 
 }

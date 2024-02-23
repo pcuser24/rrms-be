@@ -13,6 +13,7 @@ import (
 	"github.com/user2410/rrms-backend/internal/infrastructure/database"
 	"github.com/user2410/rrms-backend/internal/interfaces/rest/responses"
 	"github.com/user2410/rrms-backend/internal/utils/token"
+	"github.com/user2410/rrms-backend/internal/utils/types"
 	"github.com/user2410/rrms-backend/internal/utils/validation"
 )
 
@@ -113,6 +114,7 @@ func (a *adapter) searchListings() fiber.Handler {
 		}
 		// log.Println(payload)
 
+		payload.PIsPublic = types.Ptr[bool](true)
 		res, err := a.lService.SearchListingCombination(payload)
 		if err != nil {
 			if err == database.ErrRecordNotFound {

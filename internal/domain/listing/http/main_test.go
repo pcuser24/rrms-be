@@ -36,7 +36,7 @@ func newTestServer(t *testing.T, pr property_repo.Repo, ur unit_repo.Repo, lr re
 	// initialize lService
 	uService := unit.NewService(ur)
 	pService := property.NewService(pr, ur)
-	lService := listing.NewService(lr)
+	lService := listing.NewService(lr, pr)
 
 	// initialize http router
 	httpServer := http.NewServer(

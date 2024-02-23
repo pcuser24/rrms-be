@@ -48,7 +48,7 @@ func (c *serverCommand) setupInternalServices(
 
 	c.internalServices.PropertyService = property.NewService(propertyRepo, unitRepo)
 	c.internalServices.UnitService = unit.NewService(unitRepo)
-	c.internalServices.ListingService = listing.NewService(listingRepo)
+	c.internalServices.ListingService = listing.NewService(listingRepo, propertyRepo)
 	c.internalServices.RentalService = rental.NewService(rentalRepo)
 	applicationTaskDistributor := application_asynctask.NewTaskDistributor(c.asyncTaskDistributor)
 	c.internalServices.ApplicationService = application.NewService(

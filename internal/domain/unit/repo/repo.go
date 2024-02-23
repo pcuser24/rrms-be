@@ -180,6 +180,9 @@ func (r *repo) IsPublic(ctx context.Context, id uuid.UUID) (bool, error) {
 }
 
 func (r *repo) GetUnitsByIds(ctx context.Context, ids []string, fields []string) ([]model.UnitModel, error) {
+	if len(ids) == 0 {
+		return nil, nil
+	}
 	var nonFKFields []string = []string{"id"}
 	var fkFields []string
 	for _, f := range fields {

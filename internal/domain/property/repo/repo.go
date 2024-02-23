@@ -151,6 +151,9 @@ func (r *repo) SearchPropertyCombination(ctx context.Context, query *property_dt
 }
 
 func (r *repo) GetPropertiesByIds(ctx context.Context, ids []string, fields []string) ([]property_model.PropertyModel, error) {
+	if len(ids) == 0 {
+		return nil, nil
+	}
 	var nonFKFields []string = []string{"id"}
 	var fkFields []string
 	for _, f := range fields {

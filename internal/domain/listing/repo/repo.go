@@ -75,6 +75,9 @@ func (r *repo) CreateListing(ctx context.Context, data *dto.CreateListing) (*mod
 }
 
 func (r *repo) GetListingsByIds(ctx context.Context, ids []string, fields []string) ([]model.ListingModel, error) {
+	if len(ids) == 0 {
+		return nil, nil
+	}
 	var nonFKFields []string = []string{"id"}
 	var fkFields []string
 	for _, f := range fields {
