@@ -204,38 +204,35 @@ type Account struct {
 }
 
 type Application struct {
-	ID                       int64             `json:"id"`
-	CreatorID                uuid.UUID         `json:"creator_id"`
-	ListingID                uuid.UUID         `json:"listing_id"`
-	PropertyID               uuid.UUID         `json:"property_id"`
-	UnitIds                  []uuid.UUID       `json:"unit_ids"`
-	Status                   APPLICATIONSTATUS `json:"status"`
-	CreatedAt                time.Time         `json:"created_at"`
-	UpdatedAt                time.Time         `json:"updated_at"`
-	FullName                 string            `json:"full_name"`
-	Email                    string            `json:"email"`
-	Phone                    string            `json:"phone"`
-	Dob                      time.Time         `json:"dob"`
-	ProfileImage             string            `json:"profile_image"`
-	MoveinDate               time.Time         `json:"movein_date"`
-	PreferredTerm            int32             `json:"preferred_term"`
-	RhAddress                pgtype.Text       `json:"rh_address"`
-	RhCity                   pgtype.Text       `json:"rh_city"`
-	RhDistrict               pgtype.Text       `json:"rh_district"`
-	RhWard                   pgtype.Text       `json:"rh_ward"`
-	RhRentalDuration         pgtype.Int4       `json:"rh_rental_duration"`
-	RhMonthlyPayment         pgtype.Float4     `json:"rh_monthly_payment"`
-	RhReasonForLeaving       pgtype.Text       `json:"rh_reason_for_leaving"`
-	EmploymentStatus         string            `json:"employment_status"`
-	EmploymentCompanyName    pgtype.Text       `json:"employment_company_name"`
-	EmploymentPosition       pgtype.Text       `json:"employment_position"`
-	EmploymentMonthlyIncome  pgtype.Float4     `json:"employment_monthly_income"`
-	EmploymentComment        pgtype.Text       `json:"employment_comment"`
-	EmploymentProofsOfIncome []string          `json:"employment_proofs_of_income"`
-	IdentityType             string            `json:"identity_type"`
-	IdentityNumber           string            `json:"identity_number"`
-	IdentityIssuedDate       time.Time         `json:"identity_issued_date"`
-	IdentityIssuedBy         string            `json:"identity_issued_by"`
+	ID                      int64             `json:"id"`
+	CreatorID               uuid.UUID         `json:"creator_id"`
+	ListingID               uuid.UUID         `json:"listing_id"`
+	PropertyID              uuid.UUID         `json:"property_id"`
+	Status                  APPLICATIONSTATUS `json:"status"`
+	CreatedAt               time.Time         `json:"created_at"`
+	UpdatedAt               time.Time         `json:"updated_at"`
+	FullName                string            `json:"full_name"`
+	Email                   string            `json:"email"`
+	Phone                   string            `json:"phone"`
+	Dob                     time.Time         `json:"dob"`
+	ProfileImage            string            `json:"profile_image"`
+	MoveinDate              time.Time         `json:"movein_date"`
+	PreferredTerm           int32             `json:"preferred_term"`
+	RentalIntention         string            `json:"rental_intention"`
+	RhAddress               pgtype.Text       `json:"rh_address"`
+	RhCity                  pgtype.Text       `json:"rh_city"`
+	RhDistrict              pgtype.Text       `json:"rh_district"`
+	RhWard                  pgtype.Text       `json:"rh_ward"`
+	RhRentalDuration        pgtype.Int4       `json:"rh_rental_duration"`
+	RhMonthlyPayment        pgtype.Int8       `json:"rh_monthly_payment"`
+	RhReasonForLeaving      pgtype.Text       `json:"rh_reason_for_leaving"`
+	EmploymentStatus        string            `json:"employment_status"`
+	EmploymentCompanyName   pgtype.Text       `json:"employment_company_name"`
+	EmploymentPosition      pgtype.Text       `json:"employment_position"`
+	EmploymentMonthlyIncome pgtype.Int8       `json:"employment_monthly_income"`
+	EmploymentComment       pgtype.Text       `json:"employment_comment"`
+	IdentityType            string            `json:"identity_type"`
+	IdentityNumber          string            `json:"identity_number"`
 }
 
 type ApplicationCoap struct {
@@ -263,6 +260,13 @@ type ApplicationPet struct {
 	Type          string        `json:"type"`
 	Weight        pgtype.Float4 `json:"weight"`
 	Description   pgtype.Text   `json:"description"`
+}
+
+type ApplicationUnit struct {
+	ApplicationID int64     `json:"application_id"`
+	UnitID        uuid.UUID `json:"unit_id"`
+	ListingPrice  int64     `json:"listing_price"`
+	OfferedPrice  int64     `json:"offered_price"`
 }
 
 type ApplicationVehicle struct {

@@ -13,12 +13,32 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const checkApplicationVisibility = `-- name: CheckApplicationVisibility :one
+SELECT count(*) FROM applications WHERE 
+  id = $1 
+  AND (
+    property_id IN (SELECT property_id FROM property_managers WHERE manager_id = $2)
+    OR creator_id = $2
+  )
+`
+
+type CheckApplicationVisibilityParams struct {
+	ID        int64     `json:"id"`
+	ManagerID uuid.UUID `json:"manager_id"`
+}
+
+func (q *Queries) CheckApplicationVisibility(ctx context.Context, arg CheckApplicationVisibilityParams) (int64, error) {
+	row := q.db.QueryRow(ctx, checkApplicationVisibility, arg.ID, arg.ManagerID)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const createApplication = `-- name: CreateApplication :one
 INSERT INTO applications (
   creator_id,
   listing_id,
   property_id,
-  unit_ids,
   -- basic info
   full_name,
   dob,
@@ -27,6 +47,7 @@ INSERT INTO applications (
   profile_image,
   movein_date,
   preferred_term,
+  rental_intention,
   -- rental history
   rh_address,
   rh_city,
@@ -41,18 +62,15 @@ INSERT INTO applications (
   employment_position,
   employment_monthly_income,
   employment_comment,
-  employment_proofs_of_income,
   -- identity
   identity_type,
-  identity_number,
-  identity_issued_date,
-  identity_issued_by
+  identity_number
 ) VALUES (
   $1,
   $2,
   $3,
-  $4,
   -- basic info
+  $4,
   $5,
   $6,
   $7,
@@ -74,44 +92,38 @@ INSERT INTO applications (
   $21,
   $22,
   $23,
-  $24,
   -- identity
-  $25,
-  $26,
-  $27,
-  $28
-) RETURNING id, creator_id, listing_id, property_id, unit_ids, status, created_at, updated_at, full_name, email, phone, dob, profile_image, movein_date, preferred_term, rh_address, rh_city, rh_district, rh_ward, rh_rental_duration, rh_monthly_payment, rh_reason_for_leaving, employment_status, employment_company_name, employment_position, employment_monthly_income, employment_comment, employment_proofs_of_income, identity_type, identity_number, identity_issued_date, identity_issued_by
+  $24,
+  $25
+) RETURNING id, creator_id, listing_id, property_id, status, created_at, updated_at, full_name, email, phone, dob, profile_image, movein_date, preferred_term, rental_intention, rh_address, rh_city, rh_district, rh_ward, rh_rental_duration, rh_monthly_payment, rh_reason_for_leaving, employment_status, employment_company_name, employment_position, employment_monthly_income, employment_comment, identity_type, identity_number
 `
 
 type CreateApplicationParams struct {
-	CreatorID                uuid.UUID     `json:"creator_id"`
-	ListingID                uuid.UUID     `json:"listing_id"`
-	PropertyID               uuid.UUID     `json:"property_id"`
-	UnitIds                  []uuid.UUID   `json:"unit_ids"`
-	FullName                 string        `json:"full_name"`
-	Dob                      time.Time     `json:"dob"`
-	Email                    string        `json:"email"`
-	Phone                    string        `json:"phone"`
-	ProfileImage             string        `json:"profile_image"`
-	MoveinDate               time.Time     `json:"movein_date"`
-	PreferredTerm            int32         `json:"preferred_term"`
-	RhAddress                pgtype.Text   `json:"rh_address"`
-	RhCity                   pgtype.Text   `json:"rh_city"`
-	RhDistrict               pgtype.Text   `json:"rh_district"`
-	RhWard                   pgtype.Text   `json:"rh_ward"`
-	RhRentalDuration         pgtype.Int4   `json:"rh_rental_duration"`
-	RhMonthlyPayment         pgtype.Float4 `json:"rh_monthly_payment"`
-	RhReasonForLeaving       pgtype.Text   `json:"rh_reason_for_leaving"`
-	EmploymentStatus         string        `json:"employment_status"`
-	EmploymentCompanyName    pgtype.Text   `json:"employment_company_name"`
-	EmploymentPosition       pgtype.Text   `json:"employment_position"`
-	EmploymentMonthlyIncome  pgtype.Float4 `json:"employment_monthly_income"`
-	EmploymentComment        pgtype.Text   `json:"employment_comment"`
-	EmploymentProofsOfIncome []string      `json:"employment_proofs_of_income"`
-	IdentityType             string        `json:"identity_type"`
-	IdentityNumber           string        `json:"identity_number"`
-	IdentityIssuedDate       time.Time     `json:"identity_issued_date"`
-	IdentityIssuedBy         string        `json:"identity_issued_by"`
+	CreatorID               uuid.UUID   `json:"creator_id"`
+	ListingID               uuid.UUID   `json:"listing_id"`
+	PropertyID              uuid.UUID   `json:"property_id"`
+	FullName                string      `json:"full_name"`
+	Dob                     time.Time   `json:"dob"`
+	Email                   string      `json:"email"`
+	Phone                   string      `json:"phone"`
+	ProfileImage            string      `json:"profile_image"`
+	MoveinDate              time.Time   `json:"movein_date"`
+	PreferredTerm           int32       `json:"preferred_term"`
+	RentalIntention         string      `json:"rental_intention"`
+	RhAddress               pgtype.Text `json:"rh_address"`
+	RhCity                  pgtype.Text `json:"rh_city"`
+	RhDistrict              pgtype.Text `json:"rh_district"`
+	RhWard                  pgtype.Text `json:"rh_ward"`
+	RhRentalDuration        pgtype.Int4 `json:"rh_rental_duration"`
+	RhMonthlyPayment        pgtype.Int8 `json:"rh_monthly_payment"`
+	RhReasonForLeaving      pgtype.Text `json:"rh_reason_for_leaving"`
+	EmploymentStatus        string      `json:"employment_status"`
+	EmploymentCompanyName   pgtype.Text `json:"employment_company_name"`
+	EmploymentPosition      pgtype.Text `json:"employment_position"`
+	EmploymentMonthlyIncome pgtype.Int8 `json:"employment_monthly_income"`
+	EmploymentComment       pgtype.Text `json:"employment_comment"`
+	IdentityType            string      `json:"identity_type"`
+	IdentityNumber          string      `json:"identity_number"`
 }
 
 func (q *Queries) CreateApplication(ctx context.Context, arg CreateApplicationParams) (Application, error) {
@@ -119,7 +131,6 @@ func (q *Queries) CreateApplication(ctx context.Context, arg CreateApplicationPa
 		arg.CreatorID,
 		arg.ListingID,
 		arg.PropertyID,
-		arg.UnitIds,
 		arg.FullName,
 		arg.Dob,
 		arg.Email,
@@ -127,6 +138,7 @@ func (q *Queries) CreateApplication(ctx context.Context, arg CreateApplicationPa
 		arg.ProfileImage,
 		arg.MoveinDate,
 		arg.PreferredTerm,
+		arg.RentalIntention,
 		arg.RhAddress,
 		arg.RhCity,
 		arg.RhDistrict,
@@ -139,11 +151,8 @@ func (q *Queries) CreateApplication(ctx context.Context, arg CreateApplicationPa
 		arg.EmploymentPosition,
 		arg.EmploymentMonthlyIncome,
 		arg.EmploymentComment,
-		arg.EmploymentProofsOfIncome,
 		arg.IdentityType,
 		arg.IdentityNumber,
-		arg.IdentityIssuedDate,
-		arg.IdentityIssuedBy,
 	)
 	var i Application
 	err := row.Scan(
@@ -151,7 +160,6 @@ func (q *Queries) CreateApplication(ctx context.Context, arg CreateApplicationPa
 		&i.CreatorID,
 		&i.ListingID,
 		&i.PropertyID,
-		&i.UnitIds,
 		&i.Status,
 		&i.CreatedAt,
 		&i.UpdatedAt,
@@ -162,6 +170,7 @@ func (q *Queries) CreateApplication(ctx context.Context, arg CreateApplicationPa
 		&i.ProfileImage,
 		&i.MoveinDate,
 		&i.PreferredTerm,
+		&i.RentalIntention,
 		&i.RhAddress,
 		&i.RhCity,
 		&i.RhDistrict,
@@ -174,11 +183,8 @@ func (q *Queries) CreateApplication(ctx context.Context, arg CreateApplicationPa
 		&i.EmploymentPosition,
 		&i.EmploymentMonthlyIncome,
 		&i.EmploymentComment,
-		&i.EmploymentProofsOfIncome,
 		&i.IdentityType,
 		&i.IdentityNumber,
-		&i.IdentityIssuedDate,
-		&i.IdentityIssuedBy,
 	)
 	return i, err
 }
@@ -327,6 +333,44 @@ func (q *Queries) CreateApplicationPet(ctx context.Context, arg CreateApplicatio
 	return i, err
 }
 
+const createApplicationUnit = `-- name: CreateApplicationUnit :one
+INSERT INTO application_units (
+  application_id,
+  unit_id,
+  listing_price,
+  offered_price
+) VALUES (
+  $1,
+  $2,
+  $3,
+  $4
+) RETURNING application_id, unit_id, listing_price, offered_price
+`
+
+type CreateApplicationUnitParams struct {
+	ApplicationID int64     `json:"application_id"`
+	UnitID        uuid.UUID `json:"unit_id"`
+	ListingPrice  int64     `json:"listing_price"`
+	OfferedPrice  int64     `json:"offered_price"`
+}
+
+func (q *Queries) CreateApplicationUnit(ctx context.Context, arg CreateApplicationUnitParams) (ApplicationUnit, error) {
+	row := q.db.QueryRow(ctx, createApplicationUnit,
+		arg.ApplicationID,
+		arg.UnitID,
+		arg.ListingPrice,
+		arg.OfferedPrice,
+	)
+	var i ApplicationUnit
+	err := row.Scan(
+		&i.ApplicationID,
+		&i.UnitID,
+		&i.ListingPrice,
+		&i.OfferedPrice,
+	)
+	return i, err
+}
+
 const createApplicationVehicle = `-- name: CreateApplicationVehicle :one
 INSERT INTO application_vehicles (
   application_id,
@@ -380,7 +424,7 @@ func (q *Queries) DeleteApplication(ctx context.Context, id int64) error {
 }
 
 const getApplicationByID = `-- name: GetApplicationByID :one
-SELECT id, creator_id, listing_id, property_id, unit_ids, status, created_at, updated_at, full_name, email, phone, dob, profile_image, movein_date, preferred_term, rh_address, rh_city, rh_district, rh_ward, rh_rental_duration, rh_monthly_payment, rh_reason_for_leaving, employment_status, employment_company_name, employment_position, employment_monthly_income, employment_comment, employment_proofs_of_income, identity_type, identity_number, identity_issued_date, identity_issued_by FROM applications WHERE id = $1 LIMIT 1
+SELECT id, creator_id, listing_id, property_id, status, created_at, updated_at, full_name, email, phone, dob, profile_image, movein_date, preferred_term, rental_intention, rh_address, rh_city, rh_district, rh_ward, rh_rental_duration, rh_monthly_payment, rh_reason_for_leaving, employment_status, employment_company_name, employment_position, employment_monthly_income, employment_comment, identity_type, identity_number FROM applications WHERE id = $1 LIMIT 1
 `
 
 func (q *Queries) GetApplicationByID(ctx context.Context, id int64) (Application, error) {
@@ -391,7 +435,6 @@ func (q *Queries) GetApplicationByID(ctx context.Context, id int64) (Application
 		&i.CreatorID,
 		&i.ListingID,
 		&i.PropertyID,
-		&i.UnitIds,
 		&i.Status,
 		&i.CreatedAt,
 		&i.UpdatedAt,
@@ -402,6 +445,7 @@ func (q *Queries) GetApplicationByID(ctx context.Context, id int64) (Application
 		&i.ProfileImage,
 		&i.MoveinDate,
 		&i.PreferredTerm,
+		&i.RentalIntention,
 		&i.RhAddress,
 		&i.RhCity,
 		&i.RhDistrict,
@@ -414,11 +458,8 @@ func (q *Queries) GetApplicationByID(ctx context.Context, id int64) (Application
 		&i.EmploymentPosition,
 		&i.EmploymentMonthlyIncome,
 		&i.EmploymentComment,
-		&i.EmploymentProofsOfIncome,
 		&i.IdentityType,
 		&i.IdentityNumber,
-		&i.IdentityIssuedDate,
-		&i.IdentityIssuedBy,
 	)
 	return i, err
 }
@@ -516,6 +557,35 @@ func (q *Queries) GetApplicationPets(ctx context.Context, applicationID int64) (
 	return items, nil
 }
 
+const getApplicationUnits = `-- name: GetApplicationUnits :many
+SELECT application_id, unit_id, listing_price, offered_price FROM application_units WHERE application_id = $1
+`
+
+func (q *Queries) GetApplicationUnits(ctx context.Context, applicationID int64) ([]ApplicationUnit, error) {
+	rows, err := q.db.Query(ctx, getApplicationUnits, applicationID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ApplicationUnit
+	for rows.Next() {
+		var i ApplicationUnit
+		if err := rows.Scan(
+			&i.ApplicationID,
+			&i.UnitID,
+			&i.ListingPrice,
+			&i.OfferedPrice,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getApplicationVehicles = `-- name: GetApplicationVehicles :many
 SELECT application_id, type, model, code, description FROM application_vehicles WHERE application_id = $1
 `
@@ -547,55 +617,43 @@ func (q *Queries) GetApplicationVehicles(ctx context.Context, applicationID int6
 }
 
 const getApplicationsByUserId = `-- name: GetApplicationsByUserId :many
-SELECT id, creator_id, listing_id, property_id, unit_ids, status, created_at, updated_at, full_name, email, phone, dob, profile_image, movein_date, preferred_term, rh_address, rh_city, rh_district, rh_ward, rh_rental_duration, rh_monthly_payment, rh_reason_for_leaving, employment_status, employment_company_name, employment_position, employment_monthly_income, employment_comment, employment_proofs_of_income, identity_type, identity_number, identity_issued_date, identity_issued_by FROM applications WHERE creator_id = $1
+SELECT 
+  id 
+FROM 
+  applications 
+WHERE 
+  creator_id = $1 
+  AND created_at >= $2
+ORDER BY 
+  created_at DESC 
+LIMIT $3 OFFSET $4
 `
 
-func (q *Queries) GetApplicationsByUserId(ctx context.Context, creatorID uuid.UUID) ([]Application, error) {
-	rows, err := q.db.Query(ctx, getApplicationsByUserId, creatorID)
+type GetApplicationsByUserIdParams struct {
+	CreatorID uuid.UUID `json:"creator_id"`
+	CreatedAt time.Time `json:"created_at"`
+	Limit     int32     `json:"limit"`
+	Offset    int32     `json:"offset"`
+}
+
+func (q *Queries) GetApplicationsByUserId(ctx context.Context, arg GetApplicationsByUserIdParams) ([]int64, error) {
+	rows, err := q.db.Query(ctx, getApplicationsByUserId,
+		arg.CreatorID,
+		arg.CreatedAt,
+		arg.Limit,
+		arg.Offset,
+	)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []Application
+	var items []int64
 	for rows.Next() {
-		var i Application
-		if err := rows.Scan(
-			&i.ID,
-			&i.CreatorID,
-			&i.ListingID,
-			&i.PropertyID,
-			&i.UnitIds,
-			&i.Status,
-			&i.CreatedAt,
-			&i.UpdatedAt,
-			&i.FullName,
-			&i.Email,
-			&i.Phone,
-			&i.Dob,
-			&i.ProfileImage,
-			&i.MoveinDate,
-			&i.PreferredTerm,
-			&i.RhAddress,
-			&i.RhCity,
-			&i.RhDistrict,
-			&i.RhWard,
-			&i.RhRentalDuration,
-			&i.RhMonthlyPayment,
-			&i.RhReasonForLeaving,
-			&i.EmploymentStatus,
-			&i.EmploymentCompanyName,
-			&i.EmploymentPosition,
-			&i.EmploymentMonthlyIncome,
-			&i.EmploymentComment,
-			&i.EmploymentProofsOfIncome,
-			&i.IdentityType,
-			&i.IdentityNumber,
-			&i.IdentityIssuedDate,
-			&i.IdentityIssuedBy,
-		); err != nil {
+		var id int64
+		if err := rows.Scan(&id); err != nil {
 			return nil, err
 		}
-		items = append(items, i)
+		items = append(items, id)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err
@@ -604,55 +662,22 @@ func (q *Queries) GetApplicationsByUserId(ctx context.Context, creatorID uuid.UU
 }
 
 const getApplicationsOfProperty = `-- name: GetApplicationsOfProperty :many
-SELECT id, creator_id, listing_id, property_id, unit_ids, status, created_at, updated_at, full_name, email, phone, dob, profile_image, movein_date, preferred_term, rh_address, rh_city, rh_district, rh_ward, rh_rental_duration, rh_monthly_payment, rh_reason_for_leaving, employment_status, employment_company_name, employment_position, employment_monthly_income, employment_comment, employment_proofs_of_income, identity_type, identity_number, identity_issued_date, identity_issued_by FROM applications WHERE property_id = $1
+SELECT id FROM applications WHERE property_id = $1
 `
 
-func (q *Queries) GetApplicationsOfProperty(ctx context.Context, propertyID uuid.UUID) ([]Application, error) {
+func (q *Queries) GetApplicationsOfProperty(ctx context.Context, propertyID uuid.UUID) ([]int64, error) {
 	rows, err := q.db.Query(ctx, getApplicationsOfProperty, propertyID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []Application
+	var items []int64
 	for rows.Next() {
-		var i Application
-		if err := rows.Scan(
-			&i.ID,
-			&i.CreatorID,
-			&i.ListingID,
-			&i.PropertyID,
-			&i.UnitIds,
-			&i.Status,
-			&i.CreatedAt,
-			&i.UpdatedAt,
-			&i.FullName,
-			&i.Email,
-			&i.Phone,
-			&i.Dob,
-			&i.ProfileImage,
-			&i.MoveinDate,
-			&i.PreferredTerm,
-			&i.RhAddress,
-			&i.RhCity,
-			&i.RhDistrict,
-			&i.RhWard,
-			&i.RhRentalDuration,
-			&i.RhMonthlyPayment,
-			&i.RhReasonForLeaving,
-			&i.EmploymentStatus,
-			&i.EmploymentCompanyName,
-			&i.EmploymentPosition,
-			&i.EmploymentMonthlyIncome,
-			&i.EmploymentComment,
-			&i.EmploymentProofsOfIncome,
-			&i.IdentityType,
-			&i.IdentityNumber,
-			&i.IdentityIssuedDate,
-			&i.IdentityIssuedBy,
-		); err != nil {
+		var id int64
+		if err := rows.Scan(&id); err != nil {
 			return nil, err
 		}
-		items = append(items, i)
+		items = append(items, id)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err
@@ -661,57 +686,44 @@ func (q *Queries) GetApplicationsOfProperty(ctx context.Context, propertyID uuid
 }
 
 const getApplicationsToUser = `-- name: GetApplicationsToUser :many
-SELECT id, creator_id, listing_id, property_id, unit_ids, status, created_at, updated_at, full_name, email, phone, dob, profile_image, movein_date, preferred_term, rh_address, rh_city, rh_district, rh_ward, rh_rental_duration, rh_monthly_payment, rh_reason_for_leaving, employment_status, employment_company_name, employment_position, employment_monthly_income, employment_comment, employment_proofs_of_income, identity_type, identity_number, identity_issued_date, identity_issued_by FROM applications WHERE property_id IN (
-  SELECT property_id FROM property_managers WHERE manager_id = $1
-)
+SELECT 
+  id 
+FROM 
+  applications 
+WHERE 
+  property_id IN (
+    SELECT property_id FROM property_managers WHERE manager_id = $1
+  ) AND created_at >= $2
+ORDER BY
+  created_at DESC
+LIMIT $3 OFFSET $4
 `
 
-func (q *Queries) GetApplicationsToUser(ctx context.Context, managerID uuid.UUID) ([]Application, error) {
-	rows, err := q.db.Query(ctx, getApplicationsToUser, managerID)
+type GetApplicationsToUserParams struct {
+	ManagerID uuid.UUID `json:"manager_id"`
+	CreatedAt time.Time `json:"created_at"`
+	Limit     int32     `json:"limit"`
+	Offset    int32     `json:"offset"`
+}
+
+func (q *Queries) GetApplicationsToUser(ctx context.Context, arg GetApplicationsToUserParams) ([]int64, error) {
+	rows, err := q.db.Query(ctx, getApplicationsToUser,
+		arg.ManagerID,
+		arg.CreatedAt,
+		arg.Limit,
+		arg.Offset,
+	)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []Application
+	var items []int64
 	for rows.Next() {
-		var i Application
-		if err := rows.Scan(
-			&i.ID,
-			&i.CreatorID,
-			&i.ListingID,
-			&i.PropertyID,
-			&i.UnitIds,
-			&i.Status,
-			&i.CreatedAt,
-			&i.UpdatedAt,
-			&i.FullName,
-			&i.Email,
-			&i.Phone,
-			&i.Dob,
-			&i.ProfileImage,
-			&i.MoveinDate,
-			&i.PreferredTerm,
-			&i.RhAddress,
-			&i.RhCity,
-			&i.RhDistrict,
-			&i.RhWard,
-			&i.RhRentalDuration,
-			&i.RhMonthlyPayment,
-			&i.RhReasonForLeaving,
-			&i.EmploymentStatus,
-			&i.EmploymentCompanyName,
-			&i.EmploymentPosition,
-			&i.EmploymentMonthlyIncome,
-			&i.EmploymentComment,
-			&i.EmploymentProofsOfIncome,
-			&i.IdentityType,
-			&i.IdentityNumber,
-			&i.IdentityIssuedDate,
-			&i.IdentityIssuedBy,
-		); err != nil {
+		var id int64
+		if err := rows.Scan(&id); err != nil {
 			return nil, err
 		}
-		items = append(items, i)
+		items = append(items, id)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err

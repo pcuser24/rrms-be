@@ -27,6 +27,7 @@ type ErrorMessage struct {
 
 var defaultStructValidator = validator.New()
 
+// GetDefaultValidator returns a copy of the default validator
 func GetDefaultValidator() *validator.Validate {
 	copy := *defaultStructValidator
 	return &copy

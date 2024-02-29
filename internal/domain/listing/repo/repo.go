@@ -21,6 +21,7 @@ type Repo interface {
 	DeleteListing(ctx context.Context, id uuid.UUID) error
 	CheckListingOwnership(ctx context.Context, lid uuid.UUID, uid uuid.UUID) (bool, error)
 	CheckValidUnitForListing(ctx context.Context, lid uuid.UUID, uid uuid.UUID) (bool, error)
+	CheckListingExpired(ctx context.Context, lid uuid.UUID) (bool, error)
 }
 
 type repo struct {
@@ -236,6 +237,14 @@ func (r *repo) CheckValidUnitForListing(ctx context.Context, lid uuid.UUID, uid 
 		return false, err
 	}
 	return res > 0, nil
+}
+
+func (r *repo) CheckListingExpired(ctx context.Context, lid uuid.UUID) (bool, error) {
+	res, err := r.dao.CheckListingExpired(ctx, lid)
+	if err != nil {
+		return false, err
+	}
+	return res.Bool, nil
 }
 
 func (r *repo) SearchListingCombination(ctx context.Context, query *dto.SearchListingCombinationQuery) (*dto.SearchListingCombinationResponse, error) {

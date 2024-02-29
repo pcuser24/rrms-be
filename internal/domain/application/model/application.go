@@ -10,6 +10,15 @@ import (
 
 /***/
 
+type ApplicationUnitModel struct {
+	ApplicationID int64     `json:"applicationId"`
+	UnitID        uuid.UUID `json:"unitId"`
+	ListingPrice  int64     `json:"listingPrice"`
+	OfferedPrice  int64     `json:"offeredPrice"`
+}
+
+/***/
+
 type ApplicationMinorModel struct {
 	ApplicationID int64     `json:"applicationId" validate:"required"`
 	FullName      string    `json:"fullName" validate:"required"`
@@ -98,7 +107,6 @@ type ApplicationModel struct {
 	ID                       int64                      `json:"id"`
 	ListingID                uuid.UUID                  `json:"listingId"`
 	PropertyID               uuid.UUID                  `json:"propertyId"`
-	UnitIds                  []uuid.UUID                `json:"unitIds"`
 	Status                   database.APPLICATIONSTATUS `json:"status"`
 	CreatorID                uuid.UUID                  `json:"creatorId"`
 	FullName                 string                     `json:"fullName"`
@@ -108,17 +116,18 @@ type ApplicationModel struct {
 	ProfileImage             string                     `json:"profileImage"`
 	MoveinDate               time.Time                  `json:"moveinDate"`
 	PreferredTerm            int32                      `json:"preferredTerm"`
+	RentalIntention          string                     `json:"rentalIntention"`
 	RhAddress                *string                    `json:"rhAddress"`
 	RhCity                   *string                    `json:"rhCity"`
 	RhDistrict               *string                    `json:"rhDistrict"`
 	RhWard                   *string                    `json:"rhWard"`
 	RhRentalDuration         *int32                     `json:"rhRentalDuration"`
-	RhMonthlyPayment         *float32                   `json:"rhMonthlyPayment"`
+	RhMonthlyPayment         *int64                     `json:"rhMonthlyPayment"`
 	RhReasonForLeaving       *string                    `json:"rhReasonForLeaving"`
 	EmploymentStatus         string                     `json:"employmentStatus"`
 	EmploymentCompanyName    *string                    `json:"employmentCompanyName"`
 	EmploymentPosition       *string                    `json:"employmentPosition"`
-	EmploymentMonthlyIncome  *float32                   `json:"employmentMonthlyIncome"`
+	EmploymentMonthlyIncome  *int64                     `json:"employmentMonthlyIncome"`
 	EmploymentComment        *string                    `json:"employmentComment"`
 	EmploymentProofsOfIncome []string                   `json:"employmentProofsOfIncome"`
 	IdentityType             string                     `json:"identityType"`
@@ -128,6 +137,7 @@ type ApplicationModel struct {
 	CreatedAt                time.Time                  `json:"createdAt"`
 	UpdatedAt                time.Time                  `json:"updatedAt"`
 
+	Units    []ApplicationUnitModel  `json:"units"`
 	Minors   []ApplicationMinorModel `json:"minors"`
 	Coaps    []ApplicationCoapModel  `json:"coaps"`
 	Pets     []ApplicationPetModel   `json:"pets"`
@@ -136,41 +146,39 @@ type ApplicationModel struct {
 
 func ToApplicationModel(a *database.Application) *ApplicationModel {
 	return &ApplicationModel{
-		ID:                       a.ID,
-		CreatorID:                a.CreatorID,
-		ListingID:                a.ListingID,
-		PropertyID:               a.PropertyID,
-		UnitIds:                  a.UnitIds,
-		Status:                   a.Status,
-		FullName:                 a.FullName,
-		Email:                    a.Email,
-		Phone:                    a.Phone,
-		Dob:                      a.Dob,
-		ProfileImage:             a.ProfileImage,
-		MoveinDate:               a.MoveinDate,
-		PreferredTerm:            a.PreferredTerm,
-		RhAddress:                types.PNStr(a.RhAddress),
-		RhCity:                   types.PNStr(a.RhCity),
-		RhDistrict:               types.PNStr(a.RhDistrict),
-		RhWard:                   types.PNStr(a.RhWard),
-		RhRentalDuration:         types.PNInt32(a.RhRentalDuration),
-		RhMonthlyPayment:         types.PNFloat32(a.RhMonthlyPayment),
-		RhReasonForLeaving:       types.PNStr(a.RhReasonForLeaving),
-		EmploymentStatus:         a.EmploymentStatus,
-		EmploymentCompanyName:    types.PNStr(a.EmploymentCompanyName),
-		EmploymentPosition:       types.PNStr(a.EmploymentPosition),
-		EmploymentMonthlyIncome:  types.PNFloat32(a.EmploymentMonthlyIncome),
-		EmploymentComment:        types.PNStr(a.EmploymentComment),
-		EmploymentProofsOfIncome: a.EmploymentProofsOfIncome,
-		IdentityType:             a.IdentityType,
-		IdentityNumber:           a.IdentityNumber,
-		IdentityIssuedDate:       a.IdentityIssuedDate,
-		IdentityIssuedBy:         a.IdentityIssuedBy,
-		CreatedAt:                a.CreatedAt,
-		UpdatedAt:                a.UpdatedAt,
-		Minors:                   make([]ApplicationMinorModel, 0),
-		Coaps:                    make([]ApplicationCoapModel, 0),
-		Pets:                     make([]ApplicationPetModel, 0),
-		Vehicles:                 make([]ApplicationVehicle, 0),
+		ID:                      a.ID,
+		CreatorID:               a.CreatorID,
+		ListingID:               a.ListingID,
+		PropertyID:              a.PropertyID,
+		Status:                  a.Status,
+		FullName:                a.FullName,
+		Email:                   a.Email,
+		Phone:                   a.Phone,
+		Dob:                     a.Dob,
+		ProfileImage:            a.ProfileImage,
+		MoveinDate:              a.MoveinDate,
+		PreferredTerm:           a.PreferredTerm,
+		RentalIntention:         a.RentalIntention,
+		RhAddress:               types.PNStr(a.RhAddress),
+		RhCity:                  types.PNStr(a.RhCity),
+		RhDistrict:              types.PNStr(a.RhDistrict),
+		RhWard:                  types.PNStr(a.RhWard),
+		RhRentalDuration:        types.PNInt32(a.RhRentalDuration),
+		RhMonthlyPayment:        types.PNInt64(a.RhMonthlyPayment),
+		RhReasonForLeaving:      types.PNStr(a.RhReasonForLeaving),
+		EmploymentStatus:        a.EmploymentStatus,
+		EmploymentCompanyName:   types.PNStr(a.EmploymentCompanyName),
+		EmploymentPosition:      types.PNStr(a.EmploymentPosition),
+		EmploymentMonthlyIncome: types.PNInt64(a.EmploymentMonthlyIncome),
+		EmploymentComment:       types.PNStr(a.EmploymentComment),
+		IdentityType:            a.IdentityType,
+		IdentityNumber:          a.IdentityNumber,
+		CreatedAt:               a.CreatedAt,
+		UpdatedAt:               a.UpdatedAt,
+		Units:                   make([]ApplicationUnitModel, 0),
+		Minors:                  make([]ApplicationMinorModel, 0),
+		Coaps:                   make([]ApplicationCoapModel, 0),
+		Pets:                    make([]ApplicationPetModel, 0),
+		Vehicles:                make([]ApplicationVehicle, 0),
 	}
 }

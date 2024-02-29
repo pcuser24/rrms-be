@@ -8,8 +8,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/huandu/go-sqlbuilder"
 	"github.com/jackc/pgx/v5/pgtype"
-	application_model "github.com/user2410/rrms-backend/internal/domain/application/model"
-	listing_model "github.com/user2410/rrms-backend/internal/domain/listing/model"
 	property_dto "github.com/user2410/rrms-backend/internal/domain/property/dto"
 	property_model "github.com/user2410/rrms-backend/internal/domain/property/model"
 	"github.com/user2410/rrms-backend/internal/infrastructure/database"
@@ -22,8 +20,8 @@ type Repo interface {
 	GetPropertyById(ctx context.Context, id uuid.UUID) (*property_model.PropertyModel, error)
 	GetPropertiesByIds(ctx context.Context, ids []string, fields []string) ([]property_model.PropertyModel, error) // Get properties with custom fields by ids
 	GetManagedProperties(ctx context.Context, userId uuid.UUID) ([]database.GetManagedPropertiesRow, error)
-	GetListingsOfProperty(ctx context.Context, id uuid.UUID) ([]listing_model.ListingModel, error)
-	GetApplicationsOfProperty(ctx context.Context, id uuid.UUID) ([]application_model.ApplicationModel, error)
+	GetListingsOfProperty(ctx context.Context, id uuid.UUID) ([]uuid.UUID, error)
+	GetApplicationsOfProperty(ctx context.Context, id uuid.UUID) ([]int64, error)
 	SearchPropertyCombination(ctx context.Context, query *property_dto.SearchPropertyCombinationQuery) (*property_dto.SearchPropertyCombinationResponse, error)
 	IsPublic(ctx context.Context, id uuid.UUID) (bool, error)
 	UpdateProperty(ctx context.Context, data *property_dto.UpdateProperty) error
@@ -318,32 +316,12 @@ func (r *repo) GetPropertyById(ctx context.Context, id uuid.UUID) (*property_mod
 	return pm, nil
 }
 
-func (r *repo) GetListingsOfProperty(ctx context.Context, id uuid.UUID) ([]listing_model.ListingModel, error) {
-	res, err := r.dao.GetListingsOfProperty(ctx, id)
-	if err != nil {
-		return nil, err
-	}
-
-	_res := make([]listing_model.ListingModel, len(res))
-	for _, r := range res {
-		_res = append(_res, *listing_model.ToListingModel(&r))
-	}
-
-	return _res, nil
+func (r *repo) GetListingsOfProperty(ctx context.Context, id uuid.UUID) ([]uuid.UUID, error) {
+	return r.dao.GetListingsOfProperty(ctx, id)
 }
 
-func (r *repo) GetApplicationsOfProperty(ctx context.Context, id uuid.UUID) ([]application_model.ApplicationModel, error) {
-	res, err := r.dao.GetApplicationsOfProperty(ctx, id)
-	if err != nil {
-		return nil, err
-	}
-
-	_res := make([]application_model.ApplicationModel, len(res))
-	for _, r := range res {
-		_res = append(_res, *application_model.ToApplicationModel(&r))
-	}
-
-	return _res, nil
+func (r *repo) GetApplicationsOfProperty(ctx context.Context, id uuid.UUID) ([]int64, error) {
+	return r.dao.GetApplicationsOfProperty(ctx, id)
 }
 
 func (r *repo) GetPropertyManagers(ctx context.Context, id uuid.UUID) ([]property_model.PropertyManagerModel, error) {

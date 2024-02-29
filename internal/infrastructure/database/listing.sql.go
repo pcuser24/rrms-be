@@ -12,6 +12,17 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const checkListingExpired = `-- name: CheckListingExpired :one
+SELECT expired_at < NOW() AND NOT active FROM listings WHERE id = $1 LIMIT 1
+`
+
+func (q *Queries) CheckListingExpired(ctx context.Context, id uuid.UUID) (pgtype.Bool, error) {
+	row := q.db.QueryRow(ctx, checkListingExpired, id)
+	var column_1 pgtype.Bool
+	err := row.Scan(&column_1)
+	return column_1, err
+}
+
 const checkListingOwnership = `-- name: CheckListingOwnership :one
 SELECT count(*) FROM listings WHERE id = $1 AND creator_id = $2 LIMIT 1
 `
@@ -313,43 +324,22 @@ func (q *Queries) GetListingUnits(ctx context.Context, listingID uuid.UUID) ([]L
 }
 
 const getListingsOfProperty = `-- name: GetListingsOfProperty :many
-SELECT id, creator_id, property_id, title, description, full_name, email, phone, contact_type, price, price_negotiable, security_deposit, lease_term, pets_allowed, number_of_residents, priority, active, created_at, updated_at, expired_at FROM listings WHERE property_id = $1
+SELECT id FROM listings WHERE property_id = $1
 `
 
-func (q *Queries) GetListingsOfProperty(ctx context.Context, propertyID uuid.UUID) ([]Listing, error) {
+func (q *Queries) GetListingsOfProperty(ctx context.Context, propertyID uuid.UUID) ([]uuid.UUID, error) {
 	rows, err := q.db.Query(ctx, getListingsOfProperty, propertyID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []Listing
+	var items []uuid.UUID
 	for rows.Next() {
-		var i Listing
-		if err := rows.Scan(
-			&i.ID,
-			&i.CreatorID,
-			&i.PropertyID,
-			&i.Title,
-			&i.Description,
-			&i.FullName,
-			&i.Email,
-			&i.Phone,
-			&i.ContactType,
-			&i.Price,
-			&i.PriceNegotiable,
-			&i.SecurityDeposit,
-			&i.LeaseTerm,
-			&i.PetsAllowed,
-			&i.NumberOfResidents,
-			&i.Priority,
-			&i.Active,
-			&i.CreatedAt,
-			&i.UpdatedAt,
-			&i.ExpiredAt,
-		); err != nil {
+		var id uuid.UUID
+		if err := rows.Scan(&id); err != nil {
 			return nil, err
 		}
-		items = append(items, i)
+		items = append(items, id)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err

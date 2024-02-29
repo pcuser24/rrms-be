@@ -6,8 +6,6 @@ import (
 	"github.com/user2410/rrms-backend/internal/domain/property/repo"
 
 	"github.com/google/uuid"
-	application_model "github.com/user2410/rrms-backend/internal/domain/application/model"
-	listing_model "github.com/user2410/rrms-backend/internal/domain/listing/model"
 	"github.com/user2410/rrms-backend/internal/domain/property/dto"
 	"github.com/user2410/rrms-backend/internal/domain/property/model"
 	unit_dto "github.com/user2410/rrms-backend/internal/domain/unit/dto"
@@ -23,8 +21,8 @@ type Service interface {
 	GetPropertyById(id uuid.UUID) (*model.PropertyModel, error)
 	GetPropertiesByIds(ids []uuid.UUID, fields []string, userId uuid.UUID) ([]model.PropertyModel, error)
 	GetUnitsOfProperty(id uuid.UUID) ([]unit_model.UnitModel, error)
-	GetListingsOfProperty(id uuid.UUID) ([]listing_model.ListingModel, error)
-	GetApplicationsOfProperty(id uuid.UUID) ([]application_model.ApplicationModel, error)
+	GetListingsOfProperty(id uuid.UUID) ([]uuid.UUID, error)
+	GetApplicationsOfProperty(id uuid.UUID) ([]int64, error)
 	GetManagedProperties(userId uuid.UUID, fields []string) ([]GetManagedPropertiesItem, error)
 	SearchListingCombination(data *dto.SearchPropertyCombinationQuery) (*dto.SearchPropertyCombinationResponse, error)
 	UpdateProperty(data *dto.UpdateProperty) error
@@ -73,21 +71,17 @@ func (s *service) GetPropertyById(id uuid.UUID) (*model.PropertyModel, error) {
 }
 
 func (s *service) GetPropertiesByIds(ids []uuid.UUID, fields []string, userId uuid.UUID) ([]model.PropertyModel, error) {
-	var _ids []uuid.UUID
+	var _ids []string
 	for _, id := range ids {
 		isVisible, err := s.CheckVisibility(id, userId)
 		if err != nil {
 			return nil, err
 		}
 		if isVisible {
-			_ids = append(_ids, id)
+			_ids = append(_ids, id.String())
 		}
 	}
-	idsStr := make([]string, len(_ids))
-	for i, id := range _ids {
-		idsStr[i] = id.String()
-	}
-	return s.pRepo.GetPropertiesByIds(context.Background(), idsStr, fields)
+	return s.pRepo.GetPropertiesByIds(context.Background(), _ids, fields)
 }
 
 func (s *service) GetUnitsOfProperty(id uuid.UUID) ([]unit_model.UnitModel, error) {
@@ -114,11 +108,11 @@ func (s *service) GetUnitsOfProperty(id uuid.UUID) ([]unit_model.UnitModel, erro
 	return res, nil
 }
 
-func (s *service) GetListingsOfProperty(id uuid.UUID) ([]listing_model.ListingModel, error) {
+func (s *service) GetListingsOfProperty(id uuid.UUID) ([]uuid.UUID, error) {
 	return s.pRepo.GetListingsOfProperty(context.Background(), id)
 }
 
-func (s *service) GetApplicationsOfProperty(id uuid.UUID) ([]application_model.ApplicationModel, error) {
+func (s *service) GetApplicationsOfProperty(id uuid.UUID) ([]int64, error) {
 	return s.pRepo.GetApplicationsOfProperty(context.Background(), id)
 }
 

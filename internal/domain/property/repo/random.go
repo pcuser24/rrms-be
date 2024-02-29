@@ -42,57 +42,57 @@ func PrepareRandomProperty(
 	ret := dto.CreateProperty{
 		CreatorID:      creatorId,
 		Name:           random.RandomAlphabetStr(10),
-		Building:       types.Ptr[string](random.RandomAlphabetStr(10)),
-		Project:        types.Ptr[string](random.RandomAlphabetStr(10)),
+		Building:       types.Ptr(random.RandomAlphabetStr(10)),
+		Project:        types.Ptr(random.RandomAlphabetStr(10)),
 		Area:           random.RandomFloat32(10, 50),
-		NumberOfFloors: types.Ptr[int32](random.RandomInt32(1, 10)),
-		YearBuilt:      types.Ptr[int32](random.RandomInt32(1990, 2020)),
-		Orientation:    types.Ptr[string](orientations[random.RandomInt32(0, int32(len(orientations)-1))]),
-		EntranceWidth:  types.Ptr[float32](random.RandomFloat32(1, 10)),
-		Facade:         types.Ptr[float32](random.RandomFloat32(1, 10)),
+		NumberOfFloors: types.Ptr(random.RandomInt32(1, 10)),
+		YearBuilt:      types.Ptr(random.RandomInt32(1990, 2020)),
+		Orientation:    types.Ptr(orientations[random.RandomInt32(0, int32(len(orientations)-1))]),
+		EntranceWidth:  types.Ptr(random.RandomFloat32(1, 10)),
+		Facade:         types.Ptr(random.RandomFloat32(1, 10)),
 		FullAddress:    random.RandomAddress(),
 		District:       random.RandomDistrict(),
 		City:           random.RandomCity(),
-		Ward:           types.Ptr[string](random.RandomWard()),
+		Ward:           types.Ptr(random.RandomWard()),
 		PrimaryImage:   primaryImageUrl,
-		Lat:            types.Ptr[float64](random.RandomFloat64(10, 50)),
-		Lng:            types.Ptr[float64](random.RandomFloat64(10, 50)),
-		Description:    types.Ptr[string](random.RandomAlphanumericStr(100)),
+		Lat:            types.Ptr(random.RandomFloat64(10, 50)),
+		Lng:            types.Ptr(random.RandomFloat64(10, 50)),
+		Description:    types.Ptr(random.RandomAlphanumericStr(100)),
 		Type:           database.PROPERTYTYPE(propertyTypes[random.RandomInt32(0, int32(len(propertyTypes)-1))]),
 		Media: []dto.CreatePropertyMedia{
 			{
 				Url:         primaryImageUrl,
 				Type:        "IMAGE",
-				Description: types.Ptr[string](random.RandomAlphanumericStr(100)),
+				Description: types.Ptr(random.RandomAlphanumericStr(100)),
 			},
 			{
 				Url:         random.RandomURL(),
 				Type:        "VIDEO",
-				Description: types.Ptr[string](random.RandomAlphanumericStr(100)),
+				Description: types.Ptr(random.RandomAlphanumericStr(100)),
 			},
 			{
 				Url:         random.RandomURL(),
 				Type:        "VIDEO",
-				Description: types.Ptr[string](random.RandomAlphanumericStr(100)),
+				Description: types.Ptr(random.RandomAlphanumericStr(100)),
 			},
 			{
 				Url:         random.RandomURL(),
 				Type:        "IMAGE",
-				Description: types.Ptr[string](random.RandomAlphanumericStr(100)),
+				Description: types.Ptr(random.RandomAlphanumericStr(100)),
 			},
 		},
 		Features: []dto.CreatePropertyFeature{
 			{
 				FeatureID:   7,
-				Description: types.Ptr[string](random.RandomAlphanumericStr(100)),
+				Description: types.Ptr(random.RandomAlphanumericStr(100)),
 			},
 			{
 				FeatureID:   9,
-				Description: types.Ptr[string](random.RandomAlphanumericStr(100)),
+				Description: types.Ptr(random.RandomAlphanumericStr(100)),
 			},
 			{
 				FeatureID:   8,
-				Description: types.Ptr[string](random.RandomAlphanumericStr(100)),
+				Description: types.Ptr(random.RandomAlphanumericStr(100)),
 			},
 		},
 		Tags: []dto.CreatePropertyTag{
@@ -159,7 +159,7 @@ func sameProperties(t *testing.T, p1, p2 *model.PropertyModel) {
 
 	require.Equal(t, len(p1.Managers), len(p2.Managers))
 	pmaCmp := func(a, b model.PropertyManagerModel) int {
-		return cmp.Compare[string](a.ManagerID.String(), b.ManagerID.String())
+		return cmp.Compare(a.ManagerID.String(), b.ManagerID.String())
 	}
 	slices.SortFunc(p1.Managers, pmaCmp)
 	slices.SortFunc(p2.Managers, pmaCmp)
@@ -239,12 +239,12 @@ func comparePropertyAndCreateDto(t *testing.T, p *model.PropertyModel, arg *dto.
 
 func NewRandomPropertyDB(
 	t *testing.T,
-	testPropertyRepo Repo,
-	testAuthRepo auth_repo.Repo,
+	pRepo Repo,
+	aRepo auth_repo.Repo,
 ) *model.PropertyModel {
-	arg := PrepareRandomProperty(t, testAuthRepo, uuid.Nil)
+	arg := PrepareRandomProperty(t, aRepo, uuid.Nil)
 
-	p, err := testPropertyRepo.CreateProperty(context.Background(), &arg)
+	p, err := pRepo.CreateProperty(context.Background(), &arg)
 	require.NoError(t, err)
 	comparePropertyAndCreateDto(t, p, &arg)
 
@@ -252,29 +252,28 @@ func NewRandomPropertyDB(
 }
 
 func NewRandomPropertyModel(t *testing.T, creatorId uuid.UUID) *model.PropertyModel {
-	id, err := uuid.NewRandom()
-	require.NoError(t, err)
+	id := uuid.MustParse("978fe220-663f-464c-9afd-fe05de7be44b")
 
 	return &model.PropertyModel{
 		ID:             id,
 		CreatorID:      creatorId,
 		Name:           random.RandomAlphabetStr(10),
-		Building:       types.Ptr[string](random.RandomAlphabetStr(10)),
-		Project:        types.Ptr[string](random.RandomAlphabetStr(10)),
+		Building:       types.Ptr(random.RandomAlphabetStr(10)),
+		Project:        types.Ptr(random.RandomAlphabetStr(10)),
 		Area:           random.RandomFloat32(10, 50),
-		NumberOfFloors: types.Ptr[int32](random.RandomInt32(1, 10)),
-		YearBuilt:      types.Ptr[int32](random.RandomInt32(1990, 2020)),
-		Orientation:    types.Ptr[string](orientations[random.RandomInt32(0, int32(len(orientations)-1))]),
-		EntranceWidth:  types.Ptr[float32](random.RandomFloat32(1, 10)),
-		Facade:         types.Ptr[float32](random.RandomFloat32(1, 10)),
+		NumberOfFloors: types.Ptr(random.RandomInt32(1, 10)),
+		YearBuilt:      types.Ptr(random.RandomInt32(1990, 2020)),
+		Orientation:    types.Ptr(orientations[random.RandomInt32(0, int32(len(orientations)-1))]),
+		EntranceWidth:  types.Ptr(random.RandomFloat32(1, 10)),
+		Facade:         types.Ptr(random.RandomFloat32(1, 10)),
 		FullAddress:    random.RandomAddress(),
 		District:       random.RandomDistrict(),
 		City:           random.RandomCity(),
-		Ward:           types.Ptr[string](random.RandomWard()),
+		Ward:           types.Ptr(random.RandomWard()),
 		PrimaryImage:   1,
-		Lat:            types.Ptr[float64](random.RandomFloat64(10, 50)),
-		Lng:            types.Ptr[float64](random.RandomFloat64(10, 50)),
-		Description:    types.Ptr[string](random.RandomAlphanumericStr(100)),
+		Lat:            types.Ptr(random.RandomFloat64(10, 50)),
+		Lng:            types.Ptr(random.RandomFloat64(10, 50)),
+		Description:    types.Ptr(random.RandomAlphanumericStr(100)),
 		Type:           database.PROPERTYTYPE(propertyTypes[random.RandomInt32(0, int32(len(propertyTypes)-1))]),
 		IsPublic:       false,
 		// CreatedAt:      time.Now(),
@@ -292,31 +291,31 @@ func NewRandomPropertyModel(t *testing.T, creatorId uuid.UUID) *model.PropertyMo
 				PropertyID:  id,
 				Url:         random.RandomURL(),
 				Type:        "IMAGE",
-				Description: types.Ptr[string](random.RandomAlphanumericStr(100)),
+				Description: types.Ptr(random.RandomAlphanumericStr(100)),
 			},
 			{
 				ID:          2,
 				PropertyID:  id,
 				Url:         random.RandomURL(),
 				Type:        "VIDEO",
-				Description: types.Ptr[string](random.RandomAlphanumericStr(100)),
+				Description: types.Ptr(random.RandomAlphanumericStr(100)),
 			},
 		},
 		Features: []model.PropertyFeatureModel{
 			{
 				PropertyID:  id,
 				FeatureID:   7,
-				Description: types.Ptr[string](random.RandomAlphanumericStr(100)),
+				Description: types.Ptr(random.RandomAlphanumericStr(100)),
 			},
 			{
 				PropertyID:  id,
 				FeatureID:   9,
-				Description: types.Ptr[string](random.RandomAlphanumericStr(100)),
+				Description: types.Ptr(random.RandomAlphanumericStr(100)),
 			},
 			{
 				PropertyID:  id,
 				FeatureID:   8,
-				Description: types.Ptr[string](random.RandomAlphanumericStr(100)),
+				Description: types.Ptr(random.RandomAlphanumericStr(100)),
 			},
 		},
 		Tags: []model.PropertyTagModel{

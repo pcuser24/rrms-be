@@ -53,6 +53,8 @@ func (c *serverCommand) setupInternalServices(
 	applicationTaskDistributor := application_asynctask.NewTaskDistributor(c.asyncTaskDistributor)
 	c.internalServices.ApplicationService = application.NewService(
 		applicationRepo,
+		listingRepo,
+		propertyRepo,
 		applicationTaskDistributor,
 	)
 	c.internalServices.StorageService = storage.NewService(s)

@@ -70,7 +70,7 @@ SELECT * FROM listing_policies WHERE listing_id = $1;
 SELECT * FROM listing_units WHERE listing_id = $1;
 
 -- name: GetListingsOfProperty :many
-SELECT * FROM listings WHERE property_id = $1;
+SELECT id FROM listings WHERE property_id = $1;
 
 -- name: GetAllRentalPolicies :many
 SELECT * FROM rental_policies;
@@ -80,6 +80,9 @@ SELECT count(*) FROM listings WHERE id = $1 AND creator_id = $2 LIMIT 1;
 
 -- name: CheckValidUnitForListing :one
 SELECT count(*) FROM units WHERE units.id = $1 AND units.property_id IN (SELECT listings.property_id FROM listings WHERE listings.id = $2) LIMIT 1;
+
+-- name: CheckListingExpired :one
+SELECT expired_at < NOW() AND NOT active FROM listings WHERE id = $1 LIMIT 1;
 
 -- name: UpdateListing :exec
 UPDATE listings SET

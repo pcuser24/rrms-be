@@ -8,9 +8,12 @@ import (
 	"context"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 type Querier interface {
+	CheckApplicationVisibility(ctx context.Context, arg CheckApplicationVisibilityParams) (int64, error)
+	CheckListingExpired(ctx context.Context, id uuid.UUID) (pgtype.Bool, error)
 	CheckListingOwnership(ctx context.Context, arg CheckListingOwnershipParams) (int64, error)
 	CheckUnitManageability(ctx context.Context, arg CheckUnitManageabilityParams) (int64, error)
 	CheckUnitOfProperty(ctx context.Context, arg CheckUnitOfPropertyParams) (int64, error)
@@ -19,6 +22,7 @@ type Querier interface {
 	CreateApplicationCoap(ctx context.Context, arg CreateApplicationCoapParams) (ApplicationCoap, error)
 	CreateApplicationMinor(ctx context.Context, arg CreateApplicationMinorParams) (ApplicationMinor, error)
 	CreateApplicationPet(ctx context.Context, arg CreateApplicationPetParams) (ApplicationPet, error)
+	CreateApplicationUnit(ctx context.Context, arg CreateApplicationUnitParams) (ApplicationUnit, error)
 	CreateApplicationVehicle(ctx context.Context, arg CreateApplicationVehicleParams) (ApplicationVehicle, error)
 	CreateListing(ctx context.Context, arg CreateListingParams) (Listing, error)
 	CreateListingPolicy(ctx context.Context, arg CreateListingPolicyParams) (ListingPolicy, error)
@@ -50,14 +54,15 @@ type Querier interface {
 	GetApplicationCoaps(ctx context.Context, applicationID int64) ([]ApplicationCoap, error)
 	GetApplicationMinors(ctx context.Context, applicationID int64) ([]ApplicationMinor, error)
 	GetApplicationPets(ctx context.Context, applicationID int64) ([]ApplicationPet, error)
+	GetApplicationUnits(ctx context.Context, applicationID int64) ([]ApplicationUnit, error)
 	GetApplicationVehicles(ctx context.Context, applicationID int64) ([]ApplicationVehicle, error)
-	GetApplicationsByUserId(ctx context.Context, creatorID uuid.UUID) ([]Application, error)
-	GetApplicationsOfProperty(ctx context.Context, propertyID uuid.UUID) ([]Application, error)
-	GetApplicationsToUser(ctx context.Context, managerID uuid.UUID) ([]Application, error)
+	GetApplicationsByUserId(ctx context.Context, arg GetApplicationsByUserIdParams) ([]int64, error)
+	GetApplicationsOfProperty(ctx context.Context, propertyID uuid.UUID) ([]int64, error)
+	GetApplicationsToUser(ctx context.Context, arg GetApplicationsToUserParams) ([]int64, error)
 	GetListingByID(ctx context.Context, id uuid.UUID) (Listing, error)
 	GetListingPolicies(ctx context.Context, listingID uuid.UUID) ([]ListingPolicy, error)
 	GetListingUnits(ctx context.Context, listingID uuid.UUID) ([]ListingUnit, error)
-	GetListingsOfProperty(ctx context.Context, propertyID uuid.UUID) ([]Listing, error)
+	GetListingsOfProperty(ctx context.Context, propertyID uuid.UUID) ([]uuid.UUID, error)
 	GetManagedProperties(ctx context.Context, managerID uuid.UUID) ([]GetManagedPropertiesRow, error)
 	GetPropertyById(ctx context.Context, id uuid.UUID) (Property, error)
 	GetPropertyFeatures(ctx context.Context, propertyID uuid.UUID) ([]PropertyFeature, error)

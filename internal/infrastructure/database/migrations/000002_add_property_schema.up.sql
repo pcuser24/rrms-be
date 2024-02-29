@@ -33,7 +33,6 @@ CREATE TABLE IF NOT EXISTS "properties" (
   "updated_at" TIMESTAMPTZ DEFAULT NOW() NOT NULL
 );
 ALTER TABLE "properties" ADD CONSTRAINT "property_user_fkey" FOREIGN KEY ("creator_id") REFERENCES "User"("id") ON DELETE CASCADE;
-ALTER TABLE "properties" ADD CONSTRAINT "property_primary_image_fkey" FOREIGN KEY ("primary_image") REFERENCES "property_media"("id") ON DELETE CASCADE;
 COMMENT ON COLUMN "properties"."orientation" IS 'n,s,w,e,nw,ne,sw,se';
 
 CREATE TABLE IF NOT EXISTS "property_managers" (
@@ -94,5 +93,6 @@ CREATE TABLE IF NOT EXISTS "property_media" (
   "description" TEXT
 );
 ALTER TABLE "property_media" ADD CONSTRAINT "property_id_media_fkey" FOREIGN KEY ("property_id") REFERENCES "properties"("id") ON DELETE CASCADE;
+ALTER TABLE "properties" ADD CONSTRAINT "property_primary_image_fkey" FOREIGN KEY ("primary_image") REFERENCES "property_media"("id") ON DELETE CASCADE;
 
 END;

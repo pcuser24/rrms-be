@@ -3,7 +3,6 @@ INSERT INTO applications (
   creator_id,
   listing_id,
   property_id,
-  unit_ids,
   -- basic info
   full_name,
   dob,
@@ -12,6 +11,7 @@ INSERT INTO applications (
   profile_image,
   movein_date,
   preferred_term,
+  rental_intention,
   -- rental history
   rh_address,
   rh_city,
@@ -26,17 +26,13 @@ INSERT INTO applications (
   employment_position,
   employment_monthly_income,
   employment_comment,
-  employment_proofs_of_income,
   -- identity
   identity_type,
-  identity_number,
-  identity_issued_date,
-  identity_issued_by
+  identity_number
 ) VALUES (
   sqlc.arg(creator_id),
   sqlc.arg(listing_id),
   sqlc.arg(property_id),
-  sqlc.arg(unit_ids),
   -- basic info
   sqlc.arg(full_name),
   sqlc.arg(dob),
@@ -45,6 +41,7 @@ INSERT INTO applications (
   sqlc.arg(profile_image),
   sqlc.arg(movein_date),
   sqlc.arg(preferred_term),
+  sqlc.arg(rental_intention),
   -- rental history
   sqlc.narg(rh_address),
   sqlc.narg(rh_city),
@@ -59,12 +56,22 @@ INSERT INTO applications (
   sqlc.narg(employment_position),
   sqlc.narg(employment_monthly_income),
   sqlc.narg(employment_comment),
-  sqlc.narg(employment_proofs_of_income),
   -- identity
   sqlc.arg(identity_type),
-  sqlc.arg(identity_number),
-  sqlc.arg(identity_issued_date),
-  sqlc.arg(identity_issued_by)
+  sqlc.arg(identity_number)
+) RETURNING *;
+
+-- name: CreateApplicationUnit :one
+INSERT INTO application_units (
+  application_id,
+  unit_id,
+  listing_price,
+  offered_price
+) VALUES (
+  sqlc.arg(application_id),
+  sqlc.arg(unit_id),
+  sqlc.arg(listing_price),
+  sqlc.arg(offered_price)
 ) RETURNING *;
 
 -- name: CreateApplicationCoap :one
@@ -136,6 +143,9 @@ INSERT INTO application_vehicles (
 -- name: GetApplicationByID :one
 SELECT * FROM applications WHERE id = $1 LIMIT 1;
 
+-- name: GetApplicationUnits :many
+SELECT * FROM application_units WHERE application_id = $1;
+
 -- name: GetApplicationMinors :many
 SELECT * FROM application_minors WHERE application_id = $1;
 
@@ -149,15 +159,40 @@ SELECT * FROM application_pets WHERE application_id = $1;
 SELECT * FROM application_vehicles WHERE application_id = $1;
 
 -- name: GetApplicationsByUserId :many
-SELECT * FROM applications WHERE creator_id = $1;
+SELECT 
+  id 
+FROM 
+  applications 
+WHERE 
+  creator_id = $1 
+  AND created_at >= $2
+ORDER BY 
+  created_at DESC 
+LIMIT $3 OFFSET $4;
 
 -- name: GetApplicationsToUser :many
-SELECT * FROM applications WHERE property_id IN (
-  SELECT property_id FROM property_managers WHERE manager_id = $1
-);
+SELECT 
+  id 
+FROM 
+  applications 
+WHERE 
+  property_id IN (
+    SELECT property_id FROM property_managers WHERE manager_id = $1
+  ) AND created_at >= $2
+ORDER BY
+  created_at DESC
+LIMIT $3 OFFSET $4;
 
 -- name: GetApplicationsOfProperty :many
-SELECT * FROM applications WHERE property_id = $1;
+SELECT id FROM applications WHERE property_id = $1;
+
+-- name: CheckApplicationVisibility :one
+SELECT count(*) FROM applications WHERE 
+  id = $1 
+  AND (
+    property_id IN (SELECT property_id FROM property_managers WHERE manager_id = $2)
+    OR creator_id = $2
+  ); 
 
 -- name: UpdateApplicationStatus :exec
 UPDATE applications SET status = $1, updated_at = NOW() WHERE id = $2;

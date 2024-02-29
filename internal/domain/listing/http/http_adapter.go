@@ -1,6 +1,8 @@
 package http
 
 import (
+	"time"
+
 	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
@@ -114,7 +116,10 @@ func (a *adapter) searchListings() fiber.Handler {
 		}
 		// log.Println(payload)
 
+		// make sure properties are public and listings not expired
 		payload.PIsPublic = types.Ptr[bool](true)
+		payload.LMinExpiredAt = types.Ptr[time.Time](time.Now())
+
 		res, err := a.lService.SearchListingCombination(payload)
 		if err != nil {
 			if err == database.ErrRecordNotFound {

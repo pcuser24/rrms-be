@@ -8,7 +8,22 @@ import (
 	"github.com/user2410/rrms-backend/internal/utils/types"
 )
 
-type CreateApplicationMinorModel struct {
+type CreateApplicationUnit struct {
+	UnitID       uuid.UUID `json:"unitId" validate:"required,uuid4"`
+	ListingPrice int64     `json:"listingPrice" validate:"required,gt=0"`
+	OfferedPrice int64     `json:"offeredPrice" validate:"required,gt=0"`
+}
+
+func (p *CreateApplicationUnit) ToCreateApplicationUnitDB(aid int64) *database.CreateApplicationUnitParams {
+	return &database.CreateApplicationUnitParams{
+		ApplicationID: aid,
+		UnitID:        p.UnitID,
+		ListingPrice:  p.ListingPrice,
+		OfferedPrice:  p.OfferedPrice,
+	}
+}
+
+type CreateApplicationMinor struct {
 	FullName    string    `json:"fullName" validate:"required"`
 	Dob         time.Time `json:"dob" validate:"required"`
 	Email       *string   `json:"email" validate:"omitempty,email"`
@@ -16,7 +31,7 @@ type CreateApplicationMinorModel struct {
 	Description *string   `json:"description" validate:"omitempty"`
 }
 
-func (m *CreateApplicationMinorModel) ToCreateApplicationMinorDB(aid int64) *database.CreateApplicationMinorParams {
+func (m *CreateApplicationMinor) ToCreateApplicationMinorDB(aid int64) *database.CreateApplicationMinorParams {
 	return &database.CreateApplicationMinorParams{
 		ApplicationID: aid,
 		FullName:      m.FullName,
@@ -50,13 +65,13 @@ func (m *CreateApplicationCoapModel) ToCreateApplicationCoapDB(aid int64) *datab
 	}
 }
 
-type CreateApplicationPetModel struct {
+type CreateApplicationPet struct {
 	Type        string   `json:"type" validate:"required"`
 	Weight      *float32 `json:"weight" validate:"omitempty"`
 	Description *string  `json:"description" validate:"omitempty"`
 }
 
-func (m *CreateApplicationPetModel) ToCreateApplicationPetDB(aid int64) *database.CreateApplicationPetParams {
+func (m *CreateApplicationPet) ToCreateApplicationPetDB(aid int64) *database.CreateApplicationPetParams {
 	return &database.CreateApplicationPetParams{
 		ApplicationID: aid,
 		Type:          m.Type,
@@ -83,69 +98,65 @@ func (m *CreateApplicationVehicle) ToCreateApplicationVehicleDB(aid int64) *data
 }
 
 type CreateApplication struct {
-	ListingID                uuid.UUID   `json:"listingId" validate:"required,uuid4"`
-	PropertyID               uuid.UUID   `json:"propertyId" validate:"required,uuid4"`
-	UnitIds                  []uuid.UUID `json:"unitIds" validate:"required,dive,uuid4"`
-	CreatorID                uuid.UUID   `json:"creatorId" validate:"required,uuid4"`
-	FullName                 string      `json:"fullName" validate:"required"`
-	Email                    string      `json:"email" validate:"required,email"`
-	Phone                    string      `json:"phone" validate:"required"`
-	Dob                      time.Time   `json:"dob" validate:"required"`
-	ProfileImage             string      `json:"profileImage" validate:"required,url"`
-	MoveinDate               time.Time   `json:"moveinDate" validate:"required"`
-	PreferredTerm            int32       `json:"preferredTerm" validate:"required,gt=0"`
-	RhAddress                *string     `json:"rhAddress" validate:"omitempty"`
-	RhCity                   *string     `json:"rhCity" validate:"omitempty"`
-	RhDistrict               *string     `json:"rhDistrict" validate:"omitempty"`
-	RhWard                   *string     `json:"rhWard" validate:"omitempty"`
-	RhRentalDuration         *int32      `json:"rhRentalDuration" validate:"omitempty,gt=0"`
-	RhMonthlyPayment         *float32    `json:"rhMonthlyPayment" validate:"omitempty,gt=0"`
-	RhReasonForLeaving       *string     `json:"rhReasonForLeaving" validate:"omitempty"`
-	EmploymentStatus         string      `json:"employmentStatus" validate:"required,oneof=UNEMPLOYED EMPLOYED SELF-EMPLOYED RETIRED STUDENT"`
-	EmploymentCompanyName    *string     `json:"employmentCompanyName" validate:"omitempty"`
-	EmploymentPosition       *string     `json:"employmentPosition" validate:"omitempty"`
-	EmploymentMonthlyIncome  *float32    `json:"employmentMonthlyIncome" validate:"omitempty,gt=0"`
-	EmploymentComment        *string     `json:"employmentComment" validate:"omitempty"`
-	EmploymentProofsOfIncome []string    `json:"employmentProofsOfIncome" validate:"omitempty"`
-	IdentityType             string      `json:"identityType" validate:"required,oneof=ID CITIZENIDENTIFICATION PASSPORT DRIVERLICENSE"`
-	IdentityNumber           string      `json:"identityNumber" validate:"required"`
-	IdentityIssuedDate       time.Time   `json:"identityIssuedDate" validate:"required"`
-	IdentityIssuedBy         string      `json:"identityIssuedBy" validate:"required"`
+	ListingID               uuid.UUID `json:"listingId" validate:"omitempty,uuid4"`
+	PropertyID              uuid.UUID `json:"propertyId" validate:"required,uuid4"`
+	CreatorID               uuid.UUID `json:"creatorId" validate:"required,uuid4"`
+	FullName                string    `json:"fullName" validate:"required"`
+	Email                   string    `json:"email" validate:"required,email"`
+	Phone                   string    `json:"phone" validate:"required"`
+	Dob                     time.Time `json:"dob" validate:"required"`
+	ProfileImage            string    `json:"profileImage" validate:"required,url"`
+	MoveinDate              time.Time `json:"moveinDate" validate:"required"`
+	PreferredTerm           int32     `json:"preferredTerm" validate:"required,gt=0"`
+	RentalIntention         string    `json:"rentalIntention" validate:"required"`
+	RhAddress               *string   `json:"rhAddress" validate:"omitempty"`
+	RhCity                  *string   `json:"rhCity" validate:"omitempty"`
+	RhDistrict              *string   `json:"rhDistrict" validate:"omitempty"`
+	RhWard                  *string   `json:"rhWard" validate:"omitempty"`
+	RhRentalDuration        *int32    `json:"rhRentalDuration" validate:"omitempty,gt=0"`
+	RhMonthlyPayment        *int64    `json:"rhMonthlyPayment" validate:"omitempty,gt=0"`
+	RhReasonForLeaving      *string   `json:"rhReasonForLeaving" validate:"omitempty"`
+	EmploymentStatus        string    `json:"employmentStatus" validate:"required,oneof=UNEMPLOYED EMPLOYED SELF-EMPLOYED RETIRED STUDENT"`
+	EmploymentCompanyName   *string   `json:"employmentCompanyName" validate:"omitempty"`
+	EmploymentPosition      *string   `json:"employmentPosition" validate:"omitempty"`
+	EmploymentMonthlyIncome *int64    `json:"employmentMonthlyIncome" validate:"omitempty,gt=0"`
+	EmploymentComment       *string   `json:"employmentComment" validate:"omitempty"`
+	IdentityType            string    `json:"identityType" validate:"required,oneof=ID CITIZENIDENTIFICATION PASSPORT DRIVERLICENSE"`
+	IdentityNumber          string    `json:"identityNumber" validate:"required"`
 
-	Minors   []CreateApplicationMinorModel `json:"minors" validate:"dive"`
-	Coaps    []CreateApplicationCoapModel  `json:"coaps" validate:"dive"`
-	Pets     []CreateApplicationPetModel   `json:"pets" validate:"dive"`
-	Vehicles []CreateApplicationVehicle    `json:"vehicles" validate:"dive"`
+	Units    []CreateApplicationUnit      `json:"units" validate:"required,dive"`
+	Minors   []CreateApplicationMinor     `json:"minors" validate:"dive"`
+	Coaps    []CreateApplicationCoapModel `json:"coaps" validate:"dive"`
+	Pets     []CreateApplicationPet       `json:"pets" validate:"dive"`
+	Vehicles []CreateApplicationVehicle   `json:"vehicles" validate:"dive"`
 }
 
 func (a *CreateApplication) ToCreateApplicationDB() *database.CreateApplicationParams {
 	return &database.CreateApplicationParams{
-		PropertyID:               a.PropertyID,
-		UnitIds:                  a.UnitIds,
-		CreatorID:                a.CreatorID,
-		FullName:                 a.FullName,
-		Email:                    a.Email,
-		Phone:                    a.Phone,
-		Dob:                      a.Dob,
-		ProfileImage:             a.ProfileImage,
-		MoveinDate:               a.MoveinDate,
-		PreferredTerm:            a.PreferredTerm,
-		EmploymentStatus:         a.EmploymentStatus,
-		EmploymentCompanyName:    types.StrN(a.EmploymentCompanyName),
-		EmploymentPosition:       types.StrN(a.EmploymentPosition),
-		EmploymentMonthlyIncome:  types.Float32N(a.EmploymentMonthlyIncome),
-		EmploymentComment:        types.StrN(a.EmploymentComment),
-		EmploymentProofsOfIncome: a.EmploymentProofsOfIncome,
-		RhAddress:                types.StrN(a.RhAddress),
-		RhCity:                   types.StrN(a.RhCity),
-		RhDistrict:               types.StrN(a.RhDistrict),
-		RhWard:                   types.StrN(a.RhWard),
-		RhRentalDuration:         types.Int32N(a.RhRentalDuration),
-		RhMonthlyPayment:         types.Float32N(a.RhMonthlyPayment),
-		RhReasonForLeaving:       types.StrN(a.RhReasonForLeaving),
-		IdentityType:             a.IdentityType,
-		IdentityNumber:           a.IdentityNumber,
-		IdentityIssuedDate:       a.IdentityIssuedDate,
-		IdentityIssuedBy:         a.IdentityIssuedBy,
+		ListingID:               a.ListingID,
+		PropertyID:              a.PropertyID,
+		CreatorID:               a.CreatorID,
+		FullName:                a.FullName,
+		Email:                   a.Email,
+		Phone:                   a.Phone,
+		Dob:                     a.Dob,
+		ProfileImage:            a.ProfileImage,
+		MoveinDate:              a.MoveinDate,
+		PreferredTerm:           a.PreferredTerm,
+		RentalIntention:         a.RentalIntention,
+		EmploymentStatus:        a.EmploymentStatus,
+		EmploymentCompanyName:   types.StrN(a.EmploymentCompanyName),
+		EmploymentPosition:      types.StrN(a.EmploymentPosition),
+		EmploymentMonthlyIncome: types.Int64N(a.EmploymentMonthlyIncome),
+		EmploymentComment:       types.StrN(a.EmploymentComment),
+		RhAddress:               types.StrN(a.RhAddress),
+		RhCity:                  types.StrN(a.RhCity),
+		RhDistrict:              types.StrN(a.RhDistrict),
+		RhWard:                  types.StrN(a.RhWard),
+		RhRentalDuration:        types.Int32N(a.RhRentalDuration),
+		RhMonthlyPayment:        types.Int64N(a.RhMonthlyPayment),
+		RhReasonForLeaving:      types.StrN(a.RhReasonForLeaving),
+		IdentityType:            a.IdentityType,
+		IdentityNumber:          a.IdentityNumber,
 	}
 }

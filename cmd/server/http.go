@@ -4,7 +4,7 @@ import (
 	"log"
 	"time"
 
-	application_http "github.com/user2410/rrms-backend/internal/domain/application"
+	application_http "github.com/user2410/rrms-backend/internal/domain/application/http"
 	auth_http "github.com/user2410/rrms-backend/internal/domain/auth/http"
 	listing_http "github.com/user2410/rrms-backend/internal/domain/listing/http"
 	property_http "github.com/user2410/rrms-backend/internal/domain/property/http"

@@ -183,3 +183,16 @@ func NewRandomListingModel(
 		},
 	}
 }
+
+func NewRandomListingDBFromArg(
+	t *testing.T,
+	testListingRepo Repo,
+	arg *dto.CreateListing,
+) *model.ListingModel {
+
+	p, err := testListingRepo.CreateListing(context.Background(), arg)
+	require.NoError(t, err)
+	compareListingAndCreateDto(t, p, arg)
+
+	return p
+}

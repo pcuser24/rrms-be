@@ -43,6 +43,21 @@ func (m *MockRepo) EXPECT() *MockRepoMockRecorder {
 	return m.recorder
 }
 
+// CheckVisibility mocks base method.
+func (m *MockRepo) CheckVisibility(arg0 context.Context, arg1 int64, arg2 uuid.UUID) (bool, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CheckVisibility", arg0, arg1, arg2)
+	ret0, _ := ret[0].(bool)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CheckVisibility indicates an expected call of CheckVisibility.
+func (mr *MockRepoMockRecorder) CheckVisibility(arg0, arg1, arg2 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CheckVisibility", reflect.TypeOf((*MockRepo)(nil).CheckVisibility), arg0, arg1, arg2)
+}
+
 // CreateApplication mocks base method.
 func (m *MockRepo) CreateApplication(arg0 context.Context, arg1 *dto.CreateApplication) (*model.ApplicationModel, error) {
 	m.ctrl.T.Helper()
@@ -87,11 +102,26 @@ func (mr *MockRepoMockRecorder) GetApplicationById(arg0, arg1 any) *gomock.Call 
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetApplicationById", reflect.TypeOf((*MockRepo)(nil).GetApplicationById), arg0, arg1)
 }
 
+// GetApplicationsByIds mocks base method.
+func (m *MockRepo) GetApplicationsByIds(arg0 context.Context, arg1 []int64, arg2 []string) ([]model.ApplicationModel, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetApplicationsByIds", arg0, arg1, arg2)
+	ret0, _ := ret[0].([]model.ApplicationModel)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetApplicationsByIds indicates an expected call of GetApplicationsByIds.
+func (mr *MockRepoMockRecorder) GetApplicationsByIds(arg0, arg1, arg2 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetApplicationsByIds", reflect.TypeOf((*MockRepo)(nil).GetApplicationsByIds), arg0, arg1, arg2)
+}
+
 // GetApplicationsByUserId mocks base method.
-func (m *MockRepo) GetApplicationsByUserId(arg0 context.Context, arg1 uuid.UUID) ([]model.ApplicationModel, error) {
+func (m *MockRepo) GetApplicationsByUserId(arg0 context.Context, arg1 uuid.UUID) ([]int64, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetApplicationsByUserId", arg0, arg1)
-	ret0, _ := ret[0].([]model.ApplicationModel)
+	ret0, _ := ret[0].([]int64)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -103,10 +133,10 @@ func (mr *MockRepoMockRecorder) GetApplicationsByUserId(arg0, arg1 any) *gomock.
 }
 
 // GetApplicationsToUser mocks base method.
-func (m *MockRepo) GetApplicationsToUser(arg0 context.Context, arg1 uuid.UUID) ([]model.ApplicationModel, error) {
+func (m *MockRepo) GetApplicationsToUser(arg0 context.Context, arg1 uuid.UUID) ([]int64, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetApplicationsToUser", arg0, arg1)
-	ret0, _ := ret[0].([]model.ApplicationModel)
+	ret0, _ := ret[0].([]int64)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -115,6 +145,21 @@ func (m *MockRepo) GetApplicationsToUser(arg0 context.Context, arg1 uuid.UUID) (
 func (mr *MockRepoMockRecorder) GetApplicationsToUser(arg0, arg1 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetApplicationsToUser", reflect.TypeOf((*MockRepo)(nil).GetApplicationsToUser), arg0, arg1)
+}
+
+// GetRecentApplicationsOfUser mocks base method.
+func (m *MockRepo) GetRecentApplicationsOfUser(arg0 context.Context, arg1, arg2 uuid.UUID, arg3 int) ([]int64, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetRecentApplicationsOfUser", arg0, arg1, arg2, arg3)
+	ret0, _ := ret[0].([]int64)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetRecentApplicationsOfUser indicates an expected call of GetRecentApplicationsOfUser.
+func (mr *MockRepoMockRecorder) GetRecentApplicationsOfUser(arg0, arg1, arg2, arg3 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRecentApplicationsOfUser", reflect.TypeOf((*MockRepo)(nil).GetRecentApplicationsOfUser), arg0, arg1, arg2, arg3)
 }
 
 // UpdateApplicationStatus mocks base method.

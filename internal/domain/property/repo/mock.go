@@ -14,10 +14,8 @@ import (
 	reflect "reflect"
 
 	uuid "github.com/google/uuid"
-	model "github.com/user2410/rrms-backend/internal/domain/application/model"
-	model0 "github.com/user2410/rrms-backend/internal/domain/listing/model"
 	dto "github.com/user2410/rrms-backend/internal/domain/property/dto"
-	model1 "github.com/user2410/rrms-backend/internal/domain/property/model"
+	model "github.com/user2410/rrms-backend/internal/domain/property/model"
 	database "github.com/user2410/rrms-backend/internal/infrastructure/database"
 	gomock "go.uber.org/mock/gomock"
 )
@@ -46,10 +44,10 @@ func (m *MockRepo) EXPECT() *MockRepoMockRecorder {
 }
 
 // CreateProperty mocks base method.
-func (m *MockRepo) CreateProperty(arg0 context.Context, arg1 *dto.CreateProperty) (*model1.PropertyModel, error) {
+func (m *MockRepo) CreateProperty(arg0 context.Context, arg1 *dto.CreateProperty) (*model.PropertyModel, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CreateProperty", arg0, arg1)
-	ret0, _ := ret[0].(*model1.PropertyModel)
+	ret0, _ := ret[0].(*model.PropertyModel)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -75,10 +73,10 @@ func (mr *MockRepoMockRecorder) DeleteProperty(arg0, arg1 any) *gomock.Call {
 }
 
 // GetApplicationsOfProperty mocks base method.
-func (m *MockRepo) GetApplicationsOfProperty(arg0 context.Context, arg1 uuid.UUID) ([]model.ApplicationModel, error) {
+func (m *MockRepo) GetApplicationsOfProperty(arg0 context.Context, arg1 uuid.UUID) ([]int64, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetApplicationsOfProperty", arg0, arg1)
-	ret0, _ := ret[0].([]model.ApplicationModel)
+	ret0, _ := ret[0].([]int64)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -90,10 +88,10 @@ func (mr *MockRepoMockRecorder) GetApplicationsOfProperty(arg0, arg1 any) *gomoc
 }
 
 // GetListingsOfProperty mocks base method.
-func (m *MockRepo) GetListingsOfProperty(arg0 context.Context, arg1 uuid.UUID) ([]model0.ListingModel, error) {
+func (m *MockRepo) GetListingsOfProperty(arg0 context.Context, arg1 uuid.UUID) ([]uuid.UUID, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetListingsOfProperty", arg0, arg1)
-	ret0, _ := ret[0].([]model0.ListingModel)
+	ret0, _ := ret[0].([]uuid.UUID)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -120,10 +118,10 @@ func (mr *MockRepoMockRecorder) GetManagedProperties(arg0, arg1 any) *gomock.Cal
 }
 
 // GetPropertiesByIds mocks base method.
-func (m *MockRepo) GetPropertiesByIds(arg0 context.Context, arg1, arg2 []string) ([]model1.PropertyModel, error) {
+func (m *MockRepo) GetPropertiesByIds(arg0 context.Context, arg1, arg2 []string) ([]model.PropertyModel, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetPropertiesByIds", arg0, arg1, arg2)
-	ret0, _ := ret[0].([]model1.PropertyModel)
+	ret0, _ := ret[0].([]model.PropertyModel)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -135,10 +133,10 @@ func (mr *MockRepoMockRecorder) GetPropertiesByIds(arg0, arg1, arg2 any) *gomock
 }
 
 // GetPropertyById mocks base method.
-func (m *MockRepo) GetPropertyById(arg0 context.Context, arg1 uuid.UUID) (*model1.PropertyModel, error) {
+func (m *MockRepo) GetPropertyById(arg0 context.Context, arg1 uuid.UUID) (*model.PropertyModel, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetPropertyById", arg0, arg1)
-	ret0, _ := ret[0].(*model1.PropertyModel)
+	ret0, _ := ret[0].(*model.PropertyModel)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -150,10 +148,10 @@ func (mr *MockRepoMockRecorder) GetPropertyById(arg0, arg1 any) *gomock.Call {
 }
 
 // GetPropertyManagers mocks base method.
-func (m *MockRepo) GetPropertyManagers(arg0 context.Context, arg1 uuid.UUID) ([]model1.PropertyManagerModel, error) {
+func (m *MockRepo) GetPropertyManagers(arg0 context.Context, arg1 uuid.UUID) ([]model.PropertyManagerModel, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetPropertyManagers", arg0, arg1)
-	ret0, _ := ret[0].([]model1.PropertyManagerModel)
+	ret0, _ := ret[0].([]model.PropertyManagerModel)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
