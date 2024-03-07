@@ -8,8 +8,9 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/stretchr/testify/require"
+	application_repo "github.com/user2410/rrms-backend/internal/domain/application/repo"
 	"github.com/user2410/rrms-backend/internal/domain/listing"
-	"github.com/user2410/rrms-backend/internal/domain/listing/repo"
+	listing_repo "github.com/user2410/rrms-backend/internal/domain/listing/repo"
 	"github.com/user2410/rrms-backend/internal/domain/property"
 	property_repo "github.com/user2410/rrms-backend/internal/domain/property/repo"
 	"github.com/user2410/rrms-backend/internal/domain/unit"
@@ -20,22 +21,18 @@ import (
 )
 
 type server struct {
-	ur         unit_repo.Repo
-	pr         property_repo.Repo
-	lr         repo.Repo
 	tokenMaker token.Maker
 	router     http.Server
 }
 
-func newTestServer(t *testing.T, pr property_repo.Repo, ur unit_repo.Repo, lr repo.Repo) *server {
+func newTestServer(t *testing.T, pr property_repo.Repo, ur unit_repo.Repo, lr listing_repo.Repo, ar application_repo.Repo) *server {
 
 	tokenMaker, err := token.NewJWTMaker(random.RandomAlphanumericStr(32))
 	require.NoError(t, err)
 	require.NotNil(t, tokenMaker)
 
-	// initialize lService
 	uService := unit.NewService(ur)
-	pService := property.NewService(pr, ur)
+	pService := property.NewService(pr, ur, lr, ar)
 	lService := listing.NewService(lr, pr)
 
 	// initialize http router
@@ -52,9 +49,6 @@ func newTestServer(t *testing.T, pr property_repo.Repo, ur unit_repo.Repo, lr re
 	NewAdapter(lService, pService, uService).RegisterServer(httpServer.GetApiRoute(), tokenMaker)
 
 	return &server{
-		pr:         pr,
-		ur:         ur,
-		lr:         lr,
 		tokenMaker: tokenMaker,
 		router:     httpServer,
 	}

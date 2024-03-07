@@ -70,7 +70,17 @@ SELECT * FROM listing_policies WHERE listing_id = $1;
 SELECT * FROM listing_units WHERE listing_id = $1;
 
 -- name: GetListingsOfProperty :many
-SELECT id FROM listings WHERE property_id = $1;
+SELECT id
+FROM listings
+WHERE 
+  property_id = $1
+  AND CASE
+    WHEN $2 THEN expired_at <= NOW()
+    WHEN NOT $2 THEN expired_at > NOW()
+  END
+ORDER BY
+  created_at DESC
+LIMIT $3 OFFSET $4;
 
 -- name: GetAllRentalPolicies :many
 SELECT * FROM rental_policies;

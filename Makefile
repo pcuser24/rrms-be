@@ -26,8 +26,12 @@ sqlcgen:
 # Operations
 build:
 	go build -o rrmsd
+
 serve:
 	go run main.go serve
+
+payment:
+	go run main.go payment
 
 
 # Mocking:
@@ -68,7 +72,9 @@ test_pkg:
 # Start s3
 ls_s3:
 	localstack start -d && \
+	sleep 10 && \
 	awslocal s3api create-bucket --bucket rrms-image --region ap-southeast-1 --create-bucket-configuration LocationConstraint=ap-southeast-1 && \
 	awslocal s3api put-bucket-cors --bucket rrms-image --cors-configuration file://$$PWD/internal/infrastructure/aws/s3/cors-config.json
+
 
 .PHONY: sqlcgen build serve migratecreate migrateup migrateup1 migratedown migratedown1 mock_repo mock_asynctask test test_db test_pkg ls_s3

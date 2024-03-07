@@ -8,6 +8,8 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/stretchr/testify/require"
+	application_repo "github.com/user2410/rrms-backend/internal/domain/application/repo"
+	listing_repo "github.com/user2410/rrms-backend/internal/domain/listing/repo"
 	"github.com/user2410/rrms-backend/internal/domain/property"
 	"github.com/user2410/rrms-backend/internal/domain/property/repo"
 	unit_repo "github.com/user2410/rrms-backend/internal/domain/unit/repo"
@@ -23,14 +25,14 @@ type server struct {
 	router     http.Server
 }
 
-func newTestServer(t *testing.T, pr repo.Repo, ur unit_repo.Repo) *server {
+func newTestServer(t *testing.T, pr repo.Repo, ur unit_repo.Repo, lr listing_repo.Repo, ar application_repo.Repo) *server {
 
 	tokenMaker, err := token.NewJWTMaker(random.RandomAlphanumericStr(32))
 	require.NoError(t, err)
 	require.NotNil(t, tokenMaker)
 
 	// initialize service
-	service := property.NewService(pr, ur)
+	service := property.NewService(pr, ur, lr, ar)
 
 	// initialize http router
 	httpServer := http.NewServer(

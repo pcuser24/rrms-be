@@ -29,7 +29,7 @@ func TestGetPropertyManagers(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, len(p.Managers), len(managers))
 	pmaCmp := func(a, b model.PropertyManagerModel) int {
-		return cmp.Compare[string](a.ManagerID.String(), b.ManagerID.String())
+		return cmp.Compare(a.ManagerID.String(), b.ManagerID.String())
 	}
 	slices.SortFunc(p.Managers, pmaCmp)
 	slices.SortFunc(managers, pmaCmp)
@@ -52,7 +52,7 @@ func TestGetPropertyById(t *testing.T) {
 }
 
 func TestGetPropertyByIds(t *testing.T) {
-	selectedFields := random.RandomlyPickNFromSlice[string](dto.GetRetrievableFields(), 5)
+	selectedFields := random.RandomlyPickNFromSlice(dto.GetRetrievableFields(), 5)
 	p1 := NewRandomPropertyDB(t, testPropertyRepo, testAuthRepo)
 	p2 := NewRandomPropertyDB(t, testPropertyRepo, testAuthRepo)
 
@@ -135,7 +135,7 @@ func TestPublicity(t *testing.T) {
 
 	err := testPropertyRepo.UpdateProperty(context.Background(), &dto.UpdateProperty{
 		ID:       p.ID,
-		IsPublic: types.Ptr[bool](true),
+		IsPublic: types.Ptr(true),
 	})
 	require.NoError(t, err)
 
@@ -150,24 +150,24 @@ func TestUpdateProperty(t *testing.T) {
 	// case 0: all fields are valid
 	arg := dto.UpdateProperty{
 		ID:             p.ID,
-		Name:           types.Ptr[string](random.RandomAlphanumericStr(100)),
-		Building:       types.Ptr[string](random.RandomAlphanumericStr(100)),
-		Project:        types.Ptr[string](random.RandomAlphanumericStr(100)),
+		Name:           types.Ptr(random.RandomAlphanumericStr(100)),
+		Building:       types.Ptr(random.RandomAlphanumericStr(100)),
+		Project:        types.Ptr(random.RandomAlphanumericStr(100)),
 		Area:           types.Ptr[float32](random.RandomFloat32(10, 50)),
 		NumberOfFloors: types.Ptr[int32](random.RandomInt32(1, 10)),
 		YearBuilt:      types.Ptr[int32](random.RandomInt32(1990, 2020)),
-		Orientation:    types.Ptr[string](orientations[random.RandomInt32(0, int32(len(orientations)-1))]),
+		Orientation:    types.Ptr(orientations[random.RandomInt32(0, int32(len(orientations)-1))]),
 		EntranceWidth:  types.Ptr[float32](random.RandomFloat32(1, 10)),
 		Facade:         types.Ptr[float32](random.RandomFloat32(1, 10)),
-		FullAddress:    types.Ptr[string](random.RandomAlphanumericStr(100)),
-		District:       types.Ptr[string](random.RandomAlphanumericStr(100)),
-		City:           types.Ptr[string](random.RandomAlphanumericStr(100)),
-		Ward:           types.Ptr[string](random.RandomAlphanumericStr(100)),
-		Lat:            types.Ptr[float64](random.RandomFloat64(10, 50)),
-		Lng:            types.Ptr[float64](random.RandomFloat64(10, 50)),
-		PrimaryImage:   types.Ptr[int64](random.RandomInt64(1, 10)),
-		Description:    types.Ptr[string](random.RandomAlphanumericStr(100)),
-		IsPublic:       utils.Ternary(p.IsPublic, types.Ptr[bool](false), types.Ptr[bool](true)).(*bool),
+		FullAddress:    types.Ptr(random.RandomAlphanumericStr(100)),
+		District:       types.Ptr(random.RandomAlphanumericStr(100)),
+		City:           types.Ptr(random.RandomAlphanumericStr(100)),
+		Ward:           types.Ptr(random.RandomAlphanumericStr(100)),
+		Lat:            types.Ptr(random.RandomFloat64(10, 50)),
+		Lng:            types.Ptr(random.RandomFloat64(10, 50)),
+		PrimaryImage:   types.Ptr(random.RandomInt64(1, 10)),
+		Description:    types.Ptr(random.RandomAlphanumericStr(100)),
+		IsPublic:       utils.Ternary(p.IsPublic, types.Ptr(false), types.Ptr(true)),
 	}
 	err := testPropertyRepo.UpdateProperty(context.Background(), &arg)
 	require.NoError(t, err)

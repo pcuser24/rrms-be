@@ -11,6 +11,14 @@ import (
 
 const ListingFieldsLocalKey = "listingFields"
 
+var retrievableFields = []string{"creator_id", "property_id", "title", "description", "full_name", "email", "phone", "contact_type", "price", "price_negotiable", "security_deposit", "lease_term", "pets_allowed", "number_of_residents", "priority", "active", "created_at", "updated_at", "expired_at", "policies", "units"}
+
+func GetRetrievableFields() []string {
+	rfs := make([]string, len(retrievableFields))
+	copy(rfs, retrievableFields)
+	return rfs
+}
+
 type GetListingsByIdsQuery struct {
 	GetListingsQuery
 	IDs []uuid.UUID `query:"listingIds" validate:"required,dive,uuid4"`
@@ -45,11 +53,18 @@ func (q *GetListingsQuery) QueryParser(ctx *fiber.Ctx) error {
 func ValidateQuery(fl validator.FieldLevel) bool {
 	if fields, ok := fl.Field().Interface().([]string); ok {
 		for _, f := range fields {
-			if !slices.Contains([]string{"creator_id", "property_id", "title", "description", "full_name", "email", "phone", "contact_type", "price", "price_negotiable", "security_deposit", "lease_term", "pets_allowed", "number_of_residents", "priority", "active", "created_at", "updated_at", "expired_at", "policies", "units"}, f) {
+			if !slices.Contains(retrievableFields, f) {
 				return false
 			}
 		}
 		return true
 	}
 	return false
+}
+
+type GetListingsOfPropertyQuery struct {
+	GetListingsQuery
+	Expired bool   `query:"expired" validate:"omitempty"`
+	Limit   *int32 `query:"limit" validate:"omitempty,gt=0"`
+	Offset  *int32 `json:"offset" validate:"omitempty,gt=0"`
 }

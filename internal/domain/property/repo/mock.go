@@ -14,7 +14,9 @@ import (
 	reflect "reflect"
 
 	uuid "github.com/google/uuid"
-	dto "github.com/user2410/rrms-backend/internal/domain/property/dto"
+	dto "github.com/user2410/rrms-backend/internal/domain/application/dto"
+	dto0 "github.com/user2410/rrms-backend/internal/domain/listing/dto"
+	dto1 "github.com/user2410/rrms-backend/internal/domain/property/dto"
 	model "github.com/user2410/rrms-backend/internal/domain/property/model"
 	database "github.com/user2410/rrms-backend/internal/infrastructure/database"
 	gomock "go.uber.org/mock/gomock"
@@ -44,7 +46,7 @@ func (m *MockRepo) EXPECT() *MockRepoMockRecorder {
 }
 
 // CreateProperty mocks base method.
-func (m *MockRepo) CreateProperty(arg0 context.Context, arg1 *dto.CreateProperty) (*model.PropertyModel, error) {
+func (m *MockRepo) CreateProperty(arg0 context.Context, arg1 *dto1.CreateProperty) (*model.PropertyModel, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CreateProperty", arg0, arg1)
 	ret0, _ := ret[0].(*model.PropertyModel)
@@ -73,33 +75,33 @@ func (mr *MockRepoMockRecorder) DeleteProperty(arg0, arg1 any) *gomock.Call {
 }
 
 // GetApplicationsOfProperty mocks base method.
-func (m *MockRepo) GetApplicationsOfProperty(arg0 context.Context, arg1 uuid.UUID) ([]int64, error) {
+func (m *MockRepo) GetApplicationsOfProperty(arg0 context.Context, arg1 uuid.UUID, arg2 *dto.GetApplicationsOfPropertyQuery) ([]int64, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetApplicationsOfProperty", arg0, arg1)
+	ret := m.ctrl.Call(m, "GetApplicationsOfProperty", arg0, arg1, arg2)
 	ret0, _ := ret[0].([]int64)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetApplicationsOfProperty indicates an expected call of GetApplicationsOfProperty.
-func (mr *MockRepoMockRecorder) GetApplicationsOfProperty(arg0, arg1 any) *gomock.Call {
+func (mr *MockRepoMockRecorder) GetApplicationsOfProperty(arg0, arg1, arg2 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetApplicationsOfProperty", reflect.TypeOf((*MockRepo)(nil).GetApplicationsOfProperty), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetApplicationsOfProperty", reflect.TypeOf((*MockRepo)(nil).GetApplicationsOfProperty), arg0, arg1, arg2)
 }
 
 // GetListingsOfProperty mocks base method.
-func (m *MockRepo) GetListingsOfProperty(arg0 context.Context, arg1 uuid.UUID) ([]uuid.UUID, error) {
+func (m *MockRepo) GetListingsOfProperty(arg0 context.Context, arg1 uuid.UUID, arg2 *dto0.GetListingsOfPropertyQuery) ([]uuid.UUID, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetListingsOfProperty", arg0, arg1)
+	ret := m.ctrl.Call(m, "GetListingsOfProperty", arg0, arg1, arg2)
 	ret0, _ := ret[0].([]uuid.UUID)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetListingsOfProperty indicates an expected call of GetListingsOfProperty.
-func (mr *MockRepoMockRecorder) GetListingsOfProperty(arg0, arg1 any) *gomock.Call {
+func (mr *MockRepoMockRecorder) GetListingsOfProperty(arg0, arg1, arg2 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetListingsOfProperty", reflect.TypeOf((*MockRepo)(nil).GetListingsOfProperty), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetListingsOfProperty", reflect.TypeOf((*MockRepo)(nil).GetListingsOfProperty), arg0, arg1, arg2)
 }
 
 // GetManagedProperties mocks base method.
@@ -178,10 +180,10 @@ func (mr *MockRepoMockRecorder) IsPublic(arg0, arg1 any) *gomock.Call {
 }
 
 // SearchPropertyCombination mocks base method.
-func (m *MockRepo) SearchPropertyCombination(arg0 context.Context, arg1 *dto.SearchPropertyCombinationQuery) (*dto.SearchPropertyCombinationResponse, error) {
+func (m *MockRepo) SearchPropertyCombination(arg0 context.Context, arg1 *dto1.SearchPropertyCombinationQuery) (*dto1.SearchPropertyCombinationResponse, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "SearchPropertyCombination", arg0, arg1)
-	ret0, _ := ret[0].(*dto.SearchPropertyCombinationResponse)
+	ret0, _ := ret[0].(*dto1.SearchPropertyCombinationResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -193,7 +195,7 @@ func (mr *MockRepoMockRecorder) SearchPropertyCombination(arg0, arg1 any) *gomoc
 }
 
 // UpdateProperty mocks base method.
-func (m *MockRepo) UpdateProperty(arg0 context.Context, arg1 *dto.UpdateProperty) error {
+func (m *MockRepo) UpdateProperty(arg0 context.Context, arg1 *dto1.UpdateProperty) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "UpdateProperty", arg0, arg1)
 	ret0, _ := ret[0].(error)

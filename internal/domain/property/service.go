@@ -2,12 +2,20 @@ package property
 
 import (
 	"context"
+	"fmt"
 
-	"github.com/user2410/rrms-backend/internal/domain/property/repo"
+	application_dto "github.com/user2410/rrms-backend/internal/domain/application/dto"
+	application_model "github.com/user2410/rrms-backend/internal/domain/application/model"
+	application_repo "github.com/user2410/rrms-backend/internal/domain/application/repo"
+	property_repo "github.com/user2410/rrms-backend/internal/domain/property/repo"
+	"github.com/user2410/rrms-backend/internal/infrastructure/database"
 
 	"github.com/google/uuid"
-	"github.com/user2410/rrms-backend/internal/domain/property/dto"
-	"github.com/user2410/rrms-backend/internal/domain/property/model"
+	listing_dto "github.com/user2410/rrms-backend/internal/domain/listing/dto"
+	listing_model "github.com/user2410/rrms-backend/internal/domain/listing/model"
+	listing_repo "github.com/user2410/rrms-backend/internal/domain/listing/repo"
+	property_dto "github.com/user2410/rrms-backend/internal/domain/property/dto"
+	property_model "github.com/user2410/rrms-backend/internal/domain/property/model"
 	unit_dto "github.com/user2410/rrms-backend/internal/domain/unit/dto"
 	unit_model "github.com/user2410/rrms-backend/internal/domain/unit/model"
 	"github.com/user2410/rrms-backend/internal/utils"
@@ -15,17 +23,17 @@ import (
 )
 
 type Service interface {
-	CreateProperty(data *dto.CreateProperty, creatorID uuid.UUID) (*model.PropertyModel, error)
+	CreateProperty(data *property_dto.CreateProperty, creatorID uuid.UUID) (*property_model.PropertyModel, error)
 	CheckVisibility(id uuid.UUID, uid uuid.UUID) (bool, error)
 	CheckManageability(id uuid.UUID, userId uuid.UUID) (bool, error)
-	GetPropertyById(id uuid.UUID) (*model.PropertyModel, error)
-	GetPropertiesByIds(ids []uuid.UUID, fields []string, userId uuid.UUID) ([]model.PropertyModel, error)
+	GetPropertyById(id uuid.UUID) (*property_model.PropertyModel, error)
+	GetPropertiesByIds(ids []uuid.UUID, fields []string, userId uuid.UUID) ([]property_model.PropertyModel, error)
 	GetUnitsOfProperty(id uuid.UUID) ([]unit_model.UnitModel, error)
-	GetListingsOfProperty(id uuid.UUID) ([]uuid.UUID, error)
-	GetApplicationsOfProperty(id uuid.UUID) ([]int64, error)
+	GetListingsOfProperty(id uuid.UUID, query *listing_dto.GetListingsOfPropertyQuery) ([]listing_model.ListingModel, error)
+	GetApplicationsOfProperty(id uuid.UUID, query *application_dto.GetApplicationsOfPropertyQuery) ([]application_model.ApplicationModel, error)
 	GetManagedProperties(userId uuid.UUID, fields []string) ([]GetManagedPropertiesItem, error)
-	SearchListingCombination(data *dto.SearchPropertyCombinationQuery) (*dto.SearchPropertyCombinationResponse, error)
-	UpdateProperty(data *dto.UpdateProperty) error
+	SearchListingCombination(data *property_dto.SearchPropertyCombinationQuery) (*property_dto.SearchPropertyCombinationResponse, error)
+	UpdateProperty(data *property_dto.UpdateProperty) error
 	DeleteProperty(id uuid.UUID) error
 }
 
@@ -36,18 +44,22 @@ type unitRepo interface {
 }
 
 type service struct {
-	pRepo repo.Repo
+	pRepo property_repo.Repo
 	uRepo unitRepo
+	lRepo listing_repo.Repo
+	aRepo application_repo.Repo
 }
 
-func NewService(pRepo repo.Repo, uRepo unitRepo) Service {
+func NewService(pRepo property_repo.Repo, uRepo unitRepo, lRepo listing_repo.Repo, aRepo application_repo.Repo) Service {
 	return &service{
 		pRepo: pRepo,
 		uRepo: uRepo,
+		lRepo: lRepo,
+		aRepo: aRepo,
 	}
 }
 
-func (s *service) CreateProperty(data *dto.CreateProperty, creatorID uuid.UUID) (*model.PropertyModel, error) {
+func (s *service) CreateProperty(data *property_dto.CreateProperty, creatorID uuid.UUID) (*property_model.PropertyModel, error) {
 	data.CreatorID = creatorID
 	foundCreator := false
 	for _, m := range data.Managers {
@@ -58,7 +70,7 @@ func (s *service) CreateProperty(data *dto.CreateProperty, creatorID uuid.UUID) 
 		}
 	}
 	if !foundCreator {
-		data.Managers = append(data.Managers, dto.CreatePropertyManager{
+		data.Managers = append(data.Managers, property_dto.CreatePropertyManager{
 			ManagerID: creatorID,
 			Role:      "MANAGER", // TODO: add role to user
 		})
@@ -66,11 +78,11 @@ func (s *service) CreateProperty(data *dto.CreateProperty, creatorID uuid.UUID) 
 	return s.pRepo.CreateProperty(context.Background(), data)
 }
 
-func (s *service) GetPropertyById(id uuid.UUID) (*model.PropertyModel, error) {
+func (s *service) GetPropertyById(id uuid.UUID) (*property_model.PropertyModel, error) {
 	return s.pRepo.GetPropertyById(context.Background(), id)
 }
 
-func (s *service) GetPropertiesByIds(ids []uuid.UUID, fields []string, userId uuid.UUID) ([]model.PropertyModel, error) {
+func (s *service) GetPropertiesByIds(ids []uuid.UUID, fields []string, userId uuid.UUID) ([]property_model.PropertyModel, error) {
 	var _ids []string
 	for _, id := range ids {
 		isVisible, err := s.CheckVisibility(id, userId)
@@ -108,15 +120,55 @@ func (s *service) GetUnitsOfProperty(id uuid.UUID) ([]unit_model.UnitModel, erro
 	return res, nil
 }
 
-func (s *service) GetListingsOfProperty(id uuid.UUID) ([]uuid.UUID, error) {
-	return s.pRepo.GetListingsOfProperty(context.Background(), id)
+func (s *service) GetListingsOfProperty(id uuid.UUID, query *listing_dto.GetListingsOfPropertyQuery) ([]listing_model.ListingModel, error) {
+	ids, err := s.pRepo.GetListingsOfProperty(context.Background(), id, query)
+	if err != nil {
+		return nil, err
+	}
+
+	idsStr := make([]string, 0, len(ids))
+	for _, id := range ids {
+		idsStr = append(idsStr, id.String())
+	}
+	return s.lRepo.GetListingsByIds(context.Background(), idsStr, query.Fields)
 }
 
-func (s *service) GetApplicationsOfProperty(id uuid.UUID) ([]int64, error) {
-	return s.pRepo.GetApplicationsOfProperty(context.Background(), id)
+func (s *service) GetApplicationsOfProperty(id uuid.UUID, query *application_dto.GetApplicationsOfPropertyQuery) ([]application_model.ApplicationModel, error) {
+	ids, err := s.pRepo.GetApplicationsOfProperty(context.Background(), id, query)
+	if err != nil {
+		return nil, err
+	}
+
+	return s.aRepo.GetApplicationsByIds(context.Background(), ids, query.Fields)
 }
 
-func (s *service) UpdateProperty(data *dto.UpdateProperty) error {
+var (
+	ErrMissingPrimaryImage = fmt.Errorf("missing primary image")
+	ErrMissingImage        = fmt.Errorf("empty media")
+)
+
+func (s *service) UpdateProperty(data *property_dto.UpdateProperty) error {
+	if data.Media != nil {
+		// primaryImageUrl must exists
+		if data.PrimaryImageUrl == nil {
+			return ErrMissingPrimaryImage
+		}
+		// make sure that there is at least one image
+		images := []property_model.PropertyMediaModel{}
+		data.PrimaryImage = nil
+		for i, m := range data.Media {
+			if m.Type == database.MEDIATYPEIMAGE {
+				images = append(images, m)
+				if m.Url == *data.PrimaryImageUrl {
+					data.PrimaryImage = types.Ptr(int64(i))
+				}
+			}
+		}
+		if len(images) == 0 {
+			return ErrMissingImage
+		}
+	}
+
 	return s.pRepo.UpdateProperty(context.Background(), data)
 }
 
@@ -158,8 +210,8 @@ func (s *service) DeleteProperty(id uuid.UUID) error {
 }
 
 type GetManagedPropertiesItem struct {
-	Role     string              `json:"role"`
-	Property model.PropertyModel `json:"property"`
+	Role     string                       `json:"role"`
+	Property property_model.PropertyModel `json:"property"`
 }
 
 func (s *service) GetManagedProperties(userId uuid.UUID, fields []string) ([]GetManagedPropertiesItem, error) {
@@ -193,7 +245,7 @@ func (s *service) GetManagedProperties(userId uuid.UUID, fields []string) ([]Get
 	return res, nil
 }
 
-func (s *service) SearchListingCombination(data *dto.SearchPropertyCombinationQuery) (*dto.SearchPropertyCombinationResponse, error) {
+func (s *service) SearchListingCombination(data *property_dto.SearchPropertyCombinationQuery) (*property_dto.SearchPropertyCombinationResponse, error) {
 	data.SortBy = types.Ptr(utils.PtrDerefence[string](data.SortBy, "created_at"))
 	data.Order = types.Ptr(utils.PtrDerefence[string](data.Order, "desc"))
 	data.Limit = types.Ptr(utils.PtrDerefence[int32](data.Limit, 1000))

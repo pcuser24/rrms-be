@@ -12,7 +12,9 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	application_repo "github.com/user2410/rrms-backend/internal/domain/application/repo"
 	auth_http "github.com/user2410/rrms-backend/internal/domain/auth/http"
+	listing_repo "github.com/user2410/rrms-backend/internal/domain/listing/repo"
 	property_model "github.com/user2410/rrms-backend/internal/domain/property/model"
 	property_repo "github.com/user2410/rrms-backend/internal/domain/property/repo"
 	unit_dto "github.com/user2410/rrms-backend/internal/domain/unit/dto"
@@ -286,9 +288,12 @@ func TestCreateUnit(t *testing.T) {
 			defer ctrl.Finish()
 			pRepo := property_repo.NewMockRepo(ctrl)
 			uRepo := unit_repo.NewMockRepo(ctrl)
+			lRepo := listing_repo.NewMockRepo(ctrl)
+			aRepo := application_repo.NewMockRepo(ctrl)
+
 			tc.buildStubs(pRepo, uRepo)
 
-			srv := newTestServer(t, pRepo, uRepo)
+			srv := newTestServer(t, pRepo, uRepo, lRepo, aRepo)
 
 			data, err := json.Marshal(tc.body)
 			require.NoError(t, err)

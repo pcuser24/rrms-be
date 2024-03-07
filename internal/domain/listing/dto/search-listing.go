@@ -6,7 +6,7 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
-	propertyDTO "github.com/user2410/rrms-backend/internal/domain/property/dto"
+	property_dto "github.com/user2410/rrms-backend/internal/domain/property/dto"
 	unitDTO "github.com/user2410/rrms-backend/internal/domain/unit/dto"
 	"github.com/user2410/rrms-backend/internal/interfaces/rest/requests"
 )
@@ -38,7 +38,7 @@ type SearchListingQuery struct {
 type SearchListingCombinationQuery struct {
 	requests.SearchSortPaginationQuery
 	SearchListingQuery
-	propertyDTO.SearchPropertyQuery
+	property_dto.SearchPropertyQuery
 	unitDTO.SearchUnitQuery
 }
 

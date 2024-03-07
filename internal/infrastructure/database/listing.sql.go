@@ -324,11 +324,33 @@ func (q *Queries) GetListingUnits(ctx context.Context, listingID uuid.UUID) ([]L
 }
 
 const getListingsOfProperty = `-- name: GetListingsOfProperty :many
-SELECT id FROM listings WHERE property_id = $1
+SELECT id
+FROM listings
+WHERE 
+  property_id = $1
+  AND CASE
+    WHEN $2 THEN expired_at <= NOW()
+    WHEN NOT $2 THEN expired_at > NOW()
+  END
+ORDER BY
+  created_at DESC
+LIMIT $3 OFFSET $4
 `
 
-func (q *Queries) GetListingsOfProperty(ctx context.Context, propertyID uuid.UUID) ([]uuid.UUID, error) {
-	rows, err := q.db.Query(ctx, getListingsOfProperty, propertyID)
+type GetListingsOfPropertyParams struct {
+	PropertyID uuid.UUID   `json:"property_id"`
+	Column2    interface{} `json:"column_2"`
+	Limit      int32       `json:"limit"`
+	Offset     int32       `json:"offset"`
+}
+
+func (q *Queries) GetListingsOfProperty(ctx context.Context, arg GetListingsOfPropertyParams) ([]uuid.UUID, error) {
+	rows, err := q.db.Query(ctx, getListingsOfProperty,
+		arg.PropertyID,
+		arg.Column2,
+		arg.Limit,
+		arg.Offset,
+	)
 	if err != nil {
 		return nil, err
 	}

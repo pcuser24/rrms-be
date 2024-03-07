@@ -661,12 +661,12 @@ func (q *Queries) GetApplicationsByUserId(ctx context.Context, arg GetApplicatio
 	return items, nil
 }
 
-const getApplicationsOfProperty = `-- name: GetApplicationsOfProperty :many
-SELECT id FROM applications WHERE property_id = $1
+const getApplicationsOfListing = `-- name: GetApplicationsOfListing :many
+SELECT id FROM applications WHERE listing_id = $1
 `
 
-func (q *Queries) GetApplicationsOfProperty(ctx context.Context, propertyID uuid.UUID) ([]int64, error) {
-	rows, err := q.db.Query(ctx, getApplicationsOfProperty, propertyID)
+func (q *Queries) GetApplicationsOfListing(ctx context.Context, listingID uuid.UUID) ([]int64, error) {
+	rows, err := q.db.Query(ctx, getApplicationsOfListing, listingID)
 	if err != nil {
 		return nil, err
 	}

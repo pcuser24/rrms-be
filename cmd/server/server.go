@@ -29,6 +29,8 @@ import (
 )
 
 type serverConfig struct {
+	Port *uint16 `mapstructure:"PORT" validate:"omitempty"`
+
 	DatabaseURL string `mapstructure:"DB_URL" validate:"required,uri"`
 
 	AllowOrigins string `mapstructure:"ALLOW_ORIGINS" validate:"required"`
@@ -63,9 +65,9 @@ type internalServices struct {
 
 type serverCommand struct {
 	*cobra.Command
+	config               *serverConfig
 	tokenMaker           token.Maker
 	emailSender          email.EmailSender
-	config               *serverConfig
 	dao                  database.DAO
 	internalServices     internalServices
 	httpServer           http.Server

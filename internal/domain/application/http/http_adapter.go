@@ -106,7 +106,7 @@ func (a *adapter) getMyApplications() fiber.Handler {
 			return fiber.NewError(fiber.StatusBadRequest)
 		}
 		validator := validation.GetDefaultValidator()
-		validator.RegisterValidation(dto.PropertyFieldsLocalKey, dto.ValidateQuery)
+		validator.RegisterValidation(dto.ApplicationFieldsLocalKey, dto.ValidateQuery)
 		if errs := validation.ValidateStruct(validator, *query); len(errs) > 0 {
 			return fiber.NewError(fiber.StatusBadRequest, validation.GetValidationError(errs))
 		}
@@ -134,7 +134,7 @@ func (a *adapter) getApplicationsToMe() fiber.Handler {
 			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": err.Error()})
 		}
 		validator := validation.GetDefaultValidator()
-		validator.RegisterValidation(dto.PropertyFieldsLocalKey, dto.ValidateQuery)
+		validator.RegisterValidation(dto.ApplicationFieldsLocalKey, dto.ValidateQuery)
 		if errs := validation.ValidateStruct(validator, *query); len(errs) > 0 {
 			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": validation.GetValidationError(errs)})
 		}
@@ -181,7 +181,7 @@ func (a *adapter) getApplicationsByIds() fiber.Handler {
 		}
 
 		validator := validation.GetDefaultValidator()
-		validator.RegisterValidation(dto.PropertyFieldsLocalKey, dto.ValidateQuery)
+		validator.RegisterValidation(dto.ApplicationFieldsLocalKey, dto.ValidateQuery)
 		if errs := validation.ValidateStruct(validator, *query); len(errs) > 0 {
 			return fiber.NewError(fiber.StatusBadRequest, validation.GetValidationError(errs))
 		}

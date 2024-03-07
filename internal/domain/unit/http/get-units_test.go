@@ -14,7 +14,9 @@ import (
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	application_repo "github.com/user2410/rrms-backend/internal/domain/application/repo"
 	auth_http "github.com/user2410/rrms-backend/internal/domain/auth/http"
+	listing_repo "github.com/user2410/rrms-backend/internal/domain/listing/repo"
 	property_repo "github.com/user2410/rrms-backend/internal/domain/property/repo"
 	unit_dto "github.com/user2410/rrms-backend/internal/domain/unit/dto"
 	unit_model "github.com/user2410/rrms-backend/internal/domain/unit/model"
@@ -122,9 +124,12 @@ func TestGetUnitById(t *testing.T) {
 			defer ctrl.Finish()
 			pRepo := property_repo.NewMockRepo(ctrl)
 			uRepo := unit_repo.NewMockRepo(ctrl)
+			lRepo := listing_repo.NewMockRepo(ctrl)
+			aRepo := application_repo.NewMockRepo(ctrl)
+
 			tc.buildStubs(pRepo, uRepo)
 
-			srv := newTestServer(t, pRepo, uRepo)
+			srv := newTestServer(t, pRepo, uRepo, lRepo, aRepo)
 
 			req := httptest.NewRequest(
 				http.MethodGet,
@@ -387,9 +392,12 @@ func TestGetUnitsByIds(t *testing.T) {
 			defer ctrl.Finish()
 			pRepo := property_repo.NewMockRepo(ctrl)
 			uRepo := unit_repo.NewMockRepo(ctrl)
+			lRepo := listing_repo.NewMockRepo(ctrl)
+			aRepo := application_repo.NewMockRepo(ctrl)
+
 			tc.buildStubs(pRepo, uRepo)
 
-			srv := newTestServer(t, pRepo, uRepo)
+			srv := newTestServer(t, pRepo, uRepo, lRepo, aRepo)
 
 			var queries []string
 			for _, v := range tc.query {

@@ -7,9 +7,10 @@ import (
 
 	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
+	"github.com/google/uuid"
 )
 
-const PropertyFieldsLocalKey = "propertyFields"
+const ApplicationFieldsLocalKey = "applicationFields"
 
 var retrievableFields = []string{"creator_id", "listing_id", "property_id", "status", "created_at", "updated_at", "full_name", "email", "phone", "dob", "profile_image", "movein_date", "preferred_term", "rental_intention", "rh_address", "rh_city", "rh_district", "rh_ward", "rh_rental_duration", "rh_monthly_payment", "rh_reason_for_leaving", "employment_status", "employment_company_name", "employment_position", "employment_monthly_income", "employment_comment", "identity_type", "identity_number", "units", "minors", "coaps", "pets", "vehicles"}
 
@@ -32,7 +33,7 @@ func ValidateQuery(fl validator.FieldLevel) bool {
 }
 
 type GetApplicationsQuery struct {
-	Fields []string `query:"fields" validate:"propertyFields"`
+	Fields []string `query:"fields" validate:"applicationFields"`
 }
 
 func (q *GetApplicationsQuery) QueryParser(ctx *fiber.Ctx) error {
@@ -83,5 +84,21 @@ func (q *GetApplicationsToMeQuery) QueryParser(ctx *fiber.Ctx) error {
 	if q.Limit == 0 {
 		q.Limit = 10
 	}
+	return nil
+}
+
+type GetApplicationsOfPropertyQuery struct {
+	GetApplicationsQuery
+	ListingIds []uuid.UUID `query:"listingIds" validate:"dive,uuid4"`
+	Limit      *int32      `query:"limit" validate:"omitempty,gte=0"`
+	Offset     *int32      `json:"offset" validate:"omitempty,gte=0"`
+}
+
+func (q *GetApplicationsOfPropertyQuery) QueryParser(ctx *fiber.Ctx) error {
+	err := ctx.QueryParser(q)
+	if err != nil {
+		return err
+	}
+	q.parseFields()
 	return nil
 }

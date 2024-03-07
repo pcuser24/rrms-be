@@ -2,30 +2,35 @@ package dto
 
 import (
 	"github.com/google/uuid"
+	"github.com/user2410/rrms-backend/internal/domain/property/model"
 	"github.com/user2410/rrms-backend/internal/infrastructure/database"
 	"github.com/user2410/rrms-backend/internal/utils/types"
 )
 
 type UpdateProperty struct {
-	ID             uuid.UUID
-	Name           *string  `json:"name" validate:"omitempty"`
-	Building       *string  `json:"building" validate:"omitempty"`
-	Project        *string  `json:"project" validate:"omitempty"`
-	Area           *float32 `json:"area" validate:"omitempty,gte=0"`
-	NumberOfFloors *int32   `json:"numberOfFloors" validate:"omitempty,gte=0"`
-	YearBuilt      *int32   `json:"yearBuilt" validate:"omitempty,gte=0"`
-	Orientation    *string  `json:"orientation" validate:"omitempty,oneof=n s e w ne nw se sw"`
-	EntranceWidth  *float32 `json:"entranceWidth" validate:"omitempty,gte=0"`
-	Facade         *float32 `json:"facade" validate:"omitempty,gte=0"`
-	FullAddress    *string  `json:"fullAddress" validate:"omitempty"`
-	District       *string  `json:"district" validate:"omitempty"`
-	City           *string  `json:"city" validate:"omitempty"`
-	Ward           *string  `json:"ward" validate:"omitempty"`
-	Lat            *float64 `json:"lat" validate:"omitempty"`
-	Lng            *float64 `json:"lng" validate:"omitempty"`
-	PrimaryImage   *int64   `json:"primaryImage" validate:"omitempty"`
-	Description    *string  `json:"description" validate:"omitempty"`
-	IsPublic       *bool    `json:"isPublic" validate:"omitempty"`
+	ID              uuid.UUID
+	Name            *string                      `json:"name" validate:"omitempty"`
+	Building        *string                      `json:"building" validate:"omitempty"`
+	Project         *string                      `json:"project" validate:"omitempty"`
+	Area            *float32                     `json:"area" validate:"omitempty,gte=0"`
+	NumberOfFloors  *int32                       `json:"numberOfFloors" validate:"omitempty,gte=0"`
+	YearBuilt       *int32                       `json:"yearBuilt" validate:"omitempty,gte=0"`
+	Orientation     *string                      `json:"orientation" validate:"omitempty,oneof=n s e w ne nw se sw"`
+	EntranceWidth   *float32                     `json:"entranceWidth" validate:"omitempty,gte=0"`
+	Facade          *float32                     `json:"facade" validate:"omitempty,gte=0"`
+	FullAddress     *string                      `json:"fullAddress" validate:"omitempty"`
+	District        *string                      `json:"district" validate:"omitempty"`
+	City            *string                      `json:"city" validate:"omitempty"`
+	Ward            *string                      `json:"ward" validate:"omitempty"`
+	Lat             *float64                     `json:"lat" validate:"omitempty"`
+	Lng             *float64                     `json:"lng" validate:"omitempty"`
+	PrimaryImage    *int64                       `json:"primaryImage" validate:"omitempty"`
+	PrimaryImageUrl *string                      `json:"primaryImageUrl" validate:"omitempty"`
+	Description     *string                      `json:"description" validate:"omitempty"`
+	IsPublic        *bool                        `json:"isPublic" validate:"omitempty"`
+	Media           []model.PropertyMediaModel   `json:"media" validate:"omitempty,dive"`
+	Features        []model.PropertyFeatureModel `json:"features" validate:"omitempty,dive"`
+	Managers        []model.PropertyManagerModel `json:"managers" validate:"omitempty,dive"`
 }
 
 func (u *UpdateProperty) ToUpdatePropertyDB() database.UpdatePropertyParams {

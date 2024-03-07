@@ -8,10 +8,13 @@ import (
 	"github.com/google/uuid"
 	"github.com/huandu/go-sqlbuilder"
 	"github.com/jackc/pgx/v5/pgtype"
+	application_dto "github.com/user2410/rrms-backend/internal/domain/application/dto"
+	listing_dto "github.com/user2410/rrms-backend/internal/domain/listing/dto"
 	property_dto "github.com/user2410/rrms-backend/internal/domain/property/dto"
 	property_model "github.com/user2410/rrms-backend/internal/domain/property/model"
 	"github.com/user2410/rrms-backend/internal/infrastructure/database"
 	sqlbuilders "github.com/user2410/rrms-backend/internal/infrastructure/database/sql_builders"
+	"github.com/user2410/rrms-backend/internal/utils/types"
 )
 
 type Repo interface {
@@ -20,8 +23,8 @@ type Repo interface {
 	GetPropertyById(ctx context.Context, id uuid.UUID) (*property_model.PropertyModel, error)
 	GetPropertiesByIds(ctx context.Context, ids []string, fields []string) ([]property_model.PropertyModel, error) // Get properties with custom fields by ids
 	GetManagedProperties(ctx context.Context, userId uuid.UUID) ([]database.GetManagedPropertiesRow, error)
-	GetListingsOfProperty(ctx context.Context, id uuid.UUID) ([]uuid.UUID, error)
-	GetApplicationsOfProperty(ctx context.Context, id uuid.UUID) ([]int64, error)
+	GetListingsOfProperty(ctx context.Context, id uuid.UUID, query *listing_dto.GetListingsOfPropertyQuery) ([]uuid.UUID, error)
+	GetApplicationsOfProperty(ctx context.Context, id uuid.UUID, query *application_dto.GetApplicationsOfPropertyQuery) ([]int64, error)
 	SearchPropertyCombination(ctx context.Context, query *property_dto.SearchPropertyCombinationQuery) (*property_dto.SearchPropertyCombinationResponse, error)
 	IsPublic(ctx context.Context, id uuid.UUID) (bool, error)
 	UpdateProperty(ctx context.Context, data *property_dto.UpdateProperty) error
@@ -316,12 +319,68 @@ func (r *repo) GetPropertyById(ctx context.Context, id uuid.UUID) (*property_mod
 	return pm, nil
 }
 
-func (r *repo) GetListingsOfProperty(ctx context.Context, id uuid.UUID) ([]uuid.UUID, error) {
-	return r.dao.GetListingsOfProperty(ctx, id)
+func (r *repo) GetListingsOfProperty(ctx context.Context, id uuid.UUID, query *listing_dto.GetListingsOfPropertyQuery) ([]uuid.UUID, error) {
+	params := database.GetListingsOfPropertyParams{
+		PropertyID: id,
+		Column2:    query.Expired,
+	}
+	if query.Offset != nil {
+		params.Offset = *query.Offset
+	} else {
+		params.Offset = 0
+	}
+	if query.Limit != nil {
+		params.Limit = *query.Limit
+	} else {
+		params.Limit = 100
+	}
+
+	return r.dao.GetListingsOfProperty(ctx, params)
 }
 
-func (r *repo) GetApplicationsOfProperty(ctx context.Context, id uuid.UUID) ([]int64, error) {
-	return r.dao.GetApplicationsOfProperty(ctx, id)
+func (r *repo) GetApplicationsOfProperty(ctx context.Context, id uuid.UUID, query *application_dto.GetApplicationsOfPropertyQuery) ([]int64, error) {
+	sb := sqlbuilder.PostgreSQL.NewSelectBuilder()
+	sb.Select("id")
+	sb.From("applications")
+	andExprs := []string{
+		sb.Equal("property_id::text", id.String()),
+	}
+	if len(query.ListingIds) > 0 {
+		idsStr := make([]string, 0, len(query.ListingIds))
+		for _, id := range query.ListingIds {
+			idsStr = append(idsStr, id.String())
+		}
+		andExprs = append(andExprs, sb.In("listing_id::text", sqlbuilder.List(idsStr)))
+	}
+	sb.Where(andExprs...)
+	if query.Limit != nil {
+		sb.Limit(int(*query.Limit))
+	} else {
+		sb.Limit(100)
+	}
+	if query.Offset != nil {
+		sb.Offset(int(*query.Offset))
+	} else {
+		sb.Offset(0)
+	}
+	sql, args := sb.Build()
+	rows, err := r.dao.Query(ctx, sql, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []int64
+	for rows.Next() {
+		var id int64
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		items = append(items, id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 func (r *repo) GetPropertyManagers(ctx context.Context, id uuid.UUID) ([]property_model.PropertyManagerModel, error) {
@@ -345,6 +404,65 @@ func (r *repo) IsPublic(ctx context.Context, id uuid.UUID) (bool, error) {
 }
 
 func (r *repo) UpdateProperty(ctx context.Context, data *property_dto.UpdateProperty) error {
+	// update property media
+	if data.Media != nil {
+		// delete all old media records
+		sb := sqlbuilder.PostgreSQL.NewDeleteBuilder()
+		sb.DeleteFrom("property_media")
+		sb.Where(sb.Equal("property_id::text", data.ID.String()))
+		sql, args := sb.Build()
+		_, err := r.dao.Exec(ctx, sql, args...)
+		if err != nil {
+			return err
+		}
+		// then insert new media records
+		media := []database.PropertyMedium{}
+		for _, m := range data.Media {
+			newMedia, err := r.dao.CreatePropertyMedia(ctx, database.CreatePropertyMediaParams{
+				PropertyID:  data.ID,
+				Url:         m.Url,
+				Type:        m.Type,
+				Description: types.StrN(m.Description),
+			})
+			if err != nil {
+				return err
+			}
+			media = append(media, newMedia)
+		}
+		err = r.dao.UpdateProperty(ctx, database.UpdatePropertyParams{
+			ID:           data.ID,
+			PrimaryImage: pgtype.Int8{Valid: true, Int64: media[*data.PrimaryImage].ID}, // data.PrimaryImage must exist
+		})
+		if err != nil {
+			return err
+		}
+		data.PrimaryImage = nil
+	}
+
+	// update property features
+	if data.Features != nil {
+		// delete all old features records
+		sb := sqlbuilder.PostgreSQL.NewDeleteBuilder()
+		sb.DeleteFrom("property_features")
+		sb.Where(sb.Equal("property_id::text", data.ID.String()))
+		sql, args := sb.Build()
+		_, err := r.dao.Exec(ctx, sql, args...)
+		if err != nil {
+			return err
+		}
+		// then insert new features records
+		for _, f := range data.Features {
+			_, err := r.dao.CreatePropertyFeature(ctx, database.CreatePropertyFeatureParams{
+				PropertyID:  data.ID,
+				FeatureID:   f.FeatureID,
+				Description: types.StrN(f.Description),
+			})
+			if err != nil {
+				return nil
+			}
+		}
+	}
+
 	return r.dao.UpdateProperty(ctx, data.ToUpdatePropertyDB())
 }
 

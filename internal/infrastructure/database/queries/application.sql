@@ -183,8 +183,8 @@ ORDER BY
   created_at DESC
 LIMIT $3 OFFSET $4;
 
--- name: GetApplicationsOfProperty :many
-SELECT id FROM applications WHERE property_id = $1;
+-- name: GetApplicationsOfListing :many
+SELECT id FROM applications WHERE listing_id = $1;
 
 -- name: CheckApplicationVisibility :one
 SELECT count(*) FROM applications WHERE 

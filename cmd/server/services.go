@@ -46,7 +46,7 @@ func (c *serverCommand) setupInternalServices(
 
 	s := storage.NewStorage(s3Client, c.config.AWSS3ImageBucket)
 
-	c.internalServices.PropertyService = property.NewService(propertyRepo, unitRepo)
+	c.internalServices.PropertyService = property.NewService(propertyRepo, unitRepo, listingRepo, applicationRepo)
 	c.internalServices.UnitService = unit.NewService(unitRepo)
 	c.internalServices.ListingService = listing.NewService(listingRepo, propertyRepo)
 	c.internalServices.RentalService = rental.NewService(rentalRepo)

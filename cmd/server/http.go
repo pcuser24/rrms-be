@@ -54,7 +54,11 @@ func (c *serverCommand) setupHttpServer() {
 
 func (c *serverCommand) runHttpServer() {
 	log.Println("Starting HTTP server...")
-	if err := c.httpServer.Start(8000); err != nil {
+	var port uint16 = 8000
+	if c.config.Port != nil {
+		port = *c.config.Port
+	}
+	if err := c.httpServer.Start(port); err != nil {
 		log.Fatal("Failed to start HTTP server:", err)
 	}
 }
