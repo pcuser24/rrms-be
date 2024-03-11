@@ -22,12 +22,12 @@ type CreateUnit struct {
 	Name                *string             `json:"name" validate:"omitempty"`
 	Area                float32             `json:"area" validate:"required,gt=0"`
 	Floor               *int32              `json:"floor" validate:"omitempty,gt=0"`
-	NumberOfLivingRooms *int32              `json:"numberOfLivingRooms" validate:"omitempty,gt=0"`
-	NumberOfBedrooms    *int32              `json:"numberOfBedrooms" validate:"omitempty,gt=0"`
-	NumberOfBathrooms   *int32              `json:"numberOfBathrooms" validate:"omitempty,gt=0"`
-	NumberOfToilets     *int32              `json:"numberOfToilets" validate:"omitempty,gt=0"`
-	NumberOfKitchens    *int32              `json:"numberOfKitchens" validate:"omitempty,gt=0"`
-	NumberOfBalconies   *int32              `json:"numberOfBalconies" validate:"omitempty,gt=0"`
+	NumberOfLivingRooms *int32              `json:"numberOfLivingRooms" validate:"omitempty,gte=0"`
+	NumberOfBedrooms    *int32              `json:"numberOfBedrooms" validate:"omitempty,gte=0"`
+	NumberOfBathrooms   *int32              `json:"numberOfBathrooms" validate:"omitempty,gte=0"`
+	NumberOfToilets     *int32              `json:"numberOfToilets" validate:"omitempty,gte=0"`
+	NumberOfKitchens    *int32              `json:"numberOfKitchens" validate:"omitempty,gte=0"`
+	NumberOfBalconies   *int32              `json:"numberOfBalconies" validate:"omitempty,gte=0"`
 	Type                database.UNITTYPE   `json:"type" validate:"required,oneof=APARTMENT ROOM STUDIO"`
 	Amenities           []CreateUnitAmenity `json:"amenities" validate:"dive"`
 	Media               []CreateUnitMedia   `json:"media" validate:"dive"`

@@ -10,6 +10,10 @@ import (
 	"github.com/user2410/rrms-backend/internal/utils/token"
 )
 
+const (
+	ListingIDLocalKey = "listing_id"
+)
+
 func CheckListingManageability(s listing.Service) fiber.Handler {
 	return func(ctx *fiber.Ctx) error {
 		id := ctx.Params("id")
@@ -17,6 +21,7 @@ func CheckListingManageability(s listing.Service) fiber.Handler {
 		if err != nil {
 			return ctx.SendStatus(fiber.StatusBadRequest)
 		}
+		ctx.Locals(ListingIDLocalKey, lid)
 
 		tkPayload := ctx.Locals(http.AuthorizationPayloadKey).(*token.Payload)
 

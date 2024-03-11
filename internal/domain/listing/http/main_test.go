@@ -11,6 +11,7 @@ import (
 	application_repo "github.com/user2410/rrms-backend/internal/domain/application/repo"
 	"github.com/user2410/rrms-backend/internal/domain/listing"
 	listing_repo "github.com/user2410/rrms-backend/internal/domain/listing/repo"
+	payment_repo "github.com/user2410/rrms-backend/internal/domain/payment/repo"
 	"github.com/user2410/rrms-backend/internal/domain/property"
 	property_repo "github.com/user2410/rrms-backend/internal/domain/property/repo"
 	"github.com/user2410/rrms-backend/internal/domain/unit"
@@ -25,7 +26,7 @@ type server struct {
 	router     http.Server
 }
 
-func newTestServer(t *testing.T, pr property_repo.Repo, ur unit_repo.Repo, lr listing_repo.Repo, ar application_repo.Repo) *server {
+func newTestServer(t *testing.T, pr property_repo.Repo, ur unit_repo.Repo, lr listing_repo.Repo, ar application_repo.Repo, paymentRepo payment_repo.Repo) *server {
 
 	tokenMaker, err := token.NewJWTMaker(random.RandomAlphanumericStr(32))
 	require.NoError(t, err)
@@ -33,7 +34,7 @@ func newTestServer(t *testing.T, pr property_repo.Repo, ur unit_repo.Repo, lr li
 
 	uService := unit.NewService(ur)
 	pService := property.NewService(pr, ur, lr, ar)
-	lService := listing.NewService(lr, pr)
+	lService := listing.NewService(lr, pr, paymentRepo)
 
 	// initialize http router
 	httpServer := http.NewServer(

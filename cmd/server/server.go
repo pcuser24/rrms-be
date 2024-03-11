@@ -16,6 +16,8 @@ import (
 	"github.com/user2410/rrms-backend/internal/domain/application"
 	"github.com/user2410/rrms-backend/internal/domain/auth"
 	"github.com/user2410/rrms-backend/internal/domain/listing"
+	payment_service "github.com/user2410/rrms-backend/internal/domain/payment/service"
+	"github.com/user2410/rrms-backend/internal/domain/payment/service/vnpay"
 	"github.com/user2410/rrms-backend/internal/domain/property"
 	"github.com/user2410/rrms-backend/internal/domain/rental"
 	"github.com/user2410/rrms-backend/internal/domain/storage"
@@ -51,6 +53,11 @@ type serverConfig struct {
 	EmailSenderPassword string `mapstructure:"EMAIL_SENDER_PASSWORD" validate:"required"`
 
 	AsynqRedisAddress string `mapstructure:"ASYNQ_REDIS_ADDRESS" validate:"required"`
+
+	VnpTmnCode    string `mapstructure:"VNP_TMNCODE" validate:"required"`
+	VnpHashSecret string `mapstructure:"VNP_HASHSECRET" validate:"required"`
+	VnpUrl        string `mapstructure:"VNP_URL" validate:"required"`
+	VnpApi        string `mapstructure:"VNP_API" validate:"required"`
 }
 
 type internalServices struct {
@@ -61,6 +68,8 @@ type internalServices struct {
 	RentalService      rental.Service
 	ApplicationService application.Service
 	StorageService     storage.Service
+	PaymentService     payment_service.Service
+	VnpService         *vnpay.Service
 }
 
 type serverCommand struct {
@@ -84,11 +93,11 @@ func NewServerCommand() *serverCommand {
 Manage the APIs for %s from the command line`, version.Art(), version.ReadableName),
 		Run: c.run,
 	}
-	c.config = newServerConfig(c.Command)
+	c.config = newServerConfig()
 	return c
 }
 
-func newServerConfig(cmd *cobra.Command) *serverConfig {
+func newServerConfig() *serverConfig {
 	var conf serverConfig
 	viper.AddConfigPath(".")
 	viper.SetConfigName("app")
@@ -114,18 +123,22 @@ func newServerConfig(cmd *cobra.Command) *serverConfig {
 }
 
 func (c *serverCommand) run(cmd *cobra.Command, args []string) {
-	c.setup(cmd, args)
+	c.setup()
+	defer c.shutdown()
 
 	exitCh := make(chan os.Signal, 1)
 	signal.Notify(exitCh, syscall.SIGINT, syscall.SIGTERM, syscall.SIGABRT)
-	go func() {
-		<-exitCh
-		fmt.Println("Gracefully shutting down...")
-		c.shutdown()
-	}()
 
-	go c.runAsyncTaskProcessor()
-	c.runHttpServer()
+	errChan := make(chan error, 1)
+	go c.runAsyncTaskProcessor(errChan)
+	go c.runHttpServer(errChan)
+
+	select {
+	case err := <-errChan:
+		log.Println("Error while running server: ", err)
+	case <-exitCh:
+		log.Println("Gracefully shutting down...")
+	}
 
 }
 
@@ -147,7 +160,7 @@ func (c *serverCommand) shutdown() {
 /*                       setups components of the server                      */
 /* -------------------------------------------------------------------------- */
 
-func (c *serverCommand) setup(cmd *cobra.Command, args []string) {
+func (c *serverCommand) setup() {
 	// setup database
 	dao, err := database.NewPostgresDAO(c.config.DatabaseURL)
 	if err != nil {

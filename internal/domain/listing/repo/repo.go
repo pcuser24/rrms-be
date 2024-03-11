@@ -35,19 +35,19 @@ func NewRepo(d database.DAO) Repo {
 }
 
 func (r *repo) CreateListing(ctx context.Context, data *dto.CreateListing) (*model.ListingModel, error) {
-	res, err := r.dao.QueryTx(ctx, func(d database.DAO) (interface{}, error) {
-		var lm *model.ListingModel
-		res, err := d.CreateListing(ctx, *data.ToCreateListingDB())
-		if err != nil {
-			return nil, err
-		}
-		lm = model.ToListingModel(&res)
+	var lm *model.ListingModel
+	res, err := r.dao.CreateListing(ctx, *data.ToCreateListingDB())
+	if err != nil {
+		return nil, err
+	}
+	lm = model.ToListingModel(&res)
 
+	err = func() error {
 		for i := 0; i < len(data.Policies); i++ {
 			p := &data.Policies[i]
 			lp, err := r.dao.CreateListingPolicy(ctx, *p.ToCreateListingPolicyDB(lm.ID))
 			if err != nil {
-				return nil, err
+				return err
 			}
 			lm.Policies = append(lm.Policies, *model.ToListingPolicyModel(&lp))
 		}
@@ -59,20 +59,20 @@ func (r *repo) CreateListing(ctx context.Context, data *dto.CreateListing) (*mod
 				UnitID:    u.UnitID,
 			})
 			if err != nil {
-				return nil, err
+				return err
 			}
 			lm.Units = append(lm.Units, model.ListingUnitModel(lu))
 		}
 
-		return lm, nil
-	})
+		return nil
+	}()
+
 	if err != nil {
+		_ = r.dao.DeleteListing(ctx, lm.ID)
 		return nil, err
 	}
 
-	l := res.(*model.ListingModel)
-
-	return l, nil
+	return lm, nil
 }
 
 func (r *repo) GetListingsByIds(ctx context.Context, ids []string, fields []string) ([]model.ListingModel, error) {

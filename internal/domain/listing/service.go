@@ -2,12 +2,17 @@ package listing
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/user2410/rrms-backend/internal/domain/listing/repo"
 
 	"github.com/google/uuid"
 	"github.com/user2410/rrms-backend/internal/domain/listing/dto"
 	"github.com/user2410/rrms-backend/internal/domain/listing/model"
+	listing_utils "github.com/user2410/rrms-backend/internal/domain/listing/utils"
+	payment_dto "github.com/user2410/rrms-backend/internal/domain/payment/dto"
+	payment_model "github.com/user2410/rrms-backend/internal/domain/payment/model"
+	payment_repo "github.com/user2410/rrms-backend/internal/domain/payment/repo"
 	property_dto "github.com/user2410/rrms-backend/internal/domain/property/dto"
 	property_repo "github.com/user2410/rrms-backend/internal/domain/property/repo"
 	"github.com/user2410/rrms-backend/internal/interfaces/rest/requests"
@@ -25,17 +30,20 @@ type Service interface {
 	DeleteListing(id uuid.UUID) error
 	CheckListingOwnership(lid uuid.UUID, uid uuid.UUID) (bool, error)
 	CheckValidUnitForListing(lid uuid.UUID, uid uuid.UUID) (bool, error)
+	CreateListingPayment(data *dto.CreateListingPayment) (*payment_model.PaymentModel, error)
 }
 
 type service struct {
-	lRepo repo.Repo
-	pRepo property_repo.Repo
+	lRepo       repo.Repo
+	pRepo       property_repo.Repo
+	paymentRepo payment_repo.Repo
 }
 
-func NewService(lRepo repo.Repo, pRepo property_repo.Repo) Service {
+func NewService(lRepo repo.Repo, pRepo property_repo.Repo, paymentRepo payment_repo.Repo) Service {
 	return &service{
-		lRepo: lRepo,
-		pRepo: pRepo,
+		lRepo:       lRepo,
+		pRepo:       pRepo,
+		paymentRepo: paymentRepo,
 	}
 }
 
@@ -46,11 +54,12 @@ func (s *service) CreateListing(data *dto.CreateListing) (*model.ListingModel, e
 	}
 	err = s.pRepo.UpdateProperty(context.Background(), &property_dto.UpdateProperty{
 		ID:       listing.PropertyID,
-		IsPublic: types.Ptr[bool](true),
+		IsPublic: types.Ptr(true),
 	})
 	if err != nil {
 		return listing, err
 	}
+
 	return listing, nil
 }
 
@@ -113,4 +122,25 @@ func (s *service) GetListingsOfUser(userId uuid.UUID, fields []string) ([]model.
 
 	return s.lRepo.GetListingsByIds(context.Background(), lids, fields)
 
+}
+
+func (s *service) CreateListingPayment(data *dto.CreateListingPayment) (*payment_model.PaymentModel, error) {
+	// create a payment entry
+	params := payment_dto.CreatePayment{UserId: data.UserId}
+	amount, err := listing_utils.CalculateListingPrice(data.Priority, data.PostDuration)
+	if err != nil {
+		return nil, err
+	}
+	params.Amount = amount
+
+	params.OrderInfo = fmt.Sprintf("[CREATE_LISTING-%s] Phi dang tin nha cho thue", data.ListingId.String())
+	params.Items = []payment_dto.CreatePaymentItem{
+		{
+			Name:     "Phi dang tin",
+			Price:    amount,
+			Quantity: 1,
+			Discount: 0,
+		},
+	}
+	return s.paymentRepo.CreatePayment(context.Background(), &params)
 }

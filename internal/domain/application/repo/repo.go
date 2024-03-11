@@ -35,59 +35,61 @@ func NewRepo(d database.DAO) Repo {
 
 func (r *repo) CreateApplication(ctx context.Context, data *dto.CreateApplication) (*model.ApplicationModel, error) {
 
-	res, err := r.dao.QueryTx(ctx, func(d database.DAO) (interface{}, error) {
-		var am *model.ApplicationModel
+	var am *model.ApplicationModel
 
-		res, err := d.CreateApplication(ctx, *data.ToCreateApplicationDB())
-		if err != nil {
-			return nil, err
-		}
-		am = model.ToApplicationModel(&res)
+	res, err := r.dao.CreateApplication(ctx, *data.ToCreateApplicationDB())
+	if err != nil {
+		return nil, err
+	}
+	am = model.ToApplicationModel(&res)
 
+	err = func() error {
 		for _, u := range data.Units {
-			res, err := d.CreateApplicationUnit(ctx, *u.ToCreateApplicationUnitDB(am.ID))
+			res, err := r.dao.CreateApplicationUnit(ctx, *u.ToCreateApplicationUnitDB(am.ID))
 			if err != nil {
-				return nil, err
+				return err
 			}
 			am.Units = append(am.Units, model.ApplicationUnitModel(res))
 		}
 		for _, m := range data.Minors {
-			res, err := d.CreateApplicationMinor(ctx, *m.ToCreateApplicationMinorDB(am.ID))
+			res, err := r.dao.CreateApplicationMinor(ctx, *m.ToCreateApplicationMinorDB(am.ID))
 			if err != nil {
-				return nil, err
+				return err
 			}
 			am.Minors = append(am.Minors, model.ToApplicationMinorModel(&res))
 		}
 		for _, c := range data.Coaps {
-			res, err := d.CreateApplicationCoap(ctx, *c.ToCreateApplicationCoapDB(am.ID))
+			res, err := r.dao.CreateApplicationCoap(ctx, *c.ToCreateApplicationCoapDB(am.ID))
 			if err != nil {
-				return nil, err
+				return err
 			}
 			am.Coaps = append(am.Coaps, model.ToApplicationCoapModel(&res))
 		}
 		for _, p := range data.Pets {
-			res, err := d.CreateApplicationPet(ctx, *p.ToCreateApplicationPetDB(am.ID))
+			res, err := r.dao.CreateApplicationPet(ctx, *p.ToCreateApplicationPetDB(am.ID))
 			if err != nil {
-				return nil, err
+				return err
 			}
 			am.Pets = append(am.Pets, model.ToApplicationPetModel(&res))
 		}
 		for _, v := range data.Vehicles {
-			res, err := d.CreateApplicationVehicle(ctx, *v.ToCreateApplicationVehicleDB(am.ID))
+			res, err := r.dao.CreateApplicationVehicle(ctx, *v.ToCreateApplicationVehicleDB(am.ID))
 			if err != nil {
-				return nil, err
+				return err
 			}
 			am.Vehicles = append(am.Vehicles, model.ToApplicationVehicleModel(&res))
 		}
 
-		return am, nil
-	})
+		return nil
+	}()
+
 	if err != nil {
+		// rollback and ignore any error
+		_ = r.dao.DeleteApplication(ctx, am.ID)
 		return nil, err
 	}
-	a := res.(*model.ApplicationModel)
 
-	return a, nil
+	return am, nil
 }
 
 func (r *repo) GetApplicationById(ctx context.Context, id int64) (*model.ApplicationModel, error) {

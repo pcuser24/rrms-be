@@ -3,6 +3,7 @@ package dto
 import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/user2410/rrms-backend/internal/domain/listing/model"
 	"github.com/user2410/rrms-backend/internal/infrastructure/database"
 	"github.com/user2410/rrms-backend/internal/utils/types"
 )
@@ -66,4 +67,9 @@ func (c *CreateListing) ToCreateListingDB() *database.CreateListingParams {
 		PostDuration:      c.PostDuration,
 	}
 	return ldb
+}
+
+type CreateListingResponse struct {
+	Listing *model.ListingModel
+	Payment *database.Payment
 }

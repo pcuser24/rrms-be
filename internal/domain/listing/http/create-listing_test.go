@@ -19,6 +19,7 @@ import (
 	listing_dto "github.com/user2410/rrms-backend/internal/domain/listing/dto"
 	listing_model "github.com/user2410/rrms-backend/internal/domain/listing/model"
 	listing_repo "github.com/user2410/rrms-backend/internal/domain/listing/repo"
+	payment_repo "github.com/user2410/rrms-backend/internal/domain/payment/repo"
 	property_model "github.com/user2410/rrms-backend/internal/domain/property/model"
 	property_repo "github.com/user2410/rrms-backend/internal/domain/property/repo"
 	unit_repo "github.com/user2410/rrms-backend/internal/domain/unit/repo"
@@ -294,9 +295,11 @@ func TestCreateListing(t *testing.T) {
 			uRepo := unit_repo.NewMockRepo(ctrl)
 			lRepo := listing_repo.NewMockRepo(ctrl)
 			aRepo := application_repo.NewMockRepo(ctrl)
+			paymentRepo := payment_repo.NewMockRepo(ctrl)
+
 			tc.buildStubs(pRepo, uRepo, lRepo)
 
-			srv := newTestServer(t, pRepo, uRepo, lRepo, aRepo)
+			srv := newTestServer(t, pRepo, uRepo, lRepo, aRepo, paymentRepo)
 
 			data, err := json.Marshal(tc.body)
 			require.NoError(t, err)

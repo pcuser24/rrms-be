@@ -42,79 +42,75 @@ func NewRepo(d database.DAO) Repo {
 }
 
 func (r *repo) CreateProperty(ctx context.Context, data *property_dto.CreateProperty) (*property_model.PropertyModel, error) {
-	res, err := r.dao.QueryTx(ctx, func(d database.DAO) (interface{}, error) {
+	var pm *property_model.PropertyModel
+	prop, err := r.dao.CreateProperty(ctx, *data.ToCreatePropertyDB())
+	if err != nil {
+		return nil, err
+	}
+	pm = property_model.ToPropertyModel(&prop)
 
-		var pm *property_model.PropertyModel
-
-		prop, err := d.CreateProperty(ctx, *data.ToCreatePropertyDB())
-		if err != nil {
-			return nil, err
-		}
-		pm = property_model.ToPropertyModel(&prop)
-
+	err = func() error {
 		for _, m := range data.Managers {
-			res, err := d.CreatePropertyManager(ctx, database.CreatePropertyManagerParams{
+			res, err := r.dao.CreatePropertyManager(ctx, database.CreatePropertyManagerParams{
 				PropertyID: prop.ID,
 				ManagerID:  m.ManagerID,
 				Role:       m.Role,
 			})
 			if err != nil {
-				return pm, err
+				return err
 			}
 			pm.Managers = append(pm.Managers, property_model.PropertyManagerModel(res))
 		}
 
 		for _, f := range data.Features {
-			res, err := d.CreatePropertyFeature(ctx, *f.ToCreatePropertyFeatureDB(prop.ID))
+			res, err := r.dao.CreatePropertyFeature(ctx, *f.ToCreatePropertyFeatureDB(prop.ID))
 			if err != nil {
-				return pm, err
+				return err
 			}
 			pm.Features = append(pm.Features, property_model.ToPropertyFeatureModel(&res))
 		}
 
 		var primaryImageID int64
 		for _, m := range data.Media {
-			res, err := d.CreatePropertyMedia(ctx, *m.ToCreatePropertyMediaDB(prop.ID))
+			res, err := r.dao.CreatePropertyMedia(ctx, *m.ToCreatePropertyMediaDB(prop.ID))
 			if err != nil {
-				return pm, err
+				return err
 			}
 			if m.Type == database.MEDIATYPEIMAGE && res.Url == data.PrimaryImage {
 				primaryImageID = res.ID
 			}
 			pm.Media = append(pm.Media, property_model.ToPropertyMediaModel(&res))
 		}
-		err = d.UpdateProperty(ctx, database.UpdatePropertyParams{
+		err = r.dao.UpdateProperty(ctx, database.UpdatePropertyParams{
 			ID:           prop.ID,
 			PrimaryImage: pgtype.Int8{Valid: true, Int64: primaryImageID},
 		})
 		if err != nil {
-			return pm, err
+			return err
 		}
 		pm.PrimaryImage = primaryImageID
 
 		for _, t := range data.Tags {
-			res, err := d.CreatePropertyTag(ctx, database.CreatePropertyTagParams{
+			res, err := r.dao.CreatePropertyTag(ctx, database.CreatePropertyTagParams{
 				PropertyID: prop.ID,
 				Tag:        t.Tag,
 			})
 			if err != nil {
-				return pm, err
+				return err
 			}
 			pm.Tags = append(pm.Tags, property_model.PropertyTagModel(res))
 		}
 
-		return pm, nil
-	})
+		return nil
+	}()
+
 	if err != nil {
-		if res != nil {
-			// rollback and ignore any error
-			_ = r.dao.DeleteProperty(ctx, res.(*property_model.PropertyModel).ID)
-		}
+		// rollback and ignore any error
+		_ = r.dao.DeleteProperty(ctx, pm.ID)
 		return nil, err
 	}
-	p := res.(*property_model.PropertyModel)
 
-	return p, nil
+	return pm, nil
 }
 
 func (r *repo) SearchPropertyCombination(ctx context.Context, query *property_dto.SearchPropertyCombinationQuery) (*property_dto.SearchPropertyCombinationResponse, error) {

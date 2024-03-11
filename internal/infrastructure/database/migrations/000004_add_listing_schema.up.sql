@@ -22,7 +22,7 @@ CREATE TABLE IF NOT EXISTS "listings" (
   "number_of_residents" INTEGER CHECK (number_of_residents >= 0),
 
   "priority" INTEGER NOT NULL DEFAULT 1,
-  "active" BOOL NOT NULL DEFAULT TRUE,
+  "active" BOOL NOT NULL DEFAULT FALSE,
   "created_at" TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   "updated_at" TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   -- "post_at" TIMESTAMPTZ NOT NULL,

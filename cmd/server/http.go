@@ -7,6 +7,7 @@ import (
 	application_http "github.com/user2410/rrms-backend/internal/domain/application/http"
 	auth_http "github.com/user2410/rrms-backend/internal/domain/auth/http"
 	listing_http "github.com/user2410/rrms-backend/internal/domain/listing/http"
+	payment_http "github.com/user2410/rrms-backend/internal/domain/payment/http"
 	property_http "github.com/user2410/rrms-backend/internal/domain/property/http"
 	"github.com/user2410/rrms-backend/internal/domain/rental"
 	"github.com/user2410/rrms-backend/internal/domain/storage"
@@ -39,7 +40,8 @@ func (c *serverCommand) setupHttpServer() {
 		RegisterServer(apiRoute, c.tokenMaker)
 	unit_http.NewAdapter(c.internalServices.UnitService, c.internalServices.PropertyService).
 		RegisterServer(apiRoute, c.tokenMaker)
-	listing_http.NewAdapter(c.internalServices.ListingService, c.internalServices.PropertyService, c.internalServices.UnitService).
+	listing_http.
+		NewAdapter(c.internalServices.ListingService, c.internalServices.PropertyService, c.internalServices.UnitService).
 		RegisterServer(apiRoute, c.tokenMaker)
 	rental.
 		NewAdapter(c.internalServices.RentalService).
@@ -50,15 +52,18 @@ func (c *serverCommand) setupHttpServer() {
 	storage.
 		NewAdapter(c.internalServices.StorageService).
 		RegisterServer(apiRoute, c.tokenMaker)
+	payment_http.
+		NewAdapter(c.internalServices.PaymentService, c.internalServices.VnpService).
+		RegisterServer(apiRoute, c.tokenMaker)
 }
 
-func (c *serverCommand) runHttpServer() {
+func (c *serverCommand) runHttpServer(errChan chan error) {
 	log.Println("Starting HTTP server...")
 	var port uint16 = 8000
 	if c.config.Port != nil {
 		port = *c.config.Port
 	}
 	if err := c.httpServer.Start(port); err != nil {
-		log.Fatal("Failed to start HTTP server:", err)
+		errChan <- err
 	}
 }

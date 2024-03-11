@@ -27,6 +27,8 @@ type Querier interface {
 	CreateListing(ctx context.Context, arg CreateListingParams) (Listing, error)
 	CreateListingPolicy(ctx context.Context, arg CreateListingPolicyParams) (ListingPolicy, error)
 	CreateListingUnit(ctx context.Context, arg CreateListingUnitParams) (ListingUnit, error)
+	CreatePayment(ctx context.Context, arg CreatePaymentParams) (Payment, error)
+	CreatePaymentItem(ctx context.Context, arg CreatePaymentItemParams) (PaymentItem, error)
 	CreateProperty(ctx context.Context, arg CreatePropertyParams) (Property, error)
 	CreatePropertyFeature(ctx context.Context, arg CreatePropertyFeatureParams) (PropertyFeature, error)
 	CreatePropertyManager(ctx context.Context, arg CreatePropertyManagerParams) (PropertyManager, error)
@@ -39,6 +41,7 @@ type Querier interface {
 	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
 	DeleteApplication(ctx context.Context, id int64) error
 	DeleteListing(ctx context.Context, id uuid.UUID) error
+	DeletePayment(ctx context.Context, id int64) error
 	DeleteProperty(ctx context.Context, id uuid.UUID) error
 	DeletePropertyFeature(ctx context.Context, arg DeletePropertyFeatureParams) error
 	DeletePropertyManager(ctx context.Context, arg DeletePropertyManagerParams) error
@@ -64,6 +67,8 @@ type Querier interface {
 	GetListingUnits(ctx context.Context, listingID uuid.UUID) ([]ListingUnit, error)
 	GetListingsOfProperty(ctx context.Context, arg GetListingsOfPropertyParams) ([]uuid.UUID, error)
 	GetManagedProperties(ctx context.Context, managerID uuid.UUID) ([]GetManagedPropertiesRow, error)
+	GetPaymentById(ctx context.Context, id int64) (Payment, error)
+	GetPaymentItemsByPaymentId(ctx context.Context, paymentID int64) ([]PaymentItem, error)
 	GetPropertyById(ctx context.Context, id uuid.UUID) (Property, error)
 	GetPropertyFeatures(ctx context.Context, propertyID uuid.UUID) ([]PropertyFeature, error)
 	GetPropertyManagers(ctx context.Context, propertyID uuid.UUID) ([]PropertyManager, error)
@@ -81,6 +86,7 @@ type Querier interface {
 	UpdateApplicationStatus(ctx context.Context, arg UpdateApplicationStatusParams) error
 	UpdateListing(ctx context.Context, arg UpdateListingParams) error
 	UpdateListingStatus(ctx context.Context, arg UpdateListingStatusParams) error
+	UpdatePayment(ctx context.Context, arg UpdatePaymentParams) error
 	UpdateProperty(ctx context.Context, arg UpdatePropertyParams) error
 	UpdateSessionBlockingStatus(ctx context.Context, arg UpdateSessionBlockingStatusParams) error
 	UpdateUnit(ctx context.Context, arg UpdateUnitParams) error

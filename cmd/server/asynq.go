@@ -21,9 +21,9 @@ func (c *serverCommand) setupAsyncTaskProcessor(
 	application_asynctask.NewTaskProcessor(c.asyncTaskProcessor, mailer).RegisterProcessor()
 }
 
-func (c *serverCommand) runAsyncTaskProcessor() {
+func (c *serverCommand) runAsyncTaskProcessor(errChan chan error) {
 	log.Println("Starting async task processor...")
 	if err := c.asyncTaskProcessor.Start(); err != nil {
-		log.Fatal("Failed to start task processor:", err)
+		errChan <- err
 	}
 }

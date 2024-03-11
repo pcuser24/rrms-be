@@ -38,14 +38,13 @@ func NewRepo(d database.DAO) Repo {
 }
 
 func (r *repo) CreateUnit(ctx context.Context, data *dto.CreateUnit) (*model.UnitModel, error) {
-	res, err := r.dao.QueryTx(ctx, func(d database.DAO) (interface{}, error) {
-		var um *model.UnitModel
-		res, err := d.CreateUnit(ctx, *data.ToCreateUnitDB())
-		if err != nil {
-			return nil, err
-		}
-		um = model.ToUnitModel(&res)
-
+	var um *model.UnitModel
+	res, err := r.dao.CreateUnit(ctx, *data.ToCreateUnitDB())
+	if err != nil {
+		return nil, err
+	}
+	um = model.ToUnitModel(&res)
+	err = func() error {
 		for _, a := range data.Amenities {
 			amenity, err := r.dao.CreateUnitAmenity(ctx, database.CreateUnitAmenityParams{
 				UnitID:      res.ID,
@@ -53,7 +52,7 @@ func (r *repo) CreateUnit(ctx context.Context, data *dto.CreateUnit) (*model.Uni
 				Description: types.StrN(a.Description),
 			})
 			if err != nil {
-				return nil, err
+				return err
 			}
 			um.Amenities = append(um.Amenities, *model.ToUnitAmenityModel(&amenity))
 		}
@@ -66,19 +65,20 @@ func (r *repo) CreateUnit(ctx context.Context, data *dto.CreateUnit) (*model.Uni
 				Description: types.StrN(m.Description),
 			})
 			if err != nil {
-				return nil, err
+				return err
 			}
 			um.Media = append(um.Media, *model.ToUnitMediaModel(&media))
 		}
 
-		return um, nil
-	})
+		return nil
+	}()
+
 	if err != nil {
+		_ = r.dao.DeleteUnit(ctx, res.ID)
 		return nil, err
 	}
 
-	u := res.(*model.UnitModel)
-	return u, nil
+	return um, nil
 }
 
 func (r *repo) GetUnitById(ctx context.Context, id uuid.UUID) (*model.UnitModel, error) {

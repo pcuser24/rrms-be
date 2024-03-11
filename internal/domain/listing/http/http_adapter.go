@@ -7,7 +7,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgconn"
-	"github.com/user2410/rrms-backend/internal/domain/auth/http"
+	auth_http "github.com/user2410/rrms-backend/internal/domain/auth/http"
 	"github.com/user2410/rrms-backend/internal/domain/listing"
 	"github.com/user2410/rrms-backend/internal/domain/listing/dto"
 	"github.com/user2410/rrms-backend/internal/domain/property"
@@ -44,17 +44,18 @@ func (a *adapter) RegisterServer(router *fiber.Router, tokenMaker token.Maker) {
 	listingRoute.Get("/", a.searchListings())
 	listingRoute.Get("/listing/:id", a.getListingById())
 	listingRoute.Get("/ids", a.getListingsByIds())
-	listingRoute.Use(http.AuthorizedMiddleware(tokenMaker))
+	listingRoute.Use(auth_http.AuthorizedMiddleware(tokenMaker))
 
 	listingRoute.Post("/", a.createListing())
 	listingRoute.Get("/my-listings", a.getMyListings())
+	listingRoute.Post("/listing/:id/payment", CheckListingManageability(a.lService), a.createListingPayment())
 	listingRoute.Patch("/listing/:id", CheckListingManageability(a.lService), a.updateListing())
 	listingRoute.Delete("/listing/:id", CheckListingManageability(a.lService), a.deleteListing())
 }
 
 func (a *adapter) createListing() fiber.Handler {
 	return func(ctx *fiber.Ctx) error {
-		tkPayload := ctx.Locals(http.AuthorizationPayloadKey).(*token.Payload)
+		tkPayload := ctx.Locals(auth_http.AuthorizationPayloadKey).(*token.Payload)
 
 		var payload dto.CreateListing
 		if err := ctx.BodyParser(&payload); err != nil {
@@ -101,6 +102,8 @@ func (a *adapter) createListing() fiber.Handler {
 
 			return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
 		}
+
+		// res, err := a.lService.CreateListing(&payload)
 		return ctx.Status(fiber.StatusCreated).JSON(res)
 	}
 }
@@ -146,7 +149,7 @@ func (a *adapter) getMyListings() fiber.Handler {
 			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": validation.GetValidationError(errs)})
 		}
 
-		tokenPayload := ctx.Locals(http.AuthorizationPayloadKey).(*token.Payload)
+		tokenPayload := ctx.Locals(auth_http.AuthorizationPayloadKey).(*token.Payload)
 		res, err := a.lService.GetListingsOfUser(tokenPayload.UserID, query.Fields)
 		if err != nil {
 			if err == database.ErrRecordNotFound {
@@ -246,5 +249,32 @@ func (a *adapter) deleteListing() fiber.Handler {
 			ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
 		}
 		return nil
+	}
+}
+
+func (a *adapter) createListingPayment() fiber.Handler {
+	return func(ctx *fiber.Ctx) error {
+		var payload dto.CreateListingPayment
+		if err := ctx.BodyParser(&payload); err != nil {
+			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": err.Error()})
+		}
+
+		payload.ListingId = ctx.Locals(ListingIDLocalKey).(uuid.UUID)
+		tkPayload := ctx.Locals(auth_http.AuthorizationPayloadKey).(*token.Payload)
+		payload.UserId = tkPayload.UserID
+		if errs := validation.ValidateStruct(nil, payload); len(errs) > 0 {
+			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": validation.GetValidationError(errs)})
+		}
+
+		res, err := a.lService.CreateListingPayment(&payload)
+		if err != nil {
+			if dbErr, ok := err.(*pgconn.PgError); ok {
+				return responses.DBErrorResponse(ctx, dbErr)
+			}
+
+			return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
+		}
+
+		return ctx.Status(fiber.StatusCreated).JSON(res)
 	}
 }

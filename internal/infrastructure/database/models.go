@@ -100,6 +100,49 @@ func (ns NullMEDIATYPE) Value() (driver.Value, error) {
 	return string(ns.MEDIATYPE), nil
 }
 
+type PAYMENTSTATUS string
+
+const (
+	PAYMENTSTATUSPENDING PAYMENTSTATUS = "PENDING"
+	PAYMENTSTATUSSUCCESS PAYMENTSTATUS = "SUCCESS"
+	PAYMENTSTATUSFAILED  PAYMENTSTATUS = "FAILED"
+)
+
+func (e *PAYMENTSTATUS) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = PAYMENTSTATUS(s)
+	case string:
+		*e = PAYMENTSTATUS(s)
+	default:
+		return fmt.Errorf("unsupported scan type for PAYMENTSTATUS: %T", src)
+	}
+	return nil
+}
+
+type NullPAYMENTSTATUS struct {
+	PAYMENTSTATUS PAYMENTSTATUS `json:"PAYMENTSTATUS"`
+	Valid         bool          `json:"valid"` // Valid is true if PAYMENTSTATUS is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullPAYMENTSTATUS) Scan(value interface{}) error {
+	if value == nil {
+		ns.PAYMENTSTATUS, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.PAYMENTSTATUS.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullPAYMENTSTATUS) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.PAYMENTSTATUS), nil
+}
+
 type PROPERTYTYPE string
 
 const (
@@ -321,6 +364,25 @@ type ListingUnit struct {
 type PFeature struct {
 	ID      int64  `json:"id"`
 	Feature string `json:"feature"`
+}
+
+type Payment struct {
+	ID        int64         `json:"id"`
+	UserID    uuid.UUID     `json:"user_id"`
+	OrderID   string        `json:"order_id"`
+	OrderInfo string        `json:"order_info"`
+	Amount    int64         `json:"amount"`
+	Status    PAYMENTSTATUS `json:"status"`
+	CreatedAt time.Time     `json:"created_at"`
+	UpdatedAt time.Time     `json:"updated_at"`
+}
+
+type PaymentItem struct {
+	PaymentID int64  `json:"payment_id"`
+	Name      string `json:"name"`
+	Price     int64  `json:"price"`
+	Quantity  int32  `json:"quantity"`
+	Discount  int32  `json:"discount"`
 }
 
 type Property struct {

@@ -24,15 +24,16 @@ type DAO interface {
 	Querier
 	DBTX
 	GetConn() *pgxpool.Pool
-	ExecTx(ctx context.Context, fn func(DAO) error) *TXError
-	QueryTx(ctx context.Context, fn func(DAO) (interface{}, error)) (interface{}, *TXError)
+	ExecTx(ctx context.Context, txOptions any, fn func(DAO) error) *TXError
+	QueryTx(ctx context.Context, txOptions any, fn func(DAO) (interface{}, error)) (interface{}, *TXError)
 	Close()
 }
 
 // extend Queries struct ability
 type postgresDAO struct {
 	*Queries
-	db *pgxpool.Pool
+	db   *pgxpool.Pool
+	dbtx *pgx.Tx
 }
 
 func NewPostgresDAO(dbUrl string) (DAO, error) {
@@ -56,24 +57,48 @@ func (d *postgresDAO) GetConn() *pgxpool.Pool {
 }
 
 func (d *postgresDAO) Exec(ctx context.Context, query string, params ...interface{}) (pgconn.CommandTag, error) {
+	if d.dbtx != nil {
+		return (*d.dbtx).Exec(ctx, query, params...)
+	}
 	return d.db.Exec(ctx, query, params...)
 }
 
 func (d *postgresDAO) Query(ctx context.Context, query string, params ...interface{}) (pgx.Rows, error) {
+	if d.dbtx != nil {
+		return (*d.dbtx).Query(ctx, query, params...)
+	}
 	return d.db.Query(ctx, query, params...)
 }
 
 func (d *postgresDAO) QueryRow(ctx context.Context, query string, params ...interface{}) pgx.Row {
+	if d.dbtx != nil {
+		return (*d.dbtx).QueryRow(ctx, query, params...)
+	}
 	return d.db.QueryRow(ctx, query, params...)
 }
 
-func (d *postgresDAO) ExecTx(ctx context.Context, fn func(DAO) error) *TXError {
-	tx, err := d.db.Begin(ctx)
+func (d *postgresDAO) ExecTx(ctx context.Context, txOptions any, fn func(DAO) error) *TXError {
+	opts, ok := txOptions.(*pgx.TxOptions)
+	var (
+		tx  pgx.Tx
+		err error
+	)
+	if !ok || opts == nil {
+		tx, err = d.db.Begin(ctx)
+	} else {
+		tx, err = d.db.BeginTx(ctx, *opts)
+	}
+
 	if err != nil {
 		return &TXError{Err: err}
 	}
 
-	if err = fn(d); err != nil {
+	q := &postgresDAO{
+		Queries: New(tx),
+		db:      d.db,
+		dbtx:    &tx,
+	}
+	if err = fn(q); err != nil {
 		if rbErr := tx.Rollback(ctx); rbErr != nil {
 			return &TXError{Err: err, RollbackErr: rbErr}
 		}
@@ -88,13 +113,28 @@ func (d *postgresDAO) ExecTx(ctx context.Context, fn func(DAO) error) *TXError {
 	return nil
 }
 
-func (d *postgresDAO) QueryTx(ctx context.Context, fn func(DAO) (interface{}, error)) (interface{}, *TXError) {
-	tx, err := d.db.Begin(ctx)
+func (d *postgresDAO) QueryTx(ctx context.Context, txOptions any, fn func(DAO) (interface{}, error)) (interface{}, *TXError) {
+	opts, ok := txOptions.(*pgx.TxOptions)
+	var (
+		tx  pgx.Tx
+		err error
+	)
+	if !ok || opts == nil {
+		tx, err = d.db.Begin(ctx)
+	} else {
+		tx, err = d.db.BeginTx(ctx, *opts)
+	}
+
 	if err != nil {
 		return nil, &TXError{Err: err}
 	}
 
-	res, err := fn(d)
+	q := &postgresDAO{
+		Queries: New(tx),
+		db:      d.db,
+		dbtx:    &tx,
+	}
+	res, err := fn(q)
 	if err != nil {
 		if rbErr := tx.Rollback(ctx); rbErr != nil {
 			return nil, &TXError{Err: err, RollbackErr: rbErr}
