@@ -47,7 +47,7 @@ func (c *serverCommand) setupHttpServer() {
 		NewAdapter(c.internalServices.RentalService).
 		RegisterServer(apiRoute)
 	application_http.
-		NewAdapter(c.internalServices.ApplicationService).
+		NewAdapter(c.internalServices.ListingService, c.internalServices.ApplicationService).
 		RegisterServer(apiRoute, c.tokenMaker)
 	storage.
 		NewAdapter(c.internalServices.StorageService).

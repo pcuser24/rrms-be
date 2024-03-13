@@ -100,7 +100,7 @@ func (m *CreateApplicationVehicle) ToCreateApplicationVehicleDB(aid int64) *data
 type CreateApplication struct {
 	ListingID               uuid.UUID `json:"listingId" validate:"omitempty,uuid4"`
 	PropertyID              uuid.UUID `json:"propertyId" validate:"required,uuid4"`
-	CreatorID               uuid.UUID `json:"creatorId" validate:"required,uuid4"`
+	CreatorID               uuid.UUID `json:"creatorId"`
 	FullName                string    `json:"fullName" validate:"required"`
 	Email                   string    `json:"email" validate:"required,email"`
 	Phone                   string    `json:"phone" validate:"required"`
@@ -129,13 +129,15 @@ type CreateApplication struct {
 	Coaps    []CreateApplicationCoapModel `json:"coaps" validate:"dive"`
 	Pets     []CreateApplicationPet       `json:"pets" validate:"dive"`
 	Vehicles []CreateApplicationVehicle   `json:"vehicles" validate:"dive"`
+
+	ApplicationKey string `json:"k" validate:"omitempty"`
 }
 
 func (a *CreateApplication) ToCreateApplicationDB() *database.CreateApplicationParams {
 	return &database.CreateApplicationParams{
 		ListingID:               a.ListingID,
 		PropertyID:              a.PropertyID,
-		CreatorID:               a.CreatorID,
+		CreatorID:               types.UUIDN(a.CreatorID),
 		FullName:                a.FullName,
 		Email:                   a.Email,
 		Phone:                   a.Phone,

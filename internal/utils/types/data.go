@@ -179,11 +179,18 @@ func PNBool(n pgtype.Bool) *bool {
 	return &n.Bool
 }
 
-func NUUID(n pgtype.Text) uuid.UUID {
+// func NUUID(n pgtype.Text) uuid.UUID {
+// 	if !n.Valid {
+// 		return uuid.New()
+// 	}
+// 	return uuid.MustParse(n.String)
+// }
+
+func NUUID(n pgtype.UUID) uuid.UUID {
 	if !n.Valid {
-		return uuid.New()
+		return uuid.Nil
 	}
-	return uuid.MustParse(n.String)
+	return n.Bytes
 }
 
 func NStrTime(n pgtype.Text) *time.Time {

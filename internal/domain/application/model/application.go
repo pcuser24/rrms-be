@@ -104,38 +104,38 @@ func ToApplicationVehicleModel(db *database.ApplicationVehicle) ApplicationVehic
 }
 
 type ApplicationModel struct {
-	ID                       int64                      `json:"id"`
-	ListingID                uuid.UUID                  `json:"listingId"`
-	PropertyID               uuid.UUID                  `json:"propertyId"`
-	Status                   database.APPLICATIONSTATUS `json:"status"`
-	CreatorID                uuid.UUID                  `json:"creatorId"`
-	FullName                 string                     `json:"fullName"`
-	Email                    string                     `json:"email"`
-	Phone                    string                     `json:"phone"`
-	Dob                      time.Time                  `json:"dob"`
-	ProfileImage             string                     `json:"profileImage"`
-	MoveinDate               time.Time                  `json:"moveinDate"`
-	PreferredTerm            int32                      `json:"preferredTerm"`
-	RentalIntention          string                     `json:"rentalIntention"`
-	RhAddress                *string                    `json:"rhAddress"`
-	RhCity                   *string                    `json:"rhCity"`
-	RhDistrict               *string                    `json:"rhDistrict"`
-	RhWard                   *string                    `json:"rhWard"`
-	RhRentalDuration         *int32                     `json:"rhRentalDuration"`
-	RhMonthlyPayment         *int64                     `json:"rhMonthlyPayment"`
-	RhReasonForLeaving       *string                    `json:"rhReasonForLeaving"`
-	EmploymentStatus         string                     `json:"employmentStatus"`
-	EmploymentCompanyName    *string                    `json:"employmentCompanyName"`
-	EmploymentPosition       *string                    `json:"employmentPosition"`
-	EmploymentMonthlyIncome  *int64                     `json:"employmentMonthlyIncome"`
-	EmploymentComment        *string                    `json:"employmentComment"`
-	EmploymentProofsOfIncome []string                   `json:"employmentProofsOfIncome"`
-	IdentityType             string                     `json:"identityType"`
-	IdentityNumber           string                     `json:"identityNumber"`
-	IdentityIssuedDate       time.Time                  `json:"identityIssuedDate"`
-	IdentityIssuedBy         string                     `json:"identityIssuedBy"`
-	CreatedAt                time.Time                  `json:"createdAt"`
-	UpdatedAt                time.Time                  `json:"updatedAt"`
+	ID                      int64                      `json:"id"`
+	ListingID               uuid.UUID                  `json:"listingId"`
+	PropertyID              uuid.UUID                  `json:"propertyId"`
+	Status                  database.APPLICATIONSTATUS `json:"status"`
+	CreatorID               uuid.UUID                  `json:"creatorId"`
+	FullName                string                     `json:"fullName"`
+	Email                   string                     `json:"email"`
+	Phone                   string                     `json:"phone"`
+	Dob                     time.Time                  `json:"dob"`
+	ProfileImage            string                     `json:"profileImage"`
+	MoveinDate              time.Time                  `json:"moveinDate"`
+	PreferredTerm           int32                      `json:"preferredTerm"`
+	RentalIntention         string                     `json:"rentalIntention"`
+	RhAddress               *string                    `json:"rhAddress"`
+	RhCity                  *string                    `json:"rhCity"`
+	RhDistrict              *string                    `json:"rhDistrict"`
+	RhWard                  *string                    `json:"rhWard"`
+	RhRentalDuration        *int32                     `json:"rhRentalDuration"`
+	RhMonthlyPayment        *int64                     `json:"rhMonthlyPayment"`
+	RhReasonForLeaving      *string                    `json:"rhReasonForLeaving"`
+	EmploymentStatus        string                     `json:"employmentStatus"`
+	EmploymentCompanyName   *string                    `json:"employmentCompanyName"`
+	EmploymentPosition      *string                    `json:"employmentPosition"`
+	EmploymentMonthlyIncome *int64                     `json:"employmentMonthlyIncome"`
+	EmploymentComment       *string                    `json:"employmentComment"`
+	// EmploymentProofsOfIncome []string                   `json:"employmentProofsOfIncome"`
+	IdentityType       string    `json:"identityType"`
+	IdentityNumber     string    `json:"identityNumber"`
+	IdentityIssuedDate time.Time `json:"identityIssuedDate"`
+	IdentityIssuedBy   string    `json:"identityIssuedBy"`
+	CreatedAt          time.Time `json:"createdAt"`
+	UpdatedAt          time.Time `json:"updatedAt"`
 
 	Units    []ApplicationUnitModel  `json:"units"`
 	Minors   []ApplicationMinorModel `json:"minors"`
@@ -147,7 +147,7 @@ type ApplicationModel struct {
 func ToApplicationModel(a *database.Application) *ApplicationModel {
 	return &ApplicationModel{
 		ID:                      a.ID,
-		CreatorID:               a.CreatorID,
+		CreatorID:               types.NUUID(a.CreatorID),
 		ListingID:               a.ListingID,
 		PropertyID:              a.PropertyID,
 		Status:                  a.Status,

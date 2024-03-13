@@ -3,6 +3,7 @@ package listing
 import (
 	"context"
 	"fmt"
+	"net/url"
 
 	"github.com/user2410/rrms-backend/internal/domain/listing/repo"
 
@@ -31,16 +32,23 @@ type Service interface {
 	CheckListingOwnership(lid uuid.UUID, uid uuid.UUID) (bool, error)
 	CheckValidUnitForListing(lid uuid.UUID, uid uuid.UUID) (bool, error)
 	CreateListingPayment(data *dto.CreateListingPayment) (*payment_model.PaymentModel, error)
+	CreateApplicationLink(data *dto.CreateApplicationLink) (string, error)
+	VerifyApplicationLink(query *dto.VerifyApplicationLink) (bool, error)
 }
 
 type service struct {
+	hashSecret  string
 	lRepo       repo.Repo
 	pRepo       property_repo.Repo
 	paymentRepo payment_repo.Repo
 }
 
-func NewService(lRepo repo.Repo, pRepo property_repo.Repo, paymentRepo payment_repo.Repo) Service {
+func NewService(
+	lRepo repo.Repo, pRepo property_repo.Repo, paymentRepo payment_repo.Repo,
+	hashSecret string,
+) Service {
 	return &service{
+		hashSecret:  hashSecret,
 		lRepo:       lRepo,
 		pRepo:       pRepo,
 		paymentRepo: paymentRepo,
@@ -143,4 +151,24 @@ func (s *service) CreateListingPayment(data *dto.CreateListingPayment) (*payment
 		},
 	}
 	return s.paymentRepo.CreatePayment(context.Background(), &params)
+}
+
+func (s *service) CreateApplicationLink(data *dto.CreateApplicationLink) (string, error) {
+	key, err := listing_utils.EncryptApplicationLink(s.hashSecret, data)
+	if err != nil {
+		return "", err
+	}
+
+	urlValues := url.Values{}
+	urlValues.Add("listingId", data.ListingId.String())
+	urlValues.Add("fullName", data.FullName)
+	urlValues.Add("email", data.Email)
+	urlValues.Add("phone", data.Phone)
+	urlValues.Add("k", key)
+
+	return urlValues.Encode(), nil
+}
+
+func (s *service) VerifyApplicationLink(query *dto.VerifyApplicationLink) (bool, error) {
+	return listing_utils.VerifyApplicationLink(query, s.hashSecret)
 }

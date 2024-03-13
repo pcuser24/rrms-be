@@ -6,6 +6,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/user2410/rrms-backend/internal/domain/application"
+	"github.com/user2410/rrms-backend/internal/domain/listing"
 
 	"github.com/user2410/rrms-backend/internal/utils"
 	"github.com/user2410/rrms-backend/internal/utils/validation"
@@ -15,6 +16,7 @@ import (
 	"github.com/user2410/rrms-backend/internal/domain/application/dto"
 	"github.com/user2410/rrms-backend/internal/domain/application/model"
 	auth_http "github.com/user2410/rrms-backend/internal/domain/auth/http"
+	listing_dto "github.com/user2410/rrms-backend/internal/domain/listing/dto"
 	"github.com/user2410/rrms-backend/internal/infrastructure/database"
 	"github.com/user2410/rrms-backend/internal/interfaces/rest/responses"
 	"github.com/user2410/rrms-backend/internal/utils/token"
@@ -25,15 +27,19 @@ type Adapter interface {
 }
 
 type adapter struct {
-	service application.Service
+	lService listing.Service
+	aService application.Service
 }
 
 func (a *adapter) RegisterServer(route *fiber.Router, tokenMaker token.Maker) {
 	applicationRoute := (*route).Group("/applications")
 
-	applicationRoute.Use(auth_http.AuthorizedMiddleware(tokenMaker))
+	// applicationRoute.Use(auth_http.AuthorizedMiddleware(tokenMaker))
 
-	applicationRoute.Post("/", a.createApplications())
+	applicationRoute.Post("/",
+		auth_http.GetAuthorizationMiddleware(tokenMaker),
+		a.createApplications(),
+	)
 	applicationRoute.Get("/my-applications",
 		// TODO: A middleware to check if the user is a tenant
 		a.getMyApplications(),
@@ -51,31 +57,51 @@ func (a *adapter) RegisterServer(route *fiber.Router, tokenMaker token.Maker) {
 		// TODO: A middleware to check if the user is a property manager
 		a.updateApplicationStatus(),
 	)
-	applicationRoute.Delete("/application/:id", a.deleteApplication())
-
 }
 
-func NewAdapter(service application.Service) Adapter {
+func NewAdapter(lService listing.Service, aService application.Service) Adapter {
 	return &adapter{
-		service: service,
+		lService: lService,
+		aService: aService,
 	}
 }
 
 func (a *adapter) createApplications() fiber.Handler {
 	return func(ctx *fiber.Ctx) error {
-		tkPayload := ctx.Locals(auth_http.AuthorizationPayloadKey).(*token.Payload)
 
 		var payload dto.CreateApplication
 		if err := ctx.BodyParser(&payload); err != nil {
 			return err
 		}
-		payload.CreatorID = tkPayload.UserID
+		tkPayload, ok := ctx.Locals(auth_http.AuthorizationPayloadKey).(*token.Payload)
+		if ok {
+			payload.CreatorID = tkPayload.UserID
+		} else {
+			// validate key
+			if payload.ApplicationKey == "" {
+				return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": "application key is required"})
+			}
+			res, err := a.lService.VerifyApplicationLink(
+				&listing_dto.VerifyApplicationLink{
+					CreateApplicationLink: listing_dto.CreateApplicationLink{
+						FullName:  payload.FullName,
+						Email:     payload.Email,
+						Phone:     payload.Phone,
+						ListingId: payload.ListingID,
+					},
+					Key: payload.ApplicationKey,
+				},
+			)
+			if err != nil || !res {
+				return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": "invalid application key"})
+			}
+		}
 		if errs := validation.ValidateStruct(nil, payload); len(errs) > 0 {
 			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": validation.GetValidationError(errs)})
 		}
 
 		// log.Println("CreateApplication payload:", payload)
-		newApplication, err := a.service.CreateApplication(&payload)
+		newApplication, err := a.aService.CreateApplication(&payload)
 		if err != nil {
 			if dbErr, ok := err.(*database.TXError); ok {
 				return responses.DBTXErrorResponse(ctx, dbErr)
@@ -111,7 +137,7 @@ func (a *adapter) getMyApplications() fiber.Handler {
 			return fiber.NewError(fiber.StatusBadRequest, validation.GetValidationError(errs))
 		}
 
-		applications, err := a.service.GetApplicationsByUserId(tkPayload.UserID, query)
+		applications, err := a.aService.GetApplicationsByUserId(tkPayload.UserID, query)
 		if err != nil {
 			if dbErr, ok := err.(*pgconn.PgError); ok {
 				return responses.DBErrorResponse(ctx, dbErr)
@@ -139,7 +165,7 @@ func (a *adapter) getApplicationsToMe() fiber.Handler {
 			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": validation.GetValidationError(errs)})
 		}
 
-		applications, err := a.service.GetApplicationsToUser(tkPayload.UserID, query)
+		applications, err := a.aService.GetApplicationsToUser(tkPayload.UserID, query)
 		if err != nil {
 			if dbErr, ok := err.(*pgconn.PgError); ok {
 				return responses.DBErrorResponse(ctx, dbErr)
@@ -160,7 +186,7 @@ func (a *adapter) getApplicationById() fiber.Handler {
 			return nil
 		}
 
-		application, err := a.service.GetApplicationById(aid)
+		application, err := a.aService.GetApplicationById(aid)
 		if err != nil {
 			if dbErr, ok := err.(*pgconn.PgError); ok {
 				return responses.DBErrorResponse(ctx, dbErr)
@@ -192,7 +218,7 @@ func (a *adapter) getApplicationsByIds() fiber.Handler {
 			userId = tkPayload.UserID
 		}
 
-		res, err := a.service.GetApplicationByIds(query.IDs, query.Fields, userId)
+		res, err := a.aService.GetApplicationByIds(query.IDs, query.Fields, userId)
 		if err != nil {
 			ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
 			return nil
@@ -218,7 +244,7 @@ func (a *adapter) updateApplicationStatus() fiber.Handler {
 			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": err.Error()})
 		}
 
-		err = a.service.UpdateApplicationStatus(aid, payload)
+		err = a.aService.UpdateApplicationStatus(aid, payload)
 		if err != nil {
 			if err == database.ErrRecordNotFound {
 				return ctx.Status(fiber.StatusNotFound).JSON(fiber.Map{"message": "application not found"})
@@ -227,26 +253,5 @@ func (a *adapter) updateApplicationStatus() fiber.Handler {
 		}
 
 		return ctx.SendStatus(fiber.StatusOK)
-	}
-}
-
-func (a *adapter) deleteApplication() fiber.Handler {
-	return func(ctx *fiber.Ctx) error {
-		aid, err := strconv.ParseInt(ctx.Params("id"), 10, 64)
-		if err != nil {
-			ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": err.Error()})
-			return nil
-		}
-
-		err = a.service.DeleteApplication((aid))
-		if err != nil {
-			if dbErr, ok := err.(*pgconn.PgError); ok {
-				return responses.DBErrorResponse(ctx, dbErr)
-			}
-
-			return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
-		}
-
-		return nil
 	}
 }

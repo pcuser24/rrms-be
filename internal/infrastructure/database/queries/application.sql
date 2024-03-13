@@ -30,7 +30,7 @@ INSERT INTO applications (
   identity_type,
   identity_number
 ) VALUES (
-  sqlc.arg(creator_id),
+  sqlc.narg(creator_id),
   sqlc.arg(listing_id),
   sqlc.arg(property_id),
   -- basic info

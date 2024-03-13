@@ -11,6 +11,7 @@ import (
 	"github.com/user2410/rrms-backend/internal/domain/application"
 	"github.com/user2410/rrms-backend/internal/domain/application/asynctask"
 	"github.com/user2410/rrms-backend/internal/domain/application/repo"
+	"github.com/user2410/rrms-backend/internal/domain/listing"
 	listing_repo "github.com/user2410/rrms-backend/internal/domain/listing/repo"
 	property_repo "github.com/user2410/rrms-backend/internal/domain/property/repo"
 	unit_repo "github.com/user2410/rrms-backend/internal/domain/unit/repo"
@@ -39,6 +40,7 @@ func newTestServer(
 
 	// initialize lService
 	aService := application.NewService(ar, lr, pr, taskDistributor)
+	lService := listing.NewService(lr, pr, nil, "") // NOTE: leave paymentRepo nil for now
 
 	// initialize http router
 	httpServer := http.NewServer(
@@ -51,7 +53,7 @@ func newTestServer(
 			AllowHeaders: "Origin, Content-Type, Accept, Authorization",
 		},
 	)
-	NewAdapter(aService).RegisterServer(httpServer.GetApiRoute(), tokenMaker)
+	NewAdapter(lService, aService).RegisterServer(httpServer.GetApiRoute(), tokenMaker)
 
 	return &server{
 		pr:         pr,

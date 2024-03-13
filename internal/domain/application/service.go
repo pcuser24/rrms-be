@@ -26,7 +26,6 @@ type Service interface {
 	GetApplicationsByUserId(uid uuid.UUID, q *dto.GetApplicationsToMeQuery) ([]model.ApplicationModel, error)
 	GetApplicationsToUser(uid uuid.UUID, q *dto.GetApplicationsToMeQuery) ([]model.ApplicationModel, error)
 	UpdateApplicationStatus(aid int64, data *dto.UpdateApplicationStatus) error
-	DeleteApplication(id int64) error
 }
 
 type service struct {
@@ -124,10 +123,6 @@ func (s *service) GetApplicationByIds(ids []int64, fields []string, userId uuid.
 		}
 	}
 	return s.aRepo.GetApplicationsByIds(context.Background(), _ids, fields)
-}
-
-func (s *service) DeleteApplication(id int64) error {
-	return s.aRepo.DeleteApplication(context.Background(), id)
 }
 
 var ErrInvalidStatusTransition = fmt.Errorf("invalid status transition")

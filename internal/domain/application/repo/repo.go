@@ -10,6 +10,7 @@ import (
 	"github.com/user2410/rrms-backend/internal/domain/application/dto"
 	"github.com/user2410/rrms-backend/internal/domain/application/model"
 	"github.com/user2410/rrms-backend/internal/infrastructure/database"
+	"github.com/user2410/rrms-backend/internal/utils/types"
 )
 
 type Repo interface {
@@ -299,7 +300,7 @@ func (r *repo) GetApplicationsByIds(ctx context.Context, ids []int64, fields []s
 
 func (r *repo) GetApplicationsByUserId(ctx context.Context, uid uuid.UUID, createdBefore time.Time, limit, offset int32) ([]int64, error) {
 	return r.dao.GetApplicationsByUserId(ctx, database.GetApplicationsByUserIdParams{
-		CreatorID: uid,
+		CreatorID: types.UUIDN(uid),
 		CreatedAt: createdBefore,
 		Limit:     limit,
 		Offset:    offset,

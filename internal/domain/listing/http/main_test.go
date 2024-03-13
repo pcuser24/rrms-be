@@ -34,7 +34,7 @@ func newTestServer(t *testing.T, pr property_repo.Repo, ur unit_repo.Repo, lr li
 
 	uService := unit.NewService(ur)
 	pService := property.NewService(pr, ur, lr, ar)
-	lService := listing.NewService(lr, pr, paymentRepo)
+	lService := listing.NewService(lr, pr, paymentRepo, "")
 
 	// initialize http router
 	httpServer := http.NewServer(

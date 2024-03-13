@@ -249,7 +249,7 @@ type Account struct {
 
 type Application struct {
 	ID                      int64             `json:"id"`
-	CreatorID               uuid.UUID         `json:"creator_id"`
+	CreatorID               pgtype.UUID       `json:"creator_id"`
 	ListingID               uuid.UUID         `json:"listing_id"`
 	PropertyID              uuid.UUID         `json:"property_id"`
 	Status                  APPLICATIONSTATUS `json:"status"`

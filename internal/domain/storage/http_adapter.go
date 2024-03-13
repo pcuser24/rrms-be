@@ -1,7 +1,7 @@
 package storage
 
 import (
-	"fmt"
+	"github.com/google/uuid"
 	"github.com/user2410/rrms-backend/internal/domain/auth/http"
 
 	"github.com/gofiber/fiber/v2"
@@ -28,7 +28,7 @@ func NewAdapter(service Service) Adapter {
 func (a *adapter) RegisterServer(route *fiber.Router, tokenMaker token.Maker) {
 	storageRoute := (*route).Group("/storage")
 
-	storageRoute.Use(http.AuthorizedMiddleware(tokenMaker))
+	// storageRoute.Use(http.AuthorizedMiddleware(tokenMaker))
 
 	storageRoute.Post("/presign", a.getPresignUrl())
 }
@@ -39,10 +39,14 @@ func (a *adapter) getPresignUrl() fiber.Handler {
 		if err := ctx.BodyParser(&payload); err != nil {
 			return err
 		}
-		fmt.Println(payload)
-		tkPayload := ctx.Locals(http.AuthorizationPayloadKey).(*token.Payload)
 
-		presignUrl, err := a.service.GetPresignUrl(&payload, tkPayload.UserID)
+		userId := uuid.New()
+		tkPayload, ok := ctx.Locals(http.AuthorizationPayloadKey).(*token.Payload)
+		if ok {
+			userId = tkPayload.UserID
+		}
+
+		presignUrl, err := a.service.GetPresignUrl(&payload, userId)
 		if err != nil {
 			return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
 		}

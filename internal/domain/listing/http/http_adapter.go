@@ -1,6 +1,7 @@
 package http
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/go-playground/validator/v10"
@@ -44,11 +45,14 @@ func (a *adapter) RegisterServer(router *fiber.Router, tokenMaker token.Maker) {
 	listingRoute.Get("/", a.searchListings())
 	listingRoute.Get("/listing/:id", a.getListingById())
 	listingRoute.Get("/ids", a.getListingsByIds())
+	listingRoute.Get("/listing/:id/application-link", a.verifyApplicationLink())
+
 	listingRoute.Use(auth_http.AuthorizedMiddleware(tokenMaker))
 
 	listingRoute.Post("/", a.createListing())
 	listingRoute.Get("/my-listings", a.getMyListings())
 	listingRoute.Post("/listing/:id/payment", CheckListingManageability(a.lService), a.createListingPayment())
+	listingRoute.Post("/listing/:id/application-link", CheckListingManageability(a.lService), a.createApplicationLink())
 	listingRoute.Patch("/listing/:id", CheckListingManageability(a.lService), a.updateListing())
 	listingRoute.Delete("/listing/:id", CheckListingManageability(a.lService), a.deleteListing())
 }
@@ -276,5 +280,53 @@ func (a *adapter) createListingPayment() fiber.Handler {
 		}
 
 		return ctx.Status(fiber.StatusCreated).JSON(res)
+	}
+}
+
+func (a *adapter) createApplicationLink() fiber.Handler {
+	return func(ctx *fiber.Ctx) error {
+		var payload dto.CreateApplicationLink
+		if err := ctx.BodyParser(&payload); err != nil {
+			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": err.Error()})
+		}
+		payload.ListingId = ctx.Locals(ListingIDLocalKey).(uuid.UUID)
+		if errs := validation.ValidateStruct(nil, payload); len(errs) > 0 {
+			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": validation.GetValidationError(errs)})
+		}
+
+		res, err := a.lService.CreateApplicationLink(&payload)
+		if err != nil {
+			return ctx.SendStatus(fiber.StatusInternalServerError)
+		}
+
+		return ctx.Status(fiber.StatusCreated).JSON(fiber.Map{"url": fmt.Sprintf("%s/application/%s/%s", ctx.Get("Origin"), payload.ListingId.String(), res)})
+	}
+}
+
+func (a *adapter) verifyApplicationLink() fiber.Handler {
+	return func(ctx *fiber.Ctx) error {
+		var query dto.VerifyApplicationLink
+		if err := ctx.QueryParser(&query); err != nil {
+			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": err.Error()})
+		}
+		id, err := uuid.Parse(ctx.Params("id"))
+		if err != nil {
+			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": "invalid id"})
+		}
+		query.ListingId = id
+		if errs := validation.ValidateStruct(nil, query); len(errs) > 0 {
+			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": validation.GetValidationError(errs)})
+		}
+
+		res, err := a.lService.VerifyApplicationLink(&query)
+		if err != nil {
+			return ctx.SendStatus(fiber.StatusInternalServerError)
+		}
+
+		if !res {
+			return ctx.Status(fiber.StatusForbidden).JSON(fiber.Map{"message": "invalid application link"})
+		}
+
+		return ctx.SendStatus(fiber.StatusOK)
 	}
 }

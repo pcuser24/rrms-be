@@ -3,7 +3,7 @@ BEGIN;
 CREATE TYPE "APPLICATION_STATUS" AS ENUM ('PENDING', 'APPROVED', 'CONDITIONALLY_APPROVED', 'REJECTED', 'WITHDRAWN');
 CREATE TABLE IF NOT EXISTS "applications" (
   id BIGSERIAL PRIMARY KEY,
-  creator_id UUID NOT NULL,
+  creator_id UUID,
   listing_id UUID NOT NULL,
   property_id UUID NOT NULL,
   status "APPLICATION_STATUS" NOT NULL DEFAULT 'PENDING',
@@ -39,7 +39,7 @@ CREATE TABLE IF NOT EXISTS "applications" (
   -- identity_issued_date TIMESTAMPTZ,
   -- identity_issued_by TEXT
 );
-ALTER TABLE "applications" ADD CONSTRAINT "applications_creator_id_fkey" FOREIGN KEY ("creator_id") REFERENCES "User"("id") ON DELETE CASCADE;
+-- ALTER TABLE "applications" ADD CONSTRAINT "applications_creator_id_fkey" FOREIGN KEY ("creator_id") REFERENCES "User"("id") ON DELETE CASCADE;
 ALTER TABLE "applications" ADD CONSTRAINT "applications_listing_id_fkey" FOREIGN KEY ("listing_id") REFERENCES "listings"("id") ON DELETE CASCADE;
 ALTER TABLE "applications" ADD CONSTRAINT "applications_property_id_fkey" FOREIGN KEY ("property_id") REFERENCES "properties"("id") ON DELETE CASCADE;
 

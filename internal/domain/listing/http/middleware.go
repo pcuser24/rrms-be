@@ -25,7 +25,7 @@ func CheckListingManageability(s listing.Service) fiber.Handler {
 
 		tkPayload := ctx.Locals(http.AuthorizationPayloadKey).(*token.Payload)
 
-		isCreator, err := s.CheckListingOwnership(lid, tkPayload.UserID)
+		isManager, err := s.CheckListingOwnership(lid, tkPayload.UserID)
 		if err != nil {
 			if dbErr, ok := err.(*pgconn.PgError); ok {
 				return responses.DBErrorResponse(ctx, dbErr)
@@ -33,8 +33,8 @@ func CheckListingManageability(s listing.Service) fiber.Handler {
 
 			return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
 		}
-		if !isCreator {
-			return ctx.Status(fiber.StatusForbidden).JSON(fiber.Map{"message": "operation not permitted on this unit"})
+		if !isManager {
+			return ctx.Status(fiber.StatusForbidden).JSON(fiber.Map{"message": "operation not permitted on this listing"})
 		}
 
 		ctx.Next()

@@ -99,7 +99,7 @@ INSERT INTO applications (
 `
 
 type CreateApplicationParams struct {
-	CreatorID               uuid.UUID   `json:"creator_id"`
+	CreatorID               pgtype.UUID `json:"creator_id"`
 	ListingID               uuid.UUID   `json:"listing_id"`
 	PropertyID              uuid.UUID   `json:"property_id"`
 	FullName                string      `json:"full_name"`
@@ -630,10 +630,10 @@ LIMIT $3 OFFSET $4
 `
 
 type GetApplicationsByUserIdParams struct {
-	CreatorID uuid.UUID `json:"creator_id"`
-	CreatedAt time.Time `json:"created_at"`
-	Limit     int32     `json:"limit"`
-	Offset    int32     `json:"offset"`
+	CreatorID pgtype.UUID `json:"creator_id"`
+	CreatedAt time.Time   `json:"created_at"`
+	Limit     int32       `json:"limit"`
+	Offset    int32       `json:"offset"`
 }
 
 func (q *Queries) GetApplicationsByUserId(ctx context.Context, arg GetApplicationsByUserIdParams) ([]int64, error) {
