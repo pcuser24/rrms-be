@@ -2,12 +2,16 @@ package application
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"slices"
 	"time"
 
 	"github.com/user2410/rrms-backend/internal/domain/application/asynctask"
 	"github.com/user2410/rrms-backend/internal/domain/application/repo"
+	chat_dto "github.com/user2410/rrms-backend/internal/domain/chat/dto"
+	chat_model "github.com/user2410/rrms-backend/internal/domain/chat/model"
+	chat_repo "github.com/user2410/rrms-backend/internal/domain/chat/repo"
 	listing_repo "github.com/user2410/rrms-backend/internal/domain/listing/repo"
 	property_model "github.com/user2410/rrms-backend/internal/domain/property/model"
 	property_repo "github.com/user2410/rrms-backend/internal/domain/property/repo"
@@ -25,11 +29,15 @@ type Service interface {
 	GetApplicationByIds(ids []int64, fields []string, userId uuid.UUID) ([]model.ApplicationModel, error)
 	GetApplicationsByUserId(uid uuid.UUID, q *dto.GetApplicationsToMeQuery) ([]model.ApplicationModel, error)
 	GetApplicationsToUser(uid uuid.UUID, q *dto.GetApplicationsToMeQuery) ([]model.ApplicationModel, error)
-	UpdateApplicationStatus(aid int64, data *dto.UpdateApplicationStatus) error
+	UpdateApplicationStatus(aid int64, userId uuid.UUID, data *dto.UpdateApplicationStatus) error
+	CheckApplicationVisibility(aid int64, uid uuid.UUID) (bool, error)
+	CreateApplicationMsgGroup(aid int64, userId uuid.UUID) (*chat_model.MsgGroup, error)
+	GetApplicationMsgGroup(aid int64, userId uuid.UUID) (*chat_model.MsgGroupExtended, error)
 }
 
 type service struct {
 	aRepo           repo.Repo
+	cRepo           chat_repo.Repo
 	lRepo           listing_repo.Repo
 	pRepo           property_repo.Repo
 	taskDistributor asynctask.TaskDistributor
@@ -37,12 +45,14 @@ type service struct {
 
 func NewService(
 	aRepo repo.Repo,
+	cRepo chat_repo.Repo,
 	lRepo listing_repo.Repo,
 	pRepo property_repo.Repo,
 	taskDistributor asynctask.TaskDistributor,
 ) Service {
 	return &service{
 		aRepo:           aRepo,
+		cRepo:           cRepo,
 		lRepo:           lRepo,
 		pRepo:           pRepo,
 		taskDistributor: taskDistributor,
@@ -94,9 +104,10 @@ func (s *service) CreateApplication(data *dto.CreateApplication) (*model.Applica
 	if err != nil {
 		return nil, err
 	}
-	if err = s.taskDistributor.DistributeTaskSendEmailOnNewApplication(
+	if err = s.taskDistributor.SendEmailOnNewApplication(
 		context.Background(),
-		&dto.TaskSendEmailOnNewApplicationPayload{
+		&dto.SendEmailOnNewApplicationPayload{
+			Email:         a.Email,
 			Username:      a.FullName,
 			ApplicationId: a.ID,
 			ListingId:     a.ListingID,
@@ -125,15 +136,22 @@ func (s *service) GetApplicationByIds(ids []int64, fields []string, userId uuid.
 	return s.aRepo.GetApplicationsByIds(context.Background(), _ids, fields)
 }
 
-var ErrInvalidStatusTransition = fmt.Errorf("invalid status transition")
+var (
+	ErrInvalidStatusTransition = fmt.Errorf("invalid status transition")
+	ErrUnauthorizedUpdate      = fmt.Errorf("unauthorized update")
+)
 
-func (s *service) UpdateApplicationStatus(aid int64, data *dto.UpdateApplicationStatus) error {
+func (s *service) UpdateApplicationStatus(aid int64, userId uuid.UUID, data *dto.UpdateApplicationStatus) error {
 	a, err := s.aRepo.GetApplicationById(context.Background(), aid)
 	if err != nil {
 		return err
 	}
 
 	switch data.Status {
+	case database.APPLICATIONSTATUSWITHDRAWN:
+		if a.Status != database.APPLICATIONSTATUSPENDING && a.Status != database.APPLICATIONSTATUSCONDITIONALLYAPPROVED {
+			return ErrInvalidStatusTransition
+		}
 	case database.APPLICATIONSTATUSCONDITIONALLYAPPROVED:
 		if a.Status != database.APPLICATIONSTATUSPENDING {
 			return ErrInvalidStatusTransition
@@ -148,9 +166,22 @@ func (s *service) UpdateApplicationStatus(aid int64, data *dto.UpdateApplication
 		}
 	}
 
-	// TODO: send email to the applicant
+	rowsAffected, err := s.aRepo.UpdateApplicationStatus(context.Background(), aid, userId, data.Status)
+	if err != nil {
+		return err
+	}
+	if rowsAffected == 0 {
+		return ErrUnauthorizedUpdate
+	}
 
-	return s.aRepo.UpdateApplicationStatus(context.Background(), aid, data.Status)
+	// send email to the applicant
+	return s.taskDistributor.UpdateApplicationStatus(context.Background(), &dto.UpdateApplicationStatusPayload{
+		Email:         a.Email,
+		ApplicationId: aid,
+		OldStatus:     a.Status,
+		NewStatus:     data.Status,
+		Message:       data.Message,
+	})
 }
 
 func (s *service) GetApplicationsByUserId(uid uuid.UUID, q *dto.GetApplicationsToMeQuery) ([]model.ApplicationModel, error) {
@@ -192,5 +223,39 @@ func (s *service) GetApplicationsToUser(uid uuid.UUID, q *dto.GetApplicationsToM
 }
 
 func (s *service) CheckVisibility(aid int64, uid uuid.UUID) (bool, error) {
+	return s.aRepo.CheckVisibility(context.Background(), aid, uid)
+}
+
+var (
+	ErrAnonymousApplicant = errors.New("anonymous applicant")
+)
+
+func getGroupName(aid int64) string {
+	return fmt.Sprintf("[APPLICATION_%d]", aid)
+}
+
+func (s *service) CreateApplicationMsgGroup(aid int64, userId uuid.UUID) (*chat_model.MsgGroup, error) {
+	a, err := s.aRepo.GetApplicationById(context.Background(), aid)
+	if err != nil {
+		return nil, err
+	}
+	if a.CreatorID == uuid.Nil {
+		return nil, ErrAnonymousApplicant
+	}
+
+	return s.cRepo.CreateMsgroup(context.Background(), userId, &chat_dto.CreateMsgGroup{
+		Name: getGroupName(aid),
+		Members: []chat_dto.CreateMsgGroupMember{
+			{UserId: userId},
+			{UserId: a.CreatorID},
+		},
+	})
+}
+
+func (s *service) GetApplicationMsgGroup(aid int64, userId uuid.UUID) (*chat_model.MsgGroupExtended, error) {
+	return s.cRepo.GetMsgGroupByName(context.Background(), userId, getGroupName(aid))
+}
+
+func (s *service) CheckApplicationVisibility(aid int64, uid uuid.UUID) (bool, error) {
 	return s.aRepo.CheckVisibility(context.Background(), aid, uid)
 }

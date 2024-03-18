@@ -41,21 +41,36 @@ func (a *adapter) RegisterServer(route *fiber.Router, tokenMaker token.Maker) {
 		a.createApplications(),
 	)
 	applicationRoute.Get("/my-applications",
-		// TODO: A middleware to check if the user is a tenant
+		auth_http.AuthorizedMiddleware(tokenMaker),
 		a.getMyApplications(),
 	)
 	applicationRoute.Get("/to-me",
-		// TODO: A middleware to check if the user is a property manager
+		auth_http.AuthorizedMiddleware(tokenMaker),
 		a.getApplicationsToMe(),
 	)
 	applicationRoute.Get("/application/:id",
-		// TODO: A middleware to check if the user is a property manager
+		auth_http.AuthorizedMiddleware(tokenMaker),
+		CheckApplicationVisibilty(a.aService),
 		a.getApplicationById(),
 	)
-	applicationRoute.Get("/ids", a.getApplicationsByIds())
+	applicationRoute.Get("/ids",
+		auth_http.AuthorizedMiddleware(tokenMaker),
+		a.getApplicationsByIds(),
+	)
 	applicationRoute.Patch("/application/status/:id",
-		// TODO: A middleware to check if the user is a property manager
+		auth_http.AuthorizedMiddleware(tokenMaker),
+		CheckApplicationVisibilty(a.aService),
 		a.updateApplicationStatus(),
+	)
+	applicationRoute.Post("/application/:id/msg-group",
+		auth_http.AuthorizedMiddleware(tokenMaker),
+		CheckApplicationVisibilty(a.aService),
+		a.createApplicationMsgGroup(),
+	)
+	applicationRoute.Get("/application/:id/msg-group",
+		auth_http.AuthorizedMiddleware(tokenMaker),
+		CheckApplicationVisibilty(a.aService),
+		a.getApplicationMsgGroup(),
 	)
 }
 
@@ -244,7 +259,8 @@ func (a *adapter) updateApplicationStatus() fiber.Handler {
 			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": err.Error()})
 		}
 
-		err = a.aService.UpdateApplicationStatus(aid, payload)
+		tkPayload := ctx.Locals(auth_http.AuthorizationPayloadKey).(*token.Payload)
+		err = a.aService.UpdateApplicationStatus(aid, tkPayload.UserID, payload)
 		if err != nil {
 			if err == database.ErrRecordNotFound {
 				return ctx.Status(fiber.StatusNotFound).JSON(fiber.Map{"message": "application not found"})
@@ -253,5 +269,53 @@ func (a *adapter) updateApplicationStatus() fiber.Handler {
 		}
 
 		return ctx.SendStatus(fiber.StatusOK)
+	}
+}
+
+func (a *adapter) createApplicationMsgGroup() fiber.Handler {
+	return func(ctx *fiber.Ctx) error {
+		aid, err := strconv.ParseInt(ctx.Params("id"), 10, 64)
+		if err != nil {
+			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": "invalid application id"})
+		}
+
+		tkPayload := ctx.Locals(auth_http.AuthorizationPayloadKey).(*token.Payload)
+
+		res, err := a.aService.CreateApplicationMsgGroup(aid, tkPayload.UserID)
+		if err != nil {
+			if errors.Is(err, database.ErrRecordNotFound) {
+				return ctx.Status(fiber.StatusNotFound).JSON(fiber.Map{"message": "application not found"})
+			}
+			if errors.Is(err, application.ErrAnonymousApplicant) {
+				return ctx.Status(fiber.StatusConflict).JSON(fiber.Map{"message": err.Error()})
+			}
+			return ctx.SendStatus(fiber.StatusInternalServerError)
+		}
+
+		return ctx.Status(fiber.StatusCreated).JSON(res)
+	}
+}
+
+func (a *adapter) getApplicationMsgGroup() fiber.Handler {
+	return func(ctx *fiber.Ctx) error {
+		aid, err := strconv.ParseInt(ctx.Params("id"), 10, 64)
+		if err != nil {
+			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": "invalid application id"})
+		}
+
+		tkPayload := ctx.Locals(auth_http.AuthorizationPayloadKey).(*token.Payload)
+
+		res, err := a.aService.GetApplicationMsgGroup(aid, tkPayload.UserID)
+		if err != nil {
+			if errors.Is(err, database.ErrRecordNotFound) {
+				return ctx.Status(fiber.StatusNotFound).JSON(fiber.Map{"message": "application not found"})
+			}
+			if errors.Is(err, application.ErrAnonymousApplicant) {
+				return ctx.Status(fiber.StatusConflict).JSON(fiber.Map{"message": err.Error()})
+			}
+			return ctx.SendStatus(fiber.StatusInternalServerError)
+		}
+
+		return ctx.Status(fiber.StatusOK).JSON(res)
 	}
 }

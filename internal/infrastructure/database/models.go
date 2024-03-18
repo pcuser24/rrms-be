@@ -100,6 +100,91 @@ func (ns NullMEDIATYPE) Value() (driver.Value, error) {
 	return string(ns.MEDIATYPE), nil
 }
 
+type MESSAGESTATUS string
+
+const (
+	MESSAGESTATUSACTIVE  MESSAGESTATUS = "ACTIVE"
+	MESSAGESTATUSDELETED MESSAGESTATUS = "DELETED"
+)
+
+func (e *MESSAGESTATUS) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = MESSAGESTATUS(s)
+	case string:
+		*e = MESSAGESTATUS(s)
+	default:
+		return fmt.Errorf("unsupported scan type for MESSAGESTATUS: %T", src)
+	}
+	return nil
+}
+
+type NullMESSAGESTATUS struct {
+	MESSAGESTATUS MESSAGESTATUS `json:"MESSAGESTATUS"`
+	Valid         bool          `json:"valid"` // Valid is true if MESSAGESTATUS is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullMESSAGESTATUS) Scan(value interface{}) error {
+	if value == nil {
+		ns.MESSAGESTATUS, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.MESSAGESTATUS.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullMESSAGESTATUS) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.MESSAGESTATUS), nil
+}
+
+type MESSAGETYPE string
+
+const (
+	MESSAGETYPETEXT  MESSAGETYPE = "TEXT"
+	MESSAGETYPEIMAGE MESSAGETYPE = "IMAGE"
+	MESSAGETYPEFILE  MESSAGETYPE = "FILE"
+)
+
+func (e *MESSAGETYPE) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = MESSAGETYPE(s)
+	case string:
+		*e = MESSAGETYPE(s)
+	default:
+		return fmt.Errorf("unsupported scan type for MESSAGETYPE: %T", src)
+	}
+	return nil
+}
+
+type NullMESSAGETYPE struct {
+	MESSAGETYPE MESSAGETYPE `json:"MESSAGETYPE"`
+	Valid       bool        `json:"valid"` // Valid is true if MESSAGETYPE is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullMESSAGETYPE) Scan(value interface{}) error {
+	if value == nil {
+		ns.MESSAGETYPE, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.MESSAGETYPE.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullMESSAGETYPE) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.MESSAGETYPE), nil
+}
+
 type PAYMENTSTATUS string
 
 const (
@@ -358,6 +443,29 @@ type ListingUnit struct {
 	ListingID uuid.UUID `json:"listing_id"`
 	UnitID    uuid.UUID `json:"unit_id"`
 	Price     int64     `json:"price"`
+}
+
+type Message struct {
+	ID        int64         `json:"id"`
+	GroupID   int64         `json:"group_id"`
+	FromUser  uuid.UUID     `json:"from_user"`
+	Content   string        `json:"content"`
+	Status    MESSAGESTATUS `json:"status"`
+	Type      MESSAGETYPE   `json:"type"`
+	CreatedAt time.Time     `json:"created_at"`
+	UpdatedAt time.Time     `json:"updated_at"`
+}
+
+type MsgGroup struct {
+	GroupID   int64     `json:"group_id"`
+	Name      string    `json:"name"`
+	CreatedAt time.Time `json:"created_at"`
+	CreatedBy uuid.UUID `json:"created_by"`
+}
+
+type MsgGroupMember struct {
+	GroupID int64     `json:"group_id"`
+	UserID  uuid.UUID `json:"user_id"`
 }
 
 // Security guard, Parking, Gym, ...

@@ -6,8 +6,8 @@ import (
 )
 
 type UpdateApplicationStatus struct {
-	Status  database.APPLICATIONSTATUS `json:"status" validate:"required,oneof=PENDING CONDITIONALLY_APPROVED APPROVED REJECTED"`
-	Comment *string                    `json:"comment" validate:"omitempty"`
+	Status  database.APPLICATIONSTATUS `json:"status" validate:"required,oneof=WITHDRAWN PENDING CONDITIONALLY_APPROVED APPROVED REJECTED"`
+	Message *string                    `json:"message" validate:"omitempty"`
 }
 
 func (u *UpdateApplicationStatus) Validate() error {
@@ -17,7 +17,7 @@ func (u *UpdateApplicationStatus) Validate() error {
 		return err
 	}
 	if u.Status == "REJECTED" {
-		return validator.Var(u.Comment, "required")
+		return validator.Var(u.Message, "required")
 	}
 	return nil
 }

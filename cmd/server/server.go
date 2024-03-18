@@ -15,6 +15,7 @@ import (
 	"github.com/user2410/rrms-backend/cmd/version"
 	"github.com/user2410/rrms-backend/internal/domain/application"
 	"github.com/user2410/rrms-backend/internal/domain/auth"
+	"github.com/user2410/rrms-backend/internal/domain/chat"
 	"github.com/user2410/rrms-backend/internal/domain/listing"
 	payment_service "github.com/user2410/rrms-backend/internal/domain/payment/service"
 	"github.com/user2410/rrms-backend/internal/domain/payment/service/vnpay"
@@ -70,6 +71,7 @@ type internalServices struct {
 	StorageService     storage.Service
 	PaymentService     payment_service.Service
 	VnpService         *vnpay.Service
+	ChatService        chat.Service
 }
 
 type serverCommand struct {

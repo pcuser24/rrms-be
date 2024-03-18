@@ -14,7 +14,7 @@ import (
 )
 
 const checkApplicationVisibility = `-- name: CheckApplicationVisibility :one
-SELECT count(*) FROM applications WHERE 
+SELECT count(*) > 0 FROM applications WHERE 
   id = $1 
   AND (
     property_id IN (SELECT property_id FROM property_managers WHERE manager_id = $2)
@@ -27,11 +27,11 @@ type CheckApplicationVisibilityParams struct {
 	ManagerID uuid.UUID `json:"manager_id"`
 }
 
-func (q *Queries) CheckApplicationVisibility(ctx context.Context, arg CheckApplicationVisibilityParams) (int64, error) {
+func (q *Queries) CheckApplicationVisibility(ctx context.Context, arg CheckApplicationVisibilityParams) (bool, error) {
 	row := q.db.QueryRow(ctx, checkApplicationVisibility, arg.ID, arg.ManagerID)
-	var count int64
-	err := row.Scan(&count)
-	return count, err
+	var column_1 bool
+	err := row.Scan(&column_1)
+	return column_1, err
 }
 
 const createApplication = `-- name: CreateApplication :one
@@ -731,16 +731,39 @@ func (q *Queries) GetApplicationsToUser(ctx context.Context, arg GetApplications
 	return items, nil
 }
 
-const updateApplicationStatus = `-- name: UpdateApplicationStatus :exec
-UPDATE applications SET status = $1, updated_at = NOW() WHERE id = $2
+const updateApplicationStatus = `-- name: UpdateApplicationStatus :many
+UPDATE applications 
+SET 
+  status = $1, 
+  updated_at = NOW() 
+WHERE 
+  id = $2
+  AND property_id IN (SELECT property_id FROM property_managers WHERE manager_id = $3)
+RETURNING id
 `
 
 type UpdateApplicationStatusParams struct {
-	Status APPLICATIONSTATUS `json:"status"`
-	ID     int64             `json:"id"`
+	Status    APPLICATIONSTATUS `json:"status"`
+	ID        int64             `json:"id"`
+	ManagerID uuid.UUID         `json:"manager_id"`
 }
 
-func (q *Queries) UpdateApplicationStatus(ctx context.Context, arg UpdateApplicationStatusParams) error {
-	_, err := q.db.Exec(ctx, updateApplicationStatus, arg.Status, arg.ID)
-	return err
+func (q *Queries) UpdateApplicationStatus(ctx context.Context, arg UpdateApplicationStatusParams) ([]int64, error) {
+	rows, err := q.db.Query(ctx, updateApplicationStatus, arg.Status, arg.ID, arg.ManagerID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []int64
+	for rows.Next() {
+		var id int64
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		items = append(items, id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }

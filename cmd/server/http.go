@@ -6,6 +6,7 @@ import (
 
 	application_http "github.com/user2410/rrms-backend/internal/domain/application/http"
 	auth_http "github.com/user2410/rrms-backend/internal/domain/auth/http"
+	"github.com/user2410/rrms-backend/internal/domain/chat"
 	listing_http "github.com/user2410/rrms-backend/internal/domain/listing/http"
 	payment_http "github.com/user2410/rrms-backend/internal/domain/payment/http"
 	property_http "github.com/user2410/rrms-backend/internal/domain/property/http"
@@ -54,6 +55,12 @@ func (c *serverCommand) setupHttpServer() {
 		RegisterServer(apiRoute, c.tokenMaker)
 	payment_http.
 		NewAdapter(c.internalServices.PaymentService, c.internalServices.VnpService).
+		RegisterServer(apiRoute, c.tokenMaker)
+	chat.
+		NewWSChatAdapter(c.internalServices.ChatService).
+		RegisterServer(c.httpServer.GetFibApp(), c.tokenMaker)
+	chat.
+		NewHttpAdapter(c.internalServices.ChatService).
 		RegisterServer(apiRoute, c.tokenMaker)
 }
 

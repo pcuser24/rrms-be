@@ -5,6 +5,7 @@ import (
 	"reflect"
 	"runtime/debug"
 
+	"github.com/gofiber/contrib/websocket"
 	fiber "github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/logger"
@@ -16,23 +17,22 @@ type Server interface {
 	Start(port uint16) error
 	GetFibApp() *fiber.App
 	GetApiRoute() *fiber.Router
+	SetWsRoute(route string)
 	Shutdown() error
 }
 
 type server struct {
 	fib      *fiber.App
 	apiRoute *fiber.Router
-	corsConf cors.Config
 }
 
 func NewServer(conf fiber.Config, corsConf cors.Config) Server {
 	return (&server{
-		fib:      fiber.New(conf),
-		corsConf: corsConf,
-	}).init()
+		fib: fiber.New(conf),
+	}).init(corsConf)
 }
 
-func (s *server) init() Server {
+func (s *server) init(corsConf cors.Config) Server {
 	fiber.SetParserDecoder(fiber.ParserConfig{
 		IgnoreUnknownKeys: true,
 		ParserType: []fiber.ParserType{
@@ -57,7 +57,7 @@ func (s *server) init() Server {
 			})
 		},
 	}))
-	s.fib.Use(cors.New(s.corsConf))
+	s.fib.Use(cors.New(corsConf))
 	s.fib.Use(logger.New())
 
 	apiRoute := s.fib.Group("/api")
@@ -76,6 +76,16 @@ func (s *server) GetFibApp() *fiber.App {
 
 func (s *server) GetApiRoute() *fiber.Router {
 	return s.apiRoute
+}
+
+func (s *server) SetWsRoute(route string) {
+	s.fib.Use(route, func(c *fiber.Ctx) error {
+		if websocket.IsWebSocketUpgrade(c) {
+			c.Locals("allowed", true)
+			return c.Next()
+		}
+		return fiber.ErrUpgradeRequired
+	})
 }
 
 func (s *server) Shutdown() error {

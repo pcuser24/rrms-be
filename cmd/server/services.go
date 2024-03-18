@@ -5,6 +5,7 @@ import (
 	application_asynctask "github.com/user2410/rrms-backend/internal/domain/application/asynctask"
 	"github.com/user2410/rrms-backend/internal/domain/auth"
 	auth_asynctask "github.com/user2410/rrms-backend/internal/domain/auth/asynctask"
+	"github.com/user2410/rrms-backend/internal/domain/chat"
 	"github.com/user2410/rrms-backend/internal/domain/listing"
 	payment_service "github.com/user2410/rrms-backend/internal/domain/payment/service"
 	vnp_service "github.com/user2410/rrms-backend/internal/domain/payment/service/vnpay"
@@ -18,6 +19,7 @@ import (
 
 	application_repo "github.com/user2410/rrms-backend/internal/domain/application/repo"
 	auth_repo "github.com/user2410/rrms-backend/internal/domain/auth/repo"
+	chat_repo "github.com/user2410/rrms-backend/internal/domain/chat/repo"
 	listing_repo "github.com/user2410/rrms-backend/internal/domain/listing/repo"
 	payment_repo "github.com/user2410/rrms-backend/internal/domain/payment/repo"
 	property_repo "github.com/user2410/rrms-backend/internal/domain/property/repo"
@@ -47,6 +49,7 @@ func (c *serverCommand) setupInternalServices(
 	rentalRepo := rental.NewRepo(dao)
 	applicationRepo := application_repo.NewRepo(dao)
 	paymentRepo := payment_repo.NewRepo(dao)
+	chatRepo := chat_repo.NewRepo(dao)
 
 	s := storage.NewStorage(s3Client, c.config.AWSS3ImageBucket)
 
@@ -57,13 +60,13 @@ func (c *serverCommand) setupInternalServices(
 	applicationTaskDistributor := application_asynctask.NewTaskDistributor(c.asyncTaskDistributor)
 	c.internalServices.ApplicationService = application.NewService(
 		applicationRepo,
+		chatRepo,
 		listingRepo,
 		propertyRepo,
 		applicationTaskDistributor,
 	)
 	c.internalServices.PaymentService = payment_service.NewService(paymentRepo)
 	c.internalServices.StorageService = storage.NewService(s)
-
 	c.internalServices.VnpService = vnp_service.NewVnpayService(
 		paymentRepo,
 		c.config.VnpTmnCode,
@@ -71,4 +74,5 @@ func (c *serverCommand) setupInternalServices(
 		c.config.VnpUrl,
 		c.config.VnpApi,
 	)
+	c.internalServices.ChatService = chat.NewService(chatRepo)
 }

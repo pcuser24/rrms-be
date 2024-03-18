@@ -20,7 +20,7 @@ type Repo interface {
 	GetApplicationsByUserId(ctx context.Context, uid uuid.UUID, createdBefore time.Time, limit, offset int32) ([]int64, error)
 	GetApplicationsToUser(ctx context.Context, uid uuid.UUID, createdBefore time.Time, limit, offset int32) ([]int64, error)
 	CheckVisibility(ctx context.Context, id int64, uid uuid.UUID) (bool, error)
-	UpdateApplicationStatus(ctx context.Context, id int64, status database.APPLICATIONSTATUS) error
+	UpdateApplicationStatus(ctx context.Context, aid int64, userId uuid.UUID, status database.APPLICATIONSTATUS) (int, error)
 	DeleteApplication(ctx context.Context, id int64) error
 }
 
@@ -317,21 +317,22 @@ func (r *repo) GetApplicationsToUser(ctx context.Context, uid uuid.UUID, created
 }
 
 func (r *repo) CheckVisibility(ctx context.Context, id int64, uid uuid.UUID) (bool, error) {
-	res, err := r.dao.CheckApplicationVisibility(ctx, database.CheckApplicationVisibilityParams{
+	return r.dao.CheckApplicationVisibility(ctx, database.CheckApplicationVisibilityParams{
 		ID:        id,
 		ManagerID: uid,
 	})
-	if err != nil {
-		return false, err
-	}
-	return res > 0, nil
 }
 
-func (r *repo) UpdateApplicationStatus(ctx context.Context, id int64, status database.APPLICATIONSTATUS) error {
-	return r.dao.UpdateApplicationStatus(ctx, database.UpdateApplicationStatusParams{
-		ID:     id,
-		Status: status,
+func (r *repo) UpdateApplicationStatus(ctx context.Context, aid int64, userId uuid.UUID, status database.APPLICATIONSTATUS) (int, error) {
+	res, err := r.dao.UpdateApplicationStatus(ctx, database.UpdateApplicationStatusParams{
+		ID:        aid,
+		Status:    status,
+		ManagerID: userId,
 	})
+	if err != nil {
+		return 0, err
+	}
+	return len(res), nil
 }
 
 func (r *repo) DeleteApplication(ctx context.Context, id int64) error {

@@ -294,12 +294,12 @@ func (a *adapter) createApplicationLink() fiber.Handler {
 			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": validation.GetValidationError(errs)})
 		}
 
-		res, err := a.lService.CreateApplicationLink(&payload)
+		query, err := a.lService.CreateApplicationLink(&payload)
 		if err != nil {
 			return ctx.SendStatus(fiber.StatusInternalServerError)
 		}
 
-		return ctx.Status(fiber.StatusCreated).JSON(fiber.Map{"url": fmt.Sprintf("%s/application/%s/%s", ctx.Get("Origin"), payload.ListingId.String(), res)})
+		return ctx.Status(fiber.StatusCreated).JSON(fiber.Map{"url": fmt.Sprintf("%s/application/%s?%s", ctx.Get("Origin"), payload.ListingId.String(), query)})
 	}
 }
 

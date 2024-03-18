@@ -12,9 +12,10 @@ import (
 )
 
 type Querier interface {
-	CheckApplicationVisibility(ctx context.Context, arg CheckApplicationVisibilityParams) (int64, error)
+	CheckApplicationVisibility(ctx context.Context, arg CheckApplicationVisibilityParams) (bool, error)
 	CheckListingExpired(ctx context.Context, id uuid.UUID) (pgtype.Bool, error)
 	CheckListingOwnership(ctx context.Context, arg CheckListingOwnershipParams) (int64, error)
+	CheckMsgGroupMembership(ctx context.Context, arg CheckMsgGroupMembershipParams) (bool, error)
 	CheckUnitManageability(ctx context.Context, arg CheckUnitManageabilityParams) (int64, error)
 	CheckUnitOfProperty(ctx context.Context, arg CheckUnitOfPropertyParams) (int64, error)
 	CheckValidUnitForListing(ctx context.Context, arg CheckValidUnitForListingParams) (int64, error)
@@ -27,6 +28,9 @@ type Querier interface {
 	CreateListing(ctx context.Context, arg CreateListingParams) (Listing, error)
 	CreateListingPolicy(ctx context.Context, arg CreateListingPolicyParams) (ListingPolicy, error)
 	CreateListingUnit(ctx context.Context, arg CreateListingUnitParams) (ListingUnit, error)
+	CreateMessage(ctx context.Context, arg CreateMessageParams) (Message, error)
+	CreateMsgGroup(ctx context.Context, arg CreateMsgGroupParams) (MsgGroup, error)
+	CreateMsgGroupMember(ctx context.Context, arg CreateMsgGroupMemberParams) (MsgGroupMember, error)
 	CreatePayment(ctx context.Context, arg CreatePaymentParams) (Payment, error)
 	CreatePaymentItem(ctx context.Context, arg CreatePaymentItemParams) (PaymentItem, error)
 	CreateProperty(ctx context.Context, arg CreatePropertyParams) (Property, error)
@@ -41,6 +45,8 @@ type Querier interface {
 	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
 	DeleteApplication(ctx context.Context, id int64) error
 	DeleteListing(ctx context.Context, id uuid.UUID) error
+	DeleteMsgGroup(ctx context.Context, groupID int64) error
+	DeleteMsgGroupMember(ctx context.Context, arg DeleteMsgGroupMemberParams) error
 	DeletePayment(ctx context.Context, id int64) error
 	DeleteProperty(ctx context.Context, id uuid.UUID) error
 	DeletePropertyFeature(ctx context.Context, arg DeletePropertyFeatureParams) error
@@ -67,6 +73,10 @@ type Querier interface {
 	GetListingUnits(ctx context.Context, listingID uuid.UUID) ([]ListingUnit, error)
 	GetListingsOfProperty(ctx context.Context, arg GetListingsOfPropertyParams) ([]uuid.UUID, error)
 	GetManagedProperties(ctx context.Context, managerID uuid.UUID) ([]GetManagedPropertiesRow, error)
+	GetMessagesOfGroup(ctx context.Context, arg GetMessagesOfGroupParams) ([]Message, error)
+	GetMsgGroup(ctx context.Context, groupID int64) (MsgGroup, error)
+	GetMsgGroupByName(ctx context.Context, arg GetMsgGroupByNameParams) (MsgGroup, error)
+	GetMsgGroupMembers(ctx context.Context, groupID int64) ([]GetMsgGroupMembersRow, error)
 	GetPaymentById(ctx context.Context, id int64) (Payment, error)
 	GetPaymentItemsByPaymentId(ctx context.Context, paymentID int64) ([]PaymentItem, error)
 	GetPropertyById(ctx context.Context, id uuid.UUID) (Property, error)
@@ -83,9 +93,10 @@ type Querier interface {
 	GetUserById(ctx context.Context, id uuid.UUID) (User, error)
 	IsPropertyPublic(ctx context.Context, id uuid.UUID) (bool, error)
 	IsUnitPublic(ctx context.Context, id uuid.UUID) (bool, error)
-	UpdateApplicationStatus(ctx context.Context, arg UpdateApplicationStatusParams) error
+	UpdateApplicationStatus(ctx context.Context, arg UpdateApplicationStatusParams) ([]int64, error)
 	UpdateListing(ctx context.Context, arg UpdateListingParams) error
 	UpdateListingStatus(ctx context.Context, arg UpdateListingStatusParams) error
+	UpdateMessage(ctx context.Context, arg UpdateMessageParams) ([]int64, error)
 	UpdatePayment(ctx context.Context, arg UpdatePaymentParams) error
 	UpdateProperty(ctx context.Context, arg UpdatePropertyParams) error
 	UpdateSessionBlockingStatus(ctx context.Context, arg UpdateSessionBlockingStatusParams) error
