@@ -12,6 +12,7 @@ import (
 )
 
 type Querier interface {
+	CheckApplicationUpdatabilty(ctx context.Context, arg CheckApplicationUpdatabiltyParams) (bool, error)
 	CheckApplicationVisibility(ctx context.Context, arg CheckApplicationVisibilityParams) (bool, error)
 	CheckListingExpired(ctx context.Context, id uuid.UUID) (pgtype.Bool, error)
 	CheckListingOwnership(ctx context.Context, arg CheckListingOwnershipParams) (int64, error)
@@ -38,6 +39,8 @@ type Querier interface {
 	CreatePropertyManager(ctx context.Context, arg CreatePropertyManagerParams) (PropertyManager, error)
 	CreatePropertyMedia(ctx context.Context, arg CreatePropertyMediaParams) (PropertyMedium, error)
 	CreatePropertyTag(ctx context.Context, arg CreatePropertyTagParams) (PropertyTag, error)
+	CreateReminder(ctx context.Context, arg CreateReminderParams) (Reminder, error)
+	CreateReminderMember(ctx context.Context, arg CreateReminderMemberParams) (ReminderMember, error)
 	CreateSession(ctx context.Context, arg CreateSessionParams) (Session, error)
 	CreateUnit(ctx context.Context, arg CreateUnitParams) (Unit, error)
 	CreateUnitAmenity(ctx context.Context, arg CreateUnitAmenityParams) (UnitAmenity, error)
@@ -53,6 +56,7 @@ type Querier interface {
 	DeletePropertyManager(ctx context.Context, arg DeletePropertyManagerParams) error
 	DeletePropertyMedia(ctx context.Context, arg DeletePropertyMediaParams) error
 	DeletePropertyTag(ctx context.Context, arg DeletePropertyTagParams) error
+	DeleteReminder(ctx context.Context, id int64) error
 	DeleteUnit(ctx context.Context, id uuid.UUID) error
 	DeleteUnitAmenity(ctx context.Context, arg DeleteUnitAmenityParams) error
 	DeleteUnitMedia(ctx context.Context, arg DeleteUnitMediaParams) error
@@ -84,6 +88,11 @@ type Querier interface {
 	GetPropertyManagers(ctx context.Context, propertyID uuid.UUID) ([]PropertyManager, error)
 	GetPropertyMedia(ctx context.Context, propertyID uuid.UUID) ([]PropertyMedium, error)
 	GetPropertyTags(ctx context.Context, propertyID uuid.UUID) ([]PropertyTag, error)
+	GetReminderById(ctx context.Context, id int64) (Reminder, error)
+	GetReminderMembers(ctx context.Context, reminderID int64) ([]uuid.UUID, error)
+	GetRemindersByCreator(ctx context.Context, creatorID uuid.UUID) ([]Reminder, error)
+	GetRemindersOfUser(ctx context.Context, userID uuid.UUID) ([]Reminder, error)
+	GetRemindersOfUserWithResourceTag(ctx context.Context, arg GetRemindersOfUserWithResourceTagParams) ([]Reminder, error)
 	GetSessionById(ctx context.Context, id uuid.UUID) (Session, error)
 	GetUnitAmenities(ctx context.Context, unitID uuid.UUID) ([]UnitAmenity, error)
 	GetUnitById(ctx context.Context, id uuid.UUID) (Unit, error)
@@ -99,6 +108,7 @@ type Querier interface {
 	UpdateMessage(ctx context.Context, arg UpdateMessageParams) ([]int64, error)
 	UpdatePayment(ctx context.Context, arg UpdatePaymentParams) error
 	UpdateProperty(ctx context.Context, arg UpdatePropertyParams) error
+	UpdateReminder(ctx context.Context, arg UpdateReminderParams) ([]Reminder, error)
 	UpdateSessionBlockingStatus(ctx context.Context, arg UpdateSessionBlockingStatusParams) error
 	UpdateUnit(ctx context.Context, arg UpdateUnitParams) error
 	UpdateUser(ctx context.Context, arg UpdateUserParams) error

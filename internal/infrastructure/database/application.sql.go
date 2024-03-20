@@ -13,6 +13,26 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const checkApplicationUpdatabilty = `-- name: CheckApplicationUpdatabilty :one
+SELECT count(*) > 0 FROM applications WHERE 
+  id = $1 
+  AND (
+    property_id IN (SELECT property_id FROM property_managers WHERE manager_id = $2)
+  )
+`
+
+type CheckApplicationUpdatabiltyParams struct {
+	ID        int64     `json:"id"`
+	ManagerID uuid.UUID `json:"manager_id"`
+}
+
+func (q *Queries) CheckApplicationUpdatabilty(ctx context.Context, arg CheckApplicationUpdatabiltyParams) (bool, error) {
+	row := q.db.QueryRow(ctx, checkApplicationUpdatabilty, arg.ID, arg.ManagerID)
+	var column_1 bool
+	err := row.Scan(&column_1)
+	return column_1, err
+}
+
 const checkApplicationVisibility = `-- name: CheckApplicationVisibility :one
 SELECT count(*) > 0 FROM applications WHERE 
   id = $1 

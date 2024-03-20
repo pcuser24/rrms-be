@@ -9,6 +9,7 @@ import (
 	"github.com/huandu/go-sqlbuilder"
 	"github.com/user2410/rrms-backend/internal/domain/application/dto"
 	"github.com/user2410/rrms-backend/internal/domain/application/model"
+	"github.com/user2410/rrms-backend/internal/domain/application/utils"
 	"github.com/user2410/rrms-backend/internal/infrastructure/database"
 	"github.com/user2410/rrms-backend/internal/utils/types"
 )
@@ -20,8 +21,13 @@ type Repo interface {
 	GetApplicationsByUserId(ctx context.Context, uid uuid.UUID, createdBefore time.Time, limit, offset int32) ([]int64, error)
 	GetApplicationsToUser(ctx context.Context, uid uuid.UUID, createdBefore time.Time, limit, offset int32) ([]int64, error)
 	CheckVisibility(ctx context.Context, id int64, uid uuid.UUID) (bool, error)
+	CheckUpdatability(ctx context.Context, id int64, uid uuid.UUID) (bool, error)
 	UpdateApplicationStatus(ctx context.Context, aid int64, userId uuid.UUID, status database.APPLICATIONSTATUS) (int, error)
 	DeleteApplication(ctx context.Context, id int64) error
+	CreateReminder(ctx context.Context, aid int64, userId uuid.UUID, data *dto.CreateReminder) (*model.ReminderModel, error)
+	GetRemindersOfUser(ctx context.Context, aid int64, userId uuid.UUID) ([]model.ReminderModel, error)
+	GetReminderById(ctx context.Context, id int64) (*model.ReminderModel, error)
+	UpdateReminderStatus(ctx context.Context, aid, id int64, userId uuid.UUID, status database.REMINDERSTATUS) (int, error)
 }
 
 type repo struct {
@@ -323,6 +329,13 @@ func (r *repo) CheckVisibility(ctx context.Context, id int64, uid uuid.UUID) (bo
 	})
 }
 
+func (r *repo) CheckUpdatability(ctx context.Context, id int64, uid uuid.UUID) (bool, error) {
+	return r.dao.CheckApplicationUpdatabilty(ctx, database.CheckApplicationUpdatabiltyParams{
+		ID:        id,
+		ManagerID: uid,
+	})
+}
+
 func (r *repo) UpdateApplicationStatus(ctx context.Context, aid int64, userId uuid.UUID, status database.APPLICATIONSTATUS) (int, error) {
 	res, err := r.dao.UpdateApplicationStatus(ctx, database.UpdateApplicationStatusParams{
 		ID:        aid,
@@ -337,4 +350,78 @@ func (r *repo) UpdateApplicationStatus(ctx context.Context, aid int64, userId uu
 
 func (r *repo) DeleteApplication(ctx context.Context, id int64) error {
 	return r.dao.DeleteApplication(ctx, id)
+}
+
+func (r *repo) CreateReminder(ctx context.Context, aid int64, userId uuid.UUID, data *dto.CreateReminder) (*model.ReminderModel, error) {
+	rmdb, err := r.dao.CreateReminder(ctx, database.CreateReminderParams{
+		CreatorID:      userId,
+		Title:          data.Title,
+		StartAt:        data.StartAt,
+		EndAt:          data.EndAt,
+		RecurrenceMode: database.REMINDERRECURRENCEMODENONE,
+		ResourceTag:    utils.GetResourceName(aid),
+		Note:           types.StrN(data.Note),
+		Location:       data.Location,
+		Priority:       0,
+	})
+	if err != nil {
+		return nil, err
+	}
+	rmm := model.ToReminderModel(&rmdb)
+
+	for _, m := range data.Members {
+		mdb, err := r.dao.CreateReminderMember(ctx, database.CreateReminderMemberParams{
+			ReminderID: rmdb.ID,
+			UserID:     m,
+		})
+		if err != nil {
+			_ = r.dao.DeleteReminder(ctx, rmdb.ID)
+			return nil, err
+		}
+		rmm.ReminderMembers = append(rmm.ReminderMembers, model.ReminderMemberModel{
+			ReminderID: mdb.ReminderID,
+			UserID:     mdb.UserID,
+		})
+	}
+
+	return rmm, nil
+}
+
+func (r *repo) GetRemindersOfUser(ctx context.Context, aid int64, userId uuid.UUID) ([]model.ReminderModel, error) {
+	rs, err := r.dao.GetRemindersOfUserWithResourceTag(ctx, database.GetRemindersOfUserWithResourceTagParams{
+		UserID:      userId,
+		ResourceTag: utils.GetResourceName(aid),
+	})
+	if err != nil {
+		return nil, err
+	}
+	var reminders []model.ReminderModel
+	for _, rm := range rs {
+		reminders = append(reminders, *model.ToReminderModel(&rm))
+	}
+
+	return reminders, nil
+}
+
+func (r *repo) GetReminderById(ctx context.Context, id int64) (*model.ReminderModel, error) {
+	res, err := r.dao.GetReminderById(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	return model.ToReminderModel(&res), nil
+}
+
+func (r *repo) UpdateReminderStatus(ctx context.Context, aid, id int64, userId uuid.UUID, status database.REMINDERSTATUS) (int, error) {
+	res, err := r.dao.UpdateReminder(ctx, database.UpdateReminderParams{
+		ID: id,
+		Status: database.NullREMINDERSTATUS{
+			Valid:          true,
+			REMINDERSTATUS: status,
+		},
+		ResourceTag: utils.GetResourceName(aid),
+	})
+	if err != nil {
+		return 0, err
+	}
+	return len(res), nil
 }

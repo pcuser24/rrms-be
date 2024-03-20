@@ -2,7 +2,6 @@ package server
 
 import (
 	"log"
-	"time"
 
 	application_http "github.com/user2410/rrms-backend/internal/domain/application/http"
 	auth_http "github.com/user2410/rrms-backend/internal/domain/auth/http"
@@ -13,23 +12,9 @@ import (
 	"github.com/user2410/rrms-backend/internal/domain/rental"
 	"github.com/user2410/rrms-backend/internal/domain/storage"
 	unit_http "github.com/user2410/rrms-backend/internal/domain/unit/http"
-	"github.com/user2410/rrms-backend/internal/infrastructure/http"
-
-	"github.com/gofiber/fiber/v2"
-	"github.com/gofiber/fiber/v2/middleware/cors"
 )
 
 func (c *serverCommand) setupHttpServer() {
-	c.httpServer = http.NewServer(
-		fiber.Config{
-			ReadTimeout:  1 * time.Second,
-			WriteTimeout: 1 * time.Second,
-		},
-		cors.Config{
-			AllowOrigins: c.config.AllowOrigins,
-			AllowHeaders: "Origin, Content-Type, Accept, Authorization",
-		},
-	)
 	apiRoute := c.httpServer.GetApiRoute()
 	// v1 := (*apiRoute).Group("/v1")apiRoute
 

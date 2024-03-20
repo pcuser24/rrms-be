@@ -59,7 +59,7 @@ func (a *adapter) RegisterServer(route *fiber.Router, tokenMaker token.Maker) {
 	)
 	applicationRoute.Patch("/application/status/:id",
 		auth_http.AuthorizedMiddleware(tokenMaker),
-		CheckApplicationVisibilty(a.aService),
+		CheckApplicationUpdatability(a.aService),
 		a.updateApplicationStatus(),
 	)
 	applicationRoute.Post("/application/:id/msg-group",
@@ -71,6 +71,26 @@ func (a *adapter) RegisterServer(route *fiber.Router, tokenMaker token.Maker) {
 		auth_http.AuthorizedMiddleware(tokenMaker),
 		CheckApplicationVisibilty(a.aService),
 		a.getApplicationMsgGroup(),
+	)
+	applicationRoute.Post("/application/:id/reminders",
+		auth_http.AuthorizedMiddleware(tokenMaker),
+		CheckApplicationVisibilty(a.aService),
+		a.createReminder(),
+	)
+	applicationRoute.Get("/application/:id/reminders",
+		auth_http.AuthorizedMiddleware(tokenMaker),
+		CheckApplicationVisibilty(a.aService),
+		a.getRemindersOfCurrentUser(),
+	)
+	applicationRoute.Get("/application/:id/reminders",
+		auth_http.AuthorizedMiddleware(tokenMaker),
+		CheckApplicationVisibilty(a.aService),
+		a.getRemindersOfCurrentUser(),
+	)
+	applicationRoute.Patch("/application/:id/reminders",
+		auth_http.AuthorizedMiddleware(tokenMaker),
+		CheckApplicationVisibilty(a.aService),
+		a.updateReminderStatus(),
 	)
 }
 
@@ -317,5 +337,80 @@ func (a *adapter) getApplicationMsgGroup() fiber.Handler {
 		}
 
 		return ctx.Status(fiber.StatusOK).JSON(res)
+	}
+}
+
+func (a *adapter) createReminder() fiber.Handler {
+	return func(ctx *fiber.Ctx) error {
+		var payload dto.CreateReminder
+		if err := ctx.BodyParser(&payload); err != nil {
+			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": err.Error()})
+		}
+		if errs := validation.ValidateStruct(nil, payload); len(errs) > 0 {
+			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": validation.GetValidationError(errs)})
+		}
+
+		// application id
+		aid, err := strconv.ParseInt(ctx.Params("id"), 10, 64)
+		if err != nil {
+			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": "invalid message group id"})
+		}
+
+		tkPayload := ctx.Locals(auth_http.AuthorizationPayloadKey).(*token.Payload)
+
+		res, err := a.aService.CreateReminder(aid, tkPayload.UserID, &payload)
+		if err != nil {
+			if errors.Is(err, database.ErrRecordNotFound) {
+				return ctx.Status(fiber.StatusNotFound).JSON(fiber.Map{"message": "application not found"})
+			}
+			if errors.Is(err, database.ErrUniqueViolation) {
+				return ctx.Status(fiber.StatusConflict).JSON(fiber.Map{"message": "reminder already exists"})
+			}
+			return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
+		}
+
+		return ctx.Status(fiber.StatusCreated).JSON(res)
+	}
+}
+
+func (a *adapter) getRemindersOfCurrentUser() fiber.Handler {
+	return func(ctx *fiber.Ctx) error {
+		tkPayload := ctx.Locals(auth_http.AuthorizationPayloadKey).(*token.Payload)
+		aid := ctx.Locals("aid").(int64)
+
+		res, err := a.aService.GetRemindersOfUser(tkPayload.UserID, aid)
+		if err != nil {
+			if dbErr, ok := err.(*pgconn.PgError); ok {
+				return responses.DBErrorResponse(ctx, dbErr)
+			}
+			return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
+		}
+
+		return ctx.Status(fiber.StatusOK).JSON(res)
+	}
+}
+
+func (a *adapter) updateReminderStatus() fiber.Handler {
+	return func(ctx *fiber.Ctx) error {
+		var payload dto.UpdateReminderStatus
+		if err := ctx.BodyParser(&payload); err != nil {
+			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": err.Error()})
+		}
+		if errs := validation.ValidateStruct(nil, payload); len(errs) > 0 {
+			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": validation.GetValidationError(errs)})
+		}
+
+		aid := ctx.Locals("aid").(int64)
+		tkPayload := ctx.Locals(auth_http.AuthorizationPayloadKey).(*token.Payload)
+
+		err := a.aService.UpdateReminderStatus(aid, tkPayload.UserID, &payload)
+		if err != nil {
+			if dbErr, ok := err.(*pgconn.PgError); ok {
+				return responses.DBErrorResponse(ctx, dbErr)
+			}
+			return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
+		}
+
+		return ctx.SendStatus(fiber.StatusOK)
 	}
 }

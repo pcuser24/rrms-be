@@ -2,6 +2,7 @@ package application
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"slices"
@@ -9,12 +10,15 @@ import (
 
 	"github.com/user2410/rrms-backend/internal/domain/application/asynctask"
 	"github.com/user2410/rrms-backend/internal/domain/application/repo"
+	"github.com/user2410/rrms-backend/internal/domain/application/utils"
 	chat_dto "github.com/user2410/rrms-backend/internal/domain/chat/dto"
 	chat_model "github.com/user2410/rrms-backend/internal/domain/chat/model"
 	chat_repo "github.com/user2410/rrms-backend/internal/domain/chat/repo"
 	listing_repo "github.com/user2410/rrms-backend/internal/domain/listing/repo"
+	"github.com/user2410/rrms-backend/internal/domain/notification"
 	property_model "github.com/user2410/rrms-backend/internal/domain/property/model"
 	property_repo "github.com/user2410/rrms-backend/internal/domain/property/repo"
+	"github.com/user2410/rrms-backend/pkg/ds/set"
 
 	"github.com/gofiber/fiber/v2/log"
 	"github.com/google/uuid"
@@ -31,16 +35,21 @@ type Service interface {
 	GetApplicationsToUser(uid uuid.UUID, q *dto.GetApplicationsToMeQuery) ([]model.ApplicationModel, error)
 	UpdateApplicationStatus(aid int64, userId uuid.UUID, data *dto.UpdateApplicationStatus) error
 	CheckApplicationVisibility(aid int64, uid uuid.UUID) (bool, error)
+	CheckApplicationUpdatability(aid int64, uid uuid.UUID) (bool, error)
 	CreateApplicationMsgGroup(aid int64, userId uuid.UUID) (*chat_model.MsgGroup, error)
 	GetApplicationMsgGroup(aid int64, userId uuid.UUID) (*chat_model.MsgGroupExtended, error)
+	CreateReminder(aid int64, userId uuid.UUID, data *dto.CreateReminder) (*model.ReminderModel, error)
+	GetRemindersOfUser(userId uuid.UUID, aid int64) ([]model.ReminderModel, error)
+	UpdateReminderStatus(aid int64, userId uuid.UUID, data *dto.UpdateReminderStatus) error
 }
 
 type service struct {
-	aRepo           repo.Repo
-	cRepo           chat_repo.Repo
-	lRepo           listing_repo.Repo
-	pRepo           property_repo.Repo
-	taskDistributor asynctask.TaskDistributor
+	aRepo               repo.Repo
+	cRepo               chat_repo.Repo
+	lRepo               listing_repo.Repo
+	pRepo               property_repo.Repo
+	taskDistributor     asynctask.TaskDistributor
+	notificationAdapter *notification.WSNotificationAdapter
 }
 
 func NewService(
@@ -49,13 +58,15 @@ func NewService(
 	lRepo listing_repo.Repo,
 	pRepo property_repo.Repo,
 	taskDistributor asynctask.TaskDistributor,
+	notificationAdapter *notification.WSNotificationAdapter,
 ) Service {
 	return &service{
-		aRepo:           aRepo,
-		cRepo:           cRepo,
-		lRepo:           lRepo,
-		pRepo:           pRepo,
-		taskDistributor: taskDistributor,
+		aRepo:               aRepo,
+		cRepo:               cRepo,
+		lRepo:               lRepo,
+		pRepo:               pRepo,
+		taskDistributor:     taskDistributor,
+		notificationAdapter: notificationAdapter,
 	}
 }
 
@@ -230,10 +241,6 @@ var (
 	ErrAnonymousApplicant = errors.New("anonymous applicant")
 )
 
-func getGroupName(aid int64) string {
-	return fmt.Sprintf("[APPLICATION_%d]", aid)
-}
-
 func (s *service) CreateApplicationMsgGroup(aid int64, userId uuid.UUID) (*chat_model.MsgGroup, error) {
 	a, err := s.aRepo.GetApplicationById(context.Background(), aid)
 	if err != nil {
@@ -244,7 +251,7 @@ func (s *service) CreateApplicationMsgGroup(aid int64, userId uuid.UUID) (*chat_
 	}
 
 	return s.cRepo.CreateMsgroup(context.Background(), userId, &chat_dto.CreateMsgGroup{
-		Name: getGroupName(aid),
+		Name: utils.GetResourceName(aid),
 		Members: []chat_dto.CreateMsgGroupMember{
 			{UserId: userId},
 			{UserId: a.CreatorID},
@@ -253,9 +260,96 @@ func (s *service) CreateApplicationMsgGroup(aid int64, userId uuid.UUID) (*chat_
 }
 
 func (s *service) GetApplicationMsgGroup(aid int64, userId uuid.UUID) (*chat_model.MsgGroupExtended, error) {
-	return s.cRepo.GetMsgGroupByName(context.Background(), userId, getGroupName(aid))
+	return s.cRepo.GetMsgGroupByName(context.Background(), userId, utils.GetResourceName(aid))
 }
 
 func (s *service) CheckApplicationVisibility(aid int64, uid uuid.UUID) (bool, error) {
 	return s.aRepo.CheckVisibility(context.Background(), aid, uid)
+}
+
+func (s *service) CheckApplicationUpdatability(aid int64, uid uuid.UUID) (bool, error) {
+	return s.aRepo.CheckUpdatability(context.Background(), aid, uid)
+}
+
+func (s *service) CreateReminder(aid int64, userId uuid.UUID, data *dto.CreateReminder) (*model.ReminderModel, error) {
+	members := set.NewSet[uuid.UUID]()
+
+	// get application
+	application, err := s.aRepo.GetApplicationById(context.Background(), aid)
+	if err != nil {
+		return nil, err
+	}
+	if application.CreatorID != uuid.Nil { // not an anonymous applicant
+		members.Add(application.CreatorID)
+	}
+	if application.CreatorID == userId { // current user is the applicant
+		pManagers, err := s.pRepo.GetPropertyManagers(context.Background(), application.PropertyID)
+		if err != nil {
+			return nil, err
+		}
+		for _, m := range pManagers {
+			members.Add(m.ManagerID)
+		}
+	} else { // current user is a manager
+		members.Add(userId)
+	}
+
+	for m := range members {
+		data.Members = append(data.Members, m)
+	}
+
+	res, err := s.aRepo.CreateReminder(context.Background(), aid, userId, data)
+	if err != nil {
+		return nil, err
+	}
+
+	n, err := json.Marshal(*res)
+	if err != nil {
+		return res, err
+	}
+	go s.notificationAdapter.PushMessage(notification.Notification{
+		UserId:  userId,
+		Payload: n,
+	})
+
+	return res, err
+}
+
+func (s *service) GetRemindersOfUser(userId uuid.UUID, aid int64) ([]model.ReminderModel, error) {
+	return s.aRepo.GetRemindersOfUser(context.Background(), aid, userId)
+}
+
+var (
+	ErrInvalidReminderStatusTransition = fmt.Errorf("invalid reminder status transition")
+)
+
+func (s *service) UpdateReminderStatus(aid int64, userId uuid.UUID, data *dto.UpdateReminderStatus) error {
+	reminder, err := s.aRepo.GetReminderById(context.Background(), data.ID)
+	if err != nil {
+		return err
+	}
+
+	switch data.Status {
+	case database.REMINDERSTATUSINPROGRESS:
+		if reminder.Status != database.REMINDERSTATUSPENDING {
+			return ErrInvalidReminderStatusTransition
+		}
+	case database.REMINDERSTATUSCOMPLETED:
+	case database.REMINDERSTATUSCANCELLED:
+		if reminder.Status != database.REMINDERSTATUSPENDING && reminder.Status != database.REMINDERSTATUSINPROGRESS {
+			return ErrInvalidReminderStatusTransition
+		}
+	default:
+		return ErrInvalidReminderStatusTransition
+	}
+
+	rowsAffected, err := s.aRepo.UpdateReminderStatus(context.Background(), aid, data.ID, userId, data.Status)
+	if err != nil {
+		return err
+	}
+	if rowsAffected == 0 {
+		return ErrUnauthorizedUpdate
+	}
+
+	return nil
 }

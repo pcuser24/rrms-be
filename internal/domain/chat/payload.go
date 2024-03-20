@@ -3,16 +3,16 @@ package chat
 import (
 	"encoding/json"
 	"errors"
-
-	"github.com/gofiber/contrib/websocket"
 )
 
 type EventType string
 
 const (
-	CREATEMESSAGE EventType = "CHAT_CREATE_MESSAGE"
-	DELETEMESSAGE EventType = "CHAT_DELETE_MESSAGE"
-	TYPING        EventType = "CHAT_TYPING"
+	CHATCREATEMESSAGE    EventType = "CHAT_CREATE_MESSAGE"
+	CHATDELETEMESSAGE    EventType = "CHAT_DELETE_MESSAGE"
+	CHATTYPING           EventType = "CHAT_TYPING"
+	REMINDERCREATE       EventType = "REMINDER_CREATE"
+	REMINDERUPDATESTATUS EventType = "REMINDER_UPDATE_STATUS"
 )
 
 var ErrEventNotSupported = errors.New("event not supported")
@@ -24,7 +24,7 @@ type IncomingEvent struct {
 }
 
 type OutgoingEvent struct {
-	Conn       *websocket.Conn
+	Conn       *wsConn
 	Type       EventType       `json:"type"`
 	StatusCode int             `json:"statusCode"`
 	Payload    json.RawMessage `json:"payload"`

@@ -64,6 +64,7 @@ func (c *serverCommand) setupInternalServices(
 		listingRepo,
 		propertyRepo,
 		applicationTaskDistributor,
+		c.notificationAdapter,
 	)
 	c.internalServices.PaymentService = payment_service.NewService(paymentRepo)
 	c.internalServices.StorageService = storage.NewService(s)

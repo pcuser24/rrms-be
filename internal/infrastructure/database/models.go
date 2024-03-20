@@ -274,6 +274,93 @@ func (ns NullPROPERTYTYPE) Value() (driver.Value, error) {
 	return string(ns.PROPERTYTYPE), nil
 }
 
+type REMINDERRECURRENCEMODE string
+
+const (
+	REMINDERRECURRENCEMODENONE    REMINDERRECURRENCEMODE = "NONE"
+	REMINDERRECURRENCEMODEWEEKLY  REMINDERRECURRENCEMODE = "WEEKLY"
+	REMINDERRECURRENCEMODEMONTHLY REMINDERRECURRENCEMODE = "MONTHLY"
+)
+
+func (e *REMINDERRECURRENCEMODE) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = REMINDERRECURRENCEMODE(s)
+	case string:
+		*e = REMINDERRECURRENCEMODE(s)
+	default:
+		return fmt.Errorf("unsupported scan type for REMINDERRECURRENCEMODE: %T", src)
+	}
+	return nil
+}
+
+type NullREMINDERRECURRENCEMODE struct {
+	REMINDERRECURRENCEMODE REMINDERRECURRENCEMODE `json:"REMINDERRECURRENCEMODE"`
+	Valid                  bool                   `json:"valid"` // Valid is true if REMINDERRECURRENCEMODE is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullREMINDERRECURRENCEMODE) Scan(value interface{}) error {
+	if value == nil {
+		ns.REMINDERRECURRENCEMODE, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.REMINDERRECURRENCEMODE.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullREMINDERRECURRENCEMODE) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.REMINDERRECURRENCEMODE), nil
+}
+
+type REMINDERSTATUS string
+
+const (
+	REMINDERSTATUSPENDING    REMINDERSTATUS = "PENDING"
+	REMINDERSTATUSINPROGRESS REMINDERSTATUS = "INPROGRESS"
+	REMINDERSTATUSCOMPLETED  REMINDERSTATUS = "COMPLETED"
+	REMINDERSTATUSCANCELLED  REMINDERSTATUS = "CANCELLED"
+)
+
+func (e *REMINDERSTATUS) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = REMINDERSTATUS(s)
+	case string:
+		*e = REMINDERSTATUS(s)
+	default:
+		return fmt.Errorf("unsupported scan type for REMINDERSTATUS: %T", src)
+	}
+	return nil
+}
+
+type NullREMINDERSTATUS struct {
+	REMINDERSTATUS REMINDERSTATUS `json:"REMINDERSTATUS"`
+	Valid          bool           `json:"valid"` // Valid is true if REMINDERSTATUS is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullREMINDERSTATUS) Scan(value interface{}) error {
+	if value == nil {
+		ns.REMINDERSTATUS, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.REMINDERSTATUS.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullREMINDERSTATUS) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.REMINDERSTATUS), nil
+}
+
 type UNITTYPE string
 
 const (
@@ -544,6 +631,31 @@ type PropertyTag struct {
 	ID         int64     `json:"id"`
 	PropertyID uuid.UUID `json:"property_id"`
 	Tag        string    `json:"tag"`
+}
+
+type Reminder struct {
+	ID        int64       `json:"id"`
+	CreatorID uuid.UUID   `json:"creator_id"`
+	Title     string      `json:"title"`
+	StartAt   time.Time   `json:"start_at"`
+	EndAt     time.Time   `json:"end_at"`
+	Note      pgtype.Text `json:"note"`
+	Location  string      `json:"location"`
+	// 7-bit integer representing days in a week (0-6) when the reminder should be triggered. 0 is Sunday, 1 is Monday, and so on.
+	RecurrenceDay pgtype.Int4 `json:"recurrence_day"`
+	// 32-bit integer representing days in a month (0-30) when the reminder should be triggered. 0 is the last day of the month, 1 is the first day of the month, and so on.
+	RecurrenceMonth pgtype.Int4            `json:"recurrence_month"`
+	RecurrenceMode  REMINDERRECURRENCEMODE `json:"recurrence_mode"`
+	Priority        int32                  `json:"priority"`
+	Status          REMINDERSTATUS         `json:"status"`
+	ResourceTag     string                 `json:"resource_tag"`
+	CreatedAt       time.Time              `json:"created_at"`
+	UpdatedAt       time.Time              `json:"updated_at"`
+}
+
+type ReminderMember struct {
+	ReminderID int64     `json:"reminder_id"`
+	UserID     uuid.UUID `json:"user_id"`
 }
 
 type RentalPolicy struct {

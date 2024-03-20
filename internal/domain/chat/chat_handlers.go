@@ -3,14 +3,13 @@ package chat
 import (
 	"encoding/json"
 
-	"github.com/gofiber/contrib/websocket"
 	"github.com/gofiber/fiber/v2"
 	auth_http "github.com/user2410/rrms-backend/internal/domain/auth/http"
 	"github.com/user2410/rrms-backend/internal/domain/chat/dto"
 	"github.com/user2410/rrms-backend/internal/utils/token"
 )
 
-func (ws *WSChatAdapter) onCreateMessage(e IncomingEvent, c *websocket.Conn) error {
+func (ws *WSChatAdapter) onCreateMessage(e IncomingEvent, c *wsConn) error {
 	conns, ok := ws.getConns(e.GroupId)
 	if !ok {
 		return nil
@@ -27,7 +26,7 @@ func (ws *WSChatAdapter) onCreateMessage(e IncomingEvent, c *websocket.Conn) err
 	if err != nil {
 		ws.egress <- OutgoingEvent{
 			Conn:       c,
-			Type:       CREATEMESSAGE,
+			Type:       CHATCREATEMESSAGE,
 			StatusCode: fiber.StatusInternalServerError,
 		}
 		return err
@@ -41,7 +40,7 @@ func (ws *WSChatAdapter) onCreateMessage(e IncomingEvent, c *websocket.Conn) err
 	for conn := range conns {
 		ws.egress <- OutgoingEvent{
 			Conn:       conn,
-			Type:       CREATEMESSAGE,
+			Type:       CHATCREATEMESSAGE,
 			StatusCode: fiber.StatusCreated,
 			Payload:    payload,
 		}
@@ -49,7 +48,7 @@ func (ws *WSChatAdapter) onCreateMessage(e IncomingEvent, c *websocket.Conn) err
 	return nil
 }
 
-func (ws *WSChatAdapter) onDeleteMessage(e IncomingEvent, c *websocket.Conn) error {
+func (ws *WSChatAdapter) onDeleteMessage(e IncomingEvent, c *wsConn) error {
 	conns, ok := ws.getConns(e.GroupId)
 	if !ok {
 		return nil
@@ -66,7 +65,7 @@ func (ws *WSChatAdapter) onDeleteMessage(e IncomingEvent, c *websocket.Conn) err
 	if err != nil {
 		ws.egress <- OutgoingEvent{
 			Conn:       c,
-			Type:       DELETEMESSAGE,
+			Type:       CHATDELETEMESSAGE,
 			StatusCode: fiber.StatusInternalServerError,
 		}
 		return err
@@ -74,7 +73,7 @@ func (ws *WSChatAdapter) onDeleteMessage(e IncomingEvent, c *websocket.Conn) err
 	if rAffected == 0 {
 		ws.egress <- OutgoingEvent{
 			Conn:       c,
-			Type:       DELETEMESSAGE,
+			Type:       CHATDELETEMESSAGE,
 			StatusCode: fiber.StatusNotFound,
 		}
 		return nil
@@ -91,7 +90,7 @@ func (ws *WSChatAdapter) onDeleteMessage(e IncomingEvent, c *websocket.Conn) err
 	for conn := range conns {
 		ws.egress <- OutgoingEvent{
 			Conn:       conn,
-			Type:       DELETEMESSAGE,
+			Type:       CHATDELETEMESSAGE,
 			StatusCode: fiber.StatusOK,
 			Payload:    payload,
 		}
@@ -99,7 +98,7 @@ func (ws *WSChatAdapter) onDeleteMessage(e IncomingEvent, c *websocket.Conn) err
 	return nil
 }
 
-func (ws *WSChatAdapter) onTyping(e IncomingEvent, c *websocket.Conn) error {
+func (ws *WSChatAdapter) onTyping(e IncomingEvent, c *wsConn) error {
 	conns, ok := ws.getConns(e.GroupId)
 	if !ok {
 		return nil
@@ -116,7 +115,7 @@ func (ws *WSChatAdapter) onTyping(e IncomingEvent, c *websocket.Conn) error {
 	for conn := range conns {
 		ws.egress <- OutgoingEvent{
 			Conn:       conn,
-			Type:       TYPING,
+			Type:       CHATTYPING,
 			StatusCode: fiber.StatusOK,
 			Payload:    payload,
 		}

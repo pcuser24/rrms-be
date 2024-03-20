@@ -194,6 +194,14 @@ SELECT count(*) > 0 FROM applications WHERE
     OR creator_id = $2
   ); 
 
+-- name: CheckApplicationUpdatabilty :one
+SELECT count(*) > 0 FROM applications WHERE 
+  id = $1 
+  AND (
+    property_id IN (SELECT property_id FROM property_managers WHERE manager_id = $2)
+  );
+  
+
 -- name: UpdateApplicationStatus :many
 UPDATE applications 
 SET 

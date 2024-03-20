@@ -10,6 +10,8 @@ import (
 	"time"
 
 	"github.com/go-playground/validator"
+	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/user2410/rrms-backend/cmd/version"
@@ -17,6 +19,7 @@ import (
 	"github.com/user2410/rrms-backend/internal/domain/auth"
 	"github.com/user2410/rrms-backend/internal/domain/chat"
 	"github.com/user2410/rrms-backend/internal/domain/listing"
+	"github.com/user2410/rrms-backend/internal/domain/notification"
 	payment_service "github.com/user2410/rrms-backend/internal/domain/payment/service"
 	"github.com/user2410/rrms-backend/internal/domain/payment/service/vnpay"
 	"github.com/user2410/rrms-backend/internal/domain/property"
@@ -84,6 +87,7 @@ type serverCommand struct {
 	httpServer           http.Server
 	asyncTaskDistributor asynctask.Distributor
 	asyncTaskProcessor   asynctask.Processor
+	notificationAdapter  *notification.WSNotificationAdapter
 }
 
 func NewServerCommand() *serverCommand {
@@ -201,6 +205,20 @@ func (c *serverCommand) setup() {
 		log.Fatal("Error while initializing AWS S3 client", err)
 	}
 
+	// new http server
+	c.httpServer = http.NewServer(
+		fiber.Config{
+			ReadTimeout:  1 * time.Second,
+			WriteTimeout: 1 * time.Second,
+		},
+		cors.Config{
+			AllowOrigins: c.config.AllowOrigins,
+			AllowHeaders: "Origin, Content-Type, Accept, Authorization",
+		},
+	)
+	c.notificationAdapter = notification.NewWSNotificationAdapter()
+	c.notificationAdapter.Register(c.httpServer.GetFibApp())
+
 	// setup asynq task distributor and processor
 	c.setupAsyncTaskProcessor(c.emailSender)
 
@@ -210,6 +228,5 @@ func (c *serverCommand) setup() {
 		s3Client,
 	)
 
-	// setup http server
 	c.setupHttpServer()
 }

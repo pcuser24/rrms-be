@@ -40,7 +40,7 @@ func newTestServer(
 	require.NotNil(t, tokenMaker)
 
 	// initialize lService
-	aService := application.NewService(ar, cr, lr, pr, taskDistributor)
+	aService := application.NewService(ar, cr, lr, pr, taskDistributor, nil)
 	lService := listing.NewService(lr, pr, nil, "") // NOTE: leave paymentRepo nil for now
 
 	// initialize http router
