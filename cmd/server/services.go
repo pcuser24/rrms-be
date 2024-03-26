@@ -23,6 +23,7 @@ import (
 	listing_repo "github.com/user2410/rrms-backend/internal/domain/listing/repo"
 	payment_repo "github.com/user2410/rrms-backend/internal/domain/payment/repo"
 	property_repo "github.com/user2410/rrms-backend/internal/domain/property/repo"
+	rental_repo "github.com/user2410/rrms-backend/internal/domain/rental/repo"
 	unit_repo "github.com/user2410/rrms-backend/internal/domain/unit/repo"
 
 	"github.com/hibiken/asynq"
@@ -46,7 +47,7 @@ func (c *serverCommand) setupInternalServices(
 	propertyRepo := property_repo.NewRepo(dao)
 	unitRepo := unit_repo.NewRepo(dao)
 	listingRepo := listing_repo.NewRepo(dao)
-	rentalRepo := rental.NewRepo(dao)
+	rentalRepo := rental_repo.NewRepo(dao)
 	applicationRepo := application_repo.NewRepo(dao)
 	paymentRepo := payment_repo.NewRepo(dao)
 	chatRepo := chat_repo.NewRepo(dao)
@@ -56,7 +57,7 @@ func (c *serverCommand) setupInternalServices(
 	c.internalServices.PropertyService = property.NewService(propertyRepo, unitRepo, listingRepo, applicationRepo)
 	c.internalServices.UnitService = unit.NewService(unitRepo)
 	c.internalServices.ListingService = listing.NewService(listingRepo, propertyRepo, paymentRepo, c.config.TokenSecreteKey)
-	c.internalServices.RentalService = rental.NewService(rentalRepo)
+	c.internalServices.RentalService = rental.NewService(rentalRepo, authRepo, applicationRepo, listingRepo, propertyRepo, unitRepo)
 	applicationTaskDistributor := application_asynctask.NewTaskDistributor(c.asyncTaskDistributor)
 	c.internalServices.ApplicationService = application.NewService(
 		applicationRepo,

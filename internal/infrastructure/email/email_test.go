@@ -4,18 +4,14 @@ import (
 	"log"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/go-playground/validator/v10"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/require"
 	"github.com/user2410/rrms-backend/internal/utils"
+	html_util "github.com/user2410/rrms-backend/internal/utils/html"
 )
-
-type Data struct {
-	Name          string
-	ApplicationId string
-	ListingTitle  string
-}
 
 type TestSendEmailConfig struct {
 	EmailSenderName     string `mapstructure:"EMAIL_SENDER_NAME" validate:"required"`
@@ -49,6 +45,27 @@ func TestMain(t *testing.M) {
 	os.Exit(t.Run())
 }
 
+func TestRenderHtml(t *testing.T) {
+	data := struct {
+		Date          html_util.HTMLTime
+		Name          string
+		ApplicationId string
+		ListingTitle  string
+	}{
+		Date:          html_util.NewHTMLTime(time.Now()),
+		Name:          "Tehc's School",
+		ApplicationId: "123456",
+		ListingTitle:  "A test listing",
+	}
+	templateFile := "templates/test.html"
+
+	buf, err := html_util.RenderHtml(data, templateFile)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log(string(buf))
+}
+
 func TestSendEmailWithGmail(t *testing.T) {
 	if testing.Short() {
 		t.Skip()
@@ -62,7 +79,11 @@ func TestSendEmailWithGmail(t *testing.T) {
 
 	err := sender.SendEmail(
 		subject,
-		Data{
+		struct {
+			Name          string
+			ApplicationId string
+			ListingTitle  string
+		}{
 			Name:          "Nguyễn Văn A",
 			ApplicationId: "123456",
 			ListingTitle:  "Tòa nhà Giang Bắc, Số 1 Thái Hà, Đống Đa, Hà Nội",

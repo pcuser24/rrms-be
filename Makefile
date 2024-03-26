@@ -3,7 +3,13 @@
 
 # Migration
 migratecreate:
-	migrate create -ext sql -dir internal/infrastructure/database/migrations -seq ${NAME}
+	@{ \
+    set -e ;\
+    output=$$(migrate create -ext sql -dir internal/infrastructure/database/migrations -seq ${NAME} 2>&1) ;\
+    echo "$$output" | while read -r file ; do \
+      echo "BEGIN;\n\nEND;" > $$file ;\
+    done ;\
+    }
 
 migrateup:
 	migrate -path internal/infrastructure/database/migrations -database "${DB_URL}" -verbose up

@@ -1,13 +1,11 @@
 package email
 
 import (
-	"bytes"
 	"fmt"
-	"html/template"
 	"net/smtp"
-	"path"
 
 	"github.com/jordan-wright/email"
+	html_util "github.com/user2410/rrms-backend/internal/utils/html"
 )
 
 const (
@@ -40,26 +38,6 @@ func NewGmailSender(name string, fromEmailAddress string, fromEmailPassword stri
 	}
 }
 
-// Render HTML byte slice from template file and data.
-// data is a struct to hold data for replacing placeholders
-// in the template. htmlTemplateFile is the path to the template file.
-func renderHtml(data any, htmlTemplateFile string) ([]byte, error) {
-	fileName := path.Base(htmlTemplateFile)
-	tmpl, err := template.New(fileName).ParseFiles(htmlTemplateFile)
-	if err != nil {
-		return nil, err
-	}
-
-	buffer := new(bytes.Buffer)
-
-	err = tmpl.Execute(buffer, data)
-	if err != nil {
-		return nil, err
-	}
-
-	return buffer.Bytes(), nil
-}
-
 func (sender *GmailSender) SendEmail(
 	subject string,
 	contentData any, templateFile string,
@@ -75,7 +53,7 @@ func (sender *GmailSender) SendEmail(
 	e.Cc = cc
 	e.Bcc = bcc
 
-	html, err := renderHtml(contentData, templateFile)
+	html, err := html_util.RenderHtml(contentData, templateFile)
 	if err != nil {
 		return fmt.Errorf("failed to render html: %w", err)
 	}

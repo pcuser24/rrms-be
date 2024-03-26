@@ -34,6 +34,8 @@ type Querier interface {
 	CreateMsgGroupMember(ctx context.Context, arg CreateMsgGroupMemberParams) (MsgGroupMember, error)
 	CreatePayment(ctx context.Context, arg CreatePaymentParams) (Payment, error)
 	CreatePaymentItem(ctx context.Context, arg CreatePaymentItemParams) (PaymentItem, error)
+	CreatePreRental(ctx context.Context, arg CreatePreRentalParams) (Prerental, error)
+	CreatePreRentalCoap(ctx context.Context, arg CreatePreRentalCoapParams) (PrerentalCoap, error)
 	CreateProperty(ctx context.Context, arg CreatePropertyParams) (Property, error)
 	CreatePropertyFeature(ctx context.Context, arg CreatePropertyFeatureParams) (PropertyFeature, error)
 	CreatePropertyManager(ctx context.Context, arg CreatePropertyManagerParams) (PropertyManager, error)
@@ -51,6 +53,7 @@ type Querier interface {
 	DeleteMsgGroup(ctx context.Context, groupID int64) error
 	DeleteMsgGroupMember(ctx context.Context, arg DeleteMsgGroupMemberParams) error
 	DeletePayment(ctx context.Context, id int64) error
+	DeletePreRental(ctx context.Context, id int64) error
 	DeleteProperty(ctx context.Context, id uuid.UUID) error
 	DeletePropertyFeature(ctx context.Context, arg DeletePropertyFeatureParams) error
 	DeletePropertyManager(ctx context.Context, arg DeletePropertyManagerParams) error
@@ -83,6 +86,9 @@ type Querier interface {
 	GetMsgGroupMembers(ctx context.Context, groupID int64) ([]GetMsgGroupMembersRow, error)
 	GetPaymentById(ctx context.Context, id int64) (Payment, error)
 	GetPaymentItemsByPaymentId(ctx context.Context, paymentID int64) ([]PaymentItem, error)
+	GetPreRental(ctx context.Context, id int64) (Prerental, error)
+	GetPreRentalCoapByPreRentalID(ctx context.Context, prerentalID int64) ([]PrerentalCoap, error)
+	GetPreRentalContract(ctx context.Context, id int64) (GetPreRentalContractRow, error)
 	GetPropertyById(ctx context.Context, id uuid.UUID) (Property, error)
 	GetPropertyFeatures(ctx context.Context, propertyID uuid.UUID) ([]PropertyFeature, error)
 	GetPropertyManagers(ctx context.Context, propertyID uuid.UUID) ([]PropertyManager, error)
@@ -98,6 +104,7 @@ type Querier interface {
 	GetUnitById(ctx context.Context, id uuid.UUID) (Unit, error)
 	GetUnitManagers(ctx context.Context, id uuid.UUID) ([]PropertyManager, error)
 	GetUnitMedia(ctx context.Context, unitID uuid.UUID) ([]UnitMedium, error)
+	GetUnitsOfProperty(ctx context.Context, propertyID uuid.UUID) ([]Unit, error)
 	GetUserByEmail(ctx context.Context, email string) (User, error)
 	GetUserById(ctx context.Context, id uuid.UUID) (User, error)
 	IsPropertyPublic(ctx context.Context, id uuid.UUID) (bool, error)
@@ -107,6 +114,8 @@ type Querier interface {
 	UpdateListingStatus(ctx context.Context, arg UpdateListingStatusParams) error
 	UpdateMessage(ctx context.Context, arg UpdateMessageParams) ([]int64, error)
 	UpdatePayment(ctx context.Context, arg UpdatePaymentParams) error
+	UpdatePreRental(ctx context.Context, arg UpdatePreRentalParams) error
+	UpdatePreRentalContract(ctx context.Context, arg UpdatePreRentalContractParams) error
 	UpdateProperty(ctx context.Context, arg UpdatePropertyParams) error
 	UpdateReminder(ctx context.Context, arg UpdateReminderParams) ([]Reminder, error)
 	UpdateSessionBlockingStatus(ctx context.Context, arg UpdateSessionBlockingStatusParams) error

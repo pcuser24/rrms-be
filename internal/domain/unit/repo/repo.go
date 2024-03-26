@@ -19,6 +19,7 @@ type Repo interface {
 	CreateUnit(ctx context.Context, data *dto.CreateUnit) (*model.UnitModel, error)
 	GetUnitById(ctx context.Context, id uuid.UUID) (*model.UnitModel, error)
 	GetUnitsByIds(ctx context.Context, ids []string, fields []string) ([]model.UnitModel, error)
+	GetUnitsOfProperty(ctx context.Context, pid uuid.UUID) ([]model.UnitModel, error)
 	SearchUnitCombination(ctx context.Context, query *dto.SearchUnitCombinationQuery) (*dto.SearchUnitCombinationResponse, error)
 	CheckUnitManageability(ctx context.Context, uid uuid.UUID, userId uuid.UUID) (bool, error)
 	CheckUnitOfProperty(ctx context.Context, pid, uid uuid.UUID) (bool, error)
@@ -106,6 +107,34 @@ func (r *repo) GetUnitById(ctx context.Context, id uuid.UUID) (*model.UnitModel,
 	}
 
 	return um, nil
+}
+
+func (r *repo) GetUnitsOfProperty(ctx context.Context, pid uuid.UUID) ([]model.UnitModel, error) {
+	_res, err := r.dao.GetUnitsOfProperty(ctx, pid)
+	if err != nil {
+		return nil, err
+	}
+	res := make([]model.UnitModel, 0, len(_res))
+	for _, u := range _res {
+		um := model.ToUnitModel(&u)
+		a, err := r.dao.GetUnitAmenities(ctx, u.ID)
+		if err != nil {
+			return nil, err
+		}
+		for _, adb := range a {
+			um.Amenities = append(um.Amenities, *model.ToUnitAmenityModel(&adb))
+		}
+
+		m, err := r.dao.GetUnitMedia(ctx, u.ID)
+		if err != nil {
+			return nil, err
+		}
+		for _, mdb := range m {
+			um.Media = append(um.Media, *model.ToUnitMediaModel(&mdb))
+		}
+		res = append(res, *um)
+	}
+	return res, nil
 }
 
 func (r *repo) SearchUnitCombination(ctx context.Context, query *dto.SearchUnitCombinationQuery) (*dto.SearchUnitCombinationResponse, error) {

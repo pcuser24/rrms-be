@@ -353,6 +353,45 @@ func (q *Queries) GetUnitMedia(ctx context.Context, unitID uuid.UUID) ([]UnitMed
 	return items, nil
 }
 
+const getUnitsOfProperty = `-- name: GetUnitsOfProperty :many
+SELECT id, property_id, name, area, floor, number_of_living_rooms, number_of_bedrooms, number_of_bathrooms, number_of_toilets, number_of_balconies, number_of_kitchens, type, created_at, updated_at FROM units WHERE property_id = $1
+`
+
+func (q *Queries) GetUnitsOfProperty(ctx context.Context, propertyID uuid.UUID) ([]Unit, error) {
+	rows, err := q.db.Query(ctx, getUnitsOfProperty, propertyID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Unit
+	for rows.Next() {
+		var i Unit
+		if err := rows.Scan(
+			&i.ID,
+			&i.PropertyID,
+			&i.Name,
+			&i.Area,
+			&i.Floor,
+			&i.NumberOfLivingRooms,
+			&i.NumberOfBedrooms,
+			&i.NumberOfBathrooms,
+			&i.NumberOfToilets,
+			&i.NumberOfBalconies,
+			&i.NumberOfKitchens,
+			&i.Type,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const isUnitPublic = `-- name: IsUnitPublic :one
 SELECT is_public FROM properties WHERE properties.id IN (SELECT property_id from units WHERE units.id = $1 LIMIT 1) LIMIT 1
 `

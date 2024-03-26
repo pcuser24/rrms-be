@@ -9,3 +9,6 @@ __debug*
 
 # data
 db_data
+
+# log files
+*.log

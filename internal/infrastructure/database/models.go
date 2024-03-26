@@ -58,6 +58,49 @@ func (ns NullAPPLICATIONSTATUS) Value() (driver.Value, error) {
 	return string(ns.APPLICATIONSTATUS), nil
 }
 
+type CONTRACTTYPE string
+
+const (
+	CONTRACTTYPEDIGITAL CONTRACTTYPE = "DIGITAL"
+	CONTRACTTYPEFILE    CONTRACTTYPE = "FILE"
+	CONTRACTTYPEIMAGE   CONTRACTTYPE = "IMAGE"
+)
+
+func (e *CONTRACTTYPE) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = CONTRACTTYPE(s)
+	case string:
+		*e = CONTRACTTYPE(s)
+	default:
+		return fmt.Errorf("unsupported scan type for CONTRACTTYPE: %T", src)
+	}
+	return nil
+}
+
+type NullCONTRACTTYPE struct {
+	CONTRACTTYPE CONTRACTTYPE `json:"CONTRACTTYPE"`
+	Valid        bool         `json:"valid"` // Valid is true if CONTRACTTYPE is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullCONTRACTTYPE) Scan(value interface{}) error {
+	if value == nil {
+		ns.CONTRACTTYPE, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.CONTRACTTYPE.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullCONTRACTTYPE) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.CONTRACTTYPE), nil
+}
+
 type MEDIATYPE string
 
 const (
@@ -228,6 +271,49 @@ func (ns NullPAYMENTSTATUS) Value() (driver.Value, error) {
 	return string(ns.PAYMENTSTATUS), nil
 }
 
+type PRERENTALSTATUS string
+
+const (
+	PRERENTALSTATUSPENDING  PRERENTALSTATUS = "PENDING"
+	PRERENTALSTATUSFINISHED PRERENTALSTATUS = "FINISHED"
+	PRERENTALSTATUSCANCELED PRERENTALSTATUS = "CANCELED"
+)
+
+func (e *PRERENTALSTATUS) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = PRERENTALSTATUS(s)
+	case string:
+		*e = PRERENTALSTATUS(s)
+	default:
+		return fmt.Errorf("unsupported scan type for PRERENTALSTATUS: %T", src)
+	}
+	return nil
+}
+
+type NullPRERENTALSTATUS struct {
+	PRERENTALSTATUS PRERENTALSTATUS `json:"PRERENTALSTATUS"`
+	Valid           bool            `json:"valid"` // Valid is true if PRERENTALSTATUS is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullPRERENTALSTATUS) Scan(value interface{}) error {
+	if value == nil {
+		ns.PRERENTALSTATUS, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.PRERENTALSTATUS.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullPRERENTALSTATUS) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.PRERENTALSTATUS), nil
+}
+
 type PROPERTYTYPE string
 
 const (
@@ -359,6 +445,48 @@ func (ns NullREMINDERSTATUS) Value() (driver.Value, error) {
 		return nil, nil
 	}
 	return string(ns.REMINDERSTATUS), nil
+}
+
+type TENANTTYPE string
+
+const (
+	TENANTTYPEINDIVIDUAL   TENANTTYPE = "INDIVIDUAL"
+	TENANTTYPEORGANIZATION TENANTTYPE = "ORGANIZATION"
+)
+
+func (e *TENANTTYPE) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = TENANTTYPE(s)
+	case string:
+		*e = TENANTTYPE(s)
+	default:
+		return fmt.Errorf("unsupported scan type for TENANTTYPE: %T", src)
+	}
+	return nil
+}
+
+type NullTENANTTYPE struct {
+	TENANTTYPE TENANTTYPE `json:"TENANTTYPE"`
+	Valid      bool       `json:"valid"` // Valid is true if TENANTTYPE is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullTENANTTYPE) Scan(value interface{}) error {
+	if value == nil {
+		ns.TENANTTYPE, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.TENANTTYPE.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullTENANTTYPE) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.TENANTTYPE), nil
 }
 
 type UNITTYPE string
@@ -578,6 +706,46 @@ type PaymentItem struct {
 	Price     int64  `json:"price"`
 	Quantity  int32  `json:"quantity"`
 	Discount  int32  `json:"discount"`
+}
+
+type Prerental struct {
+	ID                   int64              `json:"id"`
+	CreatorID            uuid.UUID          `json:"creator_id"`
+	PropertyID           uuid.UUID          `json:"property_id"`
+	UnitID               uuid.UUID          `json:"unit_id"`
+	ApplicationID        pgtype.Int8        `json:"application_id"`
+	TenantID             pgtype.UUID        `json:"tenant_id"`
+	ProfileImage         string             `json:"profile_image"`
+	TenantType           TENANTTYPE         `json:"tenant_type"`
+	TenantName           string             `json:"tenant_name"`
+	TenantIdentity       string             `json:"tenant_identity"`
+	TenantDob            pgtype.Date        `json:"tenant_dob"`
+	TenantPhone          string             `json:"tenant_phone"`
+	TenantEmail          string             `json:"tenant_email"`
+	TenantAddress        pgtype.Text        `json:"tenant_address"`
+	ContractType         NullCONTRACTTYPE   `json:"contract_type"`
+	ContractContent      pgtype.Text        `json:"contract_content"`
+	ContractLastUpdateAt pgtype.Timestamptz `json:"contract_last_update_at"`
+	ContractLastUpdateBy pgtype.UUID        `json:"contract_last_update_by"`
+	LandArea             float32            `json:"land_area"`
+	UnitArea             float32            `json:"unit_area"`
+	StartDate            pgtype.Date        `json:"start_date"`
+	MoveinDate           pgtype.Date        `json:"movein_date"`
+	RentalPeriod         int32              `json:"rental_period"`
+	RentalPrice          float32            `json:"rental_price"`
+	Status               PRERENTALSTATUS    `json:"status"`
+	Note                 pgtype.Text        `json:"note"`
+}
+
+type PrerentalCoap struct {
+	PrerentalID int64       `json:"prerental_id"`
+	FullName    pgtype.Text `json:"full_name"`
+	Dob         pgtype.Date `json:"dob"`
+	Job         pgtype.Text `json:"job"`
+	Income      pgtype.Int4 `json:"income"`
+	Email       pgtype.Text `json:"email"`
+	Phone       pgtype.Text `json:"phone"`
+	Description pgtype.Text `json:"description"`
 }
 
 type Property struct {

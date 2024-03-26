@@ -113,7 +113,7 @@ func (a *adapter) getPropertyById() fiber.Handler {
 			return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
 		}
 
-		return ctx.JSON(res)
+		return ctx.Status(fiber.StatusOK).JSON(res)
 	}
 }
 

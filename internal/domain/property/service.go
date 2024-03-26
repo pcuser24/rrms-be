@@ -16,8 +16,8 @@ import (
 	listing_repo "github.com/user2410/rrms-backend/internal/domain/listing/repo"
 	property_dto "github.com/user2410/rrms-backend/internal/domain/property/dto"
 	property_model "github.com/user2410/rrms-backend/internal/domain/property/model"
-	unit_dto "github.com/user2410/rrms-backend/internal/domain/unit/dto"
 	unit_model "github.com/user2410/rrms-backend/internal/domain/unit/model"
+	unit_repo "github.com/user2410/rrms-backend/internal/domain/unit/repo"
 	"github.com/user2410/rrms-backend/internal/utils"
 	"github.com/user2410/rrms-backend/internal/utils/types"
 )
@@ -26,6 +26,7 @@ type Service interface {
 	CreateProperty(data *property_dto.CreateProperty, creatorID uuid.UUID) (*property_model.PropertyModel, error)
 	CheckVisibility(id uuid.UUID, uid uuid.UUID) (bool, error)
 	CheckManageability(id uuid.UUID, userId uuid.UUID) (bool, error)
+	CheckOwnership(id uuid.UUID, userId uuid.UUID) (bool, error)
 	GetPropertyById(id uuid.UUID) (*property_model.PropertyModel, error)
 	GetPropertiesByIds(ids []uuid.UUID, fields []string, userId uuid.UUID) ([]property_model.PropertyModel, error)
 	GetUnitsOfProperty(id uuid.UUID) ([]unit_model.UnitModel, error)
@@ -37,20 +38,14 @@ type Service interface {
 	DeleteProperty(id uuid.UUID) error
 }
 
-// import cycle is not allowed
-type unitRepo interface {
-	GetUnitById(ctx context.Context, id uuid.UUID) (*unit_model.UnitModel, error)
-	SearchUnitCombination(ctx context.Context, query *unit_dto.SearchUnitCombinationQuery) (*unit_dto.SearchUnitCombinationResponse, error)
-}
-
 type service struct {
 	pRepo property_repo.Repo
-	uRepo unitRepo
+	uRepo unit_repo.Repo
 	lRepo listing_repo.Repo
 	aRepo application_repo.Repo
 }
 
-func NewService(pRepo property_repo.Repo, uRepo unitRepo, lRepo listing_repo.Repo, aRepo application_repo.Repo) Service {
+func NewService(pRepo property_repo.Repo, uRepo unit_repo.Repo, lRepo listing_repo.Repo, aRepo application_repo.Repo) Service {
 	return &service{
 		pRepo: pRepo,
 		uRepo: uRepo,
@@ -72,7 +67,7 @@ func (s *service) CreateProperty(data *property_dto.CreateProperty, creatorID uu
 	if !foundCreator {
 		data.Managers = append(data.Managers, property_dto.CreatePropertyManager{
 			ManagerID: creatorID,
-			Role:      "MANAGER", // TODO: add role to user
+			Role:      "OWNER", // TODO: add role to user
 		})
 	}
 	return s.pRepo.CreateProperty(context.Background(), data)
@@ -97,27 +92,7 @@ func (s *service) GetPropertiesByIds(ids []uuid.UUID, fields []string, userId uu
 }
 
 func (s *service) GetUnitsOfProperty(id uuid.UUID) ([]unit_model.UnitModel, error) {
-	ids, err := s.uRepo.SearchUnitCombination(
-		context.Background(),
-		&unit_dto.SearchUnitCombinationQuery{
-			SearchUnitQuery: unit_dto.SearchUnitQuery{
-				UPropertyID: types.Ptr[string](id.String()),
-			},
-		},
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	res := make([]unit_model.UnitModel, 0, len(ids.Items))
-	for _, id := range ids.Items {
-		_res, err := s.uRepo.GetUnitById(context.Background(), id.UId)
-		if err != nil {
-			return nil, err
-		}
-		res = append(res, *_res)
-	}
-	return res, nil
+	return s.uRepo.GetUnitsOfProperty(context.Background(), id)
 }
 
 func (s *service) GetListingsOfProperty(id uuid.UUID, query *listing_dto.GetListingsOfPropertyQuery) ([]listing_model.ListingModel, error) {
@@ -179,6 +154,19 @@ func (s *service) CheckManageability(pid uuid.UUID, userId uuid.UUID) (bool, err
 	}
 	for _, manager := range managers {
 		if manager.ManagerID == userId {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
+func (s *service) CheckOwnership(pid uuid.UUID, userId uuid.UUID) (bool, error) {
+	managers, err := s.pRepo.GetPropertyManagers(context.Background(), pid)
+	if err != nil {
+		return false, err
+	}
+	for _, manager := range managers {
+		if manager.ManagerID == userId && manager.Role == "OWNER" {
 			return true, nil
 		}
 	}

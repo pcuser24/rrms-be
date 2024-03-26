@@ -9,7 +9,7 @@ import (
 	listing_http "github.com/user2410/rrms-backend/internal/domain/listing/http"
 	payment_http "github.com/user2410/rrms-backend/internal/domain/payment/http"
 	property_http "github.com/user2410/rrms-backend/internal/domain/property/http"
-	"github.com/user2410/rrms-backend/internal/domain/rental"
+	rental_http "github.com/user2410/rrms-backend/internal/domain/rental/http"
 	"github.com/user2410/rrms-backend/internal/domain/storage"
 	unit_http "github.com/user2410/rrms-backend/internal/domain/unit/http"
 )
@@ -29,9 +29,9 @@ func (c *serverCommand) setupHttpServer() {
 	listing_http.
 		NewAdapter(c.internalServices.ListingService, c.internalServices.PropertyService, c.internalServices.UnitService).
 		RegisterServer(apiRoute, c.tokenMaker)
-	rental.
+	rental_http.
 		NewAdapter(c.internalServices.RentalService).
-		RegisterServer(apiRoute)
+		RegisterServer(apiRoute, c.tokenMaker)
 	application_http.
 		NewAdapter(c.internalServices.ListingService, c.internalServices.ApplicationService).
 		RegisterServer(apiRoute, c.tokenMaker)

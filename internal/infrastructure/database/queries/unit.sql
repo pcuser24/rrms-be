@@ -68,6 +68,9 @@ SELECT * FROM unit_amenities WHERE unit_id = $1;
 -- name: GetUnitManagers :many
 SELECT * FROM property_managers WHERE property_id IN (SELECT property_id FROM units WHERE units.id = $1 LIMIT 1);
 
+-- name: GetUnitsOfProperty :many
+SELECT * FROM units WHERE property_id = $1;
+
 -- name: IsUnitPublic :one
 SELECT is_public FROM properties WHERE properties.id IN (SELECT property_id from units WHERE units.id = $1 LIMIT 1) LIMIT 1;
 

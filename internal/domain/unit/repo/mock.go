@@ -131,6 +131,21 @@ func (mr *MockRepoMockRecorder) GetUnitsByIds(arg0, arg1, arg2 any) *gomock.Call
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUnitsByIds", reflect.TypeOf((*MockRepo)(nil).GetUnitsByIds), arg0, arg1, arg2)
 }
 
+// GetUnitsOfProperty mocks base method.
+func (m *MockRepo) GetUnitsOfProperty(arg0 context.Context, arg1 uuid.UUID) ([]model.UnitModel, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetUnitsOfProperty", arg0, arg1)
+	ret0, _ := ret[0].([]model.UnitModel)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetUnitsOfProperty indicates an expected call of GetUnitsOfProperty.
+func (mr *MockRepoMockRecorder) GetUnitsOfProperty(arg0, arg1 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUnitsOfProperty", reflect.TypeOf((*MockRepo)(nil).GetUnitsOfProperty), arg0, arg1)
+}
+
 // IsPublic mocks base method.
 func (m *MockRepo) IsPublic(arg0 context.Context, arg1 uuid.UUID) (bool, error) {
 	m.ctrl.T.Helper()
