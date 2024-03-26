@@ -51,13 +51,6 @@ func (r *repo) CreateApplication(ctx context.Context, data *dto.CreateApplicatio
 	am = model.ToApplicationModel(&res)
 
 	err = func() error {
-		for _, u := range data.Units {
-			res, err := r.dao.CreateApplicationUnit(ctx, *u.ToCreateApplicationUnitDB(am.ID))
-			if err != nil {
-				return err
-			}
-			am.Units = append(am.Units, model.ApplicationUnitModel(res))
-		}
 		for _, m := range data.Minors {
 			res, err := r.dao.CreateApplicationMinor(ctx, *m.ToCreateApplicationMinorDB(am.ID))
 			if err != nil {
@@ -105,14 +98,6 @@ func (r *repo) GetApplicationById(ctx context.Context, id int64) (*model.Applica
 		return nil, err
 	}
 	a := model.ToApplicationModel(&res)
-
-	applicationUnits, err := r.dao.GetApplicationUnits(ctx, id)
-	if err != nil {
-		return nil, err
-	}
-	for _, au := range applicationUnits {
-		a.Units = append(a.Units, model.ApplicationUnitModel(au))
-	}
 
 	applicationMinors, err := r.dao.GetApplicationMinors(ctx, id)
 	if err != nil {
@@ -234,10 +219,6 @@ func (r *repo) GetApplicationsByIds(ctx context.Context, ids []int64, fields []s
 			scanningFields = append(scanningFields, &i.EmploymentMonthlyIncome)
 		case "employment_comment":
 			scanningFields = append(scanningFields, &i.EmploymentComment)
-		case "identity_type":
-			scanningFields = append(scanningFields, &i.IdentityType)
-		case "identity_number":
-			scanningFields = append(scanningFields, &i.IdentityNumber)
 		}
 	}
 	for rows.Next() {
@@ -254,15 +235,6 @@ func (r *repo) GetApplicationsByIds(ctx context.Context, ids []int64, fields []s
 	// get fk fields
 	for i := 0; i < len(items); i++ {
 		p := &items[i]
-		if slices.Contains(fkFields, "units") {
-			u, err := r.dao.GetApplicationUnits(ctx, p.ID)
-			if err != nil {
-				return nil, err
-			}
-			for _, mdb := range u {
-				p.Units = append(p.Units, model.ApplicationUnitModel(mdb))
-			}
-		}
 		if slices.Contains(fkFields, "minors") {
 			m, err := r.dao.GetApplicationMinors(ctx, p.ID)
 			if err != nil {

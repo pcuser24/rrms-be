@@ -90,12 +90,6 @@ func TestGetApplicationByIds(t *testing.T) {
 				require.Equal(t, p_1.EmploymentMonthlyIncome, p_2.EmploymentMonthlyIncome)
 			case "employment_comment":
 				require.Equal(t, p_1.EmploymentComment, p_2.EmploymentComment)
-			case "identity_type":
-				require.Equal(t, p_1.IdentityType, p_2.IdentityType)
-			case "identity_number":
-				require.Equal(t, p_1.IdentityNumber, p_2.IdentityNumber)
-			case "units":
-				require.Equal(t, (p_1.Units), (p_2.Units))
 			case "minors":
 				require.Equal(t, (p_1.Minors), (p_2.Minors))
 			case "coaps":

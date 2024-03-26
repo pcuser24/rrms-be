@@ -10,15 +10,6 @@ import (
 
 /***/
 
-type ApplicationUnitModel struct {
-	ApplicationID int64     `json:"applicationId"`
-	UnitID        uuid.UUID `json:"unitId"`
-	ListingPrice  int64     `json:"listingPrice"`
-	OfferedPrice  int64     `json:"offeredPrice"`
-}
-
-/***/
-
 type ApplicationMinorModel struct {
 	ApplicationID int64     `json:"applicationId" validate:"required"`
 	FullName      string    `json:"fullName" validate:"required"`
@@ -107,8 +98,12 @@ type ApplicationModel struct {
 	ID                      int64                      `json:"id"`
 	ListingID               uuid.UUID                  `json:"listingId"`
 	PropertyID              uuid.UUID                  `json:"propertyId"`
+	UnitID                  uuid.UUID                  `json:"unitId"`
+	ListingPrice            int64                      `json:"listingPrice"`
+	OfferedPrice            int64                      `json:"offeredPrice"`
 	Status                  database.APPLICATIONSTATUS `json:"status"`
 	CreatorID               uuid.UUID                  `json:"creatorId"`
+	TenantType              database.TENANTTYPE        `json:"tenantType"`
 	FullName                string                     `json:"fullName"`
 	Email                   string                     `json:"email"`
 	Phone                   string                     `json:"phone"`
@@ -117,6 +112,9 @@ type ApplicationModel struct {
 	MoveinDate              time.Time                  `json:"moveinDate"`
 	PreferredTerm           int32                      `json:"preferredTerm"`
 	RentalIntention         string                     `json:"rentalIntention"`
+	OrganizationName        *string                    `json:"organizationName"`
+	OrganizationHqAddress   *string                    `json:"organizationHqAddress"`
+	OrganizationScale       *string                    `json:"organizationScale"`
 	RhAddress               *string                    `json:"rhAddress"`
 	RhCity                  *string                    `json:"rhCity"`
 	RhDistrict              *string                    `json:"rhDistrict"`
@@ -130,14 +128,13 @@ type ApplicationModel struct {
 	EmploymentMonthlyIncome *int64                     `json:"employmentMonthlyIncome"`
 	EmploymentComment       *string                    `json:"employmentComment"`
 	// EmploymentProofsOfIncome []string                   `json:"employmentProofsOfIncome"`
-	IdentityType       string    `json:"identityType"`
-	IdentityNumber     string    `json:"identityNumber"`
-	IdentityIssuedDate time.Time `json:"identityIssuedDate"`
-	IdentityIssuedBy   string    `json:"identityIssuedBy"`
-	CreatedAt          time.Time `json:"createdAt"`
-	UpdatedAt          time.Time `json:"updatedAt"`
+	// IdentityType       string    `json:"identityType"`
+	// IdentityNumber     string    `json:"identityNumber"`
+	// IdentityIssuedDate time.Time `json:"identityIssuedDate"`
+	// IdentityIssuedBy   string    `json:"identityIssuedBy"`
+	CreatedAt time.Time `json:"createdAt"`
+	UpdatedAt time.Time `json:"updatedAt"`
 
-	Units    []ApplicationUnitModel  `json:"units"`
 	Minors   []ApplicationMinorModel `json:"minors"`
 	Coaps    []ApplicationCoapModel  `json:"coaps"`
 	Pets     []ApplicationPetModel   `json:"pets"`
@@ -150,15 +147,22 @@ func ToApplicationModel(a *database.Application) *ApplicationModel {
 		CreatorID:               types.NUUID(a.CreatorID),
 		ListingID:               a.ListingID,
 		PropertyID:              a.PropertyID,
+		UnitID:                  a.UnitID,
+		ListingPrice:            a.ListingPrice,
+		OfferedPrice:            a.OfferedPrice,
 		Status:                  a.Status,
+		TenantType:              a.TenantType,
 		FullName:                a.FullName,
 		Email:                   a.Email,
 		Phone:                   a.Phone,
-		Dob:                     a.Dob,
+		Dob:                     a.Dob.Time,
 		ProfileImage:            a.ProfileImage,
-		MoveinDate:              a.MoveinDate,
+		MoveinDate:              a.MoveinDate.Time,
 		PreferredTerm:           a.PreferredTerm,
 		RentalIntention:         a.RentalIntention,
+		OrganizationName:        types.PNStr(a.OrganizationName),
+		OrganizationHqAddress:   types.PNStr(a.OrganizationHqAddress),
+		OrganizationScale:       types.PNStr(a.OrganizationScale),
 		RhAddress:               types.PNStr(a.RhAddress),
 		RhCity:                  types.PNStr(a.RhCity),
 		RhDistrict:              types.PNStr(a.RhDistrict),
@@ -171,11 +175,8 @@ func ToApplicationModel(a *database.Application) *ApplicationModel {
 		EmploymentPosition:      types.PNStr(a.EmploymentPosition),
 		EmploymentMonthlyIncome: types.PNInt64(a.EmploymentMonthlyIncome),
 		EmploymentComment:       types.PNStr(a.EmploymentComment),
-		IdentityType:            a.IdentityType,
-		IdentityNumber:          a.IdentityNumber,
 		CreatedAt:               a.CreatedAt,
 		UpdatedAt:               a.UpdatedAt,
-		Units:                   make([]ApplicationUnitModel, 0),
 		Minors:                  make([]ApplicationMinorModel, 0),
 		Coaps:                   make([]ApplicationCoapModel, 0),
 		Pets:                    make([]ApplicationPetModel, 0),

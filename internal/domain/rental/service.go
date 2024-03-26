@@ -14,7 +14,6 @@ import (
 	"github.com/user2410/rrms-backend/internal/domain/rental/dto"
 	"github.com/user2410/rrms-backend/internal/domain/rental/model"
 	"github.com/user2410/rrms-backend/internal/domain/rental/repo"
-	unit_model "github.com/user2410/rrms-backend/internal/domain/unit/model"
 	unit_repo "github.com/user2410/rrms-backend/internal/domain/unit/repo"
 	"github.com/user2410/rrms-backend/internal/infrastructure/database"
 )
@@ -120,13 +119,9 @@ func (s *service) PrepareRentalContract(id int64, data *dto.PreparePreRentalCont
 		return nil, err
 	}
 
-	units := make([]unit_model.UnitModel, 0, len(a.Units))
-	for _, u := range a.Units {
-		unit, err := s.uRepo.GetUnitById(context.Background(), u.UnitID)
-		if err != nil {
-			return nil, err
-		}
-		units = append(units, *unit)
+	unit, err := s.uRepo.GetUnitById(context.Background(), a.UnitID)
+	if err != nil {
+		return nil, err
 	}
 
 	for _, m := range p.Managers {
@@ -140,7 +135,7 @@ func (s *service) PrepareRentalContract(id int64, data *dto.PreparePreRentalCont
 	}
 
 	// update contract
-	con, err := contract.RenderContractTemplate(pr, a, p, units, owner)
+	con, err := contract.RenderContractTemplate(pr, a, p, unit, owner)
 	if err != nil {
 		return nil, err
 	}

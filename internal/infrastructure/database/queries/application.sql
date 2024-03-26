@@ -3,7 +3,11 @@ INSERT INTO applications (
   creator_id,
   listing_id,
   property_id,
+  unit_id,
+  listing_price,
+  offered_price,
   -- basic info
+  tenant_type,
   full_name,
   dob,
   email,
@@ -12,6 +16,9 @@ INSERT INTO applications (
   movein_date,
   preferred_term,
   rental_intention,
+  organization_name,
+  organization_hq_address,
+  organization_scale,
   -- rental history
   rh_address,
   rh_city,
@@ -25,23 +32,30 @@ INSERT INTO applications (
   employment_company_name,
   employment_position,
   employment_monthly_income,
-  employment_comment,
+  employment_comment
   -- identity
-  identity_type,
-  identity_number
+  -- identity_type,
+  -- identity_number
 ) VALUES (
   sqlc.narg(creator_id),
   sqlc.arg(listing_id),
   sqlc.arg(property_id),
+  sqlc.arg(unit_id),
+  sqlc.arg(listing_price),
+  sqlc.arg(offered_price),
   -- basic info
+  sqlc.arg(tenant_type),
   sqlc.arg(full_name),
-  sqlc.arg(dob),
+  sqlc.narg(dob),
   sqlc.arg(email),
   sqlc.arg(phone),
   sqlc.arg(profile_image),
   sqlc.arg(movein_date),
   sqlc.arg(preferred_term),
   sqlc.arg(rental_intention),
+  sqlc.narg(organization_name),
+  sqlc.narg(organization_hq_address),
+  sqlc.narg(organization_scale),
   -- rental history
   sqlc.narg(rh_address),
   sqlc.narg(rh_city),
@@ -55,23 +69,10 @@ INSERT INTO applications (
   sqlc.narg(employment_company_name),
   sqlc.narg(employment_position),
   sqlc.narg(employment_monthly_income),
-  sqlc.narg(employment_comment),
+  sqlc.narg(employment_comment)
   -- identity
-  sqlc.arg(identity_type),
-  sqlc.arg(identity_number)
-) RETURNING *;
-
--- name: CreateApplicationUnit :one
-INSERT INTO application_units (
-  application_id,
-  unit_id,
-  listing_price,
-  offered_price
-) VALUES (
-  sqlc.arg(application_id),
-  sqlc.arg(unit_id),
-  sqlc.arg(listing_price),
-  sqlc.arg(offered_price)
+  -- sqlc.arg(identity_type),
+  -- sqlc.arg(identity_number)
 ) RETURNING *;
 
 -- name: CreateApplicationCoap :one
@@ -142,9 +143,6 @@ INSERT INTO application_vehicles (
 
 -- name: GetApplicationByID :one
 SELECT * FROM applications WHERE id = $1 LIMIT 1;
-
--- name: GetApplicationUnits :many
-SELECT * FROM application_units WHERE application_id = $1;
 
 -- name: GetApplicationMinors :many
 SELECT * FROM application_minors WHERE application_id = $1;

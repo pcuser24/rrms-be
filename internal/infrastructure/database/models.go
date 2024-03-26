@@ -552,17 +552,24 @@ type Application struct {
 	CreatorID               pgtype.UUID       `json:"creator_id"`
 	ListingID               uuid.UUID         `json:"listing_id"`
 	PropertyID              uuid.UUID         `json:"property_id"`
+	UnitID                  uuid.UUID         `json:"unit_id"`
+	ListingPrice            int64             `json:"listing_price"`
+	OfferedPrice            int64             `json:"offered_price"`
 	Status                  APPLICATIONSTATUS `json:"status"`
 	CreatedAt               time.Time         `json:"created_at"`
 	UpdatedAt               time.Time         `json:"updated_at"`
+	TenantType              TENANTTYPE        `json:"tenant_type"`
 	FullName                string            `json:"full_name"`
 	Email                   string            `json:"email"`
 	Phone                   string            `json:"phone"`
-	Dob                     time.Time         `json:"dob"`
+	Dob                     pgtype.Date       `json:"dob"`
 	ProfileImage            string            `json:"profile_image"`
-	MoveinDate              time.Time         `json:"movein_date"`
+	MoveinDate              pgtype.Date       `json:"movein_date"`
 	PreferredTerm           int32             `json:"preferred_term"`
 	RentalIntention         string            `json:"rental_intention"`
+	OrganizationName        pgtype.Text       `json:"organization_name"`
+	OrganizationHqAddress   pgtype.Text       `json:"organization_hq_address"`
+	OrganizationScale       pgtype.Text       `json:"organization_scale"`
 	RhAddress               pgtype.Text       `json:"rh_address"`
 	RhCity                  pgtype.Text       `json:"rh_city"`
 	RhDistrict              pgtype.Text       `json:"rh_district"`
@@ -575,8 +582,6 @@ type Application struct {
 	EmploymentPosition      pgtype.Text       `json:"employment_position"`
 	EmploymentMonthlyIncome pgtype.Int8       `json:"employment_monthly_income"`
 	EmploymentComment       pgtype.Text       `json:"employment_comment"`
-	IdentityType            string            `json:"identity_type"`
-	IdentityNumber          string            `json:"identity_number"`
 }
 
 type ApplicationCoap struct {
@@ -604,13 +609,6 @@ type ApplicationPet struct {
 	Type          string        `json:"type"`
 	Weight        pgtype.Float4 `json:"weight"`
 	Description   pgtype.Text   `json:"description"`
-}
-
-type ApplicationUnit struct {
-	ApplicationID int64     `json:"application_id"`
-	UnitID        uuid.UUID `json:"unit_id"`
-	ListingPrice  int64     `json:"listing_price"`
-	OfferedPrice  int64     `json:"offered_price"`
 }
 
 type ApplicationVehicle struct {

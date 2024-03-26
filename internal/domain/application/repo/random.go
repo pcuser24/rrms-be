@@ -84,8 +84,6 @@ func PrepareRandomApplication(
 		EmploymentPosition:      types.Ptr(random.RandomAlphabetStr(50)),
 		EmploymentMonthlyIncome: types.Ptr(random.RandomInt64(1000000, 10000000)),
 		EmploymentComment:       types.Ptr(random.RandomAlphabetStr(100)),
-		IdentityType:            identityTypes[random.RandomInt32(0, int32(len(identityTypes)-1))],
-		IdentityNumber:          random.RandomAlphabetStr(50),
 		Minors: []dto.CreateApplicationMinor{
 			{
 				FullName:    random.RandomAlphabetStr(50),
@@ -150,13 +148,6 @@ func PrepareRandomApplication(
 			},
 		},
 	}
-	for _, u := range unitIds {
-		ret.Units = append(ret.Units, dto.CreateApplicationUnit{
-			UnitID:       u,
-			ListingPrice: random.RandomInt64(1000000, 10000000),
-			OfferedPrice: random.RandomInt64(1000000, 10000000),
-		})
-	}
 
 	return ret
 }
@@ -187,8 +178,6 @@ func sameApplications(t *testing.T, a1, a2 *model.ApplicationModel) {
 	require.Equal(t, a1.EmploymentPosition, a2.EmploymentPosition)
 	require.Equal(t, a1.EmploymentMonthlyIncome, a2.EmploymentMonthlyIncome)
 	require.Equal(t, a1.EmploymentComment, a2.EmploymentComment)
-	require.Equal(t, a1.IdentityType, a2.IdentityType)
-	require.Equal(t, a1.IdentityNumber, a2.IdentityNumber)
 
 	require.Equal(t, len(a1.Minors), len(a2.Minors))
 	pmCmp := func(m1, m2 model.ApplicationMinorModel) int {
@@ -270,8 +259,6 @@ func NewRandomApplicationModel(
 		EmploymentPosition:      types.Ptr(random.RandomAlphabetStr(50)),
 		EmploymentMonthlyIncome: types.Ptr(random.RandomInt64(1000000, 10000000)),
 		EmploymentComment:       types.Ptr(random.RandomAlphabetStr(100)),
-		IdentityType:            identityTypes[random.RandomInt32(0, int32(len(identityTypes)-1))],
-		IdentityNumber:          random.RandomAlphabetStr(50),
 		Minors: []model.ApplicationMinorModel{
 			{
 				ApplicationID: id,
@@ -343,14 +330,6 @@ func NewRandomApplicationModel(
 				Description:   types.Ptr(random.RandomAlphabetStr(100)),
 			},
 		},
-	}
-	for _, u := range unitIds {
-		ret.Units = append(ret.Units, model.ApplicationUnitModel{
-			ApplicationID: id,
-			UnitID:        u,
-			ListingPrice:  random.RandomInt64(1000000, 10000000),
-			OfferedPrice:  random.RandomInt64(1000000, 10000000),
-		})
 	}
 
 	return ret

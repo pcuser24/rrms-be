@@ -40,7 +40,7 @@ func RenderContractTemplate(
 	prerental *model.PrerentalModel,
 	application *application_model.ApplicationModel,
 	property *property_model.PropertyModel,
-	units []unit_model.UnitModel,
+	unit *unit_model.UnitModel,
 	owner *auth_model.UserModel,
 ) (string, error) {
 	templateFile := basePath + pType2Template[property.Type]
@@ -75,17 +75,16 @@ func RenderContractTemplate(
 		UAreaStr          string
 		UFloor            string
 	}{
-		Date:           html_util.NewHTMLTime(time.Now()),
-		OwnerName:      mediumPlaceHolder,
-		OwnerAddress:   mediumPlaceHolder,
-		OwnerPhone:     mediumPlaceHolder,
-		OwnerEmail:     mediumPlaceHolder,
-		TenantName:     mediumPlaceHolder,
-		TenantDOB:      html_util.NewHTMLTime(prerental.TenantDob),
-		TenantIdentity: mediumPlaceHolder,
-		TenantAddress:  mediumPlaceHolder,
-		TenantPhone:    mediumPlaceHolder,
-		TenantEmail:    mediumPlaceHolder,
+		Date:          html_util.NewHTMLTime(time.Now()),
+		OwnerName:     mediumPlaceHolder,
+		OwnerAddress:  mediumPlaceHolder,
+		OwnerPhone:    mediumPlaceHolder,
+		OwnerEmail:    mediumPlaceHolder,
+		TenantName:    mediumPlaceHolder,
+		TenantDOB:     html_util.NewHTMLTime(prerental.TenantDob),
+		TenantAddress: mediumPlaceHolder,
+		TenantPhone:   mediumPlaceHolder,
+		TenantEmail:   mediumPlaceHolder,
 		// MoveinDate:        mediumPlaceHolder,
 		// StartDate:         mediumPlaceHolder,
 		// EndDate:           mediumPlaceHolder,
@@ -100,14 +99,13 @@ func RenderContractTemplate(
 		PArea:             fmt.Sprintf("%f", property.Area),
 		PBuilding:         mediumPlaceHolder,
 		PProject:          mediumPlaceHolder,
-		UName:             mediumPlaceHolder,
-		UArea:             shortPlaceHolder,
+		UName:             unit.Name,
+		UArea:             fmt.Sprintf("%f", unit.Area),
 		UAreaStr:          shortPlaceHolder,
 		UFloor:            shortPlaceHolder,
 	}
 	if application != nil {
 		data.TenantName = application.FullName
-		data.TenantIdentity = application.IdentityNumber
 		data.TenantEmail = application.Email
 		data.TenantPhone = application.Phone
 		data.MoveinDate = utils.Ternary(application.MoveinDate.IsZero(), html_util.NewHTMLTime(time.Now()), html_util.NewHTMLTime(application.MoveinDate))

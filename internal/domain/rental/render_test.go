@@ -17,26 +17,26 @@ func TestRenderHtml(t *testing.T) {
 		pr    model.PrerentalModel
 		a     application_model.ApplicationModel
 		p     property_model.PropertyModel
-		units []unit_model.UnitModel
+		unit  *unit_model.UnitModel
 		owner *auth_model.UserModel
 	)
 	p.Type = "APARTMENT"
-	res, err := contract.RenderContractTemplate(&pr, &a, &p, units, owner)
+	res, err := contract.RenderContractTemplate(&pr, &a, &p, unit, owner)
 	require.NoError(t, err)
 	t.Log(res)
 
 	p.Type = "ROOM"
-	res, err = contract.RenderContractTemplate(&pr, &a, &p, units, owner)
+	res, err = contract.RenderContractTemplate(&pr, &a, &p, unit, owner)
 	require.NoError(t, err)
 	t.Log(res)
 
 	p.Type = "PRIVATE"
-	res, err = contract.RenderContractTemplate(&pr, &a, &p, units, owner)
+	res, err = contract.RenderContractTemplate(&pr, &a, &p, unit, owner)
 	require.NoError(t, err)
 	t.Log(res)
 
 	p.Type = "OFFICE"
-	res, err = contract.RenderContractTemplate(&pr, &a, &p, units, owner)
+	res, err = contract.RenderContractTemplate(&pr, &a, &p, unit, owner)
 	require.NoError(t, err)
 	t.Log(res)
 

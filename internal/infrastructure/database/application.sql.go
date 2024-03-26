@@ -59,7 +59,11 @@ INSERT INTO applications (
   creator_id,
   listing_id,
   property_id,
+  unit_id,
+  listing_price,
+  offered_price,
   -- basic info
+  tenant_type,
   full_name,
   dob,
   email,
@@ -68,6 +72,9 @@ INSERT INTO applications (
   movein_date,
   preferred_term,
   rental_intention,
+  organization_name,
+  organization_hq_address,
+  organization_scale,
   -- rental history
   rh_address,
   rh_city,
@@ -81,24 +88,23 @@ INSERT INTO applications (
   employment_company_name,
   employment_position,
   employment_monthly_income,
-  employment_comment,
+  employment_comment
   -- identity
-  identity_type,
-  identity_number
+  -- identity_type,
+  -- identity_number
 ) VALUES (
   $1,
   $2,
   $3,
-  -- basic info
   $4,
   $5,
   $6,
+  -- basic info
   $7,
   $8,
   $9,
   $10,
   $11,
-  -- rental history
   $12,
   $13,
   $14,
@@ -106,30 +112,45 @@ INSERT INTO applications (
   $16,
   $17,
   $18,
-  -- employment
+  -- rental history
   $19,
   $20,
   $21,
   $22,
   $23,
-  -- identity
   $24,
-  $25
-) RETURNING id, creator_id, listing_id, property_id, status, created_at, updated_at, full_name, email, phone, dob, profile_image, movein_date, preferred_term, rental_intention, rh_address, rh_city, rh_district, rh_ward, rh_rental_duration, rh_monthly_payment, rh_reason_for_leaving, employment_status, employment_company_name, employment_position, employment_monthly_income, employment_comment, identity_type, identity_number
+  $25,
+  -- employment
+  $26,
+  $27,
+  $28,
+  $29,
+  $30
+  -- identity
+  -- sqlc.arg(identity_type),
+  -- sqlc.arg(identity_number)
+) RETURNING id, creator_id, listing_id, property_id, unit_id, listing_price, offered_price, status, created_at, updated_at, tenant_type, full_name, email, phone, dob, profile_image, movein_date, preferred_term, rental_intention, organization_name, organization_hq_address, organization_scale, rh_address, rh_city, rh_district, rh_ward, rh_rental_duration, rh_monthly_payment, rh_reason_for_leaving, employment_status, employment_company_name, employment_position, employment_monthly_income, employment_comment
 `
 
 type CreateApplicationParams struct {
 	CreatorID               pgtype.UUID `json:"creator_id"`
 	ListingID               uuid.UUID   `json:"listing_id"`
 	PropertyID              uuid.UUID   `json:"property_id"`
+	UnitID                  uuid.UUID   `json:"unit_id"`
+	ListingPrice            int64       `json:"listing_price"`
+	OfferedPrice            int64       `json:"offered_price"`
+	TenantType              TENANTTYPE  `json:"tenant_type"`
 	FullName                string      `json:"full_name"`
-	Dob                     time.Time   `json:"dob"`
+	Dob                     pgtype.Date `json:"dob"`
 	Email                   string      `json:"email"`
 	Phone                   string      `json:"phone"`
 	ProfileImage            string      `json:"profile_image"`
-	MoveinDate              time.Time   `json:"movein_date"`
+	MoveinDate              pgtype.Date `json:"movein_date"`
 	PreferredTerm           int32       `json:"preferred_term"`
 	RentalIntention         string      `json:"rental_intention"`
+	OrganizationName        pgtype.Text `json:"organization_name"`
+	OrganizationHqAddress   pgtype.Text `json:"organization_hq_address"`
+	OrganizationScale       pgtype.Text `json:"organization_scale"`
 	RhAddress               pgtype.Text `json:"rh_address"`
 	RhCity                  pgtype.Text `json:"rh_city"`
 	RhDistrict              pgtype.Text `json:"rh_district"`
@@ -142,8 +163,6 @@ type CreateApplicationParams struct {
 	EmploymentPosition      pgtype.Text `json:"employment_position"`
 	EmploymentMonthlyIncome pgtype.Int8 `json:"employment_monthly_income"`
 	EmploymentComment       pgtype.Text `json:"employment_comment"`
-	IdentityType            string      `json:"identity_type"`
-	IdentityNumber          string      `json:"identity_number"`
 }
 
 func (q *Queries) CreateApplication(ctx context.Context, arg CreateApplicationParams) (Application, error) {
@@ -151,6 +170,10 @@ func (q *Queries) CreateApplication(ctx context.Context, arg CreateApplicationPa
 		arg.CreatorID,
 		arg.ListingID,
 		arg.PropertyID,
+		arg.UnitID,
+		arg.ListingPrice,
+		arg.OfferedPrice,
+		arg.TenantType,
 		arg.FullName,
 		arg.Dob,
 		arg.Email,
@@ -159,6 +182,9 @@ func (q *Queries) CreateApplication(ctx context.Context, arg CreateApplicationPa
 		arg.MoveinDate,
 		arg.PreferredTerm,
 		arg.RentalIntention,
+		arg.OrganizationName,
+		arg.OrganizationHqAddress,
+		arg.OrganizationScale,
 		arg.RhAddress,
 		arg.RhCity,
 		arg.RhDistrict,
@@ -171,8 +197,6 @@ func (q *Queries) CreateApplication(ctx context.Context, arg CreateApplicationPa
 		arg.EmploymentPosition,
 		arg.EmploymentMonthlyIncome,
 		arg.EmploymentComment,
-		arg.IdentityType,
-		arg.IdentityNumber,
 	)
 	var i Application
 	err := row.Scan(
@@ -180,9 +204,13 @@ func (q *Queries) CreateApplication(ctx context.Context, arg CreateApplicationPa
 		&i.CreatorID,
 		&i.ListingID,
 		&i.PropertyID,
+		&i.UnitID,
+		&i.ListingPrice,
+		&i.OfferedPrice,
 		&i.Status,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.TenantType,
 		&i.FullName,
 		&i.Email,
 		&i.Phone,
@@ -191,6 +219,9 @@ func (q *Queries) CreateApplication(ctx context.Context, arg CreateApplicationPa
 		&i.MoveinDate,
 		&i.PreferredTerm,
 		&i.RentalIntention,
+		&i.OrganizationName,
+		&i.OrganizationHqAddress,
+		&i.OrganizationScale,
 		&i.RhAddress,
 		&i.RhCity,
 		&i.RhDistrict,
@@ -203,8 +234,6 @@ func (q *Queries) CreateApplication(ctx context.Context, arg CreateApplicationPa
 		&i.EmploymentPosition,
 		&i.EmploymentMonthlyIncome,
 		&i.EmploymentComment,
-		&i.IdentityType,
-		&i.IdentityNumber,
 	)
 	return i, err
 }
@@ -353,44 +382,6 @@ func (q *Queries) CreateApplicationPet(ctx context.Context, arg CreateApplicatio
 	return i, err
 }
 
-const createApplicationUnit = `-- name: CreateApplicationUnit :one
-INSERT INTO application_units (
-  application_id,
-  unit_id,
-  listing_price,
-  offered_price
-) VALUES (
-  $1,
-  $2,
-  $3,
-  $4
-) RETURNING application_id, unit_id, listing_price, offered_price
-`
-
-type CreateApplicationUnitParams struct {
-	ApplicationID int64     `json:"application_id"`
-	UnitID        uuid.UUID `json:"unit_id"`
-	ListingPrice  int64     `json:"listing_price"`
-	OfferedPrice  int64     `json:"offered_price"`
-}
-
-func (q *Queries) CreateApplicationUnit(ctx context.Context, arg CreateApplicationUnitParams) (ApplicationUnit, error) {
-	row := q.db.QueryRow(ctx, createApplicationUnit,
-		arg.ApplicationID,
-		arg.UnitID,
-		arg.ListingPrice,
-		arg.OfferedPrice,
-	)
-	var i ApplicationUnit
-	err := row.Scan(
-		&i.ApplicationID,
-		&i.UnitID,
-		&i.ListingPrice,
-		&i.OfferedPrice,
-	)
-	return i, err
-}
-
 const createApplicationVehicle = `-- name: CreateApplicationVehicle :one
 INSERT INTO application_vehicles (
   application_id,
@@ -444,7 +435,7 @@ func (q *Queries) DeleteApplication(ctx context.Context, id int64) error {
 }
 
 const getApplicationByID = `-- name: GetApplicationByID :one
-SELECT id, creator_id, listing_id, property_id, status, created_at, updated_at, full_name, email, phone, dob, profile_image, movein_date, preferred_term, rental_intention, rh_address, rh_city, rh_district, rh_ward, rh_rental_duration, rh_monthly_payment, rh_reason_for_leaving, employment_status, employment_company_name, employment_position, employment_monthly_income, employment_comment, identity_type, identity_number FROM applications WHERE id = $1 LIMIT 1
+SELECT id, creator_id, listing_id, property_id, unit_id, listing_price, offered_price, status, created_at, updated_at, tenant_type, full_name, email, phone, dob, profile_image, movein_date, preferred_term, rental_intention, organization_name, organization_hq_address, organization_scale, rh_address, rh_city, rh_district, rh_ward, rh_rental_duration, rh_monthly_payment, rh_reason_for_leaving, employment_status, employment_company_name, employment_position, employment_monthly_income, employment_comment FROM applications WHERE id = $1 LIMIT 1
 `
 
 func (q *Queries) GetApplicationByID(ctx context.Context, id int64) (Application, error) {
@@ -455,9 +446,13 @@ func (q *Queries) GetApplicationByID(ctx context.Context, id int64) (Application
 		&i.CreatorID,
 		&i.ListingID,
 		&i.PropertyID,
+		&i.UnitID,
+		&i.ListingPrice,
+		&i.OfferedPrice,
 		&i.Status,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.TenantType,
 		&i.FullName,
 		&i.Email,
 		&i.Phone,
@@ -466,6 +461,9 @@ func (q *Queries) GetApplicationByID(ctx context.Context, id int64) (Application
 		&i.MoveinDate,
 		&i.PreferredTerm,
 		&i.RentalIntention,
+		&i.OrganizationName,
+		&i.OrganizationHqAddress,
+		&i.OrganizationScale,
 		&i.RhAddress,
 		&i.RhCity,
 		&i.RhDistrict,
@@ -478,8 +476,6 @@ func (q *Queries) GetApplicationByID(ctx context.Context, id int64) (Application
 		&i.EmploymentPosition,
 		&i.EmploymentMonthlyIncome,
 		&i.EmploymentComment,
-		&i.IdentityType,
-		&i.IdentityNumber,
 	)
 	return i, err
 }
@@ -566,35 +562,6 @@ func (q *Queries) GetApplicationPets(ctx context.Context, applicationID int64) (
 			&i.Type,
 			&i.Weight,
 			&i.Description,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
-const getApplicationUnits = `-- name: GetApplicationUnits :many
-SELECT application_id, unit_id, listing_price, offered_price FROM application_units WHERE application_id = $1
-`
-
-func (q *Queries) GetApplicationUnits(ctx context.Context, applicationID int64) ([]ApplicationUnit, error) {
-	rows, err := q.db.Query(ctx, getApplicationUnits, applicationID)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []ApplicationUnit
-	for rows.Next() {
-		var i ApplicationUnit
-		if err := rows.Scan(
-			&i.ApplicationID,
-			&i.UnitID,
-			&i.ListingPrice,
-			&i.OfferedPrice,
 		); err != nil {
 			return nil, err
 		}
