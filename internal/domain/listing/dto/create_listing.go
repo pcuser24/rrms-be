@@ -44,7 +44,8 @@ type CreateListing struct {
 	Priority          int32                 `json:"priority" validate:"required,gte=1,lte=5"`
 	PostDuration      int                   `json:"postDuration" validate:"required"`
 	Policies          []CreateListingPolicy `json:"policies" validate:"dive"`
-	Units             []CreateListingUnit   `json:"units" validate:"dive"`
+	Units             []CreateListingUnit   `json:"units" validate:"required,dive"`
+	Tags              []string              `json:"tags" validate:"dive"`
 }
 
 func (c *CreateListing) ToCreateListingDB() *database.CreateListingParams {

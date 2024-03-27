@@ -18,6 +18,7 @@ type Repo interface {
 	GetListingsByIds(ctx context.Context, ids []string, fields []string) ([]model.ListingModel, error)
 	GetListingByID(ctx context.Context, id uuid.UUID) (*model.ListingModel, error)
 	UpdateListing(ctx context.Context, data *dto.UpdateListing) error
+	UpdateListingStatus(ctx context.Context, id uuid.UUID, active bool) error
 	DeleteListing(ctx context.Context, id uuid.UUID) error
 	CheckListingOwnership(ctx context.Context, lid uuid.UUID, uid uuid.UUID) (bool, error)
 	CheckValidUnitForListing(ctx context.Context, lid uuid.UUID, uid uuid.UUID) (bool, error)
@@ -43,25 +44,37 @@ func (r *repo) CreateListing(ctx context.Context, data *dto.CreateListing) (*mod
 	lm = model.ToListingModel(&res)
 
 	err = func() error {
+		for i := 0; i < len(data.Units); i++ {
+			u := &data.Units[i]
+			lu, err := r.dao.CreateListingUnit(ctx, database.CreateListingUnitParams{
+				ListingID: lm.ID,
+				UnitID:    u.UnitID,
+				Price:     u.Price,
+			})
+			if err != nil {
+				return err
+			}
+			lm.Units = append(lm.Units, model.ListingUnitModel(lu))
+		}
+
 		for i := 0; i < len(data.Policies); i++ {
 			p := &data.Policies[i]
 			lp, err := r.dao.CreateListingPolicy(ctx, *p.ToCreateListingPolicyDB(lm.ID))
 			if err != nil {
 				return err
 			}
-			lm.Policies = append(lm.Policies, *model.ToListingPolicyModel(&lp))
+			lm.Policies = append(lm.Policies, model.ToListingPolicyModel(&lp))
 		}
 
-		for i := 0; i < len(data.Units); i++ {
-			u := &data.Units[i]
-			lu, err := r.dao.CreateListingUnit(ctx, database.CreateListingUnitParams{
+		for i := 0; i < len(data.Tags); i++ {
+			lt, err := r.dao.CreateListingTag(ctx, database.CreateListingTagParams{
 				ListingID: lm.ID,
-				UnitID:    u.UnitID,
+				Tag:       data.Tags[i],
 			})
 			if err != nil {
 				return err
 			}
-			lm.Units = append(lm.Units, model.ListingUnitModel(lu))
+			lm.Tags = append(lm.Tags, model.ListingTagModel(lt))
 		}
 
 		return nil
@@ -174,7 +187,16 @@ func (r *repo) GetListingsByIds(ctx context.Context, ids []string, fields []stri
 				return nil, err
 			}
 			for _, i := range p {
-				l.Policies = append(l.Policies, *model.ToListingPolicyModel(&i))
+				l.Policies = append(l.Policies, model.ToListingPolicyModel(&i))
+			}
+		}
+		if slices.Contains(fkFields, "tags") {
+			t, err := r.dao.GetListingTags(ctx, l.ID)
+			if err != nil {
+				return nil, err
+			}
+			for _, i := range t {
+				l.Tags = append(l.Tags, model.ListingTagModel(i))
 			}
 		}
 	}
@@ -195,7 +217,7 @@ func (r *repo) GetListingByID(ctx context.Context, id uuid.UUID) (*model.Listing
 		return nil, err
 	}
 	for _, i := range p {
-		res.Policies = append(res.Policies, *model.ToListingPolicyModel(&i))
+		res.Policies = append(res.Policies, model.ToListingPolicyModel(&i))
 	}
 
 	u, err := r.dao.GetListingUnits(ctx, id)
@@ -206,11 +228,26 @@ func (r *repo) GetListingByID(ctx context.Context, id uuid.UUID) (*model.Listing
 		res.Units = append(res.Units, model.ListingUnitModel(i))
 	}
 
+	t, err := r.dao.GetListingTags(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	for _, i := range t {
+		res.Tags = append(res.Tags, model.ListingTagModel(i))
+	}
+
 	return res, nil
 }
 
 func (r *repo) UpdateListing(ctx context.Context, data *dto.UpdateListing) error {
 	return r.dao.UpdateListing(ctx, *data.ToUpdateListingDB())
+}
+
+func (r *repo) UpdateListingStatus(ctx context.Context, id uuid.UUID, active bool) error {
+	return r.dao.UpdateListingStatus(ctx, database.UpdateListingStatusParams{
+		ID:     id,
+		Active: active,
+	})
 }
 
 func (r *repo) DeleteListing(ctx context.Context, lid uuid.UUID) error {

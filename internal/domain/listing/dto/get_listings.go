@@ -11,7 +11,7 @@ import (
 
 const ListingFieldsLocalKey = "listingFields"
 
-var retrievableFields = []string{"creator_id", "property_id", "title", "description", "full_name", "email", "phone", "contact_type", "price", "price_negotiable", "security_deposit", "lease_term", "pets_allowed", "number_of_residents", "priority", "active", "created_at", "updated_at", "expired_at", "policies", "units"}
+var retrievableFields = []string{"creator_id", "property_id", "title", "description", "full_name", "email", "phone", "contact_type", "price", "price_negotiable", "security_deposit", "lease_term", "pets_allowed", "number_of_residents", "priority", "active", "created_at", "updated_at", "expired_at", "policies", "units", "tags"}
 
 func GetRetrievableFields() []string {
 	rfs := make([]string, len(retrievableFields))

@@ -36,7 +36,7 @@ type server struct {
 }
 
 func newTestServer(t *testing.T, repo repo.Repo) *server {
-	vnpService := vnpay.NewVnpayService(repo, conf.VnpTmnCode, conf.VnpHashSecret, conf.VnpUrl, conf.VnpApi)
+	vnpService := vnpay.NewVnpayService(repo, nil, conf.VnpTmnCode, conf.VnpHashSecret, conf.VnpUrl, conf.VnpApi)
 	paymentService := service.NewService(repo)
 
 	httpServer := http.NewServer(

@@ -14,7 +14,6 @@ import (
 	payment_dto "github.com/user2410/rrms-backend/internal/domain/payment/dto"
 	payment_model "github.com/user2410/rrms-backend/internal/domain/payment/model"
 	payment_repo "github.com/user2410/rrms-backend/internal/domain/payment/repo"
-	property_dto "github.com/user2410/rrms-backend/internal/domain/property/dto"
 	property_repo "github.com/user2410/rrms-backend/internal/domain/property/repo"
 	"github.com/user2410/rrms-backend/internal/interfaces/rest/requests"
 	"github.com/user2410/rrms-backend/internal/utils"
@@ -56,19 +55,7 @@ func NewService(
 }
 
 func (s *service) CreateListing(data *dto.CreateListing) (*model.ListingModel, error) {
-	listing, err := s.lRepo.CreateListing(context.Background(), data)
-	if err != nil {
-		return nil, err
-	}
-	err = s.pRepo.UpdateProperty(context.Background(), &property_dto.UpdateProperty{
-		ID:       listing.PropertyID,
-		IsPublic: types.Ptr(true),
-	})
-	if err != nil {
-		return listing, err
-	}
-
-	return listing, nil
+	return s.lRepo.CreateListing(context.Background(), data)
 }
 
 func (s *service) SearchListingCombination(data *dto.SearchListingCombinationQuery) (*dto.SearchListingCombinationResponse, error) {
@@ -141,7 +128,7 @@ func (s *service) CreateListingPayment(data *dto.CreateListingPayment) (*payment
 	}
 	params.Amount = amount
 
-	params.OrderInfo = fmt.Sprintf("[CREATE_LISTING-%s] Phi dang tin nha cho thue", data.ListingId.String())
+	params.OrderInfo = fmt.Sprintf("[CREATELISTING-%s] Phi dang tin nha cho thue", data.ListingId.String())
 	params.Items = []payment_dto.CreatePaymentItem{
 		{
 			Name:     "Phi dang tin",

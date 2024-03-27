@@ -60,6 +60,15 @@ INSERT INTO listing_units (
   sqlc.arg(price)
 ) RETURNING *;
 
+-- name: CreateListingTag :one
+INSERT INTO listing_tags (
+  listing_id,
+  tag
+) VALUES (
+  sqlc.arg(listing_id),
+  sqlc.arg(tag)
+) RETURNING *;
+
 -- name: GetListingByID :one
 SELECT * FROM listings WHERE id = $1 LIMIT 1;
 
@@ -69,6 +78,10 @@ SELECT * FROM listing_policies WHERE listing_id = $1;
 -- name: GetListingUnits :many
 SELECT * FROM listing_units WHERE listing_id = $1;
 
+-- name: GetListingTags :many
+SELECT * FROM listing_tags WHERE listing_id = $1;
+
+-- Get expired / active listings
 -- name: GetListingsOfProperty :many
 SELECT id
 FROM listings
@@ -113,7 +126,11 @@ UPDATE listings SET
 WHERE id = sqlc.arg(id);
 
 -- name: UpdateListingStatus :exec
-UPDATE listings SET active = $1 WHERE id = $2;
+UPDATE listings 
+SET 
+  active = $1,
+  updated_at = NOW()
+ WHERE id = $2;
 
 -- name: DeleteListing :exec
 DELETE FROM listings WHERE id = $1;

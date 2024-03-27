@@ -71,6 +71,7 @@ func (c *serverCommand) setupInternalServices(
 	c.internalServices.StorageService = storage.NewService(s)
 	c.internalServices.VnpService = vnp_service.NewVnpayService(
 		paymentRepo,
+		listingRepo,
 		c.config.VnpTmnCode,
 		c.config.VnpHashSecret,
 		c.config.VnpUrl,

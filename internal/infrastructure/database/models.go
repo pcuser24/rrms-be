@@ -652,6 +652,12 @@ type ListingPolicy struct {
 	Note      pgtype.Text `json:"note"`
 }
 
+type ListingTag struct {
+	ID        int64     `json:"id"`
+	ListingID uuid.UUID `json:"listing_id"`
+	Tag       string    `json:"tag"`
+}
+
 type ListingUnit struct {
 	ListingID uuid.UUID `json:"listing_id"`
 	UnitID    uuid.UUID `json:"unit_id"`

@@ -185,6 +185,28 @@ func (q *Queries) CreateListingPolicy(ctx context.Context, arg CreateListingPoli
 	return i, err
 }
 
+const createListingTag = `-- name: CreateListingTag :one
+INSERT INTO listing_tags (
+  listing_id,
+  tag
+) VALUES (
+  $1,
+  $2
+) RETURNING id, listing_id, tag
+`
+
+type CreateListingTagParams struct {
+	ListingID uuid.UUID `json:"listing_id"`
+	Tag       string    `json:"tag"`
+}
+
+func (q *Queries) CreateListingTag(ctx context.Context, arg CreateListingTagParams) (ListingTag, error) {
+	row := q.db.QueryRow(ctx, createListingTag, arg.ListingID, arg.Tag)
+	var i ListingTag
+	err := row.Scan(&i.ID, &i.ListingID, &i.Tag)
+	return i, err
+}
+
 const createListingUnit = `-- name: CreateListingUnit :one
 INSERT INTO listing_units (
   listing_id,
@@ -299,6 +321,30 @@ func (q *Queries) GetListingPolicies(ctx context.Context, listingID uuid.UUID) (
 	return items, nil
 }
 
+const getListingTags = `-- name: GetListingTags :many
+SELECT id, listing_id, tag FROM listing_tags WHERE listing_id = $1
+`
+
+func (q *Queries) GetListingTags(ctx context.Context, listingID uuid.UUID) ([]ListingTag, error) {
+	rows, err := q.db.Query(ctx, getListingTags, listingID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListingTag
+	for rows.Next() {
+		var i ListingTag
+		if err := rows.Scan(&i.ID, &i.ListingID, &i.Tag); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getListingUnits = `-- name: GetListingUnits :many
 SELECT listing_id, unit_id, price FROM listing_units WHERE listing_id = $1
 `
@@ -344,6 +390,7 @@ type GetListingsOfPropertyParams struct {
 	Offset     int32       `json:"offset"`
 }
 
+// Get expired / active listings
 func (q *Queries) GetListingsOfProperty(ctx context.Context, arg GetListingsOfPropertyParams) ([]uuid.UUID, error) {
 	rows, err := q.db.Query(ctx, getListingsOfProperty,
 		arg.PropertyID,
@@ -424,7 +471,11 @@ func (q *Queries) UpdateListing(ctx context.Context, arg UpdateListingParams) er
 }
 
 const updateListingStatus = `-- name: UpdateListingStatus :exec
-UPDATE listings SET active = $1 WHERE id = $2
+UPDATE listings 
+SET 
+  active = $1,
+  updated_at = NOW()
+ WHERE id = $2
 `
 
 type UpdateListingStatusParams struct {

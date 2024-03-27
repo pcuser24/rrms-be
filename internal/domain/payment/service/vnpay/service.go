@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	listing_repo "github.com/user2410/rrms-backend/internal/domain/listing/repo"
 	"github.com/user2410/rrms-backend/internal/domain/payment/dto"
 	"github.com/user2410/rrms-backend/internal/domain/payment/repo"
 	"github.com/user2410/rrms-backend/internal/infrastructure/database"
@@ -24,15 +25,20 @@ import (
 
 type Service struct {
 	repo          repo.Repo
+	lRepo         listing_repo.Repo
 	vnpTmnCode    string
 	vnpHashSecret string
 	vnpUrl        string
 	vnpApi        string
 }
 
-func NewVnpayService(repo repo.Repo, vnpTmnCode string, vnpHashSecret string, vnpUrl string, vnpApi string) *Service {
+func NewVnpayService(
+	repo repo.Repo, lRepo listing_repo.Repo,
+	vnpTmnCode string, vnpHashSecret string, vnpUrl string, vnpApi string,
+) *Service {
 	return &Service{
 		repo:          repo,
+		lRepo:         lRepo,
 		vnpTmnCode:    vnpTmnCode,
 		vnpHashSecret: vnpHashSecret,
 		vnpUrl:        vnpUrl,
@@ -54,7 +60,7 @@ func (s *Service) CreatePaymentUrl(ipAddr string, userId uuid.UUID, paymentId in
 	if payment.UserID != userId {
 		return "", ErrUnauthorizedUser
 	}
-	if payment.Status != "PENDING" {
+	if payment.Status == "COMPLETED" {
 		return "", ErrBadStatusPayment
 	}
 
@@ -129,7 +135,7 @@ func (s *Service) Return(query map[string]string) error {
 	}
 
 	// TODO: compare with data in database
-	// get paymentId from query["vnp_OrderInfo"]. order info is in this format "[paymentId]orderInfo"
+	// get paymentId from query["vnp_OrderInfo"]. query["vnp_OrderInfo"] is in this format "[paymentId][paymentType]orderInfo"
 	var paymentId int64
 	orderInfo := query["vnp_OrderInfo"]
 	end := strings.Index(orderInfo, "]")
@@ -141,7 +147,7 @@ func (s *Service) Return(query map[string]string) error {
 		paymentId = id
 	}
 
-	return s.repo.UpdatePayment(context.Background(), &dto.UpdatePayment{
+	paymentUpdatePayload := dto.UpdatePayment{
 		ID:      paymentId,
 		OrderId: types.Ptr(query["vnp_TxnRef"]),
 		Status: types.Ptr(database.PAYMENTSTATUS(
@@ -150,7 +156,14 @@ func (s *Service) Return(query map[string]string) error {
 				"SUCCESS", "FAILED",
 			),
 		)),
-	})
+	}
+
+	err := s.handleReturn(orderInfo[end+1:], *paymentUpdatePayload.Status == "SUCCESS")
+	if err != nil {
+		return err
+	}
+
+	return s.repo.UpdatePayment(context.Background(), &paymentUpdatePayload)
 }
 
 type IpnReturn struct {

@@ -73,4 +73,11 @@ CREATE TABLE IF NOT EXISTS "listing_policies" (
 ALTER TABLE "listing_policies" ADD CONSTRAINT "listing_policies_listing_id_fkey" FOREIGN KEY ("listing_id") REFERENCES "listings"("id") ON DELETE CASCADE;
 ALTER TABLE "listing_policies" ADD CONSTRAINT "listing_policies_policy_id_fkey" FOREIGN KEY ("policy_id") REFERENCES "rental_policies"("id") ON DELETE CASCADE;
 
+CREATE TABLE IF NOT EXISTS "listing_tags" (
+  "id" BIGSERIAL PRIMARY KEY,
+  "listing_id" UUID NOT NULL,
+  "tag" VARCHAR(32) NOT NULL
+);
+ALTER TABLE "listing_tags" ADD CONSTRAINT "listing_tags_listing_id_fkey" FOREIGN KEY ("listing_id") REFERENCES "listings"("id") ON DELETE CASCADE;
+
 END;

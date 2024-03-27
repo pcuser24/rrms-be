@@ -27,6 +27,7 @@ type Querier interface {
 	CreateApplicationVehicle(ctx context.Context, arg CreateApplicationVehicleParams) (ApplicationVehicle, error)
 	CreateListing(ctx context.Context, arg CreateListingParams) (Listing, error)
 	CreateListingPolicy(ctx context.Context, arg CreateListingPolicyParams) (ListingPolicy, error)
+	CreateListingTag(ctx context.Context, arg CreateListingTagParams) (ListingTag, error)
 	CreateListingUnit(ctx context.Context, arg CreateListingUnitParams) (ListingUnit, error)
 	CreateMessage(ctx context.Context, arg CreateMessageParams) (Message, error)
 	CreateMsgGroup(ctx context.Context, arg CreateMsgGroupParams) (MsgGroup, error)
@@ -75,7 +76,9 @@ type Querier interface {
 	GetApplicationsToUser(ctx context.Context, arg GetApplicationsToUserParams) ([]int64, error)
 	GetListingByID(ctx context.Context, id uuid.UUID) (Listing, error)
 	GetListingPolicies(ctx context.Context, listingID uuid.UUID) ([]ListingPolicy, error)
+	GetListingTags(ctx context.Context, listingID uuid.UUID) ([]ListingTag, error)
 	GetListingUnits(ctx context.Context, listingID uuid.UUID) ([]ListingUnit, error)
+	// Get expired / active listings
 	GetListingsOfProperty(ctx context.Context, arg GetListingsOfPropertyParams) ([]uuid.UUID, error)
 	GetManagedProperties(ctx context.Context, managerID uuid.UUID) ([]GetManagedPropertiesRow, error)
 	GetMessagesOfGroup(ctx context.Context, arg GetMessagesOfGroupParams) ([]Message, error)

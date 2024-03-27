@@ -8,6 +8,38 @@ import (
 	"github.com/user2410/rrms-backend/internal/utils/types"
 )
 
+type ListingPolicyModel struct {
+	ListingID uuid.UUID `json:"listingId"`
+	PolicyID  int64     `json:"policyId"`
+	Note      *string   `json:"note"`
+}
+
+func ToListingPolicyModel(lp *database.ListingPolicy) ListingPolicyModel {
+	lm := ListingPolicyModel{
+		ListingID: lp.ListingID,
+		PolicyID:  lp.PolicyID,
+	}
+
+	if lp.Note.Valid {
+		val := lp.Note.String
+		lm.Note = &val
+	}
+
+	return lm
+}
+
+type ListingUnitModel struct {
+	ListingID uuid.UUID `json:"listingId"`
+	UnitID    uuid.UUID `json:"unitId"`
+	Price     int64     `json:"price"`
+}
+
+type ListingTagModel struct {
+	ID        int64     `json:"id"`
+	ListingID uuid.UUID `json:"listingId"`
+	Tag       string    `json:"tag"`
+}
+
 type ListingModel struct {
 	ID          uuid.UUID `json:"id"`
 	CreatorID   uuid.UUID `json:"creatorId"`
@@ -35,6 +67,7 @@ type ListingModel struct {
 	ExpiredAt time.Time            `json:"expiredAt"`
 	Policies  []ListingPolicyModel `json:"policies"`
 	Units     []ListingUnitModel   `json:"units"`
+	Tags      []ListingTagModel    `json:"tags"`
 }
 
 func ToListingModel(ldb *database.Listing) *ListingModel {
