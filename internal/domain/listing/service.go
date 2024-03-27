@@ -58,12 +58,14 @@ func (s *service) CreateListing(data *dto.CreateListing) (*model.ListingModel, e
 	return s.lRepo.CreateListing(context.Background(), data)
 }
 
-func (s *service) SearchListingCombination(data *dto.SearchListingCombinationQuery) (*dto.SearchListingCombinationResponse, error) {
-	data.SortBy = types.Ptr(utils.PtrDerefence[string](data.SortBy, "created_at"))
-	data.Order = types.Ptr(utils.PtrDerefence[string](data.Order, "desc"))
-	data.Limit = types.Ptr(utils.PtrDerefence[int32](data.Limit, 1000))
-	data.Offset = types.Ptr(utils.PtrDerefence[int32](data.Offset, 0))
-	return s.lRepo.SearchListingCombination(context.Background(), data)
+func (s *service) SearchListingCombination(q *dto.SearchListingCombinationQuery) (*dto.SearchListingCombinationResponse, error) {
+	if len(q.SortBy) == 0 {
+		q.SortBy = append(q.SortBy, "listings.created_at", "listings.priority")
+		q.Order = append(q.Order, "desc", "desc")
+	}
+	q.Limit = types.Ptr(utils.PtrDerefence(q.Limit, 1000))
+	q.Offset = types.Ptr(utils.PtrDerefence(q.Offset, 0))
+	return s.lRepo.SearchListingCombination(context.Background(), q)
 }
 
 func (s *service) GetListingByID(id uuid.UUID) (*model.ListingModel, error) {
@@ -97,13 +99,13 @@ func (s *service) CheckValidUnitForListing(lid uuid.UUID, uid uuid.UUID) (bool, 
 func (s *service) GetListingsOfUser(userId uuid.UUID, fields []string) ([]model.ListingModel, error) {
 	myListings, err := s.lRepo.SearchListingCombination(context.Background(), &dto.SearchListingCombinationQuery{
 		SearchListingQuery: dto.SearchListingQuery{
-			LCreatorID: types.Ptr[string](userId.String()),
+			LCreatorID: types.Ptr(userId.String()),
 		},
 		SearchSortPaginationQuery: requests.SearchSortPaginationQuery{
 			Limit:  types.Ptr[int32](1000),
 			Offset: types.Ptr[int32](0),
-			SortBy: types.Ptr[string]("created_at"),
-			Order:  types.Ptr[string]("desc"),
+			// SortBy: types.Ptr[string]("created_at"),
+			// Order:  types.Ptr[string]("desc"),
 		},
 	})
 	if err != nil {

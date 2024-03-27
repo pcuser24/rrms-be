@@ -25,6 +25,7 @@ type SearchListingQuery struct {
 	LPriority             *int32     `json:"lpriority"`
 	LActive               *bool      `json:"lactive"`
 	LPolicies             []int32    `json:"lpolicies"`
+	LTags                 []string   `query:"ptags" validate:"omitempty"`
 	LMinCreatedAt         *time.Time `json:"lminCreatedAt"`
 	LMaxCreatedAt         *time.Time `json:"lmaxCreatedAt"`
 	LMinUpdatedAt         *time.Time `json:"lminUpdatedAt"`
@@ -42,6 +43,8 @@ type SearchListingCombinationQuery struct {
 	unitDTO.SearchUnitQuery
 }
 
+var ErrMismatchSortOrder = fiber.NewError(400, "mismatch sort order")
+
 func (q *SearchListingCombinationQuery) QueryParser(ctx *fiber.Ctx) error {
 	err := ctx.QueryParser(q)
 	if err != nil {
@@ -50,18 +53,18 @@ func (q *SearchListingCombinationQuery) QueryParser(ctx *fiber.Ctx) error {
 	if len(q.PTypes) == 1 {
 		q.PTypes = strings.Split(q.PTypes[0], ",")
 	}
-	// if len(q.PFeatures) == 1 {
-	// 	q.PFeatures = strings.Split(q.PFeatures[0], ",")
-	// }
-	if len(q.PTags) == 1 {
-		q.PTags = strings.Split(q.PTags[0], ",")
+	if len(q.LTags) == 1 {
+		q.LTags = strings.Split(q.LTags[0], ",")
 	}
-	// if len(q.LPolicies) == 1 {
-	// 	q.LPolicies = strings.Split(q.LPolicies[0], ",")
-	// }
-	// if len(q.UAmenities) == 1 {
-	// 	q.UAmenities = strings.Split(q.UAmenities[0], ",")
-	// }
+
+	if len(q.SortBy) != len(q.Order) {
+		return ErrMismatchSortOrder
+	}
+	if len(q.SortBy) > 3 {
+		q.SortBy = q.SortBy[:3]
+		q.Order = q.Order[:3]
+	}
+
 	return nil
 }
 
@@ -73,7 +76,7 @@ type SearchListingCombinationResponse struct {
 	Count  uint32                         `json:"count"`
 	Limit  int32                          `json:"limit"`
 	Offset int32                          `json:"offset"`
-	SortBy string                         `json:"sortby"`
-	Order  string                         `json:"order"`
+	SortBy []string                       `json:"sortby"`
+	Order  []string                       `json:"order"`
 	Items  []SearchListingCombinationItem `json:"items"`
 }

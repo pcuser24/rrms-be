@@ -15,10 +15,19 @@ type XValidator struct {
 }
 
 type ErrorResponse struct {
-	Error       bool
+	IsError     bool
 	FailedField string
 	Tag         string
 	Value       interface{}
+}
+
+func (e ErrorResponse) Error() string {
+	return fmt.Sprintf(
+		"[%s]: '%v' | Needs to implement '%s'",
+		e.FailedField,
+		e.Value,
+		e.Tag,
+	)
 }
 
 type ErrorMessage struct {
@@ -58,7 +67,7 @@ func ValidateStruct(v *validator.Validate, data interface{}) []ErrorResponse {
 			elem.FailedField = err.Field() // Export struct field name
 			elem.Tag = err.Tag()           // Export struct tag
 			elem.Value = err.Value()       // Export field value
-			elem.Error = true
+			elem.IsError = true
 
 			validationErrors = append(validationErrors, elem)
 		}

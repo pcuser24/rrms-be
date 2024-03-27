@@ -1,4 +1,4 @@
-package sqlbuilders
+package sqlbuild
 
 import (
 	"fmt"
@@ -6,6 +6,7 @@ import (
 
 	"github.com/huandu/go-sqlbuilder"
 	"github.com/user2410/rrms-backend/internal/domain/property/dto"
+	unit_sqlbuild "github.com/user2410/rrms-backend/internal/domain/unit/repo/sqlbuild"
 	"github.com/user2410/rrms-backend/internal/utils"
 )
 
@@ -101,10 +102,6 @@ func SearchPropertyBuilder(
 		searchQueries = append(searchQueries, "EXISTS (SELECT 1 FROM property_features WHERE property_id = properties.id AND feature_id IN ($?))")
 		args = append(args, sqlbuilder.List(query.PFeatures))
 	}
-	if len(query.PTags) > 0 {
-		searchQueries = append(searchQueries, "EXISTS (SELECT 1 FROM property_tags WHERE property_id = properties.id AND tag IN ($?))")
-		args = append(args, sqlbuilder.List(query.PTags))
-	}
 
 	// no field is specified and check exisence only
 	if len(searchQueries) == 0 && searchFields[0] == "1" {
@@ -130,7 +127,7 @@ func SearchPropertyCombinationBuilder(query *dto.SearchPropertyCombinationQuery)
 		&query.SearchPropertyQuery,
 		"", "",
 	)
-	sqlUnit, argsUnit := SearchUnitBuilder([]string{"1"}, &query.SearchUnitQuery, "", "properties.id")
+	sqlUnit, argsUnit := unit_sqlbuild.SearchUnitBuilder([]string{"1"}, &query.SearchUnitQuery, "", "properties.id")
 
 	var queryStr string = sqlProp
 	var argsLs []interface{} = argsProp
@@ -145,7 +142,13 @@ func SearchPropertyCombinationBuilder(query *dto.SearchPropertyCombinationQuery)
 
 	sql, args := sqlbuilder.Build(queryStr, argsLs...).Build()
 	sqSql := utils.SequelizePlaceholders(sql)
-	sqSql += fmt.Sprintf(" ORDER BY %v %v", *query.SortBy, *query.Order)
+
+	sqSql += " ORDER BY "
+	sortOrders := make([]string, 0, len(query.SortBy))
+	for i := 0; i < len(query.SortBy); i++ {
+		sortOrders = append(sortOrders, fmt.Sprintf("%v %v", query.SortBy[i], query.Order[i]))
+	}
+	sqSql += strings.Join(sortOrders, ", ")
 	sqSql += fmt.Sprintf(" LIMIT %v", *query.Limit)
 	sqSql += fmt.Sprintf(" OFFSET %v", *query.Offset)
 

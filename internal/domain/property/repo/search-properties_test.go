@@ -15,8 +15,8 @@ import (
 var defaultSearchSortPaginationQuery = requests.SearchSortPaginationQuery{
 	Limit:  types.Ptr[int32](1000),
 	Offset: types.Ptr[int32](0),
-	SortBy: types.Ptr[string]("created_at"),
-	Order:  types.Ptr[string]("desc"),
+	// SortBy: types.Ptr[string]("created_at"),
+	// Order:  types.Ptr[string]("desc"),
 }
 
 func TestSearchPropertyCombination(t *testing.T) {

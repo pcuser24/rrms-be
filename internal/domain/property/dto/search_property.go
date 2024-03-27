@@ -28,7 +28,6 @@ type SearchPropertyQuery struct {
 	PMinFacade      *int32     `query:"pfacade" validate:"omitempty"`
 	PIsPublic       *bool      `query:"pisPublic" validate:"omitempty"`
 	PFeatures       []int32    `query:"pfeatures" validate:"omitempty"`
-	PTags           []string   `query:"ptags" validate:"omitempty"`
 	PMinCreatedAt   *time.Time `query:"pminCreatedAt" validate:"omitempty"`
 	PMaxCreatedAt   *time.Time `query:"pmaxCreatedAt" validate:"omitempty"`
 	PMinUpdatedAt   *time.Time `query:"pminUpdatedAt" validate:"omitempty"`
@@ -49,12 +48,6 @@ func (q *SearchPropertyCombinationQuery) QueryParser(ctx *fiber.Ctx) error {
 	if len(q.PTypes) == 1 {
 		q.PTypes = strings.Split(q.PTypes[0], ",")
 	}
-	// if len(q.PFeatures) == 1 {
-	// 	q.PFeatures = strings.Split(q.PFeatures[0], ",")
-	// }
-	if len(q.PTags) == 1 {
-		q.PTags = strings.Split(q.PTags[0], ",")
-	}
 	return nil
 }
 
@@ -66,7 +59,7 @@ type SearchPropertyCombinationResponse struct {
 	Count  uint32                          `json:"count"`
 	Limit  int32                           `json:"limit"`
 	Offset int32                           `json:"offset"`
-	SortBy string                          `json:"sortby"`
-	Order  string                          `json:"order"`
+	SortBy []string                        `json:"sortby"`
+	Order  []string                        `json:"order"`
 	Items  []SearchPropertyCombinationItem `json:"items"`
 }

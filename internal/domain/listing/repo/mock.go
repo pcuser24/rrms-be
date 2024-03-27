@@ -174,3 +174,17 @@ func (mr *MockRepoMockRecorder) UpdateListing(arg0, arg1 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateListing", reflect.TypeOf((*MockRepo)(nil).UpdateListing), arg0, arg1)
 }
+
+// UpdateListingStatus mocks base method.
+func (m *MockRepo) UpdateListingStatus(arg0 context.Context, arg1 uuid.UUID, arg2 bool) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateListingStatus", arg0, arg1, arg2)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpdateListingStatus indicates an expected call of UpdateListingStatus.
+func (mr *MockRepoMockRecorder) UpdateListingStatus(arg0, arg1, arg2 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateListingStatus", reflect.TypeOf((*MockRepo)(nil).UpdateListingStatus), arg0, arg1, arg2)
+}

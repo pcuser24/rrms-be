@@ -233,10 +233,12 @@ func (s *service) GetManagedProperties(userId uuid.UUID, fields []string) ([]Get
 	return res, nil
 }
 
-func (s *service) SearchListingCombination(data *property_dto.SearchPropertyCombinationQuery) (*property_dto.SearchPropertyCombinationResponse, error) {
-	data.SortBy = types.Ptr(utils.PtrDerefence[string](data.SortBy, "created_at"))
-	data.Order = types.Ptr(utils.PtrDerefence[string](data.Order, "desc"))
-	data.Limit = types.Ptr(utils.PtrDerefence[int32](data.Limit, 1000))
-	data.Offset = types.Ptr(utils.PtrDerefence[int32](data.Offset, 0))
-	return s.pRepo.SearchPropertyCombination(context.Background(), data)
+func (s *service) SearchListingCombination(q *property_dto.SearchPropertyCombinationQuery) (*property_dto.SearchPropertyCombinationResponse, error) {
+	if len(q.SortBy) == 0 {
+		q.SortBy = append(q.SortBy, "properties.created_at")
+		q.Order = append(q.Order, "desc")
+	}
+	q.Limit = types.Ptr(utils.PtrDerefence(q.Limit, 1000))
+	q.Offset = types.Ptr(utils.PtrDerefence(q.Offset, 0))
+	return s.pRepo.SearchPropertyCombination(context.Background(), q)
 }

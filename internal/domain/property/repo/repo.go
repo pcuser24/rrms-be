@@ -12,8 +12,8 @@ import (
 	listing_dto "github.com/user2410/rrms-backend/internal/domain/listing/dto"
 	property_dto "github.com/user2410/rrms-backend/internal/domain/property/dto"
 	property_model "github.com/user2410/rrms-backend/internal/domain/property/model"
+	"github.com/user2410/rrms-backend/internal/domain/property/repo/sqlbuild"
 	"github.com/user2410/rrms-backend/internal/infrastructure/database"
-	sqlbuilders "github.com/user2410/rrms-backend/internal/infrastructure/database/sql_builders"
 	"github.com/user2410/rrms-backend/internal/utils/types"
 )
 
@@ -114,7 +114,7 @@ func (r *repo) CreateProperty(ctx context.Context, data *property_dto.CreateProp
 }
 
 func (r *repo) SearchPropertyCombination(ctx context.Context, query *property_dto.SearchPropertyCombinationQuery) (*property_dto.SearchPropertyCombinationResponse, error) {
-	sqSql, args := sqlbuilders.SearchPropertyCombinationBuilder(query)
+	sqSql, args := sqlbuild.SearchPropertyCombinationBuilder(query)
 	rows, err := r.dao.Query(context.Background(), sqSql, args...)
 	if err != nil {
 		return nil, err
@@ -139,8 +139,8 @@ func (r *repo) SearchPropertyCombination(ctx context.Context, query *property_dt
 
 	return &property_dto.SearchPropertyCombinationResponse{
 		Count:  res1.Count,
-		SortBy: *query.SortBy,
-		Order:  *query.Order,
+		SortBy: query.SortBy,
+		Order:  query.Order,
 		Offset: *query.Offset,
 		Limit:  *query.Limit,
 		Items:  res1.Items,

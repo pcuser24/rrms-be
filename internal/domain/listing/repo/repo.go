@@ -8,8 +8,8 @@ import (
 	"github.com/huandu/go-sqlbuilder"
 	"github.com/user2410/rrms-backend/internal/domain/listing/dto"
 	"github.com/user2410/rrms-backend/internal/domain/listing/model"
+	"github.com/user2410/rrms-backend/internal/domain/listing/repo/sqlbuild"
 	"github.com/user2410/rrms-backend/internal/infrastructure/database"
-	sqlbuilders "github.com/user2410/rrms-backend/internal/infrastructure/database/sql_builders"
 )
 
 type Repo interface {
@@ -285,7 +285,7 @@ func (r *repo) CheckListingExpired(ctx context.Context, lid uuid.UUID) (bool, er
 }
 
 func (r *repo) SearchListingCombination(ctx context.Context, query *dto.SearchListingCombinationQuery) (*dto.SearchListingCombinationResponse, error) {
-	sqSql, args := sqlbuilders.SearchListingCombinationBuilder(query)
+	sqSql, args := sqlbuild.SearchListingCombinationBuilder(query)
 	rows, err := r.dao.Query(context.Background(), sqSql, args...)
 	if err != nil {
 		return nil, err
@@ -309,8 +309,8 @@ func (r *repo) SearchListingCombination(ctx context.Context, query *dto.SearchLi
 	}
 
 	return &dto.SearchListingCombinationResponse{
-		SortBy: *query.SortBy,
-		Order:  *query.Order,
+		SortBy: query.SortBy,
+		Order:  query.Order,
 		Limit:  *query.Limit,
 		Offset: *query.Offset,
 		Items:  res1.Items,

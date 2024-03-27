@@ -9,8 +9,8 @@ import (
 	"github.com/huandu/go-sqlbuilder"
 	"github.com/user2410/rrms-backend/internal/domain/unit/dto"
 	"github.com/user2410/rrms-backend/internal/domain/unit/model"
+	"github.com/user2410/rrms-backend/internal/domain/unit/repo/sqlbuild"
 	"github.com/user2410/rrms-backend/internal/infrastructure/database"
-	sqlbuilders "github.com/user2410/rrms-backend/internal/infrastructure/database/sql_builders"
 	"github.com/user2410/rrms-backend/internal/utils"
 	"github.com/user2410/rrms-backend/internal/utils/types"
 )
@@ -138,7 +138,7 @@ func (r *repo) GetUnitsOfProperty(ctx context.Context, pid uuid.UUID) ([]model.U
 }
 
 func (r *repo) SearchUnitCombination(ctx context.Context, query *dto.SearchUnitCombinationQuery) (*dto.SearchUnitCombinationResponse, error) {
-	sqlUnit, argsUnit := sqlbuilders.SearchUnitBuilder(
+	sqlUnit, argsUnit := sqlbuild.SearchUnitBuilder(
 		[]string{"units.id", "count(*) OVER() AS full_count"},
 		&query.SearchUnitQuery,
 		"", "",
@@ -146,7 +146,7 @@ func (r *repo) SearchUnitCombination(ctx context.Context, query *dto.SearchUnitC
 
 	sql, args := sqlbuilder.Build(sqlUnit, argsUnit...).Build()
 	sqSql := utils.SequelizePlaceholders(sql)
-	sqSql += fmt.Sprintf(" ORDER BY %v %v", utils.PtrDerefence[string](query.SortBy, "created_at"), utils.PtrDerefence[string](query.Order, "desc"))
+	// sqSql += fmt.Sprintf(" ORDER BY %v %v", utils.PtrDerefence[string](query.SortBy, "created_at"), utils.PtrDerefence[string](query.Order, "desc"))
 	sqSql += fmt.Sprintf(" LIMIT %v", utils.PtrDerefence[int32](query.Limit, 1000))
 	sqSql += fmt.Sprintf(" OFFSET %v", utils.PtrDerefence[int32](query.Offset, 0))
 	rows, err := r.dao.Query(context.Background(), sqSql, args...)

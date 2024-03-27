@@ -1,4 +1,4 @@
-package sqlbuilders
+package sqlbuild
 
 import (
 	"fmt"
@@ -6,6 +6,8 @@ import (
 
 	"github.com/huandu/go-sqlbuilder"
 	"github.com/user2410/rrms-backend/internal/domain/listing/dto"
+	property_sqlbuild "github.com/user2410/rrms-backend/internal/domain/property/repo/sqlbuild"
+	unit_sqlbuild "github.com/user2410/rrms-backend/internal/domain/unit/repo/sqlbuild"
 	"github.com/user2410/rrms-backend/internal/utils"
 )
 
@@ -131,8 +133,8 @@ func SearchListingCombinationBuilder(query *dto.SearchListingCombinationQuery) (
 		&query.SearchListingQuery,
 		"", "", "",
 	)
-	sqlProp, argsProp := SearchPropertyBuilder([]string{"1"}, &query.SearchPropertyQuery, "listings.property_id", "")
-	sqlUnit, argsUnit := SearchUnitBuilder([]string{"1"}, &query.SearchUnitQuery, "", "listings.property_id")
+	sqlProp, argsProp := property_sqlbuild.SearchPropertyBuilder([]string{"1"}, &query.SearchPropertyQuery, "listings.property_id", "")
+	sqlUnit, argsUnit := unit_sqlbuild.SearchUnitBuilder([]string{"1"}, &query.SearchUnitQuery, "", "listings.property_id")
 
 	var queryStr string = sqlListing
 	var argsLs []any = argsListing
@@ -164,7 +166,12 @@ func SearchListingCombinationBuilder(query *dto.SearchListingCombinationQuery) (
 	sql, args := sqlbuilder.Build(queryStr, argsLs...).Build()
 	sqSql := utils.SequelizePlaceholders(sql)
 
-	sqSql += fmt.Sprintf(" ORDER BY %v %v", *query.SortBy, *query.Order)
+	sqSql += " ORDER BY "
+	sortOrders := make([]string, 0, len(query.SortBy))
+	for i := 0; i < len(query.SortBy); i++ {
+		sortOrders = append(sortOrders, fmt.Sprintf("%v %v", query.SortBy[i], query.Order[i]))
+	}
+	sqSql += strings.Join(sortOrders, ", ")
 	sqSql += fmt.Sprintf(" LIMIT %v", *query.Limit)
 	sqSql += fmt.Sprintf(" OFFSET %v", *query.Offset)
 

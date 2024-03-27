@@ -19,22 +19,6 @@ func GetRetrievableFields() []string {
 	return rfs
 }
 
-type GetPropertiesByIdsQuery struct {
-	GetPropertiesQuery
-	IDs []uuid.UUID `query:"propIds" validate:"required,dive,uuid4"`
-}
-
-func (q *GetPropertiesByIdsQuery) QueryParser(ctx *fiber.Ctx) error {
-	err := ctx.QueryParser(q)
-	if err != nil {
-		return err
-	}
-	if len(q.Fields) == 1 {
-		q.Fields = strings.Split(q.Fields[0], ",")
-	}
-	return nil
-}
-
 type GetPropertiesQuery struct {
 	Fields []string `query:"fields" validate:"propertyFields"`
 }
@@ -48,6 +32,19 @@ func (q *GetPropertiesQuery) QueryParser(ctx *fiber.Ctx) error {
 		q.Fields = strings.Split(q.Fields[0], ",")
 	}
 	return nil
+}
+
+type GetPropertiesByIdsQuery struct {
+	GetPropertiesQuery
+	IDs []uuid.UUID `query:"propIds" validate:"required,dive,uuid4"`
+}
+
+func (q *GetPropertiesByIdsQuery) QueryParser(ctx *fiber.Ctx) error {
+	err := ctx.QueryParser(q)
+	if err != nil {
+		return err
+	}
+	return q.GetPropertiesQuery.QueryParser(ctx)
 }
 
 func ValidateQuery(fl validator.FieldLevel) bool {
