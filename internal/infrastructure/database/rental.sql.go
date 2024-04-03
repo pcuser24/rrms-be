@@ -12,30 +12,30 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
-const createPreRental = `-- name: CreatePreRental :one
-INSERT INTO prerentals (
+const createRental = `-- name: CreateRental :one
+INSERT INTO rentals (
   application_id,
   creator_id,
-  tenant_id,
-  profile_image,
   property_id,
   unit_id,
+  profile_image,
+  
+  tenant_id,
   tenant_type,
   tenant_name,
-  tenant_dob,
-  tenant_identity,
   tenant_phone,
   tenant_email,
-  tenant_address,
-  contract_type,
-  contract_content,
-  contract_last_update_by,
-  land_area,
-  unit_area,
+
   start_date,
   movein_date,
   rental_period,
   rental_price,
+
+  electricity_payment_type,
+  electricity_price,
+  water_payment_type,
+  water_price,
+
   note
 ) VALUES (
   $1,
@@ -43,112 +43,100 @@ INSERT INTO prerentals (
   $3,
   $4,
   $5,
+  
   $6,
   $7,
   $8,
   $9,
   $10,
+
   $11,
   $12,
   $13,
   $14,
+
   $15,
-  $2,
   $16,
   $17,
   $18,
-  $19,
-  $20,
-  $21,
-  $22
-) RETURNING id, creator_id, property_id, unit_id, application_id, tenant_id, profile_image, tenant_type, tenant_name, tenant_identity, tenant_dob, tenant_phone, tenant_email, tenant_address, contract_type, contract_content, contract_last_update_at, contract_last_update_by, land_area, unit_area, start_date, movein_date, rental_period, rental_price, status, note
+
+  $19
+) RETURNING id, creator_id, property_id, unit_id, application_id, profile_image, tenant_id, tenant_type, tenant_name, tenant_phone, tenant_email, start_date, movein_date, rental_period, rental_price, electricity_payment_type, electricity_price, water_payment_type, water_price, note
 `
 
-type CreatePreRentalParams struct {
-	ApplicationID   pgtype.Int8      `json:"application_id"`
-	CreatorID       uuid.UUID        `json:"creator_id"`
-	TenantID        pgtype.UUID      `json:"tenant_id"`
-	ProfileImage    string           `json:"profile_image"`
-	PropertyID      uuid.UUID        `json:"property_id"`
-	UnitID          uuid.UUID        `json:"unit_id"`
-	TenantType      TENANTTYPE       `json:"tenant_type"`
-	TenantName      string           `json:"tenant_name"`
-	TenantDob       pgtype.Date      `json:"tenant_dob"`
-	TenantIdentity  string           `json:"tenant_identity"`
-	TenantPhone     string           `json:"tenant_phone"`
-	TenantEmail     string           `json:"tenant_email"`
-	TenantAddress   pgtype.Text      `json:"tenant_address"`
-	ContractType    NullCONTRACTTYPE `json:"contract_type"`
-	ContractContent pgtype.Text      `json:"contract_content"`
-	LandArea        float32          `json:"land_area"`
-	UnitArea        float32          `json:"unit_area"`
-	StartDate       pgtype.Date      `json:"start_date"`
-	MoveinDate      pgtype.Date      `json:"movein_date"`
-	RentalPeriod    int32            `json:"rental_period"`
-	RentalPrice     float32          `json:"rental_price"`
-	Note            pgtype.Text      `json:"note"`
+type CreateRentalParams struct {
+	ApplicationID          pgtype.Int8   `json:"application_id"`
+	CreatorID              uuid.UUID     `json:"creator_id"`
+	PropertyID             uuid.UUID     `json:"property_id"`
+	UnitID                 uuid.UUID     `json:"unit_id"`
+	ProfileImage           string        `json:"profile_image"`
+	TenantID               pgtype.UUID   `json:"tenant_id"`
+	TenantType             TENANTTYPE    `json:"tenant_type"`
+	TenantName             string        `json:"tenant_name"`
+	TenantPhone            string        `json:"tenant_phone"`
+	TenantEmail            string        `json:"tenant_email"`
+	StartDate              pgtype.Date   `json:"start_date"`
+	MoveinDate             pgtype.Date   `json:"movein_date"`
+	RentalPeriod           int32         `json:"rental_period"`
+	RentalPrice            float32       `json:"rental_price"`
+	ElectricityPaymentType string        `json:"electricity_payment_type"`
+	ElectricityPrice       pgtype.Float4 `json:"electricity_price"`
+	WaterPaymentType       string        `json:"water_payment_type"`
+	WaterPrice             pgtype.Float4 `json:"water_price"`
+	Note                   pgtype.Text   `json:"note"`
 }
 
-func (q *Queries) CreatePreRental(ctx context.Context, arg CreatePreRentalParams) (Prerental, error) {
-	row := q.db.QueryRow(ctx, createPreRental,
+func (q *Queries) CreateRental(ctx context.Context, arg CreateRentalParams) (Rental, error) {
+	row := q.db.QueryRow(ctx, createRental,
 		arg.ApplicationID,
 		arg.CreatorID,
-		arg.TenantID,
-		arg.ProfileImage,
 		arg.PropertyID,
 		arg.UnitID,
+		arg.ProfileImage,
+		arg.TenantID,
 		arg.TenantType,
 		arg.TenantName,
-		arg.TenantDob,
-		arg.TenantIdentity,
 		arg.TenantPhone,
 		arg.TenantEmail,
-		arg.TenantAddress,
-		arg.ContractType,
-		arg.ContractContent,
-		arg.LandArea,
-		arg.UnitArea,
 		arg.StartDate,
 		arg.MoveinDate,
 		arg.RentalPeriod,
 		arg.RentalPrice,
+		arg.ElectricityPaymentType,
+		arg.ElectricityPrice,
+		arg.WaterPaymentType,
+		arg.WaterPrice,
 		arg.Note,
 	)
-	var i Prerental
+	var i Rental
 	err := row.Scan(
 		&i.ID,
 		&i.CreatorID,
 		&i.PropertyID,
 		&i.UnitID,
 		&i.ApplicationID,
-		&i.TenantID,
 		&i.ProfileImage,
+		&i.TenantID,
 		&i.TenantType,
 		&i.TenantName,
-		&i.TenantIdentity,
-		&i.TenantDob,
 		&i.TenantPhone,
 		&i.TenantEmail,
-		&i.TenantAddress,
-		&i.ContractType,
-		&i.ContractContent,
-		&i.ContractLastUpdateAt,
-		&i.ContractLastUpdateBy,
-		&i.LandArea,
-		&i.UnitArea,
 		&i.StartDate,
 		&i.MoveinDate,
 		&i.RentalPeriod,
 		&i.RentalPrice,
-		&i.Status,
+		&i.ElectricityPaymentType,
+		&i.ElectricityPrice,
+		&i.WaterPaymentType,
+		&i.WaterPrice,
 		&i.Note,
 	)
 	return i, err
 }
 
-const createPreRentalCoap = `-- name: CreatePreRentalCoap :one
-INSERT INTO prerental_coaps (
-  prerental_id,
+const createRentalCoap = `-- name: CreateRentalCoap :one
+INSERT INTO rental_coaps (
+  rental_id,
   full_name,
   dob,
   job,
@@ -165,11 +153,11 @@ INSERT INTO prerental_coaps (
   $6,
   $7,
   $8
-) RETURNING prerental_id, full_name, dob, job, income, email, phone, description
+) RETURNING rental_id, full_name, dob, job, income, email, phone, description
 `
 
-type CreatePreRentalCoapParams struct {
-	PrerentalID int64       `json:"prerental_id"`
+type CreateRentalCoapParams struct {
+	RentalID    int64       `json:"rental_id"`
 	FullName    pgtype.Text `json:"full_name"`
 	Dob         pgtype.Date `json:"dob"`
 	Job         pgtype.Text `json:"job"`
@@ -179,9 +167,9 @@ type CreatePreRentalCoapParams struct {
 	Description pgtype.Text `json:"description"`
 }
 
-func (q *Queries) CreatePreRentalCoap(ctx context.Context, arg CreatePreRentalCoapParams) (PrerentalCoap, error) {
-	row := q.db.QueryRow(ctx, createPreRentalCoap,
-		arg.PrerentalID,
+func (q *Queries) CreateRentalCoap(ctx context.Context, arg CreateRentalCoapParams) (RentalCoap, error) {
+	row := q.db.QueryRow(ctx, createRentalCoap,
+		arg.RentalID,
 		arg.FullName,
 		arg.Dob,
 		arg.Job,
@@ -190,9 +178,9 @@ func (q *Queries) CreatePreRentalCoap(ctx context.Context, arg CreatePreRentalCo
 		arg.Phone,
 		arg.Description,
 	)
-	var i PrerentalCoap
+	var i RentalCoap
 	err := row.Scan(
-		&i.PrerentalID,
+		&i.RentalID,
 		&i.FullName,
 		&i.Dob,
 		&i.Job,
@@ -204,68 +192,223 @@ func (q *Queries) CreatePreRentalCoap(ctx context.Context, arg CreatePreRentalCo
 	return i, err
 }
 
-const deletePreRental = `-- name: DeletePreRental :exec
-DELETE FROM prerentals WHERE id = $1
+const createRentalMinor = `-- name: CreateRentalMinor :one
+INSERT INTO "rental_minors" (
+  "rental_id",
+  "full_name",
+  "dob",
+  "email",
+  "phone",
+  "description"
+) VALUES (
+  $1,
+  $2,
+  $3,
+  $4,
+  $5,
+  $6
+) RETURNING rental_id, full_name, dob, email, phone, description
 `
 
-func (q *Queries) DeletePreRental(ctx context.Context, id int64) error {
-	_, err := q.db.Exec(ctx, deletePreRental, id)
+type CreateRentalMinorParams struct {
+	RentalID    int64       `json:"rental_id"`
+	FullName    string      `json:"full_name"`
+	Dob         pgtype.Date `json:"dob"`
+	Email       pgtype.Text `json:"email"`
+	Phone       pgtype.Text `json:"phone"`
+	Description pgtype.Text `json:"description"`
+}
+
+func (q *Queries) CreateRentalMinor(ctx context.Context, arg CreateRentalMinorParams) (RentalMinor, error) {
+	row := q.db.QueryRow(ctx, createRentalMinor,
+		arg.RentalID,
+		arg.FullName,
+		arg.Dob,
+		arg.Email,
+		arg.Phone,
+		arg.Description,
+	)
+	var i RentalMinor
+	err := row.Scan(
+		&i.RentalID,
+		&i.FullName,
+		&i.Dob,
+		&i.Email,
+		&i.Phone,
+		&i.Description,
+	)
+	return i, err
+}
+
+const createRentalPet = `-- name: CreateRentalPet :one
+INSERT INTO "rental_pets" (
+  "rental_id",
+  "type",
+  "weight",
+  "description"
+) VALUES (
+  $1,
+  $2,
+  $3,
+  $4
+) RETURNING rental_id, type, weight, description
+`
+
+type CreateRentalPetParams struct {
+	RentalID    int64         `json:"rental_id"`
+	Type        string        `json:"type"`
+	Weight      pgtype.Float4 `json:"weight"`
+	Description pgtype.Text   `json:"description"`
+}
+
+func (q *Queries) CreateRentalPet(ctx context.Context, arg CreateRentalPetParams) (RentalPet, error) {
+	row := q.db.QueryRow(ctx, createRentalPet,
+		arg.RentalID,
+		arg.Type,
+		arg.Weight,
+		arg.Description,
+	)
+	var i RentalPet
+	err := row.Scan(
+		&i.RentalID,
+		&i.Type,
+		&i.Weight,
+		&i.Description,
+	)
+	return i, err
+}
+
+const createRentalService = `-- name: CreateRentalService :one
+INSERT INTO "rental_services" (
+  "rental_id",
+  "name",
+  "setupBy",
+  "provider",
+  "price"
+) VALUES (
+  $1,
+  $2,
+  $3,
+  $4,
+  $5
+) RETURNING rental_id, name, "setupBy", provider, price
+`
+
+type CreateRentalServiceParams struct {
+	RentalID int64         `json:"rental_id"`
+	Name     string        `json:"name"`
+	Setupby  string        `json:"setupby"`
+	Provider pgtype.Text   `json:"provider"`
+	Price    pgtype.Float4 `json:"price"`
+}
+
+func (q *Queries) CreateRentalService(ctx context.Context, arg CreateRentalServiceParams) (RentalService, error) {
+	row := q.db.QueryRow(ctx, createRentalService,
+		arg.RentalID,
+		arg.Name,
+		arg.Setupby,
+		arg.Provider,
+		arg.Price,
+	)
+	var i RentalService
+	err := row.Scan(
+		&i.RentalID,
+		&i.Name,
+		&i.SetupBy,
+		&i.Provider,
+		&i.Price,
+	)
+	return i, err
+}
+
+const deleteRental = `-- name: DeleteRental :exec
+DELETE FROM rentals WHERE id = $1
+`
+
+func (q *Queries) DeleteRental(ctx context.Context, id int64) error {
+	_, err := q.db.Exec(ctx, deleteRental, id)
 	return err
 }
 
-const getPreRental = `-- name: GetPreRental :one
-SELECT id, creator_id, property_id, unit_id, application_id, tenant_id, profile_image, tenant_type, tenant_name, tenant_identity, tenant_dob, tenant_phone, tenant_email, tenant_address, contract_type, contract_content, contract_last_update_at, contract_last_update_by, land_area, unit_area, start_date, movein_date, rental_period, rental_price, status, note FROM prerentals WHERE id = $1
+const getRental = `-- name: GetRental :one
+SELECT id, creator_id, property_id, unit_id, application_id, profile_image, tenant_id, tenant_type, tenant_name, tenant_phone, tenant_email, start_date, movein_date, rental_period, rental_price, electricity_payment_type, electricity_price, water_payment_type, water_price, note FROM rentals WHERE id = $1 LIMIT 1
 `
 
-func (q *Queries) GetPreRental(ctx context.Context, id int64) (Prerental, error) {
-	row := q.db.QueryRow(ctx, getPreRental, id)
-	var i Prerental
+func (q *Queries) GetRental(ctx context.Context, id int64) (Rental, error) {
+	row := q.db.QueryRow(ctx, getRental, id)
+	var i Rental
 	err := row.Scan(
 		&i.ID,
 		&i.CreatorID,
 		&i.PropertyID,
 		&i.UnitID,
 		&i.ApplicationID,
-		&i.TenantID,
 		&i.ProfileImage,
+		&i.TenantID,
 		&i.TenantType,
 		&i.TenantName,
-		&i.TenantIdentity,
-		&i.TenantDob,
 		&i.TenantPhone,
 		&i.TenantEmail,
-		&i.TenantAddress,
-		&i.ContractType,
-		&i.ContractContent,
-		&i.ContractLastUpdateAt,
-		&i.ContractLastUpdateBy,
-		&i.LandArea,
-		&i.UnitArea,
 		&i.StartDate,
 		&i.MoveinDate,
 		&i.RentalPeriod,
 		&i.RentalPrice,
-		&i.Status,
+		&i.ElectricityPaymentType,
+		&i.ElectricityPrice,
+		&i.WaterPaymentType,
+		&i.WaterPrice,
 		&i.Note,
 	)
 	return i, err
 }
 
-const getPreRentalCoapByPreRentalID = `-- name: GetPreRentalCoapByPreRentalID :many
-SELECT prerental_id, full_name, dob, job, income, email, phone, description FROM prerental_coaps WHERE prerental_id = $1
+const getRentalByApplicationId = `-- name: GetRentalByApplicationId :one
+SELECT id, creator_id, property_id, unit_id, application_id, profile_image, tenant_id, tenant_type, tenant_name, tenant_phone, tenant_email, start_date, movein_date, rental_period, rental_price, electricity_payment_type, electricity_price, water_payment_type, water_price, note FROM rentals WHERE application_id = $1 LIMIT 1
 `
 
-func (q *Queries) GetPreRentalCoapByPreRentalID(ctx context.Context, prerentalID int64) ([]PrerentalCoap, error) {
-	rows, err := q.db.Query(ctx, getPreRentalCoapByPreRentalID, prerentalID)
+func (q *Queries) GetRentalByApplicationId(ctx context.Context, applicationID pgtype.Int8) (Rental, error) {
+	row := q.db.QueryRow(ctx, getRentalByApplicationId, applicationID)
+	var i Rental
+	err := row.Scan(
+		&i.ID,
+		&i.CreatorID,
+		&i.PropertyID,
+		&i.UnitID,
+		&i.ApplicationID,
+		&i.ProfileImage,
+		&i.TenantID,
+		&i.TenantType,
+		&i.TenantName,
+		&i.TenantPhone,
+		&i.TenantEmail,
+		&i.StartDate,
+		&i.MoveinDate,
+		&i.RentalPeriod,
+		&i.RentalPrice,
+		&i.ElectricityPaymentType,
+		&i.ElectricityPrice,
+		&i.WaterPaymentType,
+		&i.WaterPrice,
+		&i.Note,
+	)
+	return i, err
+}
+
+const getRentalCoapsByRentalID = `-- name: GetRentalCoapsByRentalID :many
+SELECT rental_id, full_name, dob, job, income, email, phone, description FROM rental_coaps WHERE rental_id = $1 LIMIT 1
+`
+
+func (q *Queries) GetRentalCoapsByRentalID(ctx context.Context, rentalID int64) ([]RentalCoap, error) {
+	rows, err := q.db.Query(ctx, getRentalCoapsByRentalID, rentalID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []PrerentalCoap
+	var items []RentalCoap
 	for rows.Next() {
-		var i PrerentalCoap
+		var i RentalCoap
 		if err := rows.Scan(
-			&i.PrerentalID,
+			&i.RentalID,
 			&i.FullName,
 			&i.Dob,
 			&i.Job,
@@ -284,114 +427,153 @@ func (q *Queries) GetPreRentalCoapByPreRentalID(ctx context.Context, prerentalID
 	return items, nil
 }
 
-const getPreRentalContract = `-- name: GetPreRentalContract :one
-SELECT id, contract_type, contract_content, contract_last_update_at, contract_last_update_by FROM prerentals WHERE id = $1
+const getRentalMinorsByRentalID = `-- name: GetRentalMinorsByRentalID :many
+SELECT rental_id, full_name, dob, email, phone, description FROM rental_minors WHERE rental_id = $1 LIMIT 1
 `
 
-type GetPreRentalContractRow struct {
-	ID                   int64              `json:"id"`
-	ContractType         NullCONTRACTTYPE   `json:"contract_type"`
-	ContractContent      pgtype.Text        `json:"contract_content"`
-	ContractLastUpdateAt pgtype.Timestamptz `json:"contract_last_update_at"`
-	ContractLastUpdateBy pgtype.UUID        `json:"contract_last_update_by"`
+func (q *Queries) GetRentalMinorsByRentalID(ctx context.Context, rentalID int64) ([]RentalMinor, error) {
+	rows, err := q.db.Query(ctx, getRentalMinorsByRentalID, rentalID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []RentalMinor
+	for rows.Next() {
+		var i RentalMinor
+		if err := rows.Scan(
+			&i.RentalID,
+			&i.FullName,
+			&i.Dob,
+			&i.Email,
+			&i.Phone,
+			&i.Description,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
-func (q *Queries) GetPreRentalContract(ctx context.Context, id int64) (GetPreRentalContractRow, error) {
-	row := q.db.QueryRow(ctx, getPreRentalContract, id)
-	var i GetPreRentalContractRow
-	err := row.Scan(
-		&i.ID,
-		&i.ContractType,
-		&i.ContractContent,
-		&i.ContractLastUpdateAt,
-		&i.ContractLastUpdateBy,
-	)
-	return i, err
+const getRentalPetsByRentalID = `-- name: GetRentalPetsByRentalID :many
+SELECT rental_id, type, weight, description FROM rental_pets WHERE rental_id = $1 LIMIT 1
+`
+
+func (q *Queries) GetRentalPetsByRentalID(ctx context.Context, rentalID int64) ([]RentalPet, error) {
+	rows, err := q.db.Query(ctx, getRentalPetsByRentalID, rentalID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []RentalPet
+	for rows.Next() {
+		var i RentalPet
+		if err := rows.Scan(
+			&i.RentalID,
+			&i.Type,
+			&i.Weight,
+			&i.Description,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
-const updatePreRental = `-- name: UpdatePreRental :exec
-UPDATE prerentals SET
+const getRentalServicesByRentalID = `-- name: GetRentalServicesByRentalID :many
+SELECT rental_id, name, "setupBy", provider, price FROM rental_services WHERE rental_id = $1 LIMIT 1
+`
+
+func (q *Queries) GetRentalServicesByRentalID(ctx context.Context, rentalID int64) ([]RentalService, error) {
+	rows, err := q.db.Query(ctx, getRentalServicesByRentalID, rentalID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []RentalService
+	for rows.Next() {
+		var i RentalService
+		if err := rows.Scan(
+			&i.RentalID,
+			&i.Name,
+			&i.SetupBy,
+			&i.Provider,
+			&i.Price,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const updateRental = `-- name: UpdateRental :exec
+UPDATE rentals SET
   tenant_id = coalesce($2, tenant_id),
   profile_image = coalesce($3, profile_image),
   tenant_type = coalesce($4, tenant_type),
   tenant_name = coalesce($5, tenant_name),
-  tenant_dob = coalesce($6, tenant_dob),
-  tenant_identity = coalesce($7, tenant_identity),
-  tenant_phone = coalesce($8, tenant_phone),
-  tenant_email = coalesce($9, tenant_email),
-  tenant_address = coalesce($10, tenant_address),
-  start_date = coalesce($11, start_date),
-  movein_date = coalesce($12, movein_date),
-  rental_period = coalesce($13, rental_period),
-  rental_price = coalesce($14, rental_price),
-  note = coalesce($15, note),
-  status = coalesce($16, status)
+  tenant_phone = coalesce($6, tenant_phone),
+  tenant_email = coalesce($7, tenant_email),
+  start_date = coalesce($8, start_date),
+  movein_date = coalesce($9, movein_date),
+  rental_period = coalesce($10, rental_period),
+  rental_price = coalesce($11, rental_price),
+  electricity_payment_type = coalesce($12, electricity_payment_type),
+  electricity_price = coalesce($13, electricity_price),
+  water_payment_type = coalesce($14, water_payment_type),
+  water_price = coalesce($15, water_price),
+  note = coalesce($16, note)
 WHERE id = $1
 `
 
-type UpdatePreRentalParams struct {
-	ID             int64               `json:"id"`
-	TenantID       pgtype.UUID         `json:"tenant_id"`
-	ProfileImage   pgtype.Text         `json:"profile_image"`
-	TenantType     NullTENANTTYPE      `json:"tenant_type"`
-	TenantName     pgtype.Text         `json:"tenant_name"`
-	TenantDob      pgtype.Date         `json:"tenant_dob"`
-	TenantIdentity pgtype.Text         `json:"tenant_identity"`
-	TenantPhone    pgtype.Text         `json:"tenant_phone"`
-	TenantEmail    pgtype.Text         `json:"tenant_email"`
-	TenantAddress  pgtype.Text         `json:"tenant_address"`
-	StartDate      pgtype.Date         `json:"start_date"`
-	MoveinDate     pgtype.Date         `json:"movein_date"`
-	RentalPeriod   pgtype.Int4         `json:"rental_period"`
-	RentalPrice    pgtype.Float4       `json:"rental_price"`
-	Note           pgtype.Text         `json:"note"`
-	Status         NullPRERENTALSTATUS `json:"status"`
+type UpdateRentalParams struct {
+	ID                     int64          `json:"id"`
+	TenantID               pgtype.UUID    `json:"tenant_id"`
+	ProfileImage           pgtype.Text    `json:"profile_image"`
+	TenantType             NullTENANTTYPE `json:"tenant_type"`
+	TenantName             pgtype.Text    `json:"tenant_name"`
+	TenantPhone            pgtype.Text    `json:"tenant_phone"`
+	TenantEmail            pgtype.Text    `json:"tenant_email"`
+	StartDate              pgtype.Date    `json:"start_date"`
+	MoveinDate             pgtype.Date    `json:"movein_date"`
+	RentalPeriod           pgtype.Int4    `json:"rental_period"`
+	RentalPrice            pgtype.Float4  `json:"rental_price"`
+	ElectricityPaymentType pgtype.Text    `json:"electricity_payment_type"`
+	ElectricityPrice       pgtype.Float4  `json:"electricity_price"`
+	WaterPaymentType       pgtype.Text    `json:"water_payment_type"`
+	WaterPrice             pgtype.Float4  `json:"water_price"`
+	Note                   pgtype.Text    `json:"note"`
 }
 
-func (q *Queries) UpdatePreRental(ctx context.Context, arg UpdatePreRentalParams) error {
-	_, err := q.db.Exec(ctx, updatePreRental,
+func (q *Queries) UpdateRental(ctx context.Context, arg UpdateRentalParams) error {
+	_, err := q.db.Exec(ctx, updateRental,
 		arg.ID,
 		arg.TenantID,
 		arg.ProfileImage,
 		arg.TenantType,
 		arg.TenantName,
-		arg.TenantDob,
-		arg.TenantIdentity,
 		arg.TenantPhone,
 		arg.TenantEmail,
-		arg.TenantAddress,
 		arg.StartDate,
 		arg.MoveinDate,
 		arg.RentalPeriod,
 		arg.RentalPrice,
+		arg.ElectricityPaymentType,
+		arg.ElectricityPrice,
+		arg.WaterPaymentType,
+		arg.WaterPrice,
 		arg.Note,
-		arg.Status,
-	)
-	return err
-}
-
-const updatePreRentalContract = `-- name: UpdatePreRentalContract :exec
-UPDATE prerentals SET
-  contract_type = coalesce($2, contract_type),
-  contract_content = coalesce($3, contract_content),
-  contract_last_update_at = NOW(),
-  contract_last_update_by = $4
-WHERE id = $1
-`
-
-type UpdatePreRentalContractParams struct {
-	ID                   int64            `json:"id"`
-	ContractType         NullCONTRACTTYPE `json:"contract_type"`
-	ContractContent      pgtype.Text      `json:"contract_content"`
-	ContractLastUpdateBy pgtype.UUID      `json:"contract_last_update_by"`
-}
-
-func (q *Queries) UpdatePreRentalContract(ctx context.Context, arg UpdatePreRentalContractParams) error {
-	_, err := q.db.Exec(ctx, updatePreRentalContract,
-		arg.ID,
-		arg.ContractType,
-		arg.ContractContent,
-		arg.ContractLastUpdateBy,
 	)
 	return err
 }

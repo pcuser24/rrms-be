@@ -16,6 +16,7 @@ type Querier interface {
 	CheckApplicationVisibility(ctx context.Context, arg CheckApplicationVisibilityParams) (bool, error)
 	CheckListingExpired(ctx context.Context, id uuid.UUID) (pgtype.Bool, error)
 	CheckListingOwnership(ctx context.Context, arg CheckListingOwnershipParams) (int64, error)
+	CheckListingVisibility(ctx context.Context, arg CheckListingVisibilityParams) (bool, error)
 	CheckMsgGroupMembership(ctx context.Context, arg CheckMsgGroupMembershipParams) (bool, error)
 	CheckUnitManageability(ctx context.Context, arg CheckUnitManageabilityParams) (int64, error)
 	CheckUnitOfProperty(ctx context.Context, arg CheckUnitOfPropertyParams) (int64, error)
@@ -34,8 +35,6 @@ type Querier interface {
 	CreateMsgGroupMember(ctx context.Context, arg CreateMsgGroupMemberParams) (MsgGroupMember, error)
 	CreatePayment(ctx context.Context, arg CreatePaymentParams) (Payment, error)
 	CreatePaymentItem(ctx context.Context, arg CreatePaymentItemParams) (PaymentItem, error)
-	CreatePreRental(ctx context.Context, arg CreatePreRentalParams) (Prerental, error)
-	CreatePreRentalCoap(ctx context.Context, arg CreatePreRentalCoapParams) (PrerentalCoap, error)
 	CreateProperty(ctx context.Context, arg CreatePropertyParams) (Property, error)
 	CreatePropertyFeature(ctx context.Context, arg CreatePropertyFeatureParams) (PropertyFeature, error)
 	CreatePropertyManager(ctx context.Context, arg CreatePropertyManagerParams) (PropertyManager, error)
@@ -43,6 +42,11 @@ type Querier interface {
 	CreatePropertyTag(ctx context.Context, arg CreatePropertyTagParams) (PropertyTag, error)
 	CreateReminder(ctx context.Context, arg CreateReminderParams) (Reminder, error)
 	CreateReminderMember(ctx context.Context, arg CreateReminderMemberParams) (ReminderMember, error)
+	CreateRental(ctx context.Context, arg CreateRentalParams) (Rental, error)
+	CreateRentalCoap(ctx context.Context, arg CreateRentalCoapParams) (RentalCoap, error)
+	CreateRentalMinor(ctx context.Context, arg CreateRentalMinorParams) (RentalMinor, error)
+	CreateRentalPet(ctx context.Context, arg CreateRentalPetParams) (RentalPet, error)
+	CreateRentalService(ctx context.Context, arg CreateRentalServiceParams) (RentalService, error)
 	CreateSession(ctx context.Context, arg CreateSessionParams) (Session, error)
 	CreateUnit(ctx context.Context, arg CreateUnitParams) (Unit, error)
 	CreateUnitAmenity(ctx context.Context, arg CreateUnitAmenityParams) (UnitAmenity, error)
@@ -53,13 +57,13 @@ type Querier interface {
 	DeleteMsgGroup(ctx context.Context, groupID int64) error
 	DeleteMsgGroupMember(ctx context.Context, arg DeleteMsgGroupMemberParams) error
 	DeletePayment(ctx context.Context, id int64) error
-	DeletePreRental(ctx context.Context, id int64) error
 	DeleteProperty(ctx context.Context, id uuid.UUID) error
 	DeletePropertyFeature(ctx context.Context, arg DeletePropertyFeatureParams) error
 	DeletePropertyManager(ctx context.Context, arg DeletePropertyManagerParams) error
 	DeletePropertyMedia(ctx context.Context, arg DeletePropertyMediaParams) error
 	DeletePropertyTag(ctx context.Context, arg DeletePropertyTagParams) error
 	DeleteReminder(ctx context.Context, id int64) error
+	DeleteRental(ctx context.Context, id int64) error
 	DeleteUnit(ctx context.Context, id uuid.UUID) error
 	DeleteUnitAmenity(ctx context.Context, arg DeleteUnitAmenityParams) error
 	DeleteUnitMedia(ctx context.Context, arg DeleteUnitMediaParams) error
@@ -87,9 +91,6 @@ type Querier interface {
 	GetMsgGroupMembers(ctx context.Context, groupID int64) ([]GetMsgGroupMembersRow, error)
 	GetPaymentById(ctx context.Context, id int64) (Payment, error)
 	GetPaymentItemsByPaymentId(ctx context.Context, paymentID int64) ([]PaymentItem, error)
-	GetPreRental(ctx context.Context, id int64) (Prerental, error)
-	GetPreRentalCoapByPreRentalID(ctx context.Context, prerentalID int64) ([]PrerentalCoap, error)
-	GetPreRentalContract(ctx context.Context, id int64) (GetPreRentalContractRow, error)
 	GetPropertyById(ctx context.Context, id uuid.UUID) (Property, error)
 	GetPropertyFeatures(ctx context.Context, propertyID uuid.UUID) ([]PropertyFeature, error)
 	GetPropertyManagers(ctx context.Context, propertyID uuid.UUID) ([]PropertyManager, error)
@@ -100,6 +101,12 @@ type Querier interface {
 	GetRemindersByCreator(ctx context.Context, creatorID uuid.UUID) ([]Reminder, error)
 	GetRemindersOfUser(ctx context.Context, userID uuid.UUID) ([]Reminder, error)
 	GetRemindersOfUserWithResourceTag(ctx context.Context, arg GetRemindersOfUserWithResourceTagParams) ([]Reminder, error)
+	GetRental(ctx context.Context, id int64) (Rental, error)
+	GetRentalByApplicationId(ctx context.Context, applicationID pgtype.Int8) (Rental, error)
+	GetRentalCoapsByRentalID(ctx context.Context, rentalID int64) ([]RentalCoap, error)
+	GetRentalMinorsByRentalID(ctx context.Context, rentalID int64) ([]RentalMinor, error)
+	GetRentalPetsByRentalID(ctx context.Context, rentalID int64) ([]RentalPet, error)
+	GetRentalServicesByRentalID(ctx context.Context, rentalID int64) ([]RentalService, error)
 	GetSessionById(ctx context.Context, id uuid.UUID) (Session, error)
 	GetUnitAmenities(ctx context.Context, unitID uuid.UUID) ([]UnitAmenity, error)
 	GetUnitById(ctx context.Context, id uuid.UUID) (Unit, error)
@@ -115,10 +122,9 @@ type Querier interface {
 	UpdateListingStatus(ctx context.Context, arg UpdateListingStatusParams) error
 	UpdateMessage(ctx context.Context, arg UpdateMessageParams) ([]int64, error)
 	UpdatePayment(ctx context.Context, arg UpdatePaymentParams) error
-	UpdatePreRental(ctx context.Context, arg UpdatePreRentalParams) error
-	UpdatePreRentalContract(ctx context.Context, arg UpdatePreRentalContractParams) error
 	UpdateProperty(ctx context.Context, arg UpdatePropertyParams) error
 	UpdateReminder(ctx context.Context, arg UpdateReminderParams) ([]Reminder, error)
+	UpdateRental(ctx context.Context, arg UpdateRentalParams) error
 	UpdateSessionBlockingStatus(ctx context.Context, arg UpdateSessionBlockingStatusParams) error
 	UpdateUnit(ctx context.Context, arg UpdateUnitParams) error
 	UpdateUser(ctx context.Context, arg UpdateUserParams) error

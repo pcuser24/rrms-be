@@ -41,9 +41,12 @@ func NewAdapter(lService listing.Service, pService property.Service, uService un
 func (a *adapter) RegisterServer(router *fiber.Router, tokenMaker token.Maker) {
 	listingRoute := (*router).Group("/listings")
 
-	// non-required authorization routes
 	listingRoute.Get("/", a.searchListings())
-	listingRoute.Get("/listing/:id", a.getListingById())
+	listingRoute.Get("/listing/:id",
+		auth_http.GetAuthorizationMiddleware(tokenMaker),
+		CheckListingVisibility(a.lService),
+		a.getListingById(),
+	)
 	listingRoute.Get("/ids", a.getListingsByIds())
 	listingRoute.Get("/listing/:id/application-link", a.verifyApplicationLink())
 
@@ -137,7 +140,7 @@ func (a *adapter) searchListings() fiber.Handler {
 			return nil
 		}
 
-		return ctx.JSON(res)
+		return ctx.Status(fiber.StatusOK).JSON(res)
 	}
 }
 
@@ -184,7 +187,7 @@ func (a *adapter) getListingById() fiber.Handler {
 			ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
 			return nil
 		}
-		return ctx.JSON(res)
+		return ctx.Status(fiber.StatusOK).JSON(res)
 	}
 }
 
@@ -202,8 +205,7 @@ func (a *adapter) getListingsByIds() fiber.Handler {
 
 		res, err := a.lService.GetListingsByIds(query.IDs, query.Fields)
 		if err != nil {
-			ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
-			return nil
+			return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
 		}
 
 		return ctx.JSON(res)
@@ -220,8 +222,7 @@ func (a *adapter) updateListing() fiber.Handler {
 		}
 		payload.ID = lid
 		if errs := validation.ValidateStruct(nil, payload); len(errs) > 0 {
-			ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": validation.GetValidationError(errs)})
-			return nil
+			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": validation.GetValidationError(errs)})
 		}
 
 		err := a.lService.UpdateListing(&payload)

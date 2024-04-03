@@ -107,6 +107,18 @@ SELECT count(*) FROM units WHERE units.id = $1 AND units.property_id IN (SELECT 
 -- name: CheckListingExpired :one
 SELECT expired_at < NOW() AND NOT active FROM listings WHERE id = $1 LIMIT 1;
 
+-- name: CheckListingVisibility :one
+SELECT count(*) > 0
+FROM listings INNER JOIN property_managers ON listings.property_id = property_managers.property_id
+WHERE listings.id = $1 
+	AND (
+		property_managers.manager_id = $2
+	OR (
+		listings.active AND listings.expired_at > NOW()
+	)
+	)
+LIMIT 1;
+
 -- name: UpdateListing :exec
 UPDATE listings SET
   title = coalesce(sqlc.narg(title), title),

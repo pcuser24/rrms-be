@@ -14,7 +14,7 @@ import (
 
 func TestRenderHtml(t *testing.T) {
 	var (
-		pr    model.PrerentalModel
+		pr    model.RentalModel
 		a     application_model.ApplicationModel
 		p     property_model.PropertyModel
 		unit  *unit_model.UnitModel

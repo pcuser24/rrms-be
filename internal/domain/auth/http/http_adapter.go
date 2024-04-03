@@ -37,6 +37,7 @@ func (a *adapter) RegisterServer(router *fiber.Router, tokenMaker token.Maker) {
 	credentialGroup.Post("/register", a.credentialRegister())
 	credentialGroup.Post("/login", GetAuthorizationMiddleware(tokenMaker), a.credentialLogin())
 	credentialGroup.Get("/me", AuthorizedMiddleware(tokenMaker), a.credentialGetCurrentUser())
+	credentialGroup.Get("/ids", AuthorizedMiddleware(tokenMaker), a.credentialGetUserByIds())
 	credentialGroup.Put("/refresh", a.credentialRefresh())
 	credentialGroup.Patch("/update", AuthorizedMiddleware(tokenMaker), a.credentialUpdate())
 	credentialGroup.Delete("/logout", AuthorizedMiddleware(tokenMaker), a.credentialLogout())
@@ -136,6 +137,34 @@ func (a *adapter) credentialGetCurrentUser() fiber.Handler {
 		return ctx.Status(fiber.StatusOK).JSON(user)
 	}
 
+}
+
+func (a *adapter) credentialGetUserByIds() fiber.Handler {
+	return func(ctx *fiber.Ctx) error {
+		q := struct {
+			Ids []uuid.UUID `json:"ids" validate:"required,dive,uuid4"`
+		}{}
+		if err := ctx.QueryParser(&q); err != nil {
+			return ctx.Status(http.StatusBadRequest).JSON(fiber.Map{"message": err.Error()})
+		}
+
+		users := make([]*dto.UserResponse, 0, len(q.Ids))
+		for _, id := range q.Ids {
+			if id == uuid.Nil {
+				continue
+			}
+			user, err := a.service.GetUserById(id)
+			if err != nil {
+				if errors.Is(err, database.ErrRecordNotFound) {
+					continue
+				}
+				return ctx.Status(http.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
+			}
+			users = append(users, user)
+		}
+
+		return ctx.Status(fiber.StatusOK).JSON(users)
+	}
 }
 
 func (a *adapter) credentialRefresh() fiber.Handler {

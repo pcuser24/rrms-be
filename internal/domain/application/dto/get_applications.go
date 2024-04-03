@@ -12,7 +12,7 @@ import (
 
 const ApplicationFieldsLocalKey = "applicationFields"
 
-var retrievableFields = []string{"creator_id", "listing_id", "property_id", "status", "created_at", "updated_at", "full_name", "email", "phone", "dob", "profile_image", "movein_date", "preferred_term", "rental_intention", "organization_name", "organization_hq_address", "organization_scale", "rh_address", "rh_city", "rh_district", "rh_ward", "rh_rental_duration", "rh_monthly_payment", "rh_reason_for_leaving", "employment_status", "employment_company_name", "employment_position", "employment_monthly_income", "employment_comment", "minors", "coaps", "pets", "vehicles"}
+var retrievableFields = []string{"creator_id", "listing_id", "property_id", "unit_id", "listing_price", "offered_price", "status", "created_at", "updated_at", "full_name", "email", "phone", "dob", "profile_image", "movein_date", "preferred_term", "rental_intention", "organization_name", "organization_hq_address", "organization_scale", "rh_address", "rh_city", "rh_district", "rh_ward", "rh_rental_duration", "rh_monthly_payment", "rh_reason_for_leaving", "employment_status", "employment_company_name", "employment_position", "employment_monthly_income", "employment_comment", "minors", "coaps", "pets", "vehicles"}
 
 func GetRetrievableFields() []string {
 	rfs := make([]string, len(retrievableFields))

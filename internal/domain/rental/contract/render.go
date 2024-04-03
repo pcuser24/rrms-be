@@ -37,7 +37,7 @@ var (
 )
 
 func RenderContractTemplate(
-	prerental *model.PrerentalModel,
+	rental *model.RentalModel,
 	application *application_model.ApplicationModel,
 	property *property_model.PropertyModel,
 	unit *unit_model.UnitModel,
@@ -81,7 +81,7 @@ func RenderContractTemplate(
 		OwnerPhone:    mediumPlaceHolder,
 		OwnerEmail:    mediumPlaceHolder,
 		TenantName:    mediumPlaceHolder,
-		TenantDOB:     html_util.NewHTMLTime(prerental.TenantDob),
+		TenantDOB:     html_util.NewHTMLTime(rental.TenantDob),
 		TenantAddress: mediumPlaceHolder,
 		TenantPhone:   mediumPlaceHolder,
 		TenantEmail:   mediumPlaceHolder,

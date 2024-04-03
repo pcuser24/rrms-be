@@ -17,6 +17,7 @@ import (
 	uuid "github.com/google/uuid"
 	dto "github.com/user2410/rrms-backend/internal/domain/application/dto"
 	model "github.com/user2410/rrms-backend/internal/domain/application/model"
+	model0 "github.com/user2410/rrms-backend/internal/domain/rental/model"
 	database "github.com/user2410/rrms-backend/internal/infrastructure/database"
 	gomock "go.uber.org/mock/gomock"
 )
@@ -206,6 +207,21 @@ func (m *MockRepo) GetRemindersOfUser(arg0 context.Context, arg1 int64, arg2 uui
 func (mr *MockRepoMockRecorder) GetRemindersOfUser(arg0, arg1, arg2 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRemindersOfUser", reflect.TypeOf((*MockRepo)(nil).GetRemindersOfUser), arg0, arg1, arg2)
+}
+
+// GetRentalByApplicationId mocks base method.
+func (m *MockRepo) GetRentalByApplicationId(arg0 context.Context, arg1 int64) (*model0.RentalModel, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetRentalByApplicationId", arg0, arg1)
+	ret0, _ := ret[0].(*model0.RentalModel)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetRentalByApplicationId indicates an expected call of GetRentalByApplicationId.
+func (mr *MockRepoMockRecorder) GetRentalByApplicationId(arg0, arg1 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRentalByApplicationId", reflect.TypeOf((*MockRepo)(nil).GetRentalByApplicationId), arg0, arg1)
 }
 
 // UpdateApplicationStatus mocks base method.

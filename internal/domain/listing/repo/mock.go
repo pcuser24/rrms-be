@@ -72,6 +72,21 @@ func (mr *MockRepoMockRecorder) CheckListingOwnership(arg0, arg1, arg2 any) *gom
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CheckListingOwnership", reflect.TypeOf((*MockRepo)(nil).CheckListingOwnership), arg0, arg1, arg2)
 }
 
+// CheckListingVisibility mocks base method.
+func (m *MockRepo) CheckListingVisibility(arg0 context.Context, arg1, arg2 uuid.UUID) (bool, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CheckListingVisibility", arg0, arg1, arg2)
+	ret0, _ := ret[0].(bool)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CheckListingVisibility indicates an expected call of CheckListingVisibility.
+func (mr *MockRepoMockRecorder) CheckListingVisibility(arg0, arg1, arg2 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CheckListingVisibility", reflect.TypeOf((*MockRepo)(nil).CheckListingVisibility), arg0, arg1, arg2)
+}
+
 // CheckValidUnitForListing mocks base method.
 func (m *MockRepo) CheckValidUnitForListing(arg0 context.Context, arg1, arg2 uuid.UUID) (bool, error) {
 	m.ctrl.T.Helper()

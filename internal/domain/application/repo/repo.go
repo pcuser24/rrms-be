@@ -7,9 +7,11 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/huandu/go-sqlbuilder"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/user2410/rrms-backend/internal/domain/application/dto"
 	"github.com/user2410/rrms-backend/internal/domain/application/model"
 	"github.com/user2410/rrms-backend/internal/domain/application/utils"
+	rental_model "github.com/user2410/rrms-backend/internal/domain/rental/model"
 	"github.com/user2410/rrms-backend/internal/infrastructure/database"
 	"github.com/user2410/rrms-backend/internal/utils/types"
 )
@@ -27,6 +29,7 @@ type Repo interface {
 	CreateReminder(ctx context.Context, aid int64, userId uuid.UUID, data *dto.CreateReminder) (*model.ReminderModel, error)
 	GetRemindersOfUser(ctx context.Context, aid int64, userId uuid.UUID) ([]model.ReminderModel, error)
 	GetReminderById(ctx context.Context, id int64) (*model.ReminderModel, error)
+	GetRentalByApplicationId(ctx context.Context, aid int64) (*rental_model.RentalModel, error)
 	UpdateReminderStatus(ctx context.Context, aid, id int64, userId uuid.UUID, status database.REMINDERSTATUS) (int, error)
 }
 
@@ -142,7 +145,7 @@ func (r *repo) GetApplicationsByIds(ctx context.Context, ids []int64, fields []s
 	var nonFKFields []string = []string{"id"}
 	var fkFields []string
 	for _, f := range fields {
-		if slices.Contains([]string{"units", "minors", "coaps", "tags", "media"}, f) {
+		if slices.Contains([]string{"minors", "coaps", "tags", "media"}, f) {
 			fkFields = append(fkFields, f)
 		} else {
 			nonFKFields = append(nonFKFields, f)
@@ -173,6 +176,12 @@ func (r *repo) GetApplicationsByIds(ctx context.Context, ids []int64, fields []s
 			scanningFields = append(scanningFields, &i.ListingID)
 		case "property_id":
 			scanningFields = append(scanningFields, &i.PropertyID)
+		case "unit_id":
+			scanningFields = append(scanningFields, &i.UnitID)
+		case "listing_price":
+			scanningFields = append(scanningFields, &i.ListingPrice)
+		case "offered_price":
+			scanningFields = append(scanningFields, &i.OfferedPrice)
 		case "status":
 			scanningFields = append(scanningFields, &i.Status)
 		case "created_at":
@@ -396,4 +405,15 @@ func (r *repo) UpdateReminderStatus(ctx context.Context, aid, id int64, userId u
 		return 0, err
 	}
 	return len(res), nil
+}
+
+func (r *repo) GetRentalByApplicationId(ctx context.Context, aid int64) (*rental_model.RentalModel, error) {
+	res, err := r.dao.GetRentalByApplicationId(ctx, pgtype.Int8{
+		Int64: aid,
+		Valid: true,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return rental_model.ToRentalModel(&res), nil
 }

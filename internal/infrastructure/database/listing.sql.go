@@ -39,6 +39,31 @@ func (q *Queries) CheckListingOwnership(ctx context.Context, arg CheckListingOwn
 	return count, err
 }
 
+const checkListingVisibility = `-- name: CheckListingVisibility :one
+SELECT count(*) > 0
+FROM listings INNER JOIN property_managers ON listings.property_id = property_managers.property_id
+WHERE listings.id = $1 
+	AND (
+		property_managers.manager_id = $2
+	OR (
+		listings.active AND listings.expired_at > NOW()
+	)
+	)
+LIMIT 1
+`
+
+type CheckListingVisibilityParams struct {
+	ID        uuid.UUID `json:"id"`
+	ManagerID uuid.UUID `json:"manager_id"`
+}
+
+func (q *Queries) CheckListingVisibility(ctx context.Context, arg CheckListingVisibilityParams) (bool, error) {
+	row := q.db.QueryRow(ctx, checkListingVisibility, arg.ID, arg.ManagerID)
+	var column_1 bool
+	err := row.Scan(&column_1)
+	return column_1, err
+}
+
 const checkValidUnitForListing = `-- name: CheckValidUnitForListing :one
 SELECT count(*) FROM units WHERE units.id = $1 AND units.property_id IN (SELECT listings.property_id FROM listings WHERE listings.id = $2) LIMIT 1
 `

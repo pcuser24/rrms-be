@@ -41,3 +41,30 @@ func CheckListingManageability(s listing.Service) fiber.Handler {
 		return nil
 	}
 }
+
+func CheckListingVisibility(s listing.Service) fiber.Handler {
+	return func(ctx *fiber.Ctx) error {
+		id := ctx.Params("id")
+		lid, err := uuid.Parse(id)
+		if err != nil {
+			return ctx.SendStatus(fiber.StatusBadRequest)
+		}
+
+		tkPayload := ctx.Locals(http.AuthorizationPayloadKey).(*token.Payload)
+
+		isVisible, err := s.CheckListingVisibility(lid, tkPayload.UserID)
+		if err != nil {
+			if dbErr, ok := err.(*pgconn.PgError); ok {
+				return responses.DBErrorResponse(ctx, dbErr)
+			}
+
+			return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
+		}
+		if !isVisible {
+			return ctx.Status(fiber.StatusForbidden).JSON(fiber.Map{"message": "operation not permitted on this listing"})
+		}
+
+		ctx.Next()
+		return nil
+	}
+}

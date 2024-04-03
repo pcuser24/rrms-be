@@ -58,49 +58,6 @@ func (ns NullAPPLICATIONSTATUS) Value() (driver.Value, error) {
 	return string(ns.APPLICATIONSTATUS), nil
 }
 
-type CONTRACTTYPE string
-
-const (
-	CONTRACTTYPEDIGITAL CONTRACTTYPE = "DIGITAL"
-	CONTRACTTYPEFILE    CONTRACTTYPE = "FILE"
-	CONTRACTTYPEIMAGE   CONTRACTTYPE = "IMAGE"
-)
-
-func (e *CONTRACTTYPE) Scan(src interface{}) error {
-	switch s := src.(type) {
-	case []byte:
-		*e = CONTRACTTYPE(s)
-	case string:
-		*e = CONTRACTTYPE(s)
-	default:
-		return fmt.Errorf("unsupported scan type for CONTRACTTYPE: %T", src)
-	}
-	return nil
-}
-
-type NullCONTRACTTYPE struct {
-	CONTRACTTYPE CONTRACTTYPE `json:"CONTRACTTYPE"`
-	Valid        bool         `json:"valid"` // Valid is true if CONTRACTTYPE is not NULL
-}
-
-// Scan implements the Scanner interface.
-func (ns *NullCONTRACTTYPE) Scan(value interface{}) error {
-	if value == nil {
-		ns.CONTRACTTYPE, ns.Valid = "", false
-		return nil
-	}
-	ns.Valid = true
-	return ns.CONTRACTTYPE.Scan(value)
-}
-
-// Value implements the driver Valuer interface.
-func (ns NullCONTRACTTYPE) Value() (driver.Value, error) {
-	if !ns.Valid {
-		return nil, nil
-	}
-	return string(ns.CONTRACTTYPE), nil
-}
-
 type MEDIATYPE string
 
 const (
@@ -269,49 +226,6 @@ func (ns NullPAYMENTSTATUS) Value() (driver.Value, error) {
 		return nil, nil
 	}
 	return string(ns.PAYMENTSTATUS), nil
-}
-
-type PRERENTALSTATUS string
-
-const (
-	PRERENTALSTATUSPENDING  PRERENTALSTATUS = "PENDING"
-	PRERENTALSTATUSFINISHED PRERENTALSTATUS = "FINISHED"
-	PRERENTALSTATUSCANCELED PRERENTALSTATUS = "CANCELED"
-)
-
-func (e *PRERENTALSTATUS) Scan(src interface{}) error {
-	switch s := src.(type) {
-	case []byte:
-		*e = PRERENTALSTATUS(s)
-	case string:
-		*e = PRERENTALSTATUS(s)
-	default:
-		return fmt.Errorf("unsupported scan type for PRERENTALSTATUS: %T", src)
-	}
-	return nil
-}
-
-type NullPRERENTALSTATUS struct {
-	PRERENTALSTATUS PRERENTALSTATUS `json:"PRERENTALSTATUS"`
-	Valid           bool            `json:"valid"` // Valid is true if PRERENTALSTATUS is not NULL
-}
-
-// Scan implements the Scanner interface.
-func (ns *NullPRERENTALSTATUS) Scan(value interface{}) error {
-	if value == nil {
-		ns.PRERENTALSTATUS, ns.Valid = "", false
-		return nil
-	}
-	ns.Valid = true
-	return ns.PRERENTALSTATUS.Scan(value)
-}
-
-// Value implements the driver Valuer interface.
-func (ns NullPRERENTALSTATUS) Value() (driver.Value, error) {
-	if !ns.Valid {
-		return nil, nil
-	}
-	return string(ns.PRERENTALSTATUS), nil
 }
 
 type PROPERTYTYPE string
@@ -712,46 +626,6 @@ type PaymentItem struct {
 	Discount  int32  `json:"discount"`
 }
 
-type Prerental struct {
-	ID                   int64              `json:"id"`
-	CreatorID            uuid.UUID          `json:"creator_id"`
-	PropertyID           uuid.UUID          `json:"property_id"`
-	UnitID               uuid.UUID          `json:"unit_id"`
-	ApplicationID        pgtype.Int8        `json:"application_id"`
-	TenantID             pgtype.UUID        `json:"tenant_id"`
-	ProfileImage         string             `json:"profile_image"`
-	TenantType           TENANTTYPE         `json:"tenant_type"`
-	TenantName           string             `json:"tenant_name"`
-	TenantIdentity       string             `json:"tenant_identity"`
-	TenantDob            pgtype.Date        `json:"tenant_dob"`
-	TenantPhone          string             `json:"tenant_phone"`
-	TenantEmail          string             `json:"tenant_email"`
-	TenantAddress        pgtype.Text        `json:"tenant_address"`
-	ContractType         NullCONTRACTTYPE   `json:"contract_type"`
-	ContractContent      pgtype.Text        `json:"contract_content"`
-	ContractLastUpdateAt pgtype.Timestamptz `json:"contract_last_update_at"`
-	ContractLastUpdateBy pgtype.UUID        `json:"contract_last_update_by"`
-	LandArea             float32            `json:"land_area"`
-	UnitArea             float32            `json:"unit_area"`
-	StartDate            pgtype.Date        `json:"start_date"`
-	MoveinDate           pgtype.Date        `json:"movein_date"`
-	RentalPeriod         int32              `json:"rental_period"`
-	RentalPrice          float32            `json:"rental_price"`
-	Status               PRERENTALSTATUS    `json:"status"`
-	Note                 pgtype.Text        `json:"note"`
-}
-
-type PrerentalCoap struct {
-	PrerentalID int64       `json:"prerental_id"`
-	FullName    pgtype.Text `json:"full_name"`
-	Dob         pgtype.Date `json:"dob"`
-	Job         pgtype.Text `json:"job"`
-	Income      pgtype.Int4 `json:"income"`
-	Email       pgtype.Text `json:"email"`
-	Phone       pgtype.Text `json:"phone"`
-	Description pgtype.Text `json:"description"`
-}
-
 type Property struct {
 	ID             uuid.UUID   `json:"id"`
 	CreatorID      uuid.UUID   `json:"creator_id"`
@@ -830,9 +704,68 @@ type ReminderMember struct {
 	UserID     uuid.UUID `json:"user_id"`
 }
 
+type Rental struct {
+	ID                     int64         `json:"id"`
+	CreatorID              uuid.UUID     `json:"creator_id"`
+	PropertyID             uuid.UUID     `json:"property_id"`
+	UnitID                 uuid.UUID     `json:"unit_id"`
+	ApplicationID          pgtype.Int8   `json:"application_id"`
+	ProfileImage           string        `json:"profile_image"`
+	TenantID               pgtype.UUID   `json:"tenant_id"`
+	TenantType             TENANTTYPE    `json:"tenant_type"`
+	TenantName             string        `json:"tenant_name"`
+	TenantPhone            string        `json:"tenant_phone"`
+	TenantEmail            string        `json:"tenant_email"`
+	StartDate              pgtype.Date   `json:"start_date"`
+	MoveinDate             pgtype.Date   `json:"movein_date"`
+	RentalPeriod           int32         `json:"rental_period"`
+	RentalPrice            float32       `json:"rental_price"`
+	ElectricityPaymentType string        `json:"electricity_payment_type"`
+	ElectricityPrice       pgtype.Float4 `json:"electricity_price"`
+	WaterPaymentType       string        `json:"water_payment_type"`
+	WaterPrice             pgtype.Float4 `json:"water_price"`
+	Note                   pgtype.Text   `json:"note"`
+}
+
+type RentalCoap struct {
+	RentalID    int64       `json:"rental_id"`
+	FullName    pgtype.Text `json:"full_name"`
+	Dob         pgtype.Date `json:"dob"`
+	Job         pgtype.Text `json:"job"`
+	Income      pgtype.Int4 `json:"income"`
+	Email       pgtype.Text `json:"email"`
+	Phone       pgtype.Text `json:"phone"`
+	Description pgtype.Text `json:"description"`
+}
+
+type RentalMinor struct {
+	RentalID    int64       `json:"rental_id"`
+	FullName    string      `json:"full_name"`
+	Dob         pgtype.Date `json:"dob"`
+	Email       pgtype.Text `json:"email"`
+	Phone       pgtype.Text `json:"phone"`
+	Description pgtype.Text `json:"description"`
+}
+
+type RentalPet struct {
+	RentalID    int64         `json:"rental_id"`
+	Type        string        `json:"type"`
+	Weight      pgtype.Float4 `json:"weight"`
+	Description pgtype.Text   `json:"description"`
+}
+
 type RentalPolicy struct {
 	ID     int64  `json:"id"`
 	Policy string `json:"policy"`
+}
+
+type RentalService struct {
+	RentalID int64  `json:"rental_id"`
+	Name     string `json:"name"`
+	// The party who set up the service, either "LANDLORD" or "TENANT"
+	SetupBy  string        `json:"setupBy"`
+	Provider pgtype.Text   `json:"provider"`
+	Price    pgtype.Float4 `json:"price"`
 }
 
 type Session struct {

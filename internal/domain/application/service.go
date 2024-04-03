@@ -18,6 +18,7 @@ import (
 	"github.com/user2410/rrms-backend/internal/domain/notification"
 	property_model "github.com/user2410/rrms-backend/internal/domain/property/model"
 	property_repo "github.com/user2410/rrms-backend/internal/domain/property/repo"
+	rental_model "github.com/user2410/rrms-backend/internal/domain/rental/model"
 	"github.com/user2410/rrms-backend/pkg/ds/set"
 
 	"github.com/gofiber/fiber/v2/log"
@@ -40,6 +41,7 @@ type Service interface {
 	GetApplicationMsgGroup(aid int64, userId uuid.UUID) (*chat_model.MsgGroupExtended, error)
 	CreateReminder(aid int64, userId uuid.UUID, data *dto.CreateReminder) (*model.ReminderModel, error)
 	GetRemindersOfUser(userId uuid.UUID, aid int64) ([]model.ReminderModel, error)
+	GetRentalByApplicationId(aid int64) (*rental_model.RentalModel, error)
 	UpdateReminderStatus(aid int64, userId uuid.UUID, data *dto.UpdateReminderStatus) error
 }
 
@@ -352,4 +354,8 @@ func (s *service) UpdateReminderStatus(aid int64, userId uuid.UUID, data *dto.Up
 	}
 
 	return nil
+}
+
+func (s *service) GetRentalByApplicationId(aid int64) (*rental_model.RentalModel, error) {
+	return s.aRepo.GetRentalByApplicationId(context.Background(), aid)
 }

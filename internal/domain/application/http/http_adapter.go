@@ -87,6 +87,11 @@ func (a *adapter) RegisterServer(route *fiber.Router, tokenMaker token.Maker) {
 		CheckApplicationVisibilty(a.aService),
 		a.getRemindersOfCurrentUser(),
 	)
+	applicationRoute.Get("/application/:id/rental",
+		auth_http.AuthorizedMiddleware(tokenMaker),
+		CheckApplicationVisibilty(a.aService),
+		a.getRentalByApplicationId(),
+	)
 	applicationRoute.Patch("/application/:id/reminders",
 		auth_http.AuthorizedMiddleware(tokenMaker),
 		CheckApplicationVisibilty(a.aService),
@@ -376,7 +381,7 @@ func (a *adapter) createReminder() fiber.Handler {
 func (a *adapter) getRemindersOfCurrentUser() fiber.Handler {
 	return func(ctx *fiber.Ctx) error {
 		tkPayload := ctx.Locals(auth_http.AuthorizationPayloadKey).(*token.Payload)
-		aid := ctx.Locals("aid").(int64)
+		aid := ctx.Locals(ApplicationIdLocalKey).(int64)
 
 		res, err := a.aService.GetRemindersOfUser(tkPayload.UserID, aid)
 		if err != nil {
@@ -400,7 +405,7 @@ func (a *adapter) updateReminderStatus() fiber.Handler {
 			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": validation.GetValidationError(errs)})
 		}
 
-		aid := ctx.Locals("aid").(int64)
+		aid := ctx.Locals(ApplicationIdLocalKey).(int64)
 		tkPayload := ctx.Locals(auth_http.AuthorizationPayloadKey).(*token.Payload)
 
 		err := a.aService.UpdateReminderStatus(aid, tkPayload.UserID, &payload)
@@ -412,5 +417,21 @@ func (a *adapter) updateReminderStatus() fiber.Handler {
 		}
 
 		return ctx.SendStatus(fiber.StatusOK)
+	}
+}
+
+func (a *adapter) getRentalByApplicationId() fiber.Handler {
+	return func(ctx *fiber.Ctx) error {
+		aid := ctx.Locals(ApplicationIdLocalKey).(int64)
+
+		res, err := a.aService.GetRentalByApplicationId(aid)
+		if err != nil {
+			if errors.Is(err, database.ErrRecordNotFound) {
+				return ctx.Status(fiber.StatusNotFound).JSON(fiber.Map{"message": "rental not found"})
+			}
+			return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
+		}
+
+		return ctx.Status(fiber.StatusOK).JSON(res)
 	}
 }

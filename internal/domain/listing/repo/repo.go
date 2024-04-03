@@ -21,6 +21,7 @@ type Repo interface {
 	UpdateListingStatus(ctx context.Context, id uuid.UUID, active bool) error
 	DeleteListing(ctx context.Context, id uuid.UUID) error
 	CheckListingOwnership(ctx context.Context, lid uuid.UUID, uid uuid.UUID) (bool, error)
+	CheckListingVisibility(ctx context.Context, lid, uid uuid.UUID) (bool, error)
 	CheckValidUnitForListing(ctx context.Context, lid uuid.UUID, uid uuid.UUID) (bool, error)
 	CheckListingExpired(ctx context.Context, lid uuid.UUID) (bool, error)
 }
@@ -316,4 +317,11 @@ func (r *repo) SearchListingCombination(ctx context.Context, query *dto.SearchLi
 		Items:  res1.Items,
 		Count:  res1.Count,
 	}, nil
+}
+
+func (r *repo) CheckListingVisibility(ctx context.Context, lid, uid uuid.UUID) (bool, error) {
+	return r.dao.CheckListingVisibility(ctx, database.CheckListingVisibilityParams{
+		ID:        lid,
+		ManagerID: uid,
+	})
 }

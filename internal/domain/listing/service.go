@@ -29,6 +29,7 @@ type Service interface {
 	UpdateListing(data *dto.UpdateListing) error
 	DeleteListing(id uuid.UUID) error
 	CheckListingOwnership(lid uuid.UUID, uid uuid.UUID) (bool, error)
+	CheckListingVisibility(lid uuid.UUID, uid uuid.UUID) (bool, error)
 	CheckValidUnitForListing(lid uuid.UUID, uid uuid.UUID) (bool, error)
 	CreateListingPayment(data *dto.CreateListingPayment) (*payment_model.PaymentModel, error)
 	CreateApplicationLink(data *dto.CreateApplicationLink) (string, error)
@@ -160,4 +161,8 @@ func (s *service) CreateApplicationLink(data *dto.CreateApplicationLink) (string
 
 func (s *service) VerifyApplicationLink(query *dto.VerifyApplicationLink) (bool, error) {
 	return listing_utils.VerifyApplicationLink(query, s.hashSecret)
+}
+
+func (s *service) CheckListingVisibility(lid uuid.UUID, uid uuid.UUID) (bool, error) {
+	return s.lRepo.CheckListingVisibility(context.Background(), lid, uid)
 }
