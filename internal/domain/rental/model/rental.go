@@ -19,8 +19,8 @@ type RentalCoapModel struct {
 	Description *string   `json:"description"`
 }
 
-func ToRentalCoapModel(pr *database.RentalCoap) *RentalCoapModel {
-	return &RentalCoapModel{
+func ToRentalCoapModel(pr *database.RentalCoap) RentalCoapModel {
+	return RentalCoapModel{
 		RentalID:    pr.RentalID,
 		FullName:    types.PNStr(pr.FullName),
 		Dob:         pr.Dob.Time,
@@ -41,8 +41,8 @@ type RentalMinor struct {
 	Description *string   `json:"description"`
 }
 
-func ToRentalMinor(pr *database.RentalMinor) *RentalMinor {
-	return &RentalMinor{
+func ToRentalMinor(pr *database.RentalMinor) RentalMinor {
+	return RentalMinor{
 		RentalID:    pr.RentalID,
 		FullName:    pr.FullName,
 		Dob:         pr.Dob.Time,
@@ -59,8 +59,8 @@ type RentalPet struct {
 	Description *string  `json:"description"`
 }
 
-func ToRentalPet(pr *database.RentalPet) *RentalPet {
-	return &RentalPet{
+func ToRentalPet(pr *database.RentalPet) RentalPet {
+	return RentalPet{
 		RentalID:    pr.RentalID,
 		Type:        pr.Type,
 		Weight:      types.PNFloat32(pr.Weight),
@@ -77,8 +77,8 @@ type RentalService struct {
 	Price    *float32 `json:"price"`
 }
 
-func ToRentalService(pr *database.RentalService) *RentalService {
-	return &RentalService{
+func ToRentalService(pr *database.RentalService) RentalService {
+	return RentalService{
 		RentalID: pr.RentalID,
 		Name:     pr.Name,
 		SetupBy:  pr.SetupBy,
@@ -99,15 +99,22 @@ type RentalModel struct {
 	TenantName             string              `json:"tenantName"`
 	TenantPhone            string              `json:"tenantPhone"`
 	TenantEmail            string              `json:"tenantEmail"`
+	OrganizationName       *string             `json:"organizationName" validate:"omitempty"`
+	OrganizationHqAddress  *string             `json:"organizationHqAddress" validate:"omitempty"`
 	StartDate              time.Time           `json:"startDate"`
 	MoveinDate             time.Time           `json:"moveinDate"`
 	RentalPeriod           int32               `json:"rentalPeriod"`
 	RentalPrice            float32             `json:"rentalPrice"`
+	RentalIntention        string              `json:"rentalIntention"`
+	Deposit                float32             `json:"deposit"`
+	DepositPaid            bool                `json:"depositPaid"`
 	ElectricityPaymentType string              `json:"electricityPaymentType"`
 	ElectricityPrice       *float32            `json:"electricityPrice"`
 	WaterPaymentType       string              `json:"waterPaymentType"`
 	WaterPrice             *float32            `json:"waterPrice"`
 	Note                   *string             `json:"note"`
+	CreatedAt              time.Time           `json:"createdAt"`
+	UpdatedAt              time.Time           `json:"updatedAt"`
 
 	Coaps    []RentalCoapModel `json:"coaps"`
 	Minors   []RentalMinor     `json:"minors"`
@@ -128,14 +135,21 @@ func ToRentalModel(pr *database.Rental) *RentalModel {
 		TenantName:             pr.TenantName,
 		TenantPhone:            pr.TenantPhone,
 		TenantEmail:            pr.TenantEmail,
+		OrganizationName:       types.PNStr(pr.OrganizationName),
+		OrganizationHqAddress:  types.PNStr(pr.OrganizationHqAddress),
 		StartDate:              pr.StartDate.Time,
 		MoveinDate:             pr.MoveinDate.Time,
 		RentalPeriod:           pr.RentalPeriod,
 		RentalPrice:            pr.RentalPrice,
+		RentalIntention:        pr.RentalIntention,
+		Deposit:                pr.Deposit,
+		DepositPaid:            pr.DepositPaid,
 		ElectricityPaymentType: pr.ElectricityPaymentType,
 		ElectricityPrice:       types.PNFloat32(pr.ElectricityPrice),
 		WaterPaymentType:       pr.WaterPaymentType,
 		WaterPrice:             types.PNFloat32(pr.WaterPrice),
 		Note:                   types.PNStr(pr.Note),
+		CreatedAt:              pr.CreatedAt,
+		UpdatedAt:              pr.UpdatedAt,
 	}
 }

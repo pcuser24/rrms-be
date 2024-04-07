@@ -1,4 +1,4 @@
-package rental
+package http
 
 import (
 	"errors"
@@ -30,16 +30,25 @@ func NewAdapter(service rental.Service) Adapter {
 }
 
 func (a *adapter) RegisterServer(route *fiber.Router, tokenMaker token.Maker) {
-	prentalRoute := (*route).Group("/rentals")
-	prentalRoute.Use(auth_http.AuthorizedMiddleware(tokenMaker))
-	prentalRoute.Post("/", a.createRental())
-	prentalRoute.Get("/rental/:id", a.getRental())
-	prentalRoute.Patch("/rental/:id", a.updateRental())
-	prentalRoute.Get("/rental/:id/contract", a.getRentalContract())
-	prentalRoute.Post("/rental/:id/contract", a.prepareRentalContract())
-	prentalRoute.Patch("/rental/:id/contract", a.updateRentalContract())
+	rentalRoute := (*route).Group("/rentals")
+	rentalRoute.Use(auth_http.AuthorizedMiddleware(tokenMaker))
+	rentalRoute.Post("/", a.createRental())
+	rentalRoute.Get("/rental/:id",
+		CheckRentalVisibility(a.service),
+		a.getRental(),
+	)
+	rentalRoute.Patch("/rental/:id", a.updateRental())
+	rentalRoute.Get("/rental/:id/contract", a.getRentalContract())
+	rentalRoute.Get("/rental/:id/ping-contract", a.pingContract())
+	rentalRoute.Post("/rental/:id/contract", a.createRentalContract())
 
-	_ = (*route).Group("/rental")
+	contractRoute := (*route).Group("/contracts")
+	contractRoute.Use(auth_http.AuthorizedMiddleware(tokenMaker))
+	contractRoute.Get("/contract/:id", a.getContract())
+	// contractRoute.Patch("/contract/:id", a.updateContract())
+	contractRoute.Patch("/contract/:id", a.updateContract())
+	contractRoute.Patch("/contract/:id/content", a.updateContractContent())
+
 }
 
 func (a *adapter) createRental() fiber.Handler {
@@ -60,9 +69,6 @@ func (a *adapter) createRental() fiber.Handler {
 			if dbErr, ok := err.(*pgconn.PgError); ok {
 				return responses.DBErrorResponse(ctx, dbErr)
 			}
-			if dbErr, ok := err.(*database.TXError); ok {
-				return responses.DBTXErrorResponse(ctx, dbErr)
-			}
 
 			return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
 		}
@@ -73,42 +79,21 @@ func (a *adapter) createRental() fiber.Handler {
 
 func (a *adapter) getRental() fiber.Handler {
 	return func(ctx *fiber.Ctx) error {
-		pid, err := strconv.ParseInt(ctx.Params("id"), 10, 64)
+		rid, err := strconv.ParseInt(ctx.Params("id"), 10, 64)
 		if err != nil {
 			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message: Invalid rental id": err.Error()})
 		}
 
-		res, err := a.service.GetRental(pid)
+		res, err := a.service.GetRental(rid)
 		if err != nil {
 			if errors.Is(err, database.ErrRecordNotFound) {
-				return ctx.Status(fiber.StatusNotFound).JSON(fiber.Map{"message": "property not found"})
+				return ctx.Status(fiber.StatusNotFound).JSON(fiber.Map{"message": "rental profile not found"})
 			}
 
 			return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
 		}
 
 		return ctx.Status(fiber.StatusOK).JSON(res)
-	}
-}
-
-func (a *adapter) getRentalContract() fiber.Handler {
-	return func(ctx *fiber.Ctx) error {
-		// pid, err := strconv.ParseInt(ctx.Params("id"), 10, 64)
-		// if err != nil {
-		// 	return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": err.Error()})
-		// }
-
-		// res, err := a.service.GetRentalContract(pid)
-		// if err != nil {
-		// 	if errors.Is(err, database.ErrRecordNotFound) {
-		// 		return ctx.Status(fiber.StatusNotFound).JSON(fiber.Map{"message": "property not found"})
-		// 	}
-
-		// 	return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
-		// }
-
-		// return ctx.Status(fiber.StatusOK).JSON(res)
-		return nil
 	}
 }
 
@@ -140,60 +125,151 @@ func (a *adapter) updateRental() fiber.Handler {
 	}
 }
 
-func (a *adapter) updateRentalContract() fiber.Handler {
+func (a *adapter) createRentalContract() fiber.Handler {
 	return func(ctx *fiber.Ctx) error {
-		// pid, err := strconv.ParseInt(ctx.Params("id"), 10, 64)
-		// if err != nil {
-		// 	return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": err.Error()})
-		// }
+		rid, err := strconv.ParseInt(ctx.Params("id"), 10, 64)
+		if err != nil {
+			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": err.Error()})
+		}
 
-		// var payload dto.UpdateRentalContract
-		// if err := ctx.BodyParser(&payload); err != nil {
-		// 	return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": err.Error()})
-		// }
-		// if errs := validation.ValidateStruct(nil, payload); len(errs) > 0 {
-		// 	return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": validation.GetValidationError(errs)})
-		// }
+		var payload dto.CreateContract
+		if err := ctx.BodyParser(&payload); err != nil {
+			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": err.Error()})
+		}
+		payload.RentalID = rid
+		payload.UserID = ctx.Locals(auth_http.AuthorizationPayloadKey).(*token.Payload).UserID
+		if errs := validation.ValidateStruct(nil, payload); len(errs) > 0 {
+			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": validation.GetValidationError(errs)})
+		}
 
-		// err = a.service.UpdateRentalContract(&payload, pid)
-		// if err != nil {
-		// 	if errors.Is(err, database.ErrRecordNotFound) {
-		// 		return ctx.Status(fiber.StatusNotFound).JSON(fiber.Map{"message": "property not found"})
-		// 	}
+		res, err := a.service.CreateContract(&payload)
+		if err != nil {
+			if dbErr, ok := err.(*pgconn.PgError); ok {
+				return responses.DBErrorResponse(ctx, dbErr)
+			}
 
-		// 	return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
-		// }
+			return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
+		}
 
-		// return ctx.SendStatus(fiber.StatusOK)
-		return nil
+		return ctx.Status(fiber.StatusOK).JSON(res)
 	}
 }
 
-func (a *adapter) prepareRentalContract() fiber.Handler {
+func (a *adapter) getContract() fiber.Handler {
 	return func(ctx *fiber.Ctx) error {
-		// pid, err := strconv.ParseInt(ctx.Params("id"), 10, 64)
-		// if err != nil {
-		// 	return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": err.Error()})
-		// }
+		rid, err := strconv.ParseInt(ctx.Params("id"), 10, 64)
+		if err != nil {
+			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": err.Error()})
+		}
 
-		// var payload dto.PrepareRentalContract
-		// if err := ctx.BodyParser(&payload); err != nil {
-		// 	return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": err.Error()})
-		// }
-		// if errs := validation.ValidateStruct(nil, payload); len(errs) > 0 {
-		// 	return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": validation.GetValidationError(errs)})
-		// }
+		res, err := a.service.GetContract(rid)
+		if err != nil {
+			if errors.Is(err, database.ErrRecordNotFound) {
+				return ctx.Status(fiber.StatusNotFound).JSON(fiber.Map{"message": "property not found"})
+			}
 
-		// res, err := a.service.PrepareRentalContract(pid, &payload)
-		// if err != nil {
-		// 	if errors.Is(err, database.ErrRecordNotFound) {
-		// 		return ctx.Status(fiber.StatusNotFound).JSON(fiber.Map{"message": "property not found"})
-		// 	}
+			return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
+		}
 
-		// 	return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
-		// }
+		return ctx.Status(fiber.StatusOK).JSON(res)
+	}
+}
 
-		// return ctx.Status(fiber.StatusOK).JSON(res)
-		return nil
+func (a *adapter) pingContract() fiber.Handler {
+	return func(ctx *fiber.Ctx) error {
+		rid, err := strconv.ParseInt(ctx.Params("id"), 10, 64)
+		if err != nil {
+			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": err.Error()})
+		}
+
+		res, err := a.service.PingRentalContract(rid)
+		if err != nil {
+			if errors.Is(err, database.ErrRecordNotFound) {
+				return ctx.Status(fiber.StatusNotFound).JSON(fiber.Map{"message": "property not found"})
+			}
+
+			return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
+		}
+
+		return ctx.Status(fiber.StatusOK).JSON(res)
+	}
+}
+
+func (a *adapter) getRentalContract() fiber.Handler {
+	return func(ctx *fiber.Ctx) error {
+		rid, err := strconv.ParseInt(ctx.Params("id"), 10, 64)
+		if err != nil {
+			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": err.Error()})
+		}
+
+		res, err := a.service.GetRentalContract(rid)
+		if err != nil {
+			if errors.Is(err, database.ErrRecordNotFound) {
+				return ctx.Status(fiber.StatusNotFound).JSON(fiber.Map{"message": "property not found"})
+			}
+
+			return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
+		}
+
+		return ctx.Status(fiber.StatusOK).JSON(res)
+	}
+}
+
+func (a *adapter) updateContract() fiber.Handler {
+	return func(ctx *fiber.Ctx) error {
+		id, err := strconv.ParseInt(ctx.Params("id"), 10, 64)
+		if err != nil {
+			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": err.Error()})
+		}
+
+		var payload dto.UpdateContract
+		if err := ctx.BodyParser(&payload); err != nil {
+			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": err.Error()})
+		}
+		payload.ID = id
+		payload.UserID = ctx.Locals(auth_http.AuthorizationPayloadKey).(*token.Payload).UserID
+		if errs := validation.ValidateStruct(nil, payload); len(errs) > 0 {
+			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": validation.GetValidationError(errs)})
+		}
+
+		err = a.service.UpdateContract(&payload)
+		if err != nil {
+			if dbErr, ok := err.(*pgconn.PgError); ok {
+				return responses.DBErrorResponse(ctx, dbErr)
+			}
+
+			return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
+		}
+
+		return ctx.SendStatus(fiber.StatusOK)
+	}
+}
+
+func (a *adapter) updateContractContent() fiber.Handler {
+	return func(ctx *fiber.Ctx) error {
+		id, err := strconv.ParseInt(ctx.Params("id"), 10, 64)
+		if err != nil {
+			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": err.Error()})
+		}
+
+		var payload dto.UpdateContractContent
+		if err := ctx.BodyParser(&payload); err != nil {
+			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": err.Error()})
+		}
+		payload.ID = id
+		if errs := validation.ValidateStruct(nil, payload); len(errs) > 0 {
+			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": validation.GetValidationError(errs)})
+		}
+
+		err = a.service.UpdateContractContent(&payload)
+		if err != nil {
+			if dbErr, ok := err.(*pgconn.PgError); ok {
+				return responses.DBErrorResponse(ctx, dbErr)
+			}
+
+			return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
+		}
+
+		return ctx.SendStatus(fiber.StatusOK)
 	}
 }

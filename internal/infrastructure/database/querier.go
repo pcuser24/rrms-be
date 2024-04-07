@@ -18,6 +18,7 @@ type Querier interface {
 	CheckListingOwnership(ctx context.Context, arg CheckListingOwnershipParams) (int64, error)
 	CheckListingVisibility(ctx context.Context, arg CheckListingVisibilityParams) (bool, error)
 	CheckMsgGroupMembership(ctx context.Context, arg CheckMsgGroupMembershipParams) (bool, error)
+	CheckRentalVisibility(ctx context.Context, arg CheckRentalVisibilityParams) (bool, error)
 	CheckUnitManageability(ctx context.Context, arg CheckUnitManageabilityParams) (int64, error)
 	CheckUnitOfProperty(ctx context.Context, arg CheckUnitOfPropertyParams) (int64, error)
 	CheckValidUnitForListing(ctx context.Context, arg CheckValidUnitForListingParams) (int64, error)
@@ -26,6 +27,7 @@ type Querier interface {
 	CreateApplicationMinor(ctx context.Context, arg CreateApplicationMinorParams) (ApplicationMinor, error)
 	CreateApplicationPet(ctx context.Context, arg CreateApplicationPetParams) (ApplicationPet, error)
 	CreateApplicationVehicle(ctx context.Context, arg CreateApplicationVehicleParams) (ApplicationVehicle, error)
+	CreateContract(ctx context.Context, arg CreateContractParams) (Contract, error)
 	CreateListing(ctx context.Context, arg CreateListingParams) (Listing, error)
 	CreateListingPolicy(ctx context.Context, arg CreateListingPolicyParams) (ListingPolicy, error)
 	CreateListingTag(ctx context.Context, arg CreateListingTagParams) (ListingTag, error)
@@ -78,6 +80,8 @@ type Querier interface {
 	GetApplicationsByUserId(ctx context.Context, arg GetApplicationsByUserIdParams) ([]int64, error)
 	GetApplicationsOfListing(ctx context.Context, listingID uuid.UUID) ([]int64, error)
 	GetApplicationsToUser(ctx context.Context, arg GetApplicationsToUserParams) ([]int64, error)
+	GetContractByID(ctx context.Context, id int64) (Contract, error)
+	GetContractByRentalID(ctx context.Context, rentalID int64) (Contract, error)
 	GetListingByID(ctx context.Context, id uuid.UUID) (Listing, error)
 	GetListingPolicies(ctx context.Context, listingID uuid.UUID) ([]ListingPolicy, error)
 	GetListingTags(ctx context.Context, listingID uuid.UUID) ([]ListingTag, error)
@@ -117,7 +121,10 @@ type Querier interface {
 	GetUserById(ctx context.Context, id uuid.UUID) (User, error)
 	IsPropertyPublic(ctx context.Context, id uuid.UUID) (bool, error)
 	IsUnitPublic(ctx context.Context, id uuid.UUID) (bool, error)
+	PingContractByRentalID(ctx context.Context, rentalID int64) (PingContractByRentalIDRow, error)
 	UpdateApplicationStatus(ctx context.Context, arg UpdateApplicationStatusParams) ([]int64, error)
+	UpdateContract(ctx context.Context, arg UpdateContractParams) error
+	UpdateContractContent(ctx context.Context, arg UpdateContractContentParams) error
 	UpdateListing(ctx context.Context, arg UpdateListingParams) error
 	UpdateListingStatus(ctx context.Context, arg UpdateListingStatusParams) error
 	UpdateMessage(ctx context.Context, arg UpdateMessageParams) ([]int64, error)

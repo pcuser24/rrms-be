@@ -39,7 +39,7 @@ func (a *adapter) RegisterServer(router *fiber.Router, tokenMaker token.Maker) {
 	credentialGroup.Get("/me", AuthorizedMiddleware(tokenMaker), a.credentialGetCurrentUser())
 	credentialGroup.Get("/ids", AuthorizedMiddleware(tokenMaker), a.credentialGetUserByIds())
 	credentialGroup.Put("/refresh", a.credentialRefresh())
-	credentialGroup.Patch("/update", AuthorizedMiddleware(tokenMaker), a.credentialUpdate())
+	credentialGroup.Patch("/update", AuthorizedMiddleware(tokenMaker), a.credentialUpdateUser())
 	credentialGroup.Delete("/logout", AuthorizedMiddleware(tokenMaker), a.credentialLogout())
 
 	bffGroup := authRoute.Group("/bff")
@@ -193,7 +193,7 @@ func (a *adapter) credentialRefresh() fiber.Handler {
 	}
 }
 
-func (a *adapter) credentialUpdate() fiber.Handler {
+func (a *adapter) credentialUpdateUser() fiber.Handler {
 	return func(ctx *fiber.Ctx) error {
 		tokenPayload := ctx.Locals(AuthorizationPayloadKey).(*token.Payload)
 

@@ -21,14 +21,15 @@ type UserModel struct {
 	DeletedF  bool      `json:"deletedF"`
 
 	// User info
-	FirstName string  `json:"firstName"`
-	LastName  string  `json:"lastName"`
-	Phone     *string `json:"phone"`
-	Avatar    *string `json:"avatar"`
-	Address   *string `json:"address"`
-	City      *string `json:"city"`
-	District  *string `json:"district"`
-	Ward      *string `json:"ward"`
+	FirstName string            `json:"firstName"`
+	LastName  string            `json:"lastName"`
+	Phone     *string           `json:"phone"`
+	Avatar    *string           `json:"avatar"`
+	Address   *string           `json:"address"`
+	City      *string           `json:"city"`
+	District  *string           `json:"district"`
+	Ward      *string           `json:"ward"`
+	Role      database.USERROLE `json:"role"`
 }
 
 func (u *UserModel) ToUserResponse() *dto.UserResponse {
@@ -48,6 +49,7 @@ func (u *UserModel) ToUserResponse() *dto.UserResponse {
 		City:      u.City,
 		District:  u.District,
 		Ward:      u.Ward,
+		Role:      u.Role,
 	}
 	// if u.CreatedBy != uuid.Nil {
 	// 	str := u.CreatedBy.String()
@@ -79,5 +81,6 @@ func ToUserModel(ud *database.User) *UserModel {
 		City:      types.PNStr(ud.City),
 		District:  types.PNStr(ud.District),
 		Ward:      types.PNStr(ud.Ward),
+		Role:      ud.Role,
 	}
 }

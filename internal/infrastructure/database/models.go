@@ -58,6 +58,52 @@ func (ns NullAPPLICATIONSTATUS) Value() (driver.Value, error) {
 	return string(ns.APPLICATIONSTATUS), nil
 }
 
+type CONTRACTSTATUS string
+
+const (
+	CONTRACTSTATUSPENDINGA CONTRACTSTATUS = "PENDING_A"
+	CONTRACTSTATUSPENDINGB CONTRACTSTATUS = "PENDING_B"
+	CONTRACTSTATUSPENDING  CONTRACTSTATUS = "PENDING"
+	CONTRACTSTATUSSIGNED   CONTRACTSTATUS = "SIGNED"
+	CONTRACTSTATUSREJECTED CONTRACTSTATUS = "REJECTED"
+	CONTRACTSTATUSCANCELED CONTRACTSTATUS = "CANCELED"
+)
+
+func (e *CONTRACTSTATUS) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = CONTRACTSTATUS(s)
+	case string:
+		*e = CONTRACTSTATUS(s)
+	default:
+		return fmt.Errorf("unsupported scan type for CONTRACTSTATUS: %T", src)
+	}
+	return nil
+}
+
+type NullCONTRACTSTATUS struct {
+	CONTRACTSTATUS CONTRACTSTATUS `json:"CONTRACTSTATUS"`
+	Valid          bool           `json:"valid"` // Valid is true if CONTRACTSTATUS is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullCONTRACTSTATUS) Scan(value interface{}) error {
+	if value == nil {
+		ns.CONTRACTSTATUS, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.CONTRACTSTATUS.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullCONTRACTSTATUS) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.CONTRACTSTATUS), nil
+}
+
 type MEDIATYPE string
 
 const (
@@ -446,6 +492,49 @@ func (ns NullUNITTYPE) Value() (driver.Value, error) {
 	return string(ns.UNITTYPE), nil
 }
 
+type USERROLE string
+
+const (
+	USERROLEADMIN    USERROLE = "ADMIN"
+	USERROLELANDLORD USERROLE = "LANDLORD"
+	USERROLETENANT   USERROLE = "TENANT"
+)
+
+func (e *USERROLE) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = USERROLE(s)
+	case string:
+		*e = USERROLE(s)
+	default:
+		return fmt.Errorf("unsupported scan type for USERROLE: %T", src)
+	}
+	return nil
+}
+
+type NullUSERROLE struct {
+	USERROLE USERROLE `json:"USERROLE"`
+	Valid    bool     `json:"valid"` // Valid is true if USERROLE is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullUSERROLE) Scan(value interface{}) error {
+	if value == nil {
+		ns.USERROLE, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.USERROLE.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullUSERROLE) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.USERROLE), nil
+}
+
 type Account struct {
 	ID                uuid.UUID   `json:"id"`
 	UserId            uuid.UUID   `json:"userId"`
@@ -531,6 +620,49 @@ type ApplicationVehicle struct {
 	Model         pgtype.Text `json:"model"`
 	Code          string      `json:"code"`
 	Description   pgtype.Text `json:"description"`
+}
+
+type Contract struct {
+	ID                        int64          `json:"id"`
+	RentalID                  int64          `json:"rental_id"`
+	AFullname                 string         `json:"a_fullname"`
+	ADob                      pgtype.Date    `json:"a_dob"`
+	APhone                    string         `json:"a_phone"`
+	AAddress                  string         `json:"a_address"`
+	AHouseholdRegistration    string         `json:"a_household_registration"`
+	AIdentity                 string         `json:"a_identity"`
+	AIdentityIssuedBy         string         `json:"a_identity_issued_by"`
+	AIdentityIssuedAt         pgtype.Date    `json:"a_identity_issued_at"`
+	ADocuments                []string       `json:"a_documents"`
+	ABankAccount              pgtype.Text    `json:"a_bank_account"`
+	ABank                     pgtype.Text    `json:"a_bank"`
+	ARegistrationNumber       string         `json:"a_registration_number"`
+	BFullname                 string         `json:"b_fullname"`
+	BOrganizationName         pgtype.Text    `json:"b_organization_name"`
+	BOrganizationHqAddress    pgtype.Text    `json:"b_organization_hq_address"`
+	BOrganizationCode         pgtype.Text    `json:"b_organization_code"`
+	BOrganizationCodeIssuedAt pgtype.Date    `json:"b_organization_code_issued_at"`
+	BOrganizationCodeIssuedBy pgtype.Text    `json:"b_organization_code_issued_by"`
+	BDob                      pgtype.Text    `json:"b_dob"`
+	BPhone                    string         `json:"b_phone"`
+	BAddress                  pgtype.Text    `json:"b_address"`
+	BHouseholdRegistration    pgtype.Text    `json:"b_household_registration"`
+	BIdentity                 pgtype.Text    `json:"b_identity"`
+	BIdentityIssuedBy         pgtype.Text    `json:"b_identity_issued_by"`
+	BIdentityIssuedAt         pgtype.Date    `json:"b_identity_issued_at"`
+	BBankAccount              pgtype.Text    `json:"b_bank_account"`
+	BBank                     pgtype.Text    `json:"b_bank"`
+	BTaxCode                  pgtype.Text    `json:"b_tax_code"`
+	PaymentMethod             string         `json:"payment_method"`
+	PaymentDay                int32          `json:"payment_day"`
+	NCopies                   int32          `json:"n_copies"`
+	CreatedAtPlace            string         `json:"created_at_place"`
+	Content                   string         `json:"content"`
+	Status                    CONTRACTSTATUS `json:"status"`
+	CreatedAt                 time.Time      `json:"created_at"`
+	UpdatedAt                 time.Time      `json:"updated_at"`
+	CreatedBy                 uuid.UUID      `json:"created_by"`
+	UpdatedBy                 uuid.UUID      `json:"updated_by"`
 }
 
 type Listing struct {
@@ -710,21 +842,28 @@ type Rental struct {
 	PropertyID             uuid.UUID     `json:"property_id"`
 	UnitID                 uuid.UUID     `json:"unit_id"`
 	ApplicationID          pgtype.Int8   `json:"application_id"`
-	ProfileImage           string        `json:"profile_image"`
 	TenantID               pgtype.UUID   `json:"tenant_id"`
+	ProfileImage           string        `json:"profile_image"`
 	TenantType             TENANTTYPE    `json:"tenant_type"`
 	TenantName             string        `json:"tenant_name"`
 	TenantPhone            string        `json:"tenant_phone"`
 	TenantEmail            string        `json:"tenant_email"`
+	OrganizationName       pgtype.Text   `json:"organization_name"`
+	OrganizationHqAddress  pgtype.Text   `json:"organization_hq_address"`
 	StartDate              pgtype.Date   `json:"start_date"`
 	MoveinDate             pgtype.Date   `json:"movein_date"`
 	RentalPeriod           int32         `json:"rental_period"`
 	RentalPrice            float32       `json:"rental_price"`
+	RentalIntention        string        `json:"rental_intention"`
+	Deposit                float32       `json:"deposit"`
+	DepositPaid            bool          `json:"deposit_paid"`
 	ElectricityPaymentType string        `json:"electricity_payment_type"`
 	ElectricityPrice       pgtype.Float4 `json:"electricity_price"`
 	WaterPaymentType       string        `json:"water_payment_type"`
 	WaterPrice             pgtype.Float4 `json:"water_price"`
 	Note                   pgtype.Text   `json:"note"`
+	CreatedAt              time.Time     `json:"created_at"`
+	UpdatedAt              time.Time     `json:"updated_at"`
 }
 
 type RentalCoap struct {
@@ -836,6 +975,7 @@ type User struct {
 	City      pgtype.Text `json:"city"`
 	District  pgtype.Text `json:"district"`
 	Ward      pgtype.Text `json:"ward"`
+	Role      USERROLE    `json:"role"`
 }
 
 type VerificationToken struct {

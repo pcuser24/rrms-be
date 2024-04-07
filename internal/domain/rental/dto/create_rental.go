@@ -100,13 +100,18 @@ type CreateRental struct {
 	TenantName             string              `json:"tenantName" validate:"required"`
 	TenantPhone            string              `json:"tenantPhone" validate:"required"`
 	TenantEmail            string              `json:"tenantEmail" validate:"required"`
+	OrganizationName       *string             `json:"organizationName" validate:"omitempty"`
+	OrganizationHqAddress  *string             `json:"organizationHqAddress" validate:"omitempty"`
 	StartDate              time.Time           `json:"startDate" validate:"required"`
 	MoveinDate             time.Time           `json:"moveinDate" validate:"required"`
 	RentalPeriod           int32               `json:"rentalPeriod" validate:"required"`
 	RentalPrice            float32             `json:"rentalPrice" validate:"required"`
-	ElectricityPaymentType *string             `json:"electricityPaymentType" validate:"required"`
+	RentalIntention        string              `json:"rentalIntention" validate:"required"`
+	Deposit                float32             `json:"deposit" validate:"required"`
+	DepositPaid            bool                `json:"depositPaid" validate:"required"`
+	ElectricityPaymentType string              `json:"electricityPaymentType" validate:"required"`
 	ElectricityPrice       *float32            `json:"electricityPrice" validate:"omitempty"`
-	WaterPaymentType       *string             `json:"waterPaymentType" validate:"required"`
+	WaterPaymentType       string              `json:"waterPaymentType" validate:"required"`
 	WaterPrice             *float32            `json:"waterPrice" validate:"omitempty"`
 	Note                   *string             `json:"note"`
 
@@ -118,16 +123,18 @@ type CreateRental struct {
 
 func (pm *CreateRental) ToCreateRentalDB() database.CreateRentalParams {
 	return database.CreateRentalParams{
-		CreatorID:     pm.CreatorID,
-		ApplicationID: types.Int64N(pm.ApplicationID),
-		TenantID:      types.UUIDN(pm.TenantID),
-		ProfileImage:  pm.ProfileImage,
-		PropertyID:    pm.PropertyID,
-		UnitID:        pm.UnitID,
-		TenantType:    pm.TenantType,
-		TenantName:    pm.TenantName,
-		TenantPhone:   pm.TenantPhone,
-		TenantEmail:   pm.TenantEmail,
+		CreatorID:             pm.CreatorID,
+		ApplicationID:         types.Int64N(pm.ApplicationID),
+		TenantID:              types.UUIDN(pm.TenantID),
+		ProfileImage:          pm.ProfileImage,
+		PropertyID:            pm.PropertyID,
+		UnitID:                pm.UnitID,
+		TenantType:            pm.TenantType,
+		TenantName:            pm.TenantName,
+		TenantPhone:           pm.TenantPhone,
+		TenantEmail:           pm.TenantEmail,
+		OrganizationName:      types.StrN(pm.OrganizationName),
+		OrganizationHqAddress: types.StrN(pm.OrganizationHqAddress),
 		StartDate: pgtype.Date{
 			Time:  pm.StartDate,
 			Valid: !pm.StartDate.IsZero(),
@@ -136,8 +143,15 @@ func (pm *CreateRental) ToCreateRentalDB() database.CreateRentalParams {
 			Time:  pm.MoveinDate,
 			Valid: !pm.MoveinDate.IsZero(),
 		},
-		RentalPeriod: pm.RentalPeriod,
-		RentalPrice:  pm.RentalPrice,
-		Note:         types.StrN(pm.Note),
+		RentalPeriod:           pm.RentalPeriod,
+		RentalPrice:            pm.RentalPrice,
+		RentalIntention:        pm.RentalIntention,
+		Deposit:                pm.Deposit,
+		DepositPaid:            pm.DepositPaid,
+		ElectricityPaymentType: pm.ElectricityPaymentType,
+		ElectricityPrice:       types.Float32N(pm.ElectricityPrice),
+		WaterPaymentType:       pm.WaterPaymentType,
+		WaterPrice:             types.Float32N(pm.WaterPrice),
+		Note:                   types.StrN(pm.Note),
 	}
 }

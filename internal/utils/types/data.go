@@ -277,14 +277,16 @@ func Int64N(s *int64) pgtype.Int8 {
 	}
 }
 
-func TimeN(s *time.Time) pgtype.Time {
-	if s == nil {
-		return pgtype.Time{
-			Valid: false,
-		}
+func DateN(s time.Time) pgtype.Date {
+	return pgtype.Date{
+		Valid: !s.IsZero(),
+		Time:  s,
 	}
+}
+
+func TimeN(s time.Time) pgtype.Time {
 	return pgtype.Time{
-		Valid:        true,
+		Valid:        !s.IsZero(),
 		Microseconds: s.UnixNano() / 1000,
 	}
 }

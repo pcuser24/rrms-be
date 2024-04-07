@@ -60,15 +60,17 @@ INSERT INTO "User" (
   created_at, 
   updated_at,
   first_name,
-  last_name
+  last_name,
+  role
 ) VALUES (
   $1, 
   $2, 
   NOW(), 
   NOW(),
   $3,
-  $4
-) RETURNING id, email, password, group_id, created_at, updated_at, created_by, updated_by, deleted_f, first_name, last_name, phone, avatar, address, city, district, ward
+  $4,
+  $5
+) RETURNING id, email, password, group_id, created_at, updated_at, created_by, updated_by, deleted_f, first_name, last_name, phone, avatar, address, city, district, ward, role
 `
 
 type CreateUserParams struct {
@@ -76,6 +78,7 @@ type CreateUserParams struct {
 	Password  pgtype.Text `json:"password"`
 	FirstName string      `json:"first_name"`
 	LastName  string      `json:"last_name"`
+	Role      USERROLE    `json:"role"`
 }
 
 func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, error) {
@@ -84,6 +87,7 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 		arg.Password,
 		arg.FirstName,
 		arg.LastName,
+		arg.Role,
 	)
 	var i User
 	err := row.Scan(
@@ -104,6 +108,7 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 		&i.City,
 		&i.District,
 		&i.Ward,
+		&i.Role,
 	)
 	return i, err
 }
@@ -129,7 +134,7 @@ func (q *Queries) GetSessionById(ctx context.Context, id uuid.UUID) (Session, er
 }
 
 const getUserByEmail = `-- name: GetUserByEmail :one
-SELECT id, email, password, group_id, created_at, updated_at, created_by, updated_by, deleted_f, first_name, last_name, phone, avatar, address, city, district, ward FROM "User" WHERE email = $1 LIMIT 1
+SELECT id, email, password, group_id, created_at, updated_at, created_by, updated_by, deleted_f, first_name, last_name, phone, avatar, address, city, district, ward, role FROM "User" WHERE email = $1 LIMIT 1
 `
 
 func (q *Queries) GetUserByEmail(ctx context.Context, email string) (User, error) {
@@ -153,12 +158,13 @@ func (q *Queries) GetUserByEmail(ctx context.Context, email string) (User, error
 		&i.City,
 		&i.District,
 		&i.Ward,
+		&i.Role,
 	)
 	return i, err
 }
 
 const getUserById = `-- name: GetUserById :one
-SELECT id, email, password, group_id, created_at, updated_at, created_by, updated_by, deleted_f, first_name, last_name, phone, avatar, address, city, district, ward FROM "User" WHERE id = $1 LIMIT 1
+SELECT id, email, password, group_id, created_at, updated_at, created_by, updated_by, deleted_f, first_name, last_name, phone, avatar, address, city, district, ward, role FROM "User" WHERE id = $1 LIMIT 1
 `
 
 func (q *Queries) GetUserById(ctx context.Context, id uuid.UUID) (User, error) {
@@ -182,6 +188,7 @@ func (q *Queries) GetUserById(ctx context.Context, id uuid.UUID) (User, error) {
 		&i.City,
 		&i.District,
 		&i.Ward,
+		&i.Role,
 	)
 	return i, err
 }
@@ -212,24 +219,26 @@ UPDATE "User" SET
   city = coalesce($10, city),
   district = coalesce($11, district),
   ward = coalesce($12, ward),
+  role = coalesce($13, role),
   updated_at = NOW(),
   updated_by = $1
 WHERE id = $2
 `
 
 type UpdateUserParams struct {
-	UpdatedBy pgtype.UUID `json:"updated_by"`
-	ID        uuid.UUID   `json:"id"`
-	Email     pgtype.Text `json:"email"`
-	Password  pgtype.Text `json:"password"`
-	FirstName pgtype.Text `json:"first_name"`
-	LastName  pgtype.Text `json:"last_name"`
-	Phone     pgtype.Text `json:"phone"`
-	Avatar    pgtype.Text `json:"avatar"`
-	Address   pgtype.Text `json:"address"`
-	City      pgtype.Text `json:"city"`
-	District  pgtype.Text `json:"district"`
-	Ward      pgtype.Text `json:"ward"`
+	UpdatedBy pgtype.UUID  `json:"updated_by"`
+	ID        uuid.UUID    `json:"id"`
+	Email     pgtype.Text  `json:"email"`
+	Password  pgtype.Text  `json:"password"`
+	FirstName pgtype.Text  `json:"first_name"`
+	LastName  pgtype.Text  `json:"last_name"`
+	Phone     pgtype.Text  `json:"phone"`
+	Avatar    pgtype.Text  `json:"avatar"`
+	Address   pgtype.Text  `json:"address"`
+	City      pgtype.Text  `json:"city"`
+	District  pgtype.Text  `json:"district"`
+	Ward      pgtype.Text  `json:"ward"`
+	Role      NullUSERROLE `json:"role"`
 }
 
 func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) error {
@@ -246,6 +255,7 @@ func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) error {
 		arg.City,
 		arg.District,
 		arg.Ward,
+		arg.Role,
 	)
 	return err
 }

@@ -5,14 +5,16 @@ INSERT INTO "User" (
   created_at, 
   updated_at,
   first_name,
-  last_name
+  last_name,
+  role
 ) VALUES (
   sqlc.arg(email), 
   sqlc.arg(password), 
   NOW(), 
   NOW(),
   sqlc.arg(first_name),
-  sqlc.arg(last_name)
+  sqlc.arg(last_name),
+  sqlc.arg(role)
 ) RETURNING *;
 
 -- name: CreateSession :one
@@ -41,6 +43,7 @@ UPDATE "User" SET
   city = coalesce(sqlc.narg(city), city),
   district = coalesce(sqlc.narg(district), district),
   ward = coalesce(sqlc.narg(ward), ward),
+  role = coalesce(sqlc.narg(role), role),
   updated_at = NOW(),
   updated_by = $1
 WHERE id = $2;

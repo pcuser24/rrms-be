@@ -22,7 +22,7 @@ CREATE TABLE IF NOT EXISTS "applications" (
   profile_image TEXT NOT NULL,
   movein_date DATE NOT NULL,
   preferred_term INTEGER NOT NULL CHECK (preferred_term >= 0),
-  rental_intention TEXT NOT NULL,
+  rental_intention VARCHAR(20) NOT NULL,
   organization_name TEXT,
   organization_hq_address TEXT,
   organization_scale TEXT,

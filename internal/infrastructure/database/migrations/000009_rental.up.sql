@@ -6,19 +6,24 @@ CREATE TABLE IF NOT EXISTS "rentals" (
   "property_id" UUID NOT NULL,
   "unit_id" UUID NOT NULL,
   "application_id" BIGINT,
-  "profile_image" TEXT NOT NULL,
 
   "tenant_id" UUID,
+  "profile_image" TEXT NOT NULL,
   "tenant_type" "TENANTTYPE" NOT NULL,
   "tenant_name" VARCHAR(100) NOT NULL,
   "tenant_phone" VARCHAR(20) NOT NULL,
   "tenant_email" VARCHAR(100) NOT NULL,
+  "organization_name" TEXT,
+  "organization_hq_address" TEXT,
 
   "start_date" DATE NOT NULL,
   "movein_date" DATE NOT NULL,
   "rental_period" INTEGER NOT NULL CHECK (rental_period >= 0),
   "rental_price" REAL NOT NULL CHECK (rental_price >= 0),
-
+  "rental_intention" VARCHAR(20) NOT NULL,
+  "deposit" REAL NOT NULL CHECK (deposit >= 0),
+  "deposit_paid" BOOLEAN NOT NULL DEFAULT TRUE,
+  
   -- basic services
   "electricity_payment_type" VARCHAR(10) NOT NULL,
   "electricity_price" REAL CHECK (electricity_price >= 0),
@@ -26,6 +31,9 @@ CREATE TABLE IF NOT EXISTS "rentals" (
   "water_price" REAL CHECK (water_price >= 0),
 
   "note" TEXT,
+
+  created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL,
+  updated_at TIMESTAMPTZ DEFAULT NOW() NOT NULL,
 
   UNIQUE ("application_id")
 );

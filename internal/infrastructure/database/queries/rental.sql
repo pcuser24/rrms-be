@@ -11,11 +11,16 @@ INSERT INTO rentals (
   tenant_name,
   tenant_phone,
   tenant_email,
+  organization_name,
+  organization_hq_address,
 
   start_date,
   movein_date,
   rental_period,
   rental_price,
+  rental_intention,
+  deposit,
+  deposit_paid,
 
   electricity_payment_type,
   electricity_price,
@@ -35,11 +40,16 @@ INSERT INTO rentals (
   sqlc.arg(tenant_name),
   sqlc.arg(tenant_phone),
   sqlc.arg(tenant_email),
+  sqlc.narg(organization_name),
+  sqlc.narg(organization_hq_address),
 
   sqlc.arg(start_date),
   sqlc.arg(movein_date),
   sqlc.arg(rental_period),
   sqlc.arg(rental_price),
+  sqlc.arg(rental_intention),
+  sqlc.arg(deposit),
+  sqlc.arg(deposit_paid),
 
   sqlc.arg(electricity_payment_type),
   sqlc.narg(electricity_price),
@@ -122,16 +132,30 @@ SELECT * FROM rentals WHERE id = $1 LIMIT 1;
 SELECT * FROM rentals WHERE application_id = $1 LIMIT 1;
 
 -- name: GetRentalCoapsByRentalID :many
-SELECT * FROM rental_coaps WHERE rental_id = $1 LIMIT 1;
+SELECT * FROM rental_coaps WHERE rental_id = $1;
 
 -- name: GetRentalMinorsByRentalID :many
-SELECT * FROM rental_minors WHERE rental_id = $1 LIMIT 1;
+SELECT * FROM rental_minors WHERE rental_id = $1;
 
 -- name: GetRentalPetsByRentalID :many
-SELECT * FROM rental_pets WHERE rental_id = $1 LIMIT 1;
+SELECT * FROM rental_pets WHERE rental_id = $1;
 
 -- name: GetRentalServicesByRentalID :many
-SELECT * FROM rental_services WHERE rental_id = $1 LIMIT 1;
+SELECT * FROM rental_services WHERE rental_id = $1;
+
+-- name: CheckRentalVisibility :one
+SELECT count(*) > 0 FROM rentals 
+WHERE 
+  id = $1 
+  AND (
+    tenant_id = sqlc.arg(user_id) 
+    OR EXISTS (
+      SELECT 1 FROM property_managers 
+      WHERE 
+        property_managers.property_id = rentals.property_id 
+        AND property_managers.manager_id = sqlc.arg(user_id)
+      )
+  );
 
 -- name: UpdateRental :exec
 UPDATE rentals SET
@@ -141,15 +165,21 @@ UPDATE rentals SET
   tenant_name = coalesce(sqlc.narg(tenant_name), tenant_name),
   tenant_phone = coalesce(sqlc.narg(tenant_phone), tenant_phone),
   tenant_email = coalesce(sqlc.narg(tenant_email), tenant_email),
+  organization_name = coalesce(sqlc.narg(organization_name), organization_name),
+  organization_hq_address = coalesce(sqlc.narg(organization_hq_address), organization_hq_address),
   start_date = coalesce(sqlc.narg(start_date), start_date),
   movein_date = coalesce(sqlc.narg(movein_date), movein_date),
   rental_period = coalesce(sqlc.narg(rental_period), rental_period),
   rental_price = coalesce(sqlc.narg(rental_price), rental_price),
+  rental_intention = coalesce(sqlc.narg(rental_intention), rental_intention),
+  deposit = coalesce(sqlc.narg(deposit), deposit),
+  deposit_paid = coalesce(sqlc.narg(deposit_paid), deposit_paid),
   electricity_payment_type = coalesce(sqlc.narg(electricity_payment_type), electricity_payment_type),
   electricity_price = coalesce(sqlc.narg(electricity_price), electricity_price),
   water_payment_type = coalesce(sqlc.narg(water_payment_type), water_payment_type),
   water_price = coalesce(sqlc.narg(water_price), water_price),
-  note = coalesce(sqlc.narg(note), note)
+  note = coalesce(sqlc.narg(note), note),
+  updated_at = NOW()
 WHERE id = $1;
 
 -- name: DeleteRental :exec

@@ -75,13 +75,13 @@ func RenderContractTemplate(
 		UAreaStr          string
 		UFloor            string
 	}{
-		Date:          html_util.NewHTMLTime(time.Now()),
-		OwnerName:     mediumPlaceHolder,
-		OwnerAddress:  mediumPlaceHolder,
-		OwnerPhone:    mediumPlaceHolder,
-		OwnerEmail:    mediumPlaceHolder,
-		TenantName:    mediumPlaceHolder,
-		TenantDOB:     html_util.NewHTMLTime(rental.TenantDob),
+		Date:         html_util.NewHTMLTime(time.Now()),
+		OwnerName:    mediumPlaceHolder,
+		OwnerAddress: mediumPlaceHolder,
+		OwnerPhone:   mediumPlaceHolder,
+		OwnerEmail:   mediumPlaceHolder,
+		TenantName:   mediumPlaceHolder,
+		// TenantDOB:     html_util.NewHTMLTime(rental.TenantDob),
 		TenantAddress: mediumPlaceHolder,
 		TenantPhone:   mediumPlaceHolder,
 		TenantEmail:   mediumPlaceHolder,

@@ -12,6 +12,33 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const checkRentalVisibility = `-- name: CheckRentalVisibility :one
+SELECT count(*) > 0 FROM rentals 
+WHERE 
+  id = $1 
+  AND (
+    tenant_id = $2 
+    OR EXISTS (
+      SELECT 1 FROM property_managers 
+      WHERE 
+        property_managers.property_id = rentals.property_id 
+        AND property_managers.manager_id = $2
+      )
+  )
+`
+
+type CheckRentalVisibilityParams struct {
+	ID     int64       `json:"id"`
+	UserID pgtype.UUID `json:"user_id"`
+}
+
+func (q *Queries) CheckRentalVisibility(ctx context.Context, arg CheckRentalVisibilityParams) (bool, error) {
+	row := q.db.QueryRow(ctx, checkRentalVisibility, arg.ID, arg.UserID)
+	var column_1 bool
+	err := row.Scan(&column_1)
+	return column_1, err
+}
+
 const createRental = `-- name: CreateRental :one
 INSERT INTO rentals (
   application_id,
@@ -25,11 +52,16 @@ INSERT INTO rentals (
   tenant_name,
   tenant_phone,
   tenant_email,
+  organization_name,
+  organization_hq_address,
 
   start_date,
   movein_date,
   rental_period,
   rental_price,
+  rental_intention,
+  deposit,
+  deposit_paid,
 
   electricity_payment_type,
   electricity_price,
@@ -49,19 +81,24 @@ INSERT INTO rentals (
   $8,
   $9,
   $10,
-
   $11,
   $12,
+
   $13,
   $14,
-
   $15,
   $16,
   $17,
   $18,
+  $19,
 
-  $19
-) RETURNING id, creator_id, property_id, unit_id, application_id, profile_image, tenant_id, tenant_type, tenant_name, tenant_phone, tenant_email, start_date, movein_date, rental_period, rental_price, electricity_payment_type, electricity_price, water_payment_type, water_price, note
+  $20,
+  $21,
+  $22,
+  $23,
+
+  $24
+) RETURNING id, creator_id, property_id, unit_id, application_id, tenant_id, profile_image, tenant_type, tenant_name, tenant_phone, tenant_email, organization_name, organization_hq_address, start_date, movein_date, rental_period, rental_price, rental_intention, deposit, deposit_paid, electricity_payment_type, electricity_price, water_payment_type, water_price, note, created_at, updated_at
 `
 
 type CreateRentalParams struct {
@@ -75,10 +112,15 @@ type CreateRentalParams struct {
 	TenantName             string        `json:"tenant_name"`
 	TenantPhone            string        `json:"tenant_phone"`
 	TenantEmail            string        `json:"tenant_email"`
+	OrganizationName       pgtype.Text   `json:"organization_name"`
+	OrganizationHqAddress  pgtype.Text   `json:"organization_hq_address"`
 	StartDate              pgtype.Date   `json:"start_date"`
 	MoveinDate             pgtype.Date   `json:"movein_date"`
 	RentalPeriod           int32         `json:"rental_period"`
 	RentalPrice            float32       `json:"rental_price"`
+	RentalIntention        string        `json:"rental_intention"`
+	Deposit                float32       `json:"deposit"`
+	DepositPaid            bool          `json:"deposit_paid"`
 	ElectricityPaymentType string        `json:"electricity_payment_type"`
 	ElectricityPrice       pgtype.Float4 `json:"electricity_price"`
 	WaterPaymentType       string        `json:"water_payment_type"`
@@ -98,10 +140,15 @@ func (q *Queries) CreateRental(ctx context.Context, arg CreateRentalParams) (Ren
 		arg.TenantName,
 		arg.TenantPhone,
 		arg.TenantEmail,
+		arg.OrganizationName,
+		arg.OrganizationHqAddress,
 		arg.StartDate,
 		arg.MoveinDate,
 		arg.RentalPeriod,
 		arg.RentalPrice,
+		arg.RentalIntention,
+		arg.Deposit,
+		arg.DepositPaid,
 		arg.ElectricityPaymentType,
 		arg.ElectricityPrice,
 		arg.WaterPaymentType,
@@ -115,21 +162,28 @@ func (q *Queries) CreateRental(ctx context.Context, arg CreateRentalParams) (Ren
 		&i.PropertyID,
 		&i.UnitID,
 		&i.ApplicationID,
-		&i.ProfileImage,
 		&i.TenantID,
+		&i.ProfileImage,
 		&i.TenantType,
 		&i.TenantName,
 		&i.TenantPhone,
 		&i.TenantEmail,
+		&i.OrganizationName,
+		&i.OrganizationHqAddress,
 		&i.StartDate,
 		&i.MoveinDate,
 		&i.RentalPeriod,
 		&i.RentalPrice,
+		&i.RentalIntention,
+		&i.Deposit,
+		&i.DepositPaid,
 		&i.ElectricityPaymentType,
 		&i.ElectricityPrice,
 		&i.WaterPaymentType,
 		&i.WaterPrice,
 		&i.Note,
+		&i.CreatedAt,
+		&i.UpdatedAt,
 	)
 	return i, err
 }
@@ -331,7 +385,7 @@ func (q *Queries) DeleteRental(ctx context.Context, id int64) error {
 }
 
 const getRental = `-- name: GetRental :one
-SELECT id, creator_id, property_id, unit_id, application_id, profile_image, tenant_id, tenant_type, tenant_name, tenant_phone, tenant_email, start_date, movein_date, rental_period, rental_price, electricity_payment_type, electricity_price, water_payment_type, water_price, note FROM rentals WHERE id = $1 LIMIT 1
+SELECT id, creator_id, property_id, unit_id, application_id, tenant_id, profile_image, tenant_type, tenant_name, tenant_phone, tenant_email, organization_name, organization_hq_address, start_date, movein_date, rental_period, rental_price, rental_intention, deposit, deposit_paid, electricity_payment_type, electricity_price, water_payment_type, water_price, note, created_at, updated_at FROM rentals WHERE id = $1 LIMIT 1
 `
 
 func (q *Queries) GetRental(ctx context.Context, id int64) (Rental, error) {
@@ -343,27 +397,34 @@ func (q *Queries) GetRental(ctx context.Context, id int64) (Rental, error) {
 		&i.PropertyID,
 		&i.UnitID,
 		&i.ApplicationID,
-		&i.ProfileImage,
 		&i.TenantID,
+		&i.ProfileImage,
 		&i.TenantType,
 		&i.TenantName,
 		&i.TenantPhone,
 		&i.TenantEmail,
+		&i.OrganizationName,
+		&i.OrganizationHqAddress,
 		&i.StartDate,
 		&i.MoveinDate,
 		&i.RentalPeriod,
 		&i.RentalPrice,
+		&i.RentalIntention,
+		&i.Deposit,
+		&i.DepositPaid,
 		&i.ElectricityPaymentType,
 		&i.ElectricityPrice,
 		&i.WaterPaymentType,
 		&i.WaterPrice,
 		&i.Note,
+		&i.CreatedAt,
+		&i.UpdatedAt,
 	)
 	return i, err
 }
 
 const getRentalByApplicationId = `-- name: GetRentalByApplicationId :one
-SELECT id, creator_id, property_id, unit_id, application_id, profile_image, tenant_id, tenant_type, tenant_name, tenant_phone, tenant_email, start_date, movein_date, rental_period, rental_price, electricity_payment_type, electricity_price, water_payment_type, water_price, note FROM rentals WHERE application_id = $1 LIMIT 1
+SELECT id, creator_id, property_id, unit_id, application_id, tenant_id, profile_image, tenant_type, tenant_name, tenant_phone, tenant_email, organization_name, organization_hq_address, start_date, movein_date, rental_period, rental_price, rental_intention, deposit, deposit_paid, electricity_payment_type, electricity_price, water_payment_type, water_price, note, created_at, updated_at FROM rentals WHERE application_id = $1 LIMIT 1
 `
 
 func (q *Queries) GetRentalByApplicationId(ctx context.Context, applicationID pgtype.Int8) (Rental, error) {
@@ -375,27 +436,34 @@ func (q *Queries) GetRentalByApplicationId(ctx context.Context, applicationID pg
 		&i.PropertyID,
 		&i.UnitID,
 		&i.ApplicationID,
-		&i.ProfileImage,
 		&i.TenantID,
+		&i.ProfileImage,
 		&i.TenantType,
 		&i.TenantName,
 		&i.TenantPhone,
 		&i.TenantEmail,
+		&i.OrganizationName,
+		&i.OrganizationHqAddress,
 		&i.StartDate,
 		&i.MoveinDate,
 		&i.RentalPeriod,
 		&i.RentalPrice,
+		&i.RentalIntention,
+		&i.Deposit,
+		&i.DepositPaid,
 		&i.ElectricityPaymentType,
 		&i.ElectricityPrice,
 		&i.WaterPaymentType,
 		&i.WaterPrice,
 		&i.Note,
+		&i.CreatedAt,
+		&i.UpdatedAt,
 	)
 	return i, err
 }
 
 const getRentalCoapsByRentalID = `-- name: GetRentalCoapsByRentalID :many
-SELECT rental_id, full_name, dob, job, income, email, phone, description FROM rental_coaps WHERE rental_id = $1 LIMIT 1
+SELECT rental_id, full_name, dob, job, income, email, phone, description FROM rental_coaps WHERE rental_id = $1
 `
 
 func (q *Queries) GetRentalCoapsByRentalID(ctx context.Context, rentalID int64) ([]RentalCoap, error) {
@@ -428,7 +496,7 @@ func (q *Queries) GetRentalCoapsByRentalID(ctx context.Context, rentalID int64) 
 }
 
 const getRentalMinorsByRentalID = `-- name: GetRentalMinorsByRentalID :many
-SELECT rental_id, full_name, dob, email, phone, description FROM rental_minors WHERE rental_id = $1 LIMIT 1
+SELECT rental_id, full_name, dob, email, phone, description FROM rental_minors WHERE rental_id = $1
 `
 
 func (q *Queries) GetRentalMinorsByRentalID(ctx context.Context, rentalID int64) ([]RentalMinor, error) {
@@ -459,7 +527,7 @@ func (q *Queries) GetRentalMinorsByRentalID(ctx context.Context, rentalID int64)
 }
 
 const getRentalPetsByRentalID = `-- name: GetRentalPetsByRentalID :many
-SELECT rental_id, type, weight, description FROM rental_pets WHERE rental_id = $1 LIMIT 1
+SELECT rental_id, type, weight, description FROM rental_pets WHERE rental_id = $1
 `
 
 func (q *Queries) GetRentalPetsByRentalID(ctx context.Context, rentalID int64) ([]RentalPet, error) {
@@ -488,7 +556,7 @@ func (q *Queries) GetRentalPetsByRentalID(ctx context.Context, rentalID int64) (
 }
 
 const getRentalServicesByRentalID = `-- name: GetRentalServicesByRentalID :many
-SELECT rental_id, name, "setupBy", provider, price FROM rental_services WHERE rental_id = $1 LIMIT 1
+SELECT rental_id, name, "setupBy", provider, price FROM rental_services WHERE rental_id = $1
 `
 
 func (q *Queries) GetRentalServicesByRentalID(ctx context.Context, rentalID int64) ([]RentalService, error) {
@@ -525,15 +593,21 @@ UPDATE rentals SET
   tenant_name = coalesce($5, tenant_name),
   tenant_phone = coalesce($6, tenant_phone),
   tenant_email = coalesce($7, tenant_email),
-  start_date = coalesce($8, start_date),
-  movein_date = coalesce($9, movein_date),
-  rental_period = coalesce($10, rental_period),
-  rental_price = coalesce($11, rental_price),
-  electricity_payment_type = coalesce($12, electricity_payment_type),
-  electricity_price = coalesce($13, electricity_price),
-  water_payment_type = coalesce($14, water_payment_type),
-  water_price = coalesce($15, water_price),
-  note = coalesce($16, note)
+  organization_name = coalesce($8, organization_name),
+  organization_hq_address = coalesce($9, organization_hq_address),
+  start_date = coalesce($10, start_date),
+  movein_date = coalesce($11, movein_date),
+  rental_period = coalesce($12, rental_period),
+  rental_price = coalesce($13, rental_price),
+  rental_intention = coalesce($14, rental_intention),
+  deposit = coalesce($15, deposit),
+  deposit_paid = coalesce($16, deposit_paid),
+  electricity_payment_type = coalesce($17, electricity_payment_type),
+  electricity_price = coalesce($18, electricity_price),
+  water_payment_type = coalesce($19, water_payment_type),
+  water_price = coalesce($20, water_price),
+  note = coalesce($21, note),
+  updated_at = NOW()
 WHERE id = $1
 `
 
@@ -545,10 +619,15 @@ type UpdateRentalParams struct {
 	TenantName             pgtype.Text    `json:"tenant_name"`
 	TenantPhone            pgtype.Text    `json:"tenant_phone"`
 	TenantEmail            pgtype.Text    `json:"tenant_email"`
+	OrganizationName       pgtype.Text    `json:"organization_name"`
+	OrganizationHqAddress  pgtype.Text    `json:"organization_hq_address"`
 	StartDate              pgtype.Date    `json:"start_date"`
 	MoveinDate             pgtype.Date    `json:"movein_date"`
 	RentalPeriod           pgtype.Int4    `json:"rental_period"`
 	RentalPrice            pgtype.Float4  `json:"rental_price"`
+	RentalIntention        pgtype.Text    `json:"rental_intention"`
+	Deposit                pgtype.Float4  `json:"deposit"`
+	DepositPaid            pgtype.Bool    `json:"deposit_paid"`
 	ElectricityPaymentType pgtype.Text    `json:"electricity_payment_type"`
 	ElectricityPrice       pgtype.Float4  `json:"electricity_price"`
 	WaterPaymentType       pgtype.Text    `json:"water_payment_type"`
@@ -565,10 +644,15 @@ func (q *Queries) UpdateRental(ctx context.Context, arg UpdateRentalParams) erro
 		arg.TenantName,
 		arg.TenantPhone,
 		arg.TenantEmail,
+		arg.OrganizationName,
+		arg.OrganizationHqAddress,
 		arg.StartDate,
 		arg.MoveinDate,
 		arg.RentalPeriod,
 		arg.RentalPrice,
+		arg.RentalIntention,
+		arg.Deposit,
+		arg.DepositPaid,
 		arg.ElectricityPaymentType,
 		arg.ElectricityPrice,
 		arg.WaterPaymentType,

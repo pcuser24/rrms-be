@@ -6,7 +6,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/user2410/rrms-backend/internal/domain/auth/dto"
 	"github.com/user2410/rrms-backend/internal/domain/auth/model"
-	db "github.com/user2410/rrms-backend/internal/infrastructure/database"
+	"github.com/user2410/rrms-backend/internal/infrastructure/database"
 	"github.com/user2410/rrms-backend/internal/utils/types"
 )
 
@@ -21,21 +21,22 @@ type Repo interface {
 }
 
 type authRepo struct {
-	dao db.DAO
+	dao database.DAO
 }
 
-func NewRepo(d db.DAO) Repo {
+func NewRepo(d database.DAO) Repo {
 	return &authRepo{
 		dao: d,
 	}
 }
 
 func (u *authRepo) CreateUser(ctx context.Context, data *dto.RegisterUser) (*model.UserModel, error) {
-	res, err := u.dao.CreateUser(ctx, db.CreateUserParams{
+	res, err := u.dao.CreateUser(ctx, database.CreateUserParams{
 		Email:     data.Email,
 		Password:  types.StrN(&data.Password),
 		FirstName: data.FirstName,
 		LastName:  data.LastName,
+		Role:      data.Role,
 	})
 	if err != nil {
 		return nil, err
@@ -80,14 +81,14 @@ func (u *authRepo) GetSessionById(ctx context.Context, id uuid.UUID) (*model.Ses
 }
 
 func (u *authRepo) UpdateSessionStatus(ctx context.Context, id uuid.UUID, isBlocked bool) error {
-	return u.dao.UpdateSessionBlockingStatus(ctx, db.UpdateSessionBlockingStatusParams{
+	return u.dao.UpdateSessionBlockingStatus(ctx, database.UpdateSessionBlockingStatusParams{
 		ID:        id,
 		IsBlocked: isBlocked,
 	})
 }
 
 func (u *authRepo) UpdateUser(ctx context.Context, id uuid.UUID, data *dto.UpdateUser) error {
-	return u.dao.UpdateUser(ctx, db.UpdateUserParams{
+	return u.dao.UpdateUser(ctx, database.UpdateUserParams{
 		ID:        id,
 		UpdatedBy: types.UUIDN(data.UpdatedBy),
 		Email:     types.StrN(data.Email),
@@ -100,5 +101,9 @@ func (u *authRepo) UpdateUser(ctx context.Context, id uuid.UUID, data *dto.Updat
 		City:      types.StrN(data.City),
 		District:  types.StrN(data.District),
 		Ward:      types.StrN(data.Ward),
+		Role: database.NullUSERROLE{
+			USERROLE: data.Role,
+			Valid:    data.Role != "",
+		},
 	})
 }

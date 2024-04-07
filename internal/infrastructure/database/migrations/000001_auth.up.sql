@@ -1,6 +1,7 @@
 BEGIN;
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
+CREATE TYPE "USERROLE" AS ENUM ('ADMIN', 'LANDLORD', 'TENANT');
 CREATE TABLE IF NOT EXISTS "User" (
   "id" UUID PRIMARY KEY DEFAULT uuid_generate_v4() ,
   "email" VARCHAR(45) NOT NULL,
@@ -21,7 +22,8 @@ CREATE TABLE IF NOT EXISTS "User" (
   "city" VARCHAR(15) DEFAULT NULL,
   "district" VARCHAR(15) DEFAULT NULL,
   "ward" VARCHAR(15) DEFAULT NULL,
-  
+  "role" "USERROLE" NOT NULL,
+
   UNIQUE ("email")
 );
 COMMENT ON TABLE "User" IS 'User info table';
