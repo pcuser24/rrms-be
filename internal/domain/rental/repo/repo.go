@@ -74,6 +74,13 @@ func (r *repo) CreateRental(ctx context.Context, data *dto.CreateRental) (*model
 			}
 			prm.Services = append(prm.Services, model.ToRentalService(&servicedb))
 		}
+		for _, items := range data.Policies {
+			policydb, err := r.dao.CreateRentalPolicy(ctx, items.ToCreateRentalPolicyDB(prdb.ID))
+			if err != nil {
+				return err
+			}
+			prm.Policies = append(prm.Policies, model.RentalPolicy(policydb))
+		}
 		return nil
 	}()
 	if err != nil {

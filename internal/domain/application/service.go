@@ -75,7 +75,7 @@ func NewService(
 var (
 	ErrListingIsClosed  = fmt.Errorf("listing is not active")
 	ErrInvalidApplicant = fmt.Errorf("invalid applicant")
-	ErrAlreadyApplied   = fmt.Errorf("user has already applied for this listing")
+	ErrAlreadyApplied   = fmt.Errorf("user has already applied to this property within 30 days")
 )
 
 func (s *service) CreateApplication(data *dto.CreateApplication) (*model.ApplicationModel, error) {
@@ -98,14 +98,8 @@ func (s *service) CreateApplication(data *dto.CreateApplication) (*model.Applica
 	if slices.IndexFunc(pManagers, func(m property_model.PropertyManagerModel) bool { return m.ManagerID == data.CreatorID }) != -1 {
 		return nil, ErrInvalidApplicant
 	}
-	// Check if there is an application of this user to this property within 30 days
-	appIds, err := s.aRepo.GetApplicationsByUserId(
-		context.Background(),
-		data.CreatorID,
-		time.Now().AddDate(0, 0, -30),
-		1,
-		0,
-	)
+	// Check if there is any application of this user within 30 days
+	appIds, err := s.aRepo.GetApplicationsByUserId(context.Background(), data.CreatorID, time.Now().AddDate(0, 0, -30), 1, 0)
 	if err != nil {
 		return nil, err
 	}

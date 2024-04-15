@@ -45,23 +45,23 @@ CREATE TABLE IF NOT EXISTS "listing_units" (
 ALTER TABLE "listing_units" ADD CONSTRAINT "listing_units_listing_id_fkey" FOREIGN KEY ("listing_id") REFERENCES "listings"("id") ON DELETE CASCADE;
 ALTER TABLE "listing_units" ADD CONSTRAINT "listing_units_unit_id_fkey" FOREIGN KEY ("unit_id") REFERENCES "units"("id") ON DELETE CASCADE;
 
-CREATE TABLE IF NOT EXISTS "rental_policies" (
+CREATE TABLE IF NOT EXISTS "l_policies" (
   "id" BIGSERIAL PRIMARY KEY,
   "policy" TEXT NOT NULL
 );
-INSERT INTO rental_policies (policy) VALUES
-('rental_policy-payment'),
-('rental_policy-maintenance'),
-('rental_policy-insurance'),
-('rental_policy-noise'),
-('rental_policy-lease_renewal'),
-('rental_policy-change_to_property'),
-('rental_policy-parking'),
-('rental_policy-pets'),
-('rental_policy-subletting'),
-('rental_policy-business'),
-('rental_policy-consequences'),
-('rental_policy-other');
+INSERT INTO l_policies (policy) VALUES
+('l_policy-payment'),
+('l_policy-maintenance'),
+('l_policy-insurance'),
+('l_policy-noise'),
+('l_policy-lease_renewal'),
+('l_policy-change_to_property'),
+('l_policy-parking'),
+('l_policy-pets'),
+('l_policy-subletting'),
+('l_policy-business'),
+('l_policy-consequences'),
+('l_policy-other');
 
 CREATE TABLE IF NOT EXISTS "listing_policies" (
   "listing_id" UUID NOT NULL,
@@ -71,7 +71,7 @@ CREATE TABLE IF NOT EXISTS "listing_policies" (
   PRIMARY KEY("listing_id", "policy_id")
 );
 ALTER TABLE "listing_policies" ADD CONSTRAINT "listing_policies_listing_id_fkey" FOREIGN KEY ("listing_id") REFERENCES "listings"("id") ON DELETE CASCADE;
-ALTER TABLE "listing_policies" ADD CONSTRAINT "listing_policies_policy_id_fkey" FOREIGN KEY ("policy_id") REFERENCES "rental_policies"("id") ON DELETE CASCADE;
+ALTER TABLE "listing_policies" ADD CONSTRAINT "listing_policies_policy_id_fkey" FOREIGN KEY ("policy_id") REFERENCES "l_policies"("id") ON DELETE CASCADE;
 
 CREATE TABLE IF NOT EXISTS "listing_tags" (
   "id" BIGSERIAL PRIMARY KEY,

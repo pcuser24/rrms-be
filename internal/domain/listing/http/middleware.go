@@ -50,9 +50,13 @@ func CheckListingVisibility(s listing.Service) fiber.Handler {
 			return ctx.SendStatus(fiber.StatusBadRequest)
 		}
 
-		tkPayload := ctx.Locals(http.AuthorizationPayloadKey).(*token.Payload)
+		var userId uuid.UUID
+		tkPayload, ok := ctx.Locals(http.AuthorizationPayloadKey).(*token.Payload)
+		if ok {
+			userId = tkPayload.UserID
+		}
 
-		isVisible, err := s.CheckListingVisibility(lid, tkPayload.UserID)
+		isVisible, err := s.CheckListingVisibility(lid, userId)
 		if err != nil {
 			if dbErr, ok := err.(*pgconn.PgError); ok {
 				return responses.DBErrorResponse(ctx, dbErr)

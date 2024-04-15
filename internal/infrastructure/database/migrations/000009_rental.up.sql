@@ -20,16 +20,22 @@ CREATE TABLE IF NOT EXISTS "rentals" (
   "movein_date" DATE NOT NULL,
   "rental_period" INTEGER NOT NULL CHECK (rental_period >= 0),
   "rental_price" REAL NOT NULL CHECK (rental_price >= 0),
+  "rental_payment_basis" VARCHAR(20) NOT NULL,
   "rental_intention" VARCHAR(20) NOT NULL,
   "deposit" REAL NOT NULL CHECK (deposit >= 0),
   "deposit_paid" BOOLEAN NOT NULL DEFAULT TRUE,
   
   -- basic services
+  "electricity_setup_by" VARCHAR(20) NOT NULL,
   "electricity_payment_type" VARCHAR(10) NOT NULL,
   "electricity_price" REAL CHECK (electricity_price >= 0),
+  "water_setup_by" VARCHAR(20) NOT NULL,
   "water_payment_type" VARCHAR(10) NOT NULL,
   "water_price" REAL CHECK (water_price >= 0),
 
+  -- policy
+  "rental_payment_grace_period" INTEGER NOT NULL CHECK (rental_payment_grace_period >= 0),
+  "rental_payment_late_fee_percentage" REAL CHECK (rental_payment_late_fee_percentage > 0 AND rental_payment_late_fee_percentage <= 100),
   "note" TEXT,
 
   created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL,
@@ -82,5 +88,12 @@ CREATE TABLE IF NOT EXISTS "rental_services" (
 );
 ALTER TABLE "rental_services" ADD CONSTRAINT "rental_services_rental_id_fkey" FOREIGN KEY ("rental_id") REFERENCES "rentals"("id") ON DELETE CASCADE;
 COMMENT ON COLUMN "rental_services"."setupBy" IS 'The party who set up the service, either "LANDLORD" or "TENANT"';
+
+CREATE TABLE IF NOT EXISTS "rental_policies" (
+  "rental_id" BIGINT NOT NULL,
+  "title" TEXT NOT NULL,
+  "content" TEXT NOT NULL
+);
+ALTER TABLE "rental_policies" ADD CONSTRAINT "rental_policies_rental_id_fkey" FOREIGN KEY ("rental_id") REFERENCES "rentals"("id") ON DELETE CASCADE;
 
 END;

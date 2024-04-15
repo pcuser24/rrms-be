@@ -18,14 +18,20 @@ INSERT INTO rentals (
   movein_date,
   rental_period,
   rental_price,
+  rental_payment_basis,
   rental_intention,
   deposit,
   deposit_paid,
 
+  electricity_setup_by,
   electricity_payment_type,
   electricity_price,
+  water_setup_by,
   water_payment_type,
   water_price,
+
+  rental_payment_grace_period,
+  rental_payment_late_fee_percentage,
 
   note
 ) VALUES (
@@ -47,15 +53,21 @@ INSERT INTO rentals (
   sqlc.arg(movein_date),
   sqlc.arg(rental_period),
   sqlc.arg(rental_price),
+  sqlc.arg(rental_payment_basis),
   sqlc.arg(rental_intention),
   sqlc.arg(deposit),
   sqlc.arg(deposit_paid),
 
+  sqlc.arg(electricity_setup_by),
   sqlc.arg(electricity_payment_type),
   sqlc.narg(electricity_price),
+  sqlc.arg(water_setup_by),
   sqlc.arg(water_payment_type),
   sqlc.narg(water_price),
 
+  sqlc.arg(rental_payment_grace_period),
+  sqlc.narg(rental_payment_late_fee_percentage),
+  
   sqlc.narg(note)
 ) RETURNING *;
 
@@ -125,6 +137,17 @@ INSERT INTO "rental_services" (
   sqlc.narg(price)
 ) RETURNING *;
 
+-- name: CreateRentalPolicy :one
+INSERT INTO "rental_policies" (
+  "rental_id",
+  "title",
+  "content"
+) VALUES (
+  sqlc.arg(rental_id),
+  sqlc.arg(title),
+  sqlc.arg(content)
+) RETURNING *;
+
 -- name: GetRental :one
 SELECT * FROM rentals WHERE id = $1 LIMIT 1;
 
@@ -171,13 +194,18 @@ UPDATE rentals SET
   movein_date = coalesce(sqlc.narg(movein_date), movein_date),
   rental_period = coalesce(sqlc.narg(rental_period), rental_period),
   rental_price = coalesce(sqlc.narg(rental_price), rental_price),
+  rental_payment_basis = coalesce(sqlc.narg(rental_payment_basis), rental_payment_basis),
   rental_intention = coalesce(sqlc.narg(rental_intention), rental_intention),
   deposit = coalesce(sqlc.narg(deposit), deposit),
   deposit_paid = coalesce(sqlc.narg(deposit_paid), deposit_paid),
+  electricity_setup_by = coalesce(sqlc.narg(electricity_setup_by), electricity_setup_by),
   electricity_payment_type = coalesce(sqlc.narg(electricity_payment_type), electricity_payment_type),
   electricity_price = coalesce(sqlc.narg(electricity_price), electricity_price),
+  water_setup_by = coalesce(sqlc.narg(water_setup_by), water_setup_by),
   water_payment_type = coalesce(sqlc.narg(water_payment_type), water_payment_type),
   water_price = coalesce(sqlc.narg(water_price), water_price),
+  rental_payment_grace_period = coalesce(sqlc.narg(rental_payment_grace_period), rental_payment_grace_period),
+  rental_payment_late_fee_percentage = coalesce(sqlc.narg(rental_payment_late_fee_percentage), rental_payment_late_fee_percentage),
   note = coalesce(sqlc.narg(note), note),
   updated_at = NOW()
 WHERE id = $1;

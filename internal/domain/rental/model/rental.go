@@ -87,6 +87,12 @@ func ToRentalService(pr *database.RentalService) RentalService {
 	}
 }
 
+type RentalPolicy struct {
+	RentalID int64  `json:"rentalId"`
+	Title    string `json:"title"`
+	Content  string `json:"content"`
+}
+
 type RentalModel struct {
 	ID                     int64               `json:"id"`
 	CreatorID              uuid.UUID           `json:"creatorId"`
@@ -120,6 +126,7 @@ type RentalModel struct {
 	Minors   []RentalMinor     `json:"minors"`
 	Pets     []RentalPet       `json:"pets"`
 	Services []RentalService   `json:"services"`
+	Policies []RentalPolicy    `json:"policies"`
 }
 
 func ToRentalModel(pr *database.Rental) *RentalModel {

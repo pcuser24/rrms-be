@@ -41,7 +41,10 @@ func NewAdapter(lService listing.Service, pService property.Service, uService un
 func (a *adapter) RegisterServer(router *fiber.Router, tokenMaker token.Maker) {
 	listingRoute := (*router).Group("/listings")
 
-	listingRoute.Get("/", a.searchListings())
+	listingRoute.Get("/",
+		auth_http.GetAuthorizationMiddleware(tokenMaker),
+		a.searchListings(),
+	)
 	listingRoute.Get("/listing/:id",
 		auth_http.GetAuthorizationMiddleware(tokenMaker),
 		CheckListingVisibility(a.lService),
@@ -130,7 +133,13 @@ func (a *adapter) searchListings() fiber.Handler {
 		payload.PIsPublic = types.Ptr[bool](true)
 		payload.LMinExpiredAt = types.Ptr[time.Time](time.Now())
 
-		res, err := a.lService.SearchListingCombination(payload)
+		var userId uuid.UUID
+		tkPayload, ok := ctx.Locals(auth_http.AuthorizationPayloadKey).(*token.Payload)
+		if ok {
+			userId = tkPayload.UserID
+		}
+
+		res, err := a.lService.SearchListingCombination(payload, userId)
 		if err != nil {
 			if err == database.ErrRecordNotFound {
 				return ctx.SendStatus(fiber.StatusNotFound)

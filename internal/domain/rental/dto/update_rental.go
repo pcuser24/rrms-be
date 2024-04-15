@@ -10,22 +10,29 @@ import (
 )
 
 type UpdateRental struct {
-	ID                     int64               `json:"id"`
-	TenantID               uuid.UUID           `json:"tenant_id"`
-	ProfileImage           *string             `json:"profile_image"`
-	TenantType             database.TENANTTYPE `json:"tenant_type"`
-	TenantName             *string             `json:"tenant_name"`
-	TenantPhone            *string             `json:"tenant_phone"`
-	TenantEmail            *string             `json:"tenant_email"`
-	StartDate              time.Time           `json:"start_date"`
-	MoveinDate             time.Time           `json:"movein_date"`
-	RentalPeriod           *int32              `json:"rental_period"`
-	RentalPrice            *float32            `json:"rental_price"`
-	ElectricityPaymentType *string             `json:"electricity_payment_type"`
-	ElectricityPrice       *float32            `json:"electricity_price"`
-	WaterPaymentType       *string             `json:"water_payment_type"`
-	WaterPrice             *float32            `json:"water_price"`
-	Note                   *string             `json:"note"`
+	ID                 int64               `json:"id" validate:"required"`
+	TenantID           uuid.UUID           `json:"tenantId" validate:"omitempty"`
+	ProfileImage       *string             `json:"profileImage" validate:"omitempty"`
+	TenantType         database.TENANTTYPE `json:"tenantType" validate:"omitempty,oneof=INDIVIDUAL FAMILY ORGANIZATION"`
+	TenantName         *string             `json:"tenantName" validate:"omitempty"`
+	TenantPhone        *string             `json:"tenantPhone" validate:"omitempty"`
+	TenantEmail        *string             `json:"tenantEmail" validate:"omitempty"`
+	StartDate          time.Time           `json:"startDate" validate:"omitempty"`
+	MoveinDate         time.Time           `json:"moveinDate" validate:"omitempty"`
+	RentalPeriod       *int32              `json:"rentalPeriod" validate:"omitempty"`
+	RentalPrice        *float32            `json:"rentalPrice" validate:"omitempty"`
+	RentalPaymentBasis *string             `json:"rentalPaymentBasis" validate:"omitempty"`
+
+	ElectricitySetupBy             *string  `json:"electricitySetupBy" validate:"omitempty"`
+	ElectricityPaymentType         *string  `json:"electricityPaymentType" validate:"omitempty"`
+	ElectricityPrice               *float32 `json:"electricityPrice" validate:"omitempty"`
+	WaterSetupBy                   *string  `json:"waterSetupBy" validate:"omitempty"`
+	WaterPaymentType               *string  `json:"waterPaymentType" validate:"omitempty"`
+	WaterPrice                     *float32 `json:"waterPrice" validate:"omitempty"`
+	RentalPaymentGracePeriod       *int32   `json:"rentalPaymentGracePeriod" validate:"omitempty"`
+	RentalPaymentLateFeePercentage *float32 `json:"rentalPaymentLateFeePercentage" validate:"omitempty"`
+
+	Note *string `json:"note" validate:"omitempty"`
 }
 
 func (pm *UpdateRental) ToUpdateRentalDB(id int64) database.UpdateRentalParams {
@@ -48,29 +55,17 @@ func (pm *UpdateRental) ToUpdateRentalDB(id int64) database.UpdateRentalParams {
 			Time:  pm.MoveinDate,
 			Valid: !pm.MoveinDate.IsZero(),
 		},
-		RentalPeriod: types.Int32N(pm.RentalPeriod),
-		RentalPrice:  types.Float32N(pm.RentalPrice),
-		Note:         types.StrN(pm.Note),
+		RentalPeriod:                   types.Int32N(pm.RentalPeriod),
+		RentalPrice:                    types.Float32N(pm.RentalPrice),
+		RentalPaymentBasis:             types.StrN(pm.RentalPaymentBasis),
+		ElectricitySetupBy:             types.StrN(pm.ElectricitySetupBy),
+		ElectricityPaymentType:         types.StrN(pm.ElectricityPaymentType),
+		ElectricityPrice:               types.Float32N(pm.ElectricityPrice),
+		WaterSetupBy:                   types.StrN(pm.WaterSetupBy),
+		WaterPaymentType:               types.StrN(pm.WaterPaymentType),
+		WaterPrice:                     types.Float32N(pm.WaterPrice),
+		RentalPaymentGracePeriod:       types.Int32N(pm.RentalPaymentGracePeriod),
+		RentalPaymentLateFeePercentage: types.Float32N(pm.RentalPaymentLateFeePercentage),
+		Note:                           types.StrN(pm.Note),
 	}
 }
-
-// type UpdateRentalContract struct {
-// 	ContractType         database.CONTRACTTYPE `json:"contractType" validate:"required"`
-// 	ContractContent      *string               `json:"contractContent" validate:"required"`
-// 	ContractLastUpdateBy uuid.UUID             `json:"contract_last_update_by" validate:"required"`
-// }
-
-// func (pm *UpdateRentalContract) ToUpdateRentalContractDB(id int64) database.UpdateRentalContractParams {
-// 	return database.UpdateRentalContractParams{
-// 		ID: id,
-// 		ContractType: database.NullCONTRACTTYPE{
-// 			CONTRACTTYPE: pm.ContractType,
-// 			Valid:        pm.ContractType != "",
-// 		},
-// 		ContractContent: types.StrN(pm.ContractContent),
-// 		ContractLastUpdateBy: pgtype.UUID{
-// 			Bytes: pm.ContractLastUpdateBy,
-// 			Valid: pm.ContractLastUpdateBy != uuid.Nil,
-// 		},
-// 	}
-// }

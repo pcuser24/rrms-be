@@ -96,7 +96,7 @@ ORDER BY
 LIMIT $3 OFFSET $4;
 
 -- name: GetAllRentalPolicies :many
-SELECT * FROM rental_policies;
+SELECT * FROM l_policies;
 
 -- name: CheckListingOwnership :one
 SELECT count(*) FROM listings WHERE id = $1 AND creator_id = $2 LIMIT 1;

@@ -74,7 +74,7 @@ func (pm *CreateRentalPet) ToCreateRentalPetDB(id int64) database.CreateRentalPe
 
 type CreateRentalService struct {
 	Name     string   `json:"name" validate:"required"`
-	Setupby  string   `json:"setupby" validate:"required"`
+	Setupby  string   `json:"setupby" validate:"required,oneof=LANDLORD TENANT"`
 	Provider *string  `json:"provider" validate:"omitempty"`
 	Price    *float32 `json:"price" validate:"omitempty"`
 }
@@ -89,6 +89,19 @@ func (pm *CreateRentalService) ToCreateRentalServiceDB(id int64) database.Create
 	}
 }
 
+type CreateRentalPolicy struct {
+	Title   string `json:"title" validate:"required"`
+	Content string `json:"content" validate:"required"`
+}
+
+func (pm *CreateRentalPolicy) ToCreateRentalPolicyDB(id int64) database.CreateRentalPolicyParams {
+	return database.CreateRentalPolicyParams{
+		RentalID: id,
+		Title:    pm.Title,
+		Content:  pm.Content,
+	}
+}
+
 type CreateRental struct {
 	ApplicationID          *int64 `json:"applicationId" validate:"omitempty"`
 	CreatorID              uuid.UUID
@@ -96,7 +109,7 @@ type CreateRental struct {
 	PropertyID             uuid.UUID           `json:"propertyId" validatet:"required"`
 	UnitID                 uuid.UUID           `json:"unitId" validatet:"required"`
 	ProfileImage           string              `json:"profileImage" validate:"omitempty"`
-	TenantType             database.TENANTTYPE `json:"tenantType" validate:"required"`
+	TenantType             database.TENANTTYPE `json:"tenantType" validate:"required,oneof=INDIVIDUAL FAMILY ORGANIZATION"`
 	TenantName             string              `json:"tenantName" validate:"required"`
 	TenantPhone            string              `json:"tenantPhone" validate:"required"`
 	TenantEmail            string              `json:"tenantEmail" validate:"required"`
@@ -106,19 +119,27 @@ type CreateRental struct {
 	MoveinDate             time.Time           `json:"moveinDate" validate:"required"`
 	RentalPeriod           int32               `json:"rentalPeriod" validate:"required"`
 	RentalPrice            float32             `json:"rentalPrice" validate:"required"`
+	RentalPaymentBasis     string              `json:"rentalPaymentBasis" validate:"required"`
 	RentalIntention        string              `json:"rentalIntention" validate:"required"`
 	Deposit                float32             `json:"deposit" validate:"required"`
-	DepositPaid            bool                `json:"depositPaid" validate:"required"`
-	ElectricityPaymentType string              `json:"electricityPaymentType" validate:"required"`
+	DepositPaid            bool                `json:"depositPaid"`
+	ElectricitySetupBy     string              `json:"electricitySetupBy" validate:"required,oneof=LANDLORD TENANT"`
+	ElectricityPaymentType string              `json:"electricityPaymentType" validate:"omitempty,oneof=RETAIL FIXED"`
 	ElectricityPrice       *float32            `json:"electricityPrice" validate:"omitempty"`
-	WaterPaymentType       string              `json:"waterPaymentType" validate:"required"`
+	WaterSetupBy           string              `json:"waterSetupBy" validate:"required,oneof=LANDLORD TENANT"`
+	WaterPaymentType       string              `json:"waterPaymentType" validate:"omitempty,oneof=RETAIL FIXED"`
 	WaterPrice             *float32            `json:"waterPrice" validate:"omitempty"`
-	Note                   *string             `json:"note"`
+
+	RentalPaymentGracePeriod       int32    `json:"rentalPaymentGracePeriod" validate:"required"`
+	RentalPaymentLateFeePercentage *float32 `json:"rentalPaymentLateFeePercentage" validate:"omitempty"`
+
+	Note *string `json:"note"`
 
 	Coaps    []CreateRentalCoap    `json:"coaps"`
 	Minors   []CreateRentalMinor   `json:"minors"`
 	Pets     []CreateRentalPet     `json:"pets"`
 	Services []CreateRentalService `json:"services"`
+	Policies []CreateRentalPolicy  `json:"policies"`
 }
 
 func (pm *CreateRental) ToCreateRentalDB() database.CreateRentalParams {
@@ -143,15 +164,20 @@ func (pm *CreateRental) ToCreateRentalDB() database.CreateRentalParams {
 			Time:  pm.MoveinDate,
 			Valid: !pm.MoveinDate.IsZero(),
 		},
-		RentalPeriod:           pm.RentalPeriod,
-		RentalPrice:            pm.RentalPrice,
-		RentalIntention:        pm.RentalIntention,
-		Deposit:                pm.Deposit,
-		DepositPaid:            pm.DepositPaid,
-		ElectricityPaymentType: pm.ElectricityPaymentType,
-		ElectricityPrice:       types.Float32N(pm.ElectricityPrice),
-		WaterPaymentType:       pm.WaterPaymentType,
-		WaterPrice:             types.Float32N(pm.WaterPrice),
-		Note:                   types.StrN(pm.Note),
+		RentalPeriod:                   pm.RentalPeriod,
+		RentalPrice:                    pm.RentalPrice,
+		RentalPaymentBasis:             pm.RentalPaymentBasis,
+		RentalIntention:                pm.RentalIntention,
+		Deposit:                        pm.Deposit,
+		DepositPaid:                    pm.DepositPaid,
+		ElectricitySetupBy:             pm.ElectricitySetupBy,
+		ElectricityPaymentType:         pm.ElectricityPaymentType,
+		ElectricityPrice:               types.Float32N(pm.ElectricityPrice),
+		WaterSetupBy:                   pm.WaterSetupBy,
+		WaterPaymentType:               pm.WaterPaymentType,
+		WaterPrice:                     types.Float32N(pm.WaterPrice),
+		RentalPaymentGracePeriod:       pm.RentalPaymentGracePeriod,
+		RentalPaymentLateFeePercentage: types.Float32N(pm.RentalPaymentLateFeePercentage),
+		Note:                           types.StrN(pm.Note),
 	}
 }
