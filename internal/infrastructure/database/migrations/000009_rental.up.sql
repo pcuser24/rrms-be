@@ -1,5 +1,7 @@
 BEGIN;
 
+CREATE TYPE "RENTALPAYMENTTYPE" AS ENUM ('PREPAID', 'POSTPAID');
+
 CREATE TABLE IF NOT EXISTS "rentals" (
   "id" BIGSERIAL PRIMARY KEY,
   "creator_id" UUID NOT NULL,
@@ -19,27 +21,34 @@ CREATE TABLE IF NOT EXISTS "rentals" (
   "start_date" DATE NOT NULL,
   "movein_date" DATE NOT NULL,
   "rental_period" INTEGER NOT NULL CHECK (rental_period >= 0),
+
+  "payment_type" "RENTALPAYMENTTYPE" NOT NULL DEFAULT 'POSTPAID',
+
   "rental_price" REAL NOT NULL CHECK (rental_price >= 0),
-  "rental_payment_basis" VARCHAR(20) NOT NULL,
+  "rental_payment_basis" INTEGER NOT NULL CHECK(rental_payment_basis >= 1),
+  CHECK(rental_payment_basis <= rental_period),
   "rental_intention" VARCHAR(20) NOT NULL,
   "deposit" REAL NOT NULL CHECK (deposit >= 0),
   "deposit_paid" BOOLEAN NOT NULL DEFAULT TRUE,
   
   -- basic services
   "electricity_setup_by" VARCHAR(20) NOT NULL,
-  "electricity_payment_type" VARCHAR(10) NOT NULL,
+  "electricity_payment_type" VARCHAR(10),
+  "electricity_customer_code" VARCHAR(50),
+  "electricity_provider" TEXT,
   "electricity_price" REAL CHECK (electricity_price >= 0),
   "water_setup_by" VARCHAR(20) NOT NULL,
-  "water_payment_type" VARCHAR(10) NOT NULL,
+  "water_payment_type" VARCHAR(10),
+  "water_customer_code" VARCHAR(50),
+  "water_provider" TEXT,
   "water_price" REAL CHECK (water_price >= 0),
 
   -- policy
-  "rental_payment_grace_period" INTEGER NOT NULL CHECK (rental_payment_grace_period >= 0),
-  "rental_payment_late_fee_percentage" REAL CHECK (rental_payment_late_fee_percentage > 0 AND rental_payment_late_fee_percentage <= 100),
+  -- "rental_payment_grace_period" INTEGER NOT NULL CHECK (rental_payment_grace_period >= 0),
   "note" TEXT,
 
-  created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL,
-  updated_at TIMESTAMPTZ DEFAULT NOW() NOT NULL,
+  "created_at" TIMESTAMPTZ DEFAULT NOW() NOT NULL,
+  "updated_at" TIMESTAMPTZ DEFAULT NOW() NOT NULL,
 
   UNIQUE ("application_id")
 );
@@ -80,14 +89,15 @@ CREATE TABLE IF NOT EXISTS "rental_pets" (
 ALTER TABLE "rental_pets" ADD CONSTRAINT "rental_pets_rental_id_fkey" FOREIGN KEY ("rental_id") REFERENCES "rentals"("id") ON DELETE CASCADE;
 
 CREATE TABLE IF NOT EXISTS "rental_services" (
+  "id" BIGSERIAL PRIMARY KEY,
   "rental_id" BIGINT NOT NULL,
   "name" TEXT NOT NULL,
-  "setupBy" VARCHAR(20) NOT NULL,
+  "setup_by" VARCHAR(20) NOT NULL,
   "provider" TEXT,
   "price" REAL CHECK (price >= 0)
 );
 ALTER TABLE "rental_services" ADD CONSTRAINT "rental_services_rental_id_fkey" FOREIGN KEY ("rental_id") REFERENCES "rentals"("id") ON DELETE CASCADE;
-COMMENT ON COLUMN "rental_services"."setupBy" IS 'The party who set up the service, either "LANDLORD" or "TENANT"';
+COMMENT ON COLUMN "rental_services"."setup_by" IS 'The party who set up the service, either "LANDLORD" or "TENANT"';
 
 CREATE TABLE IF NOT EXISTS "rental_policies" (
   "rental_id" BIGINT NOT NULL,

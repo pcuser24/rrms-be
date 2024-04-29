@@ -21,13 +21,17 @@ type UpdateRental struct {
 	MoveinDate         time.Time           `json:"moveinDate" validate:"omitempty"`
 	RentalPeriod       *int32              `json:"rentalPeriod" validate:"omitempty"`
 	RentalPrice        *float32            `json:"rentalPrice" validate:"omitempty"`
-	RentalPaymentBasis *string             `json:"rentalPaymentBasis" validate:"omitempty"`
+	RentalPaymentBasis *int32              `json:"rentalPaymentBasis" validate:"omitempty"`
 
 	ElectricitySetupBy             *string  `json:"electricitySetupBy" validate:"omitempty"`
 	ElectricityPaymentType         *string  `json:"electricityPaymentType" validate:"omitempty"`
+	ElectricityProvider            *string  `json:"electricityProvider" validate:"omitempty"`
+	ElectricityCustomerCode        *string  `json:"electricityCustomerCode" validate:"omitempty"`
 	ElectricityPrice               *float32 `json:"electricityPrice" validate:"omitempty"`
 	WaterSetupBy                   *string  `json:"waterSetupBy" validate:"omitempty"`
 	WaterPaymentType               *string  `json:"waterPaymentType" validate:"omitempty"`
+	WaterCustomerCode              *string  `json:"waterCustomerCode" validate:"omitempty"`
+	WaterProvider                  *string  `json:"waterProvider" validate:"omitempty"`
 	WaterPrice                     *float32 `json:"waterPrice" validate:"omitempty"`
 	RentalPaymentGracePeriod       *int32   `json:"rentalPaymentGracePeriod" validate:"omitempty"`
 	RentalPaymentLateFeePercentage *float32 `json:"rentalPaymentLateFeePercentage" validate:"omitempty"`
@@ -55,17 +59,19 @@ func (pm *UpdateRental) ToUpdateRentalDB(id int64) database.UpdateRentalParams {
 			Time:  pm.MoveinDate,
 			Valid: !pm.MoveinDate.IsZero(),
 		},
-		RentalPeriod:                   types.Int32N(pm.RentalPeriod),
-		RentalPrice:                    types.Float32N(pm.RentalPrice),
-		RentalPaymentBasis:             types.StrN(pm.RentalPaymentBasis),
-		ElectricitySetupBy:             types.StrN(pm.ElectricitySetupBy),
-		ElectricityPaymentType:         types.StrN(pm.ElectricityPaymentType),
-		ElectricityPrice:               types.Float32N(pm.ElectricityPrice),
-		WaterSetupBy:                   types.StrN(pm.WaterSetupBy),
-		WaterPaymentType:               types.StrN(pm.WaterPaymentType),
-		WaterPrice:                     types.Float32N(pm.WaterPrice),
-		RentalPaymentGracePeriod:       types.Int32N(pm.RentalPaymentGracePeriod),
-		RentalPaymentLateFeePercentage: types.Float32N(pm.RentalPaymentLateFeePercentage),
-		Note:                           types.StrN(pm.Note),
+		RentalPeriod:            types.Int32N(pm.RentalPeriod),
+		RentalPrice:             types.Float32N(pm.RentalPrice),
+		RentalPaymentBasis:      types.Int32N(pm.RentalPaymentBasis),
+		ElectricitySetupBy:      types.StrN(pm.ElectricitySetupBy),
+		ElectricityPaymentType:  types.StrN(pm.ElectricityPaymentType),
+		ElectricityProvider:     types.StrN(pm.ElectricityProvider),
+		ElectricityCustomerCode: types.StrN(pm.ElectricityCustomerCode),
+		ElectricityPrice:        types.Float32N(pm.ElectricityPrice),
+		WaterSetupBy:            types.StrN(pm.WaterSetupBy),
+		WaterPaymentType:        types.StrN(pm.WaterPaymentType),
+		WaterCustomerCode:       types.StrN(pm.WaterCustomerCode),
+		WaterProvider:           types.StrN(pm.WaterProvider),
+		WaterPrice:              types.Float32N(pm.WaterPrice),
+		Note:                    types.StrN(pm.Note),
 	}
 }

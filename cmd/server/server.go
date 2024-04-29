@@ -12,6 +12,7 @@ import (
 	"github.com/go-playground/validator"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
+	"github.com/robfig/cron/v3"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/user2410/rrms-backend/cmd/version"
@@ -80,6 +81,7 @@ type internalServices struct {
 type serverCommand struct {
 	*cobra.Command
 	config               *serverConfig
+	cronScheduler        *cron.Cron
 	tokenMaker           token.Maker
 	emailSender          email.EmailSender
 	dao                  database.DAO
@@ -136,6 +138,7 @@ func (c *serverCommand) run(cmd *cobra.Command, args []string) {
 	signal.Notify(exitCh, syscall.SIGINT, syscall.SIGTERM, syscall.SIGABRT)
 
 	errChan := make(chan error, 1)
+	c.cronScheduler.Start()
 	go c.runAsyncTaskProcessor(errChan)
 	go c.runHttpServer(errChan)
 
@@ -159,6 +162,8 @@ func (c *serverCommand) shutdown() {
 
 	c.asyncTaskProcessor.Shutdown()
 
+	c.cronScheduler.Stop()
+
 	os.Exit(0)
 }
 
@@ -173,6 +178,9 @@ func (c *serverCommand) setup() {
 		log.Fatal("Error while initializing database connection: ", err)
 	}
 	c.dao = dao
+
+	// setup cron scheduler
+	c.cronScheduler = cron.New()
 
 	// setup token maker
 	if strings.ToUpper(c.config.TokenMaker) == "PASETO" {

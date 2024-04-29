@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/huandu/go-sqlbuilder"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/user2410/rrms-backend/internal/domain/rental/dto"
 	"github.com/user2410/rrms-backend/internal/domain/rental/model"
@@ -13,9 +14,9 @@ import (
 )
 
 type Repo interface {
-	CreateRental(ctx context.Context, data *dto.CreateRental) (*model.RentalModel, error)
-	GetRental(ctx context.Context, id int64) (*model.RentalModel, error)
-	// GetRentalContract(ctx context.Context, id int64) (*model.RentalContractModel, error)
+	CreateRental(ctx context.Context, data *dto.CreateRental) (model.RentalModel, error)
+	GetRental(ctx context.Context, id int64) (model.RentalModel, error)
+	GetRentalSide(ctx context.Context, id int64, userId uuid.UUID) (string, error)
 	UpdateRental(ctx context.Context, data *dto.UpdateRental, id int64) error
 	// UpdateRentalContract(ctx context.Context, data *dto.UpdateRentalContract, id int64) error
 	CheckRentalVisibility(ctx context.Context, id int64, userId uuid.UUID) (bool, error)
@@ -26,6 +27,13 @@ type Repo interface {
 	PingRentalContract(ctx context.Context, id int64) (any, error)
 	UpdateContract(ctx context.Context, data *dto.UpdateContract) error
 	UpdateContractContent(ctx context.Context, data *dto.UpdateContractContent) error
+
+	CreateRentalPayment(ctx context.Context, data *dto.CreateRentalPayment) (model.RentalPayment, error)
+	GetRentalPayment(ctx context.Context, id int64) (model.RentalPayment, error)
+	GetPaymentsOfRental(ctx context.Context, rentalID int64) ([]model.RentalPayment, error)
+	UpdateRentalPayment(ctx context.Context, data *dto.UpdateRentalPayment) error
+	PlanRentalPayments(ctx context.Context) ([]int64, error)
+	PlanRentalPayment(ctx context.Context, rentalId int64) ([]int64, error)
 }
 
 type repo struct {
@@ -38,10 +46,10 @@ func NewRepo(dao database.DAO) Repo {
 	}
 }
 
-func (r *repo) CreateRental(ctx context.Context, data *dto.CreateRental) (*model.RentalModel, error) {
+func (r *repo) CreateRental(ctx context.Context, data *dto.CreateRental) (model.RentalModel, error) {
 	prdb, err := r.dao.CreateRental(ctx, data.ToCreateRentalDB())
 	if err != nil {
-		return nil, err
+		return model.RentalModel{}, err
 	}
 	prm := model.ToRentalModel(&prdb)
 
@@ -85,22 +93,22 @@ func (r *repo) CreateRental(ctx context.Context, data *dto.CreateRental) (*model
 	}()
 	if err != nil {
 		_err := r.dao.DeleteRental(ctx, prdb.ID)
-		return nil, errors.Join(err, _err)
+		return model.RentalModel{}, errors.Join(err, _err)
 	}
 
 	return prm, nil
 }
 
-func (r *repo) GetRental(ctx context.Context, id int64) (*model.RentalModel, error) {
+func (r *repo) GetRental(ctx context.Context, id int64) (model.RentalModel, error) {
 	prdb, err := r.dao.GetRental(ctx, id)
 	if err != nil {
-		return nil, err
+		return model.RentalModel{}, err
 	}
 	prm := model.ToRentalModel(&prdb)
 
 	coapdb, err := r.dao.GetRentalCoapsByRentalID(ctx, id)
 	if err != nil {
-		return nil, err
+		return model.RentalModel{}, err
 	}
 	for _, item := range coapdb {
 		prm.Coaps = append(prm.Coaps, model.ToRentalCoapModel(&item))
@@ -108,7 +116,7 @@ func (r *repo) GetRental(ctx context.Context, id int64) (*model.RentalModel, err
 
 	minordb, err := r.dao.GetRentalMinorsByRentalID(ctx, id)
 	if err != nil {
-		return nil, err
+		return model.RentalModel{}, err
 	}
 	for _, item := range minordb {
 		prm.Minors = append(prm.Minors, model.ToRentalMinor(&item))
@@ -116,7 +124,7 @@ func (r *repo) GetRental(ctx context.Context, id int64) (*model.RentalModel, err
 
 	petdb, err := r.dao.GetRentalPetsByRentalID(ctx, id)
 	if err != nil {
-		return nil, err
+		return model.RentalModel{}, err
 	}
 	for _, item := range petdb {
 		prm.Pets = append(prm.Pets, model.ToRentalPet(&item))
@@ -124,7 +132,7 @@ func (r *repo) GetRental(ctx context.Context, id int64) (*model.RentalModel, err
 
 	servicedb, err := r.dao.GetRentalServicesByRentalID(ctx, id)
 	if err != nil {
-		return nil, err
+		return model.RentalModel{}, err
 	}
 	for _, item := range servicedb {
 		prm.Services = append(prm.Services, model.ToRentalService(&item))
@@ -133,19 +141,12 @@ func (r *repo) GetRental(ctx context.Context, id int64) (*model.RentalModel, err
 	return prm, nil
 }
 
-// func (r *repo) GetRentalContract(ctx context.Context, id int64) (*model.RentalContractModel, error) {
-// 	prcdb, err := r.dao.GetRentalContract(ctx, id)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-// 	return &model.RentalContractModel{
-// 		ID:                   id,
-// 		ContractType:         prcdb.ContractType.CONTRACTTYPE,
-// 		ContractContent:      types.PNStr(prcdb.ContractContent),
-// 		ContractLastUpdateAt: prcdb.ContractLastUpdateAt.Time,
-// 		ContractLastUpdateBy: prcdb.ContractLastUpdateBy.Bytes,
-// 	}, nil
-// }
+func (r *repo) GetRentalSide(ctx context.Context, id int64, userId uuid.UUID) (string, error) {
+	return r.dao.GetRentalSide(ctx, database.GetRentalSideParams{
+		ID:     id,
+		UserID: userId,
+	})
+}
 
 func (r *repo) UpdateRental(ctx context.Context, data *dto.UpdateRental, id int64) error {
 	return r.dao.UpdateRental(ctx, data.ToUpdateRentalDB(id))
@@ -215,4 +216,79 @@ func (r *repo) UpdateContract(ctx context.Context, data *dto.UpdateContract) err
 
 func (r *repo) UpdateContractContent(ctx context.Context, data *dto.UpdateContractContent) error {
 	return r.dao.UpdateContractContent(ctx, data.ToUpdateContractContentDB())
+}
+
+func (r *repo) CreateRentalPayment(ctx context.Context, data *dto.CreateRentalPayment) (model.RentalPayment, error) {
+	res, err := r.dao.CreateRentalPayment(ctx, data.ToCreateRentalPaymentDB())
+	if err != nil {
+		return model.RentalPayment{}, err
+	}
+	return model.ToRentalPaymentModel(&res), nil
+}
+
+func (r *repo) GetRentalPayment(ctx context.Context, id int64) (model.RentalPayment, error) {
+	res, err := r.dao.GetRentalPayment(ctx, id)
+	if err != nil {
+		return model.RentalPayment{}, err
+	}
+	return model.ToRentalPaymentModel(&res), nil
+}
+
+func (r *repo) GetRentalPayments(ctx context.Context, ids []int64) ([]model.RentalPayment, error) {
+	ib := sqlbuilder.PostgreSQL.NewSelectBuilder()
+	ib.Select("id", "code", "rental_id", "created_at", "updated_at", "expiry_date", "payment_date", "updated_by", "status", "amount", "note")
+	ib.From("rental_payments")
+	ib.Where(ib.In("id", sqlbuilder.List(ids)))
+	query, args := ib.Build()
+	rows, err := r.dao.Query(ctx, query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var (
+		items []model.RentalPayment
+		i     database.RentalPayment
+	)
+	for rows.Next() {
+		if err := rows.Scan(&i.ID, &i.Code, &i.RentalID, &i.CreatedAt, &i.UpdatedAt, &i.ExpiryDate, &i.PaymentDate, &i.UpdatedBy, &i.Status, &i.Amount, &i.Note); err != nil {
+			return nil, err
+		}
+		items = append(items, model.ToRentalPaymentModel(&i))
+	}
+	rows.Close()
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return items, nil
+}
+
+func (r *repo) GetPaymentsOfRental(ctx context.Context, rentalID int64) ([]model.RentalPayment, error) {
+	res, err := r.dao.GetPaymentsOfRental(ctx, rentalID)
+	if err != nil {
+		return nil, err
+	}
+
+	var (
+		rms []model.RentalPayment
+		rm  model.RentalPayment
+	)
+	for i := range res {
+		rm = model.ToRentalPaymentModel(&res[i])
+		rms = append(rms, rm)
+	}
+	return rms, nil
+}
+
+func (r *repo) UpdateRentalPayment(ctx context.Context, data *dto.UpdateRentalPayment) error {
+	return r.dao.UpdateRentalPayment(ctx, data.ToUpdateRentalPaymentDB())
+}
+
+func (r *repo) PlanRentalPayments(ctx context.Context) ([]int64, error) {
+	return r.dao.PlanRentalPayments(ctx)
+}
+
+func (r *repo) PlanRentalPayment(ctx context.Context, rentalId int64) ([]int64, error) {
+	return r.dao.PlanRentalPayment(ctx, rentalId)
 }

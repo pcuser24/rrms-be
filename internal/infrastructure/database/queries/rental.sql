@@ -17,6 +17,9 @@ INSERT INTO rentals (
   start_date,
   movein_date,
   rental_period,
+
+  payment_type,
+
   rental_price,
   rental_payment_basis,
   rental_intention,
@@ -26,12 +29,16 @@ INSERT INTO rentals (
   electricity_setup_by,
   electricity_payment_type,
   electricity_price,
+  electricity_customer_code,
+  electricity_provider,
   water_setup_by,
   water_payment_type,
   water_price,
+  water_customer_code,
+  water_provider,
 
-  rental_payment_grace_period,
-  rental_payment_late_fee_percentage,
+  -- rental_payment_grace_period,
+  -- rental_payment_late_fee_percentage,
 
   note
 ) VALUES (
@@ -52,6 +59,9 @@ INSERT INTO rentals (
   sqlc.arg(start_date),
   sqlc.arg(movein_date),
   sqlc.arg(rental_period),
+
+  sqlc.narg(payment_type),
+
   sqlc.arg(rental_price),
   sqlc.arg(rental_payment_basis),
   sqlc.arg(rental_intention),
@@ -59,14 +69,18 @@ INSERT INTO rentals (
   sqlc.arg(deposit_paid),
 
   sqlc.arg(electricity_setup_by),
-  sqlc.arg(electricity_payment_type),
+  sqlc.narg(electricity_payment_type),
   sqlc.narg(electricity_price),
+  sqlc.narg(electricity_customer_code),
+  sqlc.narg(electricity_provider),
   sqlc.arg(water_setup_by),
-  sqlc.arg(water_payment_type),
+  sqlc.narg(water_payment_type),
   sqlc.narg(water_price),
+  sqlc.narg(water_customer_code),
+  sqlc.narg(water_provider),
 
-  sqlc.arg(rental_payment_grace_period),
-  sqlc.narg(rental_payment_late_fee_percentage),
+  -- sqlc.arg(rental_payment_grace_period),
+  -- sqlc.narg(rental_payment_late_fee_percentage),
   
   sqlc.narg(note)
 ) RETURNING *;
@@ -126,13 +140,13 @@ INSERT INTO "rental_pets" (
 INSERT INTO "rental_services" (
   "rental_id",
   "name",
-  "setupBy",
+  "setup_by",
   "provider",
   "price"
 ) VALUES (
   sqlc.arg(rental_id),
   sqlc.arg(name),
-  sqlc.arg(setupBy),
+  sqlc.arg(setup_by),
   sqlc.narg(provider),
   sqlc.narg(price)
 ) RETURNING *;
@@ -165,6 +179,17 @@ SELECT * FROM rental_pets WHERE rental_id = $1;
 
 -- name: GetRentalServicesByRentalID :many
 SELECT * FROM rental_services WHERE rental_id = $1;
+
+-- Get rental side: Side A (lanlord and managers) and Side B (tenant). Otherwise return C
+-- name: GetRentalSide :one
+SELECT 
+  CASE 
+    WHEN EXISTS (SELECT 1 FROM property_managers WHERE property_id = rentals.property_id AND manager_id = sqlc.arg(user_id)) THEN 'A'
+    WHEN rentals.tenant_id = sqlc.arg(user_id) THEN 'B'
+    ELSE 'C'
+  END AS side
+FROM rentals
+WHERE id = $1;
 
 -- name: CheckRentalVisibility :one
 SELECT count(*) > 0 FROM rentals 
@@ -201,11 +226,15 @@ UPDATE rentals SET
   electricity_setup_by = coalesce(sqlc.narg(electricity_setup_by), electricity_setup_by),
   electricity_payment_type = coalesce(sqlc.narg(electricity_payment_type), electricity_payment_type),
   electricity_price = coalesce(sqlc.narg(electricity_price), electricity_price),
+  electricity_customer_code = coalesce(sqlc.narg(electricity_customer_code), electricity_customer_code),
+  electricity_provider = coalesce(sqlc.narg(electricity_provider), electricity_provider),
   water_setup_by = coalesce(sqlc.narg(water_setup_by), water_setup_by),
   water_payment_type = coalesce(sqlc.narg(water_payment_type), water_payment_type),
   water_price = coalesce(sqlc.narg(water_price), water_price),
-  rental_payment_grace_period = coalesce(sqlc.narg(rental_payment_grace_period), rental_payment_grace_period),
-  rental_payment_late_fee_percentage = coalesce(sqlc.narg(rental_payment_late_fee_percentage), rental_payment_late_fee_percentage),
+  water_customer_code = coalesce(sqlc.narg(water_customer_code), water_customer_code),
+  water_provider = coalesce(sqlc.narg(water_provider), water_provider),
+  -- rental_payment_grace_period = coalesce(sqlc.narg(rental_payment_grace_period), rental_payment_grace_period),
+  -- rental_payment_late_fee_percentage = coalesce(sqlc.narg(rental_payment_late_fee_percentage), rental_payment_late_fee_percentage),
   note = coalesce(sqlc.narg(note), note),
   updated_at = NOW()
 WHERE id = $1;

@@ -29,7 +29,7 @@ type Repo interface {
 	CreateReminder(ctx context.Context, aid int64, userId uuid.UUID, data *dto.CreateReminder) (*model.ReminderModel, error)
 	GetRemindersOfUser(ctx context.Context, aid int64, userId uuid.UUID) ([]model.ReminderModel, error)
 	GetReminderById(ctx context.Context, id int64) (*model.ReminderModel, error)
-	GetRentalByApplicationId(ctx context.Context, aid int64) (*rental_model.RentalModel, error)
+	GetRentalByApplicationId(ctx context.Context, aid int64) (rental_model.RentalModel, error)
 	UpdateReminderStatus(ctx context.Context, aid, id int64, userId uuid.UUID, status database.REMINDERSTATUS) (int, error)
 }
 
@@ -407,13 +407,13 @@ func (r *repo) UpdateReminderStatus(ctx context.Context, aid, id int64, userId u
 	return len(res), nil
 }
 
-func (r *repo) GetRentalByApplicationId(ctx context.Context, aid int64) (*rental_model.RentalModel, error) {
+func (r *repo) GetRentalByApplicationId(ctx context.Context, aid int64) (rental_model.RentalModel, error) {
 	res, err := r.dao.GetRentalByApplicationId(ctx, pgtype.Int8{
 		Int64: aid,
 		Valid: true,
 	})
 	if err != nil {
-		return nil, err
+		return rental_model.RentalModel{}, err
 	}
 	return rental_model.ToRentalModel(&res), nil
 }

@@ -47,6 +47,7 @@ type Querier interface {
 	CreateRental(ctx context.Context, arg CreateRentalParams) (Rental, error)
 	CreateRentalCoap(ctx context.Context, arg CreateRentalCoapParams) (RentalCoap, error)
 	CreateRentalMinor(ctx context.Context, arg CreateRentalMinorParams) (RentalMinor, error)
+	CreateRentalPayment(ctx context.Context, arg CreateRentalPaymentParams) (RentalPayment, error)
 	CreateRentalPet(ctx context.Context, arg CreateRentalPetParams) (RentalPet, error)
 	CreateRentalPolicy(ctx context.Context, arg CreateRentalPolicyParams) (RentalPolicy, error)
 	CreateRentalService(ctx context.Context, arg CreateRentalServiceParams) (RentalService, error)
@@ -96,6 +97,7 @@ type Querier interface {
 	GetMsgGroupMembers(ctx context.Context, groupID int64) ([]GetMsgGroupMembersRow, error)
 	GetPaymentById(ctx context.Context, id int64) (Payment, error)
 	GetPaymentItemsByPaymentId(ctx context.Context, paymentID int64) ([]PaymentItem, error)
+	GetPaymentsOfRental(ctx context.Context, rentalID int64) ([]RentalPayment, error)
 	GetPropertyById(ctx context.Context, id uuid.UUID) (Property, error)
 	GetPropertyFeatures(ctx context.Context, propertyID uuid.UUID) ([]PropertyFeature, error)
 	GetPropertyManagers(ctx context.Context, propertyID uuid.UUID) ([]PropertyManager, error)
@@ -110,8 +112,11 @@ type Querier interface {
 	GetRentalByApplicationId(ctx context.Context, applicationID pgtype.Int8) (Rental, error)
 	GetRentalCoapsByRentalID(ctx context.Context, rentalID int64) ([]RentalCoap, error)
 	GetRentalMinorsByRentalID(ctx context.Context, rentalID int64) ([]RentalMinor, error)
+	GetRentalPayment(ctx context.Context, id int64) (RentalPayment, error)
 	GetRentalPetsByRentalID(ctx context.Context, rentalID int64) ([]RentalPet, error)
 	GetRentalServicesByRentalID(ctx context.Context, rentalID int64) ([]RentalService, error)
+	// Get rental side: Side A (lanlord and managers) and Side B (tenant). Otherwise return C
+	GetRentalSide(ctx context.Context, arg GetRentalSideParams) (string, error)
 	GetSessionById(ctx context.Context, id uuid.UUID) (Session, error)
 	GetUnitAmenities(ctx context.Context, unitID uuid.UUID) ([]UnitAmenity, error)
 	GetUnitById(ctx context.Context, id uuid.UUID) (Unit, error)
@@ -123,6 +128,8 @@ type Querier interface {
 	IsPropertyPublic(ctx context.Context, id uuid.UUID) (bool, error)
 	IsUnitPublic(ctx context.Context, id uuid.UUID) (bool, error)
 	PingContractByRentalID(ctx context.Context, rentalID int64) (PingContractByRentalIDRow, error)
+	PlanRentalPayment(ctx context.Context, rentalID int64) ([]int64, error)
+	PlanRentalPayments(ctx context.Context) ([]int64, error)
 	UpdateApplicationStatus(ctx context.Context, arg UpdateApplicationStatusParams) ([]int64, error)
 	UpdateContract(ctx context.Context, arg UpdateContractParams) error
 	UpdateContractContent(ctx context.Context, arg UpdateContractContentParams) error
@@ -133,6 +140,7 @@ type Querier interface {
 	UpdateProperty(ctx context.Context, arg UpdatePropertyParams) error
 	UpdateReminder(ctx context.Context, arg UpdateReminderParams) ([]Reminder, error)
 	UpdateRental(ctx context.Context, arg UpdateRentalParams) error
+	UpdateRentalPayment(ctx context.Context, arg UpdateRentalPaymentParams) error
 	UpdateSessionBlockingStatus(ctx context.Context, arg UpdateSessionBlockingStatusParams) error
 	UpdateUnit(ctx context.Context, arg UpdateUnitParams) error
 	UpdateUser(ctx context.Context, arg UpdateUserParams) error

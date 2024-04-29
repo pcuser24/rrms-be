@@ -41,7 +41,7 @@ type Service interface {
 	GetApplicationMsgGroup(aid int64, userId uuid.UUID) (*chat_model.MsgGroupExtended, error)
 	CreateReminder(aid int64, userId uuid.UUID, data *dto.CreateReminder) (*model.ReminderModel, error)
 	GetRemindersOfUser(userId uuid.UUID, aid int64) ([]model.ReminderModel, error)
-	GetRentalByApplicationId(aid int64) (*rental_model.RentalModel, error)
+	GetRentalByApplicationId(aid int64) (rental_model.RentalModel, error)
 	UpdateReminderStatus(aid int64, userId uuid.UUID, data *dto.UpdateReminderStatus) error
 }
 
@@ -350,6 +350,6 @@ func (s *service) UpdateReminderStatus(aid int64, userId uuid.UUID, data *dto.Up
 	return nil
 }
 
-func (s *service) GetRentalByApplicationId(aid int64) (*rental_model.RentalModel, error) {
+func (s *service) GetRentalByApplicationId(aid int64) (rental_model.RentalModel, error) {
 	return s.aRepo.GetRentalByApplicationId(context.Background(), aid)
 }

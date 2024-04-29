@@ -11,6 +11,7 @@ import (
 	"github.com/user2410/rrms-backend/internal/domain/rental/dto"
 	"github.com/user2410/rrms-backend/internal/infrastructure/database"
 	"github.com/user2410/rrms-backend/internal/interfaces/rest/responses"
+	"github.com/user2410/rrms-backend/internal/utils"
 	"github.com/user2410/rrms-backend/internal/utils/token"
 	"github.com/user2410/rrms-backend/internal/utils/validation"
 )
@@ -33,14 +34,11 @@ func (a *adapter) RegisterServer(route *fiber.Router, tokenMaker token.Maker) {
 	rentalRoute := (*route).Group("/rentals")
 	rentalRoute.Use(auth_http.AuthorizedMiddleware(tokenMaker))
 	rentalRoute.Post("/", a.createRental())
-	rentalRoute.Get("/rental/:id",
-		CheckRentalVisibility(a.service),
-		a.getRental(),
-	)
-	rentalRoute.Patch("/rental/:id", a.updateRental())
-	rentalRoute.Get("/rental/:id/contract", a.getRentalContract())
-	rentalRoute.Get("/rental/:id/ping-contract", a.pingContract())
-	rentalRoute.Post("/rental/:id/contract", a.createRentalContract())
+	rentalRoute.Get("/rental/:id", CheckRentalVisibility(a.service), a.getRental())
+	rentalRoute.Patch("/rental/:id", CheckRentalVisibility(a.service), a.updateRental())
+	rentalRoute.Get("/rental/:id/contract", CheckRentalVisibility(a.service), a.getRentalContract())
+	rentalRoute.Get("/rental/:id/ping-contract", CheckRentalVisibility(a.service), a.pingContract())
+	rentalRoute.Post("/rental/:id/contract", CheckRentalVisibility(a.service), a.createRentalContract())
 
 	contractRoute := (*route).Group("/contracts")
 	contractRoute.Use(auth_http.AuthorizedMiddleware(tokenMaker))
@@ -49,6 +47,14 @@ func (a *adapter) RegisterServer(route *fiber.Router, tokenMaker token.Maker) {
 	contractRoute.Patch("/contract/:id", a.updateContract())
 	contractRoute.Patch("/contract/:id/content", a.updateContractContent())
 
+	rentalPaymentRoute := (*route).Group("/rental-payments")
+	rentalPaymentRoute.Use(auth_http.AuthorizedMiddleware(tokenMaker))
+	rentalPaymentRoute.Post("/", a.createRentalPayment())
+	rentalPaymentRoute.Get("/rental-payment/:id", a.getRentalPayment())
+	rentalPaymentRoute.Get("/rental/:id", CheckRentalVisibility(a.service), a.getPaymentsOfRental())
+	rentalPaymentRoute.Patch("/rental-payment/:id/plan", a.updatePlanRentalPayment())
+	rentalPaymentRoute.Patch("/rental-payment/:id/issued", a.updateIssuedRentalPayment())
+	rentalPaymentRoute.Patch("/rental-payment/:id/pending", a.updatePendingRentalPayment())
 }
 
 func (a *adapter) createRental() fiber.Handler {
@@ -60,8 +66,8 @@ func (a *adapter) createRental() fiber.Handler {
 			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": err.Error()})
 		}
 		payload.CreatorID = tkPayload.UserID
-		if errs := validation.ValidateStruct(nil, payload); len(errs) > 0 {
-			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": validation.GetValidationError(errs)})
+		if err := payload.Validate(); err != nil {
+			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": err.Error()})
 		}
 
 		res, err := a.service.CreateRental(&payload, tkPayload.UserID)
@@ -79,10 +85,7 @@ func (a *adapter) createRental() fiber.Handler {
 
 func (a *adapter) getRental() fiber.Handler {
 	return func(ctx *fiber.Ctx) error {
-		rid, err := strconv.ParseInt(ctx.Params("id"), 10, 64)
-		if err != nil {
-			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message: Invalid rental id": err.Error()})
-		}
+		rid := ctx.Locals(RentalIDLocalKey).(int64)
 
 		res, err := a.service.GetRental(rid)
 		if err != nil {
@@ -271,5 +274,180 @@ func (a *adapter) updateContractContent() fiber.Handler {
 		}
 
 		return ctx.SendStatus(fiber.StatusOK)
+	}
+}
+
+func (a *adapter) createRentalPayment() fiber.Handler {
+	return func(ctx *fiber.Ctx) error {
+		var payload dto.CreateRentalPayment
+		if err := ctx.BodyParser(&payload); err != nil {
+			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": err.Error()})
+		}
+		if errs := validation.ValidateStruct(nil, payload); len(errs) > 0 {
+			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": validation.GetValidationError(errs)})
+		}
+
+		res, err := a.service.CreateRentalPayment(&payload)
+		if err != nil {
+			if dbErr, ok := err.(*pgconn.PgError); ok {
+				return responses.DBErrorResponse(ctx, dbErr)
+			}
+
+			return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
+		}
+
+		return ctx.Status(fiber.StatusCreated).JSON(res)
+	}
+}
+
+func (a *adapter) getRentalPayment() fiber.Handler {
+	return func(ctx *fiber.Ctx) error {
+		rpId, err := strconv.ParseInt(ctx.Params("id"), 10, 64)
+		if err != nil {
+			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": "invalid rental payment id: " + err.Error()})
+		}
+
+		tkPayload := ctx.Locals(auth_http.AuthorizationPayloadKey).(*token.Payload)
+
+		rp, err := a.service.GetRentalPayment(rpId)
+		if err != nil {
+			if errors.Is(err, database.ErrRecordNotFound) {
+				return ctx.Status(fiber.StatusNotFound).JSON(fiber.Map{"message": "rental payment not found"})
+			}
+
+			return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
+		}
+
+		isVisible, err := a.service.CheckRentalVisibility(rp.RentalID, tkPayload.UserID)
+		if err != nil {
+			return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
+		}
+		if !isVisible {
+			return ctx.Status(fiber.StatusForbidden).JSON(fiber.Map{"message": "operation not permitted on this rental payment"})
+		}
+
+		return ctx.Status(fiber.StatusOK).JSON(rp)
+	}
+}
+
+func (a *adapter) getPaymentsOfRental() fiber.Handler {
+	return func(ctx *fiber.Ctx) error {
+		rid := ctx.Locals(RentalIDLocalKey).(int64)
+
+		res, err := a.service.GetPaymentsOfRental(rid)
+		if err != nil {
+			if errors.Is(err, database.ErrRecordNotFound) {
+				return ctx.Status(fiber.StatusNotFound).JSON(fiber.Map{"message": "rental not found"})
+			}
+
+			return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
+		}
+
+		return ctx.Status(fiber.StatusOK).JSON(res)
+	}
+}
+
+func (a *adapter) updatePlanRentalPayment() fiber.Handler {
+	return func(ctx *fiber.Ctx) error {
+		id, err := strconv.ParseInt(ctx.Params("id"), 10, 64)
+		if err != nil {
+			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": err.Error()})
+		}
+
+		var payload dto.UpdatePlanRentalPayment
+		if err := ctx.BodyParser(&payload); err != nil {
+			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": err.Error()})
+		}
+		if errs := validation.ValidateStruct(nil, payload); len(errs) > 0 {
+			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": validation.GetValidationError(errs)})
+		}
+
+		tkPayload := ctx.Locals(auth_http.AuthorizationPayloadKey).(*token.Payload)
+
+		err = a.service.UpdateRentalPayment(id, tkPayload.UserID, &payload, database.RENTALPAYMENTSTATUSPLAN)
+		if err != nil {
+			if dbErr, ok := err.(*pgconn.PgError); ok {
+				return responses.DBErrorResponse(ctx, dbErr)
+			}
+
+			if errors.Is(err, rental.ErrInvalidTypeTransition) {
+				return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": err.Error()})
+			}
+
+			return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
+		}
+		return nil
+	}
+}
+
+func (a *adapter) updateIssuedRentalPayment() fiber.Handler {
+	return func(ctx *fiber.Ctx) error {
+		id, err := strconv.ParseInt(ctx.Params("id"), 10, 64)
+		if err != nil {
+			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": err.Error()})
+		}
+
+		var payload dto.UpdateIssuedRentalPayment
+		if err := ctx.BodyParser(&payload); err != nil {
+			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": err.Error()})
+		}
+		if errs := validation.ValidateStruct(nil, payload); len(errs) > 0 {
+			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": validation.GetValidationError(errs)})
+		}
+
+		tkPayload := ctx.Locals(auth_http.AuthorizationPayloadKey).(*token.Payload)
+
+		err = a.service.UpdateRentalPayment(id, tkPayload.UserID, &payload, database.RENTALPAYMENTSTATUSISSUED)
+		if err != nil {
+			if dbErr, ok := err.(*pgconn.PgError); ok {
+				return responses.DBErrorResponse(ctx, dbErr)
+			}
+
+			if errors.Is(err, rental.ErrInvalidTypeTransition) {
+				return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": err.Error()})
+			}
+
+			return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
+		}
+		return nil
+	}
+}
+
+func (a *adapter) updatePendingRentalPayment() fiber.Handler {
+	return func(ctx *fiber.Ctx) error {
+		id, err := strconv.ParseInt(ctx.Params("id"), 10, 64)
+		if err != nil {
+			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": err.Error()})
+		}
+
+		var payload dto.UpdatePendingRentalPayment
+		if err := ctx.BodyParser(&payload); err != nil {
+			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": err.Error()})
+		}
+		if errs := validation.ValidateStruct(nil, payload); len(errs) > 0 {
+			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": validation.GetValidationError(errs)})
+		}
+
+		tkPayload := ctx.Locals(auth_http.AuthorizationPayloadKey).(*token.Payload)
+
+		err = a.service.UpdateRentalPayment(
+			id, tkPayload.UserID, &payload,
+			utils.Ternary(payload.Status == database.RENTALPAYMENTSTATUSREQUEST2PAY,
+				database.RENTALPAYMENTSTATUSPENDING,
+				database.RENTALPAYMENTSTATUSREQUEST2PAY,
+			),
+		)
+		if err != nil {
+			if dbErr, ok := err.(*pgconn.PgError); ok {
+				return responses.DBErrorResponse(ctx, dbErr)
+			}
+
+			if errors.Is(err, rental.ErrInvalidTypeTransition) {
+				return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": err.Error()})
+			}
+
+			return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
+		}
+		return nil
 	}
 }

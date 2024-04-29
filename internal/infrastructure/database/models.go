@@ -407,6 +407,94 @@ func (ns NullREMINDERSTATUS) Value() (driver.Value, error) {
 	return string(ns.REMINDERSTATUS), nil
 }
 
+type RENTALPAYMENTSTATUS string
+
+const (
+	RENTALPAYMENTSTATUSPLAN        RENTALPAYMENTSTATUS = "PLAN"
+	RENTALPAYMENTSTATUSISSUED      RENTALPAYMENTSTATUS = "ISSUED"
+	RENTALPAYMENTSTATUSPENDING     RENTALPAYMENTSTATUS = "PENDING"
+	RENTALPAYMENTSTATUSREQUEST2PAY RENTALPAYMENTSTATUS = "REQUEST2PAY"
+	RENTALPAYMENTSTATUSPAID        RENTALPAYMENTSTATUS = "PAID"
+	RENTALPAYMENTSTATUSCANCELLED   RENTALPAYMENTSTATUS = "CANCELLED"
+)
+
+func (e *RENTALPAYMENTSTATUS) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = RENTALPAYMENTSTATUS(s)
+	case string:
+		*e = RENTALPAYMENTSTATUS(s)
+	default:
+		return fmt.Errorf("unsupported scan type for RENTALPAYMENTSTATUS: %T", src)
+	}
+	return nil
+}
+
+type NullRENTALPAYMENTSTATUS struct {
+	RENTALPAYMENTSTATUS RENTALPAYMENTSTATUS `json:"RENTALPAYMENTSTATUS"`
+	Valid               bool                `json:"valid"` // Valid is true if RENTALPAYMENTSTATUS is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullRENTALPAYMENTSTATUS) Scan(value interface{}) error {
+	if value == nil {
+		ns.RENTALPAYMENTSTATUS, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.RENTALPAYMENTSTATUS.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullRENTALPAYMENTSTATUS) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.RENTALPAYMENTSTATUS), nil
+}
+
+type RENTALPAYMENTTYPE string
+
+const (
+	RENTALPAYMENTTYPEPREPAID  RENTALPAYMENTTYPE = "PREPAID"
+	RENTALPAYMENTTYPEPOSTPAID RENTALPAYMENTTYPE = "POSTPAID"
+)
+
+func (e *RENTALPAYMENTTYPE) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = RENTALPAYMENTTYPE(s)
+	case string:
+		*e = RENTALPAYMENTTYPE(s)
+	default:
+		return fmt.Errorf("unsupported scan type for RENTALPAYMENTTYPE: %T", src)
+	}
+	return nil
+}
+
+type NullRENTALPAYMENTTYPE struct {
+	RENTALPAYMENTTYPE RENTALPAYMENTTYPE `json:"RENTALPAYMENTTYPE"`
+	Valid             bool              `json:"valid"` // Valid is true if RENTALPAYMENTTYPE is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullRENTALPAYMENTTYPE) Scan(value interface{}) error {
+	if value == nil {
+		ns.RENTALPAYMENTTYPE, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.RENTALPAYMENTTYPE.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullRENTALPAYMENTTYPE) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.RENTALPAYMENTTYPE), nil
+}
+
 type TENANTTYPE string
 
 const (
@@ -843,38 +931,41 @@ type ReminderMember struct {
 }
 
 type Rental struct {
-	ID                             int64         `json:"id"`
-	CreatorID                      uuid.UUID     `json:"creator_id"`
-	PropertyID                     uuid.UUID     `json:"property_id"`
-	UnitID                         uuid.UUID     `json:"unit_id"`
-	ApplicationID                  pgtype.Int8   `json:"application_id"`
-	TenantID                       pgtype.UUID   `json:"tenant_id"`
-	ProfileImage                   string        `json:"profile_image"`
-	TenantType                     TENANTTYPE    `json:"tenant_type"`
-	TenantName                     string        `json:"tenant_name"`
-	TenantPhone                    string        `json:"tenant_phone"`
-	TenantEmail                    string        `json:"tenant_email"`
-	OrganizationName               pgtype.Text   `json:"organization_name"`
-	OrganizationHqAddress          pgtype.Text   `json:"organization_hq_address"`
-	StartDate                      pgtype.Date   `json:"start_date"`
-	MoveinDate                     pgtype.Date   `json:"movein_date"`
-	RentalPeriod                   int32         `json:"rental_period"`
-	RentalPrice                    float32       `json:"rental_price"`
-	RentalPaymentBasis             string        `json:"rental_payment_basis"`
-	RentalIntention                string        `json:"rental_intention"`
-	Deposit                        float32       `json:"deposit"`
-	DepositPaid                    bool          `json:"deposit_paid"`
-	ElectricitySetupBy             string        `json:"electricity_setup_by"`
-	ElectricityPaymentType         string        `json:"electricity_payment_type"`
-	ElectricityPrice               pgtype.Float4 `json:"electricity_price"`
-	WaterSetupBy                   string        `json:"water_setup_by"`
-	WaterPaymentType               string        `json:"water_payment_type"`
-	WaterPrice                     pgtype.Float4 `json:"water_price"`
-	RentalPaymentGracePeriod       int32         `json:"rental_payment_grace_period"`
-	RentalPaymentLateFeePercentage pgtype.Float4 `json:"rental_payment_late_fee_percentage"`
-	Note                           pgtype.Text   `json:"note"`
-	CreatedAt                      time.Time     `json:"created_at"`
-	UpdatedAt                      time.Time     `json:"updated_at"`
+	ID                      int64             `json:"id"`
+	CreatorID               uuid.UUID         `json:"creator_id"`
+	PropertyID              uuid.UUID         `json:"property_id"`
+	UnitID                  uuid.UUID         `json:"unit_id"`
+	ApplicationID           pgtype.Int8       `json:"application_id"`
+	TenantID                pgtype.UUID       `json:"tenant_id"`
+	ProfileImage            string            `json:"profile_image"`
+	TenantType              TENANTTYPE        `json:"tenant_type"`
+	TenantName              string            `json:"tenant_name"`
+	TenantPhone             string            `json:"tenant_phone"`
+	TenantEmail             string            `json:"tenant_email"`
+	OrganizationName        pgtype.Text       `json:"organization_name"`
+	OrganizationHqAddress   pgtype.Text       `json:"organization_hq_address"`
+	StartDate               pgtype.Date       `json:"start_date"`
+	MoveinDate              pgtype.Date       `json:"movein_date"`
+	RentalPeriod            int32             `json:"rental_period"`
+	PaymentType             RENTALPAYMENTTYPE `json:"payment_type"`
+	RentalPrice             float32           `json:"rental_price"`
+	RentalPaymentBasis      int32             `json:"rental_payment_basis"`
+	RentalIntention         string            `json:"rental_intention"`
+	Deposit                 float32           `json:"deposit"`
+	DepositPaid             bool              `json:"deposit_paid"`
+	ElectricitySetupBy      string            `json:"electricity_setup_by"`
+	ElectricityPaymentType  pgtype.Text       `json:"electricity_payment_type"`
+	ElectricityCustomerCode pgtype.Text       `json:"electricity_customer_code"`
+	ElectricityProvider     pgtype.Text       `json:"electricity_provider"`
+	ElectricityPrice        pgtype.Float4     `json:"electricity_price"`
+	WaterSetupBy            string            `json:"water_setup_by"`
+	WaterPaymentType        pgtype.Text       `json:"water_payment_type"`
+	WaterCustomerCode       pgtype.Text       `json:"water_customer_code"`
+	WaterProvider           pgtype.Text       `json:"water_provider"`
+	WaterPrice              pgtype.Float4     `json:"water_price"`
+	Note                    pgtype.Text       `json:"note"`
+	CreatedAt               time.Time         `json:"created_at"`
+	UpdatedAt               time.Time         `json:"updated_at"`
 }
 
 type RentalCoap struct {
@@ -897,6 +988,25 @@ type RentalMinor struct {
 	Description pgtype.Text `json:"description"`
 }
 
+type RentalPayment struct {
+	ID int64 `json:"id"`
+	// {payment.id}_{ELECTRICITY | WATER | RENTAL | DEPOSIT | SERVICES{id}}_{payment.created_at}
+	Code       string      `json:"code"`
+	RentalID   int64       `json:"rental_id"`
+	CreatedAt  time.Time   `json:"created_at"`
+	UpdatedAt  time.Time   `json:"updated_at"`
+	StartDate  pgtype.Date `json:"start_date"`
+	EndDate    pgtype.Date `json:"end_date"`
+	ExpiryDate pgtype.Date `json:"expiry_date"`
+	// the date the payment gets paid
+	PaymentDate pgtype.Date         `json:"payment_date"`
+	UpdatedBy   pgtype.UUID         `json:"updated_by"`
+	Status      RENTALPAYMENTSTATUS `json:"status"`
+	Amount      float32             `json:"amount"`
+	Discount    pgtype.Float4       `json:"discount"`
+	Note        pgtype.Text         `json:"note"`
+}
+
 type RentalPet struct {
 	RentalID    int64         `json:"rental_id"`
 	Type        string        `json:"type"`
@@ -911,10 +1021,11 @@ type RentalPolicy struct {
 }
 
 type RentalService struct {
+	ID       int64  `json:"id"`
 	RentalID int64  `json:"rental_id"`
 	Name     string `json:"name"`
 	// The party who set up the service, either "LANDLORD" or "TENANT"
-	SetupBy  string        `json:"setupBy"`
+	SetupBy  string        `json:"setup_by"`
 	Provider pgtype.Text   `json:"provider"`
 	Price    pgtype.Float4 `json:"price"`
 }

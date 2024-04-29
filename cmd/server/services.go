@@ -1,6 +1,8 @@
 package server
 
 import (
+	"log"
+
 	"github.com/user2410/rrms-backend/internal/domain/application"
 	application_asynctask "github.com/user2410/rrms-backend/internal/domain/application/asynctask"
 	"github.com/user2410/rrms-backend/internal/domain/auth"
@@ -58,6 +60,10 @@ func (c *serverCommand) setupInternalServices(
 	c.internalServices.UnitService = unit.NewService(unitRepo)
 	c.internalServices.ListingService = listing.NewService(listingRepo, propertyRepo, paymentRepo, c.config.TokenSecreteKey)
 	c.internalServices.RentalService = rental.NewService(rentalRepo, authRepo, applicationRepo, listingRepo, propertyRepo, unitRepo)
+	_, err := c.internalServices.RentalService.SetupCronjob(c.cronScheduler)
+	if err != nil {
+		log.Fatal("failed to setup rental cron job:", err)
+	}
 	applicationTaskDistributor := application_asynctask.NewTaskDistributor(c.asyncTaskDistributor)
 	c.internalServices.ApplicationService = application.NewService(
 		applicationRepo,

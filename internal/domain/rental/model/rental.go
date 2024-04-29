@@ -69,6 +69,7 @@ func ToRentalPet(pr *database.RentalPet) RentalPet {
 }
 
 type RentalService struct {
+	ID       int64  `json:"id"`
 	RentalID int64  `json:"rental_id"`
 	Name     string `json:"name"`
 	// The party who set up the service, either "LANDLORD" or "TENANT"
@@ -79,6 +80,7 @@ type RentalService struct {
 
 func ToRentalService(pr *database.RentalService) RentalService {
 	return RentalService{
+		ID:       pr.ID,
 		RentalID: pr.RentalID,
 		Name:     pr.Name,
 		SetupBy:  pr.SetupBy,
@@ -94,33 +96,41 @@ type RentalPolicy struct {
 }
 
 type RentalModel struct {
-	ID                     int64               `json:"id"`
-	CreatorID              uuid.UUID           `json:"creatorId"`
-	PropertyID             uuid.UUID           `json:"propertyId"`
-	UnitID                 uuid.UUID           `json:"unitId"`
-	ApplicationID          *int64              `json:"applicationId"`
-	ProfileImage           string              `json:"profileImage"`
-	TenantID               uuid.UUID           `json:"tenantId"`
-	TenantType             database.TENANTTYPE `json:"tenantType"`
-	TenantName             string              `json:"tenantName"`
-	TenantPhone            string              `json:"tenantPhone"`
-	TenantEmail            string              `json:"tenantEmail"`
-	OrganizationName       *string             `json:"organizationName" validate:"omitempty"`
-	OrganizationHqAddress  *string             `json:"organizationHqAddress" validate:"omitempty"`
-	StartDate              time.Time           `json:"startDate"`
-	MoveinDate             time.Time           `json:"moveinDate"`
-	RentalPeriod           int32               `json:"rentalPeriod"`
-	RentalPrice            float32             `json:"rentalPrice"`
-	RentalIntention        string              `json:"rentalIntention"`
-	Deposit                float32             `json:"deposit"`
-	DepositPaid            bool                `json:"depositPaid"`
-	ElectricityPaymentType string              `json:"electricityPaymentType"`
-	ElectricityPrice       *float32            `json:"electricityPrice"`
-	WaterPaymentType       string              `json:"waterPaymentType"`
-	WaterPrice             *float32            `json:"waterPrice"`
-	Note                   *string             `json:"note"`
-	CreatedAt              time.Time           `json:"createdAt"`
-	UpdatedAt              time.Time           `json:"updatedAt"`
+	ID                      int64                      `json:"id"`
+	CreatorID               uuid.UUID                  `json:"creatorId"`
+	PropertyID              uuid.UUID                  `json:"propertyId"`
+	UnitID                  uuid.UUID                  `json:"unitId"`
+	ApplicationID           *int64                     `json:"applicationId"`
+	TenantID                uuid.UUID                  `json:"tenantId"`
+	ProfileImage            string                     `json:"profileImage"`
+	TenantType              database.TENANTTYPE        `json:"tenantType"`
+	TenantName              string                     `json:"tenantName"`
+	TenantPhone             string                     `json:"tenantPhone"`
+	TenantEmail             string                     `json:"tenantEmail"`
+	OrganizationName        *string                    `json:"organizationName" validate:"omitempty"`
+	OrganizationHqAddress   *string                    `json:"organizationHqAddress" validate:"omitempty"`
+	StartDate               time.Time                  `json:"startDate"`
+	MoveinDate              time.Time                  `json:"moveinDate"`
+	RentalPeriod            int32                      `json:"rentalPeriod"`
+	PaymentType             database.RENTALPAYMENTTYPE `json:"paymentType"`
+	RentalPrice             float32                    `json:"rentalPrice"`
+	RentalPaymentBasis      int32                      `json:"rentalPaymentBasis"`
+	RentalIntention         string                     `json:"rentalIntention"`
+	Deposit                 float32                    `json:"deposit"`
+	DepositPaid             bool                       `json:"depositPaid"`
+	ElectricitySetupBy      string                     `json:"electricitySetupBy"`
+	ElectricityPaymentType  *string                    `json:"electricityPaymentType"`
+	ElectricityCustomerCode *string                    `json:"electricityCustomerCode"`
+	ElectricityProvider     *string                    `json:"electricityProvider"`
+	ElectricityPrice        *float32                   `json:"electricityPrice"`
+	WaterSetupBy            string                     `json:"waterSetupBy"`
+	WaterPaymentType        *string                    `json:"waterPaymentType"`
+	WaterPrice              *float32                   `json:"waterPrice"`
+	WaterCustomerCode       *string                    `json:"waterCustomerCode"`
+	WaterProvider           *string                    `json:"waterProvider"`
+	Note                    *string                    `json:"note"`
+	CreatedAt               time.Time                  `json:"createdAt"`
+	UpdatedAt               time.Time                  `json:"updatedAt"`
 
 	Coaps    []RentalCoapModel `json:"coaps"`
 	Minors   []RentalMinor     `json:"minors"`
@@ -129,34 +139,42 @@ type RentalModel struct {
 	Policies []RentalPolicy    `json:"policies"`
 }
 
-func ToRentalModel(pr *database.Rental) *RentalModel {
-	return &RentalModel{
-		ID:                     pr.ID,
-		CreatorID:              pr.CreatorID,
-		PropertyID:             pr.PropertyID,
-		UnitID:                 pr.UnitID,
-		ApplicationID:          types.PNInt64(pr.ApplicationID),
-		ProfileImage:           pr.ProfileImage,
-		TenantID:               pr.TenantID.Bytes,
-		TenantType:             pr.TenantType,
-		TenantName:             pr.TenantName,
-		TenantPhone:            pr.TenantPhone,
-		TenantEmail:            pr.TenantEmail,
-		OrganizationName:       types.PNStr(pr.OrganizationName),
-		OrganizationHqAddress:  types.PNStr(pr.OrganizationHqAddress),
-		StartDate:              pr.StartDate.Time,
-		MoveinDate:             pr.MoveinDate.Time,
-		RentalPeriod:           pr.RentalPeriod,
-		RentalPrice:            pr.RentalPrice,
-		RentalIntention:        pr.RentalIntention,
-		Deposit:                pr.Deposit,
-		DepositPaid:            pr.DepositPaid,
-		ElectricityPaymentType: pr.ElectricityPaymentType,
-		ElectricityPrice:       types.PNFloat32(pr.ElectricityPrice),
-		WaterPaymentType:       pr.WaterPaymentType,
-		WaterPrice:             types.PNFloat32(pr.WaterPrice),
-		Note:                   types.PNStr(pr.Note),
-		CreatedAt:              pr.CreatedAt,
-		UpdatedAt:              pr.UpdatedAt,
+func ToRentalModel(pr *database.Rental) RentalModel {
+	return RentalModel{
+		ID:                      pr.ID,
+		CreatorID:               pr.CreatorID,
+		PropertyID:              pr.PropertyID,
+		UnitID:                  pr.UnitID,
+		ApplicationID:           types.PNInt64(pr.ApplicationID),
+		TenantID:                pr.TenantID.Bytes,
+		ProfileImage:            pr.ProfileImage,
+		TenantType:              pr.TenantType,
+		TenantName:              pr.TenantName,
+		TenantPhone:             pr.TenantPhone,
+		TenantEmail:             pr.TenantEmail,
+		OrganizationName:        types.PNStr(pr.OrganizationName),
+		OrganizationHqAddress:   types.PNStr(pr.OrganizationHqAddress),
+		StartDate:               pr.StartDate.Time,
+		MoveinDate:              pr.MoveinDate.Time,
+		RentalPeriod:            pr.RentalPeriod,
+		PaymentType:             pr.PaymentType,
+		RentalPrice:             pr.RentalPrice,
+		RentalPaymentBasis:      pr.RentalPaymentBasis,
+		RentalIntention:         pr.RentalIntention,
+		Deposit:                 pr.Deposit,
+		DepositPaid:             pr.DepositPaid,
+		ElectricitySetupBy:      pr.ElectricitySetupBy,
+		ElectricityPaymentType:  types.PNStr(pr.ElectricityPaymentType),
+		ElectricityCustomerCode: types.PNStr(pr.ElectricityCustomerCode),
+		ElectricityProvider:     types.PNStr(pr.ElectricityProvider),
+		ElectricityPrice:        types.PNFloat32(pr.ElectricityPrice),
+		WaterSetupBy:            pr.WaterSetupBy,
+		WaterPaymentType:        types.PNStr(pr.WaterPaymentType),
+		WaterCustomerCode:       types.PNStr(pr.WaterCustomerCode),
+		WaterProvider:           types.PNStr(pr.WaterProvider),
+		WaterPrice:              types.PNFloat32(pr.WaterPrice),
+		Note:                    types.PNStr(pr.Note),
+		CreatedAt:               pr.CreatedAt,
+		UpdatedAt:               pr.UpdatedAt,
 	}
 }
