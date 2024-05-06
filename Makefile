@@ -1,6 +1,10 @@
 # Variables:
 # DB_URL=postgresql://root:mysecret@localhost:32755/rrms?sslmode=disable
 
+TESTDB_CONTAINER=rrms_test
+LSS3_CONTAINER=rrms_s3
+LSS3_BUCKET=rrms-image
+
 # Migration
 migratecreate:
 	@{ \
@@ -61,11 +65,11 @@ mock_asynctask:
 # Test
 # Test db container for local development
 test_db:
-	docker start rrms_test; \
-    if [ $$? -ne 0 ]; then \
-        echo "[$$(date)]: Test db not found or failed to start, creating new db container"; \
-				docker run --name rrms_test -p 32760:5432 -e POSTGRES_USER=root -e POSTGRES_PASSWORD=mysecret -e POSTGRES_DB=rrms_test -d postgres:15.2; \
-    fi
+	docker start $(TESTDB_CONTAINER); \
+	if [ $$? -ne 0 ]; then \
+		echo "[$$(date)]: Test db not found or failed to start, creating new db container"; \
+		docker run --name $(TESTDB_CONTAINER) -p 32760:5432 -e POSTGRES_USER=root -e POSTGRES_PASSWORD=mysecret -e POSTGRES_DB=$(TESTDB_CONTAINER) -d postgres:15.2; \
+	fi
 
 test:
 	go test -v -cover -short ./...
@@ -77,10 +81,14 @@ test_pkg:
 # Localstack: for development and testing only
 # Start s3
 ls_s3:
-	localstack start -d && \
-	sleep 10 && \
-	awslocal s3api create-bucket --bucket rrms-image --region ap-southeast-1 --create-bucket-configuration LocationConstraint=ap-southeast-1 && \
-	awslocal s3api put-bucket-cors --bucket rrms-image --cors-configuration file://$$PWD/internal/infrastructure/aws/s3/cors-config.json
+	docker start $(LSS3_CONTAINER); \
+	if [ $$? -ne 0 ]; then \
+		echo "[$$(date)]: Localstack s3 not found or failed to start, creating new localstack s3 container" && \
+		docker run -d -p 4566:4566 --name $(LSS3_CONTAINER) localstack/localstack:s3-latest && \
+		sleep 5 && \
+		awslocal s3api create-bucket --bucket $(LSS3_BUCKET) --region ap-southeast-1 --create-bucket-configuration LocationConstraint=ap-southeast-1 && \
+		awslocal s3api put-bucket-cors --bucket $(LSS3_BUCKET) --cors-configuration file://$$PWD/internal/infrastructure/aws/s3/cors-config.json; \
+	fi
 
 
 .PHONY: sqlcgen build serve migratecreate migrateup migrateup1 migratedown migratedown1 mock_repo mock_asynctask test test_db test_pkg ls_s3

@@ -13,6 +13,7 @@ import (
 	context "context"
 	reflect "reflect"
 
+	uuid "github.com/google/uuid"
 	dto "github.com/user2410/rrms-backend/internal/domain/rental/dto"
 	model "github.com/user2410/rrms-backend/internal/domain/rental/model"
 	gomock "go.uber.org/mock/gomock"
@@ -41,11 +42,41 @@ func (m *MockRepo) EXPECT() *MockRepoMockRecorder {
 	return m.recorder
 }
 
+// CheckRentalVisibility mocks base method.
+func (m *MockRepo) CheckRentalVisibility(arg0 context.Context, arg1 int64, arg2 uuid.UUID) (bool, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CheckRentalVisibility", arg0, arg1, arg2)
+	ret0, _ := ret[0].(bool)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CheckRentalVisibility indicates an expected call of CheckRentalVisibility.
+func (mr *MockRepoMockRecorder) CheckRentalVisibility(arg0, arg1, arg2 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CheckRentalVisibility", reflect.TypeOf((*MockRepo)(nil).CheckRentalVisibility), arg0, arg1, arg2)
+}
+
+// CreateContract mocks base method.
+func (m *MockRepo) CreateContract(arg0 context.Context, arg1 *dto.CreateContract) (*model.ContractModel, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateContract", arg0, arg1)
+	ret0, _ := ret[0].(*model.ContractModel)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CreateContract indicates an expected call of CreateContract.
+func (mr *MockRepoMockRecorder) CreateContract(arg0, arg1 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateContract", reflect.TypeOf((*MockRepo)(nil).CreateContract), arg0, arg1)
+}
+
 // CreateRental mocks base method.
-func (m *MockRepo) CreateRental(arg0 context.Context, arg1 *dto.CreateRental) (*model.RentalModel, error) {
+func (m *MockRepo) CreateRental(arg0 context.Context, arg1 *dto.CreateRental) (model.RentalModel, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CreateRental", arg0, arg1)
-	ret0, _ := ret[0].(*model.RentalModel)
+	ret0, _ := ret[0].(model.RentalModel)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -56,11 +87,101 @@ func (mr *MockRepoMockRecorder) CreateRental(arg0, arg1 any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateRental", reflect.TypeOf((*MockRepo)(nil).CreateRental), arg0, arg1)
 }
 
+// CreateRentalComplaint mocks base method.
+func (m *MockRepo) CreateRentalComplaint(arg0 context.Context, arg1 *dto.CreateRentalComplaint) (model.RentalComplaint, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateRentalComplaint", arg0, arg1)
+	ret0, _ := ret[0].(model.RentalComplaint)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CreateRentalComplaint indicates an expected call of CreateRentalComplaint.
+func (mr *MockRepoMockRecorder) CreateRentalComplaint(arg0, arg1 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateRentalComplaint", reflect.TypeOf((*MockRepo)(nil).CreateRentalComplaint), arg0, arg1)
+}
+
+// CreateRentalComplaintReply mocks base method.
+func (m *MockRepo) CreateRentalComplaintReply(arg0 context.Context, arg1 *dto.CreateRentalComplaintReply) (model.RentalComplaintReply, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateRentalComplaintReply", arg0, arg1)
+	ret0, _ := ret[0].(model.RentalComplaintReply)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CreateRentalComplaintReply indicates an expected call of CreateRentalComplaintReply.
+func (mr *MockRepoMockRecorder) CreateRentalComplaintReply(arg0, arg1 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateRentalComplaintReply", reflect.TypeOf((*MockRepo)(nil).CreateRentalComplaintReply), arg0, arg1)
+}
+
+// CreateRentalPayment mocks base method.
+func (m *MockRepo) CreateRentalPayment(arg0 context.Context, arg1 *dto.CreateRentalPayment) (model.RentalPayment, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateRentalPayment", arg0, arg1)
+	ret0, _ := ret[0].(model.RentalPayment)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CreateRentalPayment indicates an expected call of CreateRentalPayment.
+func (mr *MockRepoMockRecorder) CreateRentalPayment(arg0, arg1 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateRentalPayment", reflect.TypeOf((*MockRepo)(nil).CreateRentalPayment), arg0, arg1)
+}
+
+// GetContractByID mocks base method.
+func (m *MockRepo) GetContractByID(arg0 context.Context, arg1 int64) (*model.ContractModel, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetContractByID", arg0, arg1)
+	ret0, _ := ret[0].(*model.ContractModel)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetContractByID indicates an expected call of GetContractByID.
+func (mr *MockRepoMockRecorder) GetContractByID(arg0, arg1 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetContractByID", reflect.TypeOf((*MockRepo)(nil).GetContractByID), arg0, arg1)
+}
+
+// GetContractByRentalID mocks base method.
+func (m *MockRepo) GetContractByRentalID(arg0 context.Context, arg1 int64) (*model.ContractModel, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetContractByRentalID", arg0, arg1)
+	ret0, _ := ret[0].(*model.ContractModel)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetContractByRentalID indicates an expected call of GetContractByRentalID.
+func (mr *MockRepoMockRecorder) GetContractByRentalID(arg0, arg1 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetContractByRentalID", reflect.TypeOf((*MockRepo)(nil).GetContractByRentalID), arg0, arg1)
+}
+
+// GetPaymentsOfRental mocks base method.
+func (m *MockRepo) GetPaymentsOfRental(arg0 context.Context, arg1 int64) ([]model.RentalPayment, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetPaymentsOfRental", arg0, arg1)
+	ret0, _ := ret[0].([]model.RentalPayment)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetPaymentsOfRental indicates an expected call of GetPaymentsOfRental.
+func (mr *MockRepoMockRecorder) GetPaymentsOfRental(arg0, arg1 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPaymentsOfRental", reflect.TypeOf((*MockRepo)(nil).GetPaymentsOfRental), arg0, arg1)
+}
+
 // GetRental mocks base method.
-func (m *MockRepo) GetRental(arg0 context.Context, arg1 int64) (*model.RentalModel, error) {
+func (m *MockRepo) GetRental(arg0 context.Context, arg1 int64) (model.RentalModel, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetRental", arg0, arg1)
-	ret0, _ := ret[0].(*model.RentalModel)
+	ret0, _ := ret[0].(model.RentalModel)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -69,6 +190,154 @@ func (m *MockRepo) GetRental(arg0 context.Context, arg1 int64) (*model.RentalMod
 func (mr *MockRepoMockRecorder) GetRental(arg0, arg1 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRental", reflect.TypeOf((*MockRepo)(nil).GetRental), arg0, arg1)
+}
+
+// GetRentalComplaint mocks base method.
+func (m *MockRepo) GetRentalComplaint(arg0 context.Context, arg1 int64) (model.RentalComplaint, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetRentalComplaint", arg0, arg1)
+	ret0, _ := ret[0].(model.RentalComplaint)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetRentalComplaint indicates an expected call of GetRentalComplaint.
+func (mr *MockRepoMockRecorder) GetRentalComplaint(arg0, arg1 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRentalComplaint", reflect.TypeOf((*MockRepo)(nil).GetRentalComplaint), arg0, arg1)
+}
+
+// GetRentalComplaintReplies mocks base method.
+func (m *MockRepo) GetRentalComplaintReplies(arg0 context.Context, arg1 int64) ([]model.RentalComplaintReply, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetRentalComplaintReplies", arg0, arg1)
+	ret0, _ := ret[0].([]model.RentalComplaintReply)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetRentalComplaintReplies indicates an expected call of GetRentalComplaintReplies.
+func (mr *MockRepoMockRecorder) GetRentalComplaintReplies(arg0, arg1 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRentalComplaintReplies", reflect.TypeOf((*MockRepo)(nil).GetRentalComplaintReplies), arg0, arg1)
+}
+
+// GetRentalComplaintsByRentalId mocks base method.
+func (m *MockRepo) GetRentalComplaintsByRentalId(arg0 context.Context, arg1 int64) ([]model.RentalComplaint, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetRentalComplaintsByRentalId", arg0, arg1)
+	ret0, _ := ret[0].([]model.RentalComplaint)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetRentalComplaintsByRentalId indicates an expected call of GetRentalComplaintsByRentalId.
+func (mr *MockRepoMockRecorder) GetRentalComplaintsByRentalId(arg0, arg1 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRentalComplaintsByRentalId", reflect.TypeOf((*MockRepo)(nil).GetRentalComplaintsByRentalId), arg0, arg1)
+}
+
+// GetRentalPayment mocks base method.
+func (m *MockRepo) GetRentalPayment(arg0 context.Context, arg1 int64) (model.RentalPayment, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetRentalPayment", arg0, arg1)
+	ret0, _ := ret[0].(model.RentalPayment)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetRentalPayment indicates an expected call of GetRentalPayment.
+func (mr *MockRepoMockRecorder) GetRentalPayment(arg0, arg1 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRentalPayment", reflect.TypeOf((*MockRepo)(nil).GetRentalPayment), arg0, arg1)
+}
+
+// GetRentalSide mocks base method.
+func (m *MockRepo) GetRentalSide(arg0 context.Context, arg1 int64, arg2 uuid.UUID) (string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetRentalSide", arg0, arg1, arg2)
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetRentalSide indicates an expected call of GetRentalSide.
+func (mr *MockRepoMockRecorder) GetRentalSide(arg0, arg1, arg2 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRentalSide", reflect.TypeOf((*MockRepo)(nil).GetRentalSide), arg0, arg1, arg2)
+}
+
+// PingRentalContract mocks base method.
+func (m *MockRepo) PingRentalContract(arg0 context.Context, arg1 int64) (any, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "PingRentalContract", arg0, arg1)
+	ret0, _ := ret[0].(any)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// PingRentalContract indicates an expected call of PingRentalContract.
+func (mr *MockRepoMockRecorder) PingRentalContract(arg0, arg1 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PingRentalContract", reflect.TypeOf((*MockRepo)(nil).PingRentalContract), arg0, arg1)
+}
+
+// PlanRentalPayment mocks base method.
+func (m *MockRepo) PlanRentalPayment(arg0 context.Context, arg1 int64) ([]int64, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "PlanRentalPayment", arg0, arg1)
+	ret0, _ := ret[0].([]int64)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// PlanRentalPayment indicates an expected call of PlanRentalPayment.
+func (mr *MockRepoMockRecorder) PlanRentalPayment(arg0, arg1 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PlanRentalPayment", reflect.TypeOf((*MockRepo)(nil).PlanRentalPayment), arg0, arg1)
+}
+
+// PlanRentalPayments mocks base method.
+func (m *MockRepo) PlanRentalPayments(arg0 context.Context) ([]int64, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "PlanRentalPayments", arg0)
+	ret0, _ := ret[0].([]int64)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// PlanRentalPayments indicates an expected call of PlanRentalPayments.
+func (mr *MockRepoMockRecorder) PlanRentalPayments(arg0 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PlanRentalPayments", reflect.TypeOf((*MockRepo)(nil).PlanRentalPayments), arg0)
+}
+
+// UpdateContract mocks base method.
+func (m *MockRepo) UpdateContract(arg0 context.Context, arg1 *dto.UpdateContract) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateContract", arg0, arg1)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpdateContract indicates an expected call of UpdateContract.
+func (mr *MockRepoMockRecorder) UpdateContract(arg0, arg1 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateContract", reflect.TypeOf((*MockRepo)(nil).UpdateContract), arg0, arg1)
+}
+
+// UpdateContractContent mocks base method.
+func (m *MockRepo) UpdateContractContent(arg0 context.Context, arg1 *dto.UpdateContractContent) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateContractContent", arg0, arg1)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpdateContractContent indicates an expected call of UpdateContractContent.
+func (mr *MockRepoMockRecorder) UpdateContractContent(arg0, arg1 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateContractContent", reflect.TypeOf((*MockRepo)(nil).UpdateContractContent), arg0, arg1)
 }
 
 // UpdateRental mocks base method.
@@ -83,4 +352,32 @@ func (m *MockRepo) UpdateRental(arg0 context.Context, arg1 *dto.UpdateRental, ar
 func (mr *MockRepoMockRecorder) UpdateRental(arg0, arg1, arg2 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateRental", reflect.TypeOf((*MockRepo)(nil).UpdateRental), arg0, arg1, arg2)
+}
+
+// UpdateRentalComplaint mocks base method.
+func (m *MockRepo) UpdateRentalComplaint(arg0 context.Context, arg1 *dto.UpdateRentalComplaint) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateRentalComplaint", arg0, arg1)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpdateRentalComplaint indicates an expected call of UpdateRentalComplaint.
+func (mr *MockRepoMockRecorder) UpdateRentalComplaint(arg0, arg1 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateRentalComplaint", reflect.TypeOf((*MockRepo)(nil).UpdateRentalComplaint), arg0, arg1)
+}
+
+// UpdateRentalPayment mocks base method.
+func (m *MockRepo) UpdateRentalPayment(arg0 context.Context, arg1 *dto.UpdateRentalPayment) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateRentalPayment", arg0, arg1)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpdateRentalPayment indicates an expected call of UpdateRentalPayment.
+func (mr *MockRepoMockRecorder) UpdateRentalPayment(arg0, arg1 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateRentalPayment", reflect.TypeOf((*MockRepo)(nil).UpdateRentalPayment), arg0, arg1)
 }

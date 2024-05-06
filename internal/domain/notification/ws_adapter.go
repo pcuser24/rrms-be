@@ -12,20 +12,25 @@ import (
 
 type useridType = uuid.UUID
 
-type WSNotificationAdapter struct {
+type WSNotificationAdapter interface {
+	Register(fibApp *fiber.App)
+	PushMessage(msg Notification)
+}
+
+type wsNotificationAdapter struct {
 	sync.RWMutex
 	mapUserIdToConn map[useridType]*websocket.Conn
 	egress          chan Notification
 }
 
-func NewWSNotificationAdapter() *WSNotificationAdapter {
-	return &WSNotificationAdapter{
+func NewWSNotificationAdapter() WSNotificationAdapter {
+	return &wsNotificationAdapter{
 		mapUserIdToConn: make(map[useridType]*websocket.Conn),
 		egress:          make(chan Notification),
 	}
 }
 
-func (ws *WSNotificationAdapter) Register(fibApp *fiber.App) {
+func (ws *wsNotificationAdapter) Register(fibApp *fiber.App) {
 	fibApp.Get("/ws/user/:id", websocket.New(func(c *websocket.Conn) {
 		userId := c.Params("id")
 		uid, err := uuid.Parse(userId)
@@ -41,24 +46,24 @@ func (ws *WSNotificationAdapter) Register(fibApp *fiber.App) {
 	}))
 }
 
-func (ws *WSNotificationAdapter) PushMessage(msg Notification) {
+func (ws *wsNotificationAdapter) PushMessage(msg Notification) {
 	ws.egress <- msg
 }
 
-func (ws *WSNotificationAdapter) addConn(userId uuid.UUID, conn *websocket.Conn) {
+func (ws *wsNotificationAdapter) addConn(userId uuid.UUID, conn *websocket.Conn) {
 	ws.Lock()
 	defer ws.Unlock()
 	ws.mapUserIdToConn[userId] = conn
 }
 
-func (ws *WSNotificationAdapter) getConn(userId uuid.UUID) (*websocket.Conn, bool) {
+func (ws *wsNotificationAdapter) getConn(userId uuid.UUID) (*websocket.Conn, bool) {
 	ws.RLock()
 	defer ws.RUnlock()
 	conn, err := ws.mapUserIdToConn[userId]
 	return conn, err
 }
 
-func (ws *WSNotificationAdapter) removeConn(userId uuid.UUID) {
+func (ws *wsNotificationAdapter) removeConn(userId uuid.UUID) {
 	ws.Lock()
 	defer ws.Unlock()
 	conn, ok := ws.mapUserIdToConn[userId]
@@ -69,7 +74,7 @@ func (ws *WSNotificationAdapter) removeConn(userId uuid.UUID) {
 	delete(ws.mapUserIdToConn, userId)
 }
 
-func (ws *WSNotificationAdapter) receiveMessage(c *websocket.Conn, userId uuid.UUID) {
+func (ws *wsNotificationAdapter) receiveMessage(c *websocket.Conn, userId uuid.UUID) {
 	defer ws.removeConn(userId)
 
 	for {
@@ -85,7 +90,7 @@ func (ws *WSNotificationAdapter) receiveMessage(c *websocket.Conn, userId uuid.U
 	}
 }
 
-func (ws *WSNotificationAdapter) sendMessage(c *websocket.Conn, userId uuid.UUID) {
+func (ws *wsNotificationAdapter) sendMessage(c *websocket.Conn, userId uuid.UUID) {
 	defer ws.removeConn(userId)
 
 	ticker := time.NewTicker(10 * time.Second)

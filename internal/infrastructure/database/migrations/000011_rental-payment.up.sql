@@ -16,6 +16,7 @@ CREATE TABLE IF NOT EXISTS "rental_payments" (
   "status" "RENTALPAYMENTSTATUS" NOT NULL DEFAULT 'PLAN',
   "amount" REAL NOT NULL CHECK (amount >= 0),
   "discount" REAL CHECK (discount >= 0),
+  "penalty" REAL CHECK (penalty >= 0),
   CHECK (amount >= discount),
   "note" TEXT,
 

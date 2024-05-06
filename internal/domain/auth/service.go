@@ -2,10 +2,12 @@ package auth
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
 	"github.com/user2410/rrms-backend/internal/domain/auth/asynctask"
+	"github.com/user2410/rrms-backend/pkg/ds/set"
 
 	repo2 "github.com/user2410/rrms-backend/internal/domain/auth/repo"
 
@@ -22,6 +24,7 @@ type Service interface {
 	Login(data *dto.LoginUser, sessionData *dto.CreateSession) (*dto.LoginUserRes, error)
 	GetUserByEmail(email string) (*model.UserModel, error)
 	GetUserById(id uuid.UUID) (*dto.UserResponse, error)
+	GetUserByIds(ids []uuid.UUID) ([]dto.UserResponse, error)
 	RefreshAccessToken(accessToken, refreshToken string) (*dto.LoginUserRes, error)
 	Logout(id uuid.UUID) error
 	UpdateUser(currentUserId, targetUserId uuid.UUID, data *dto.UpdateUser) error
@@ -161,6 +164,27 @@ func (u *service) GetUserById(id uuid.UUID) (*dto.UserResponse, error) {
 		return nil, err
 	}
 	return res.ToUserResponse(), nil
+}
+
+func (u *service) GetUserByIds(ids []uuid.UUID) ([]dto.UserResponse, error) {
+	_ids := set.NewSet[uuid.UUID]()
+	for _, id := range ids {
+		if id != uuid.Nil {
+			_ids.Add(id)
+		}
+	}
+	users := make([]dto.UserResponse, 0, _ids.Size())
+	for id := range _ids {
+		user, err := u.GetUserById(id)
+		if err != nil {
+			if errors.Is(err, database.ErrRecordNotFound) {
+				continue
+			}
+			return nil, err
+		}
+		users = append(users, *user)
+	}
+	return users, nil
 }
 
 var ErrInvalidSession = fmt.Errorf("invalid session")

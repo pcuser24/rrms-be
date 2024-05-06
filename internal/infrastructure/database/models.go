@@ -407,6 +407,91 @@ func (ns NullREMINDERSTATUS) Value() (driver.Value, error) {
 	return string(ns.REMINDERSTATUS), nil
 }
 
+type RENTALCOMPLAINTSTATUS string
+
+const (
+	RENTALCOMPLAINTSTATUSPENDING  RENTALCOMPLAINTSTATUS = "PENDING"
+	RENTALCOMPLAINTSTATUSRESOLVED RENTALCOMPLAINTSTATUS = "RESOLVED"
+	RENTALCOMPLAINTSTATUSCLOSED   RENTALCOMPLAINTSTATUS = "CLOSED"
+)
+
+func (e *RENTALCOMPLAINTSTATUS) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = RENTALCOMPLAINTSTATUS(s)
+	case string:
+		*e = RENTALCOMPLAINTSTATUS(s)
+	default:
+		return fmt.Errorf("unsupported scan type for RENTALCOMPLAINTSTATUS: %T", src)
+	}
+	return nil
+}
+
+type NullRENTALCOMPLAINTSTATUS struct {
+	RENTALCOMPLAINTSTATUS RENTALCOMPLAINTSTATUS `json:"RENTALCOMPLAINTSTATUS"`
+	Valid                 bool                  `json:"valid"` // Valid is true if RENTALCOMPLAINTSTATUS is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullRENTALCOMPLAINTSTATUS) Scan(value interface{}) error {
+	if value == nil {
+		ns.RENTALCOMPLAINTSTATUS, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.RENTALCOMPLAINTSTATUS.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullRENTALCOMPLAINTSTATUS) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.RENTALCOMPLAINTSTATUS), nil
+}
+
+type RENTALCOMPLAINTTYPE string
+
+const (
+	RENTALCOMPLAINTTYPEREPORT     RENTALCOMPLAINTTYPE = "REPORT"
+	RENTALCOMPLAINTTYPESUGGESTION RENTALCOMPLAINTTYPE = "SUGGESTION"
+)
+
+func (e *RENTALCOMPLAINTTYPE) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = RENTALCOMPLAINTTYPE(s)
+	case string:
+		*e = RENTALCOMPLAINTTYPE(s)
+	default:
+		return fmt.Errorf("unsupported scan type for RENTALCOMPLAINTTYPE: %T", src)
+	}
+	return nil
+}
+
+type NullRENTALCOMPLAINTTYPE struct {
+	RENTALCOMPLAINTTYPE RENTALCOMPLAINTTYPE `json:"RENTALCOMPLAINTTYPE"`
+	Valid               bool                `json:"valid"` // Valid is true if RENTALCOMPLAINTTYPE is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullRENTALCOMPLAINTTYPE) Scan(value interface{}) error {
+	if value == nil {
+		ns.RENTALCOMPLAINTTYPE, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.RENTALCOMPLAINTTYPE.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullRENTALCOMPLAINTTYPE) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.RENTALCOMPLAINTTYPE), nil
+}
+
 type RENTALPAYMENTSTATUS string
 
 const (
@@ -979,6 +1064,30 @@ type RentalCoap struct {
 	Description pgtype.Text `json:"description"`
 }
 
+type RentalComplaint struct {
+	ID         int64                 `json:"id"`
+	RentalID   int64                 `json:"rental_id"`
+	CreatorID  uuid.UUID             `json:"creator_id"`
+	Title      string                `json:"title"`
+	Content    string                `json:"content"`
+	Suggestion pgtype.Text           `json:"suggestion"`
+	Media      []string              `json:"media"`
+	OccurredAt time.Time             `json:"occurred_at"`
+	CreatedAt  time.Time             `json:"created_at"`
+	UpdatedAt  time.Time             `json:"updated_at"`
+	UpdatedBy  uuid.UUID             `json:"updated_by"`
+	Type       RENTALCOMPLAINTTYPE   `json:"type"`
+	Status     RENTALCOMPLAINTSTATUS `json:"status"`
+}
+
+type RentalComplaintReply struct {
+	ComplaintID int64     `json:"complaint_id"`
+	ReplierID   uuid.UUID `json:"replier_id"`
+	Reply       string    `json:"reply"`
+	Media       []string  `json:"media"`
+	CreatedAt   time.Time `json:"created_at"`
+}
+
 type RentalMinor struct {
 	RentalID    int64       `json:"rental_id"`
 	FullName    string      `json:"full_name"`
@@ -1004,6 +1113,7 @@ type RentalPayment struct {
 	Status      RENTALPAYMENTSTATUS `json:"status"`
 	Amount      float32             `json:"amount"`
 	Discount    pgtype.Float4       `json:"discount"`
+	Penalty     pgtype.Float4       `json:"penalty"`
 	Note        pgtype.Text         `json:"note"`
 }
 

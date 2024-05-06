@@ -25,10 +25,7 @@ type S3Client struct {
 }
 
 // Set environment variables: AWS_REGION, AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY
-func NewS3Client(
-	region, keyID, secretKey string,
-	endpoint *string,
-) (*S3Client, error) {
+func NewS3Client(region string, endpoint *string) (*S3Client, error) {
 	customResolver := aws.EndpointResolverWithOptionsFunc(func(service, region string, options ...interface{}) (aws.Endpoint, error) {
 		if endpoint != nil {
 			return aws.Endpoint{

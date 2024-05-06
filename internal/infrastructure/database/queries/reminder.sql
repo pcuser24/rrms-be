@@ -18,7 +18,7 @@ INSERT INTO "reminders" (
   sqlc.arg(end_at),
   sqlc.narg(note),
   sqlc.arg(location),
-  sqlc.arg(priority),
+  sqlc.narg(priority),
   sqlc.narg(recurrence_day),
   sqlc.narg(recurrence_month),
   sqlc.arg(recurrence_mode),
@@ -53,6 +53,9 @@ WHERE
   "id" IN (SELECT "reminder_id" FROM "reminder_members" WHERE "user_id" = $1)
   AND "resource_tag" = $2;
 
+-- name: CheckReminderVisibility :one
+SELECT EXISTS(SELECT 1 FROM "reminder_members" WHERE "reminder_id" = $1 AND "user_id" = $2);
+
 -- name: UpdateReminder :many
 UPDATE "reminders" SET
   "title" = coalesce(sqlc.narg(title), title),
@@ -67,7 +70,6 @@ UPDATE "reminders" SET
   "status" = coalesce(sqlc.narg(status), status)
 WHERE 
   "id" = $1 
-  AND "resource_tag" = $2
 RETURNING *;
 
 -- name: DeleteReminder :exec

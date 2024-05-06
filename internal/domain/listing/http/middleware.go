@@ -14,15 +14,21 @@ const (
 	ListingIDLocalKey = "listing_id"
 )
 
+func GetListingId() fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		lid, err := uuid.Parse(c.Params("id"))
+		if err != nil {
+			return c.SendStatus(fiber.StatusBadRequest)
+		}
+		c.Locals(ListingIDLocalKey, lid)
+
+		return c.Next()
+	}
+}
+
 func CheckListingManageability(s listing.Service) fiber.Handler {
 	return func(ctx *fiber.Ctx) error {
-		id := ctx.Params("id")
-		lid, err := uuid.Parse(id)
-		if err != nil {
-			return ctx.SendStatus(fiber.StatusBadRequest)
-		}
-		ctx.Locals(ListingIDLocalKey, lid)
-
+		lid := ctx.Locals(ListingIDLocalKey).(uuid.UUID)
 		tkPayload := ctx.Locals(http.AuthorizationPayloadKey).(*token.Payload)
 
 		isManager, err := s.CheckListingOwnership(lid, tkPayload.UserID)
@@ -44,11 +50,7 @@ func CheckListingManageability(s listing.Service) fiber.Handler {
 
 func CheckListingVisibility(s listing.Service) fiber.Handler {
 	return func(ctx *fiber.Ctx) error {
-		id := ctx.Params("id")
-		lid, err := uuid.Parse(id)
-		if err != nil {
-			return ctx.SendStatus(fiber.StatusBadRequest)
-		}
+		lid := ctx.Locals(ListingIDLocalKey).(uuid.UUID)
 
 		var userId uuid.UUID
 		tkPayload, ok := ctx.Locals(http.AuthorizationPayloadKey).(*token.Payload)

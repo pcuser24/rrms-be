@@ -51,12 +51,7 @@ func TestMain(m *testing.M) {
 
 	log.Println("config loaded successfully", conf, conf.AWSS3Endpoint)
 
-	s3Client, err = NewS3Client(
-		conf.AWSRegion,
-		conf.AWSAccessKeyID,
-		conf.AWSSecretAccessKey,
-		conf.AWSS3Endpoint,
-	)
+	s3Client, err = NewS3Client(conf.AWSRegion, conf.AWSS3Endpoint)
 	if err != nil {
 		log.Fatalf("failed to create s3 client: %v", err)
 	}

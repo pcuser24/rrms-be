@@ -12,11 +12,12 @@ import (
 	"github.com/go-playground/validator"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
+	"github.com/hibiken/asynq"
 	"github.com/robfig/cron/v3"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/user2410/rrms-backend/cmd/version"
-	"github.com/user2410/rrms-backend/internal/domain/application"
+	application_service "github.com/user2410/rrms-backend/internal/domain/application/service"
 	"github.com/user2410/rrms-backend/internal/domain/auth"
 	"github.com/user2410/rrms-backend/internal/domain/chat"
 	"github.com/user2410/rrms-backend/internal/domain/listing"
@@ -24,7 +25,8 @@ import (
 	payment_service "github.com/user2410/rrms-backend/internal/domain/payment/service"
 	"github.com/user2410/rrms-backend/internal/domain/payment/service/vnpay"
 	"github.com/user2410/rrms-backend/internal/domain/property"
-	"github.com/user2410/rrms-backend/internal/domain/rental"
+	"github.com/user2410/rrms-backend/internal/domain/reminder"
+	rental_service "github.com/user2410/rrms-backend/internal/domain/rental/service"
 	"github.com/user2410/rrms-backend/internal/domain/storage"
 	"github.com/user2410/rrms-backend/internal/domain/unit"
 	"github.com/user2410/rrms-backend/internal/infrastructure/asynctask"
@@ -47,11 +49,11 @@ type serverConfig struct {
 	AccessTokenTTL  time.Duration `mapstructure:"ACCESS_TOKEN_TTL" validate:"required"`
 	RefreshTokenTTL time.Duration `mapstructure:"REFRESH_TOKEN_TTL" validate:"required"`
 
-	AWSRegion          string  `mapstructure:"AWS_REGION" validate:"required"`
-	AWSAccessKeyID     string  `mapstructure:"AWS_ACCESS_KEY_ID" validate:"required"`
-	AWSSecretAccessKey string  `mapstructure:"AWS_SECRET_ACCESS_KEY" validate:"required"`
-	AWSS3Endpoint      *string `mapstructure:"AWS_S3_ENDPOINT" validate:"omitempty"`
-	AWSS3ImageBucket   string  `mapstructure:"AWS_S3_IMAGE_BUCKET" validate:"required"`
+	AWSRegion string `mapstructure:"AWS_REGION" validate:"required"`
+	// AWSAccessKeyID     string  `mapstructure:"AWS_ACCESS_KEY_ID" validate:"required"`
+	// AWSSecretAccessKey string  `mapstructure:"AWS_SECRET_ACCESS_KEY" validate:"required"`
+	AWSS3Endpoint    *string `mapstructure:"AWS_S3_ENDPOINT" validate:"omitempty"`
+	AWSS3ImageBucket string  `mapstructure:"AWS_S3_IMAGE_BUCKET" validate:"required"`
 
 	EmailSenderName     string `mapstructure:"EMAIL_SENDER_NAME" validate:"required"`
 	EmailSenderAddress  string `mapstructure:"EMAIL_SENDER_ADDRESS" validate:"required"`
@@ -70,26 +72,27 @@ type internalServices struct {
 	PropertyService    property.Service
 	UnitService        unit.Service
 	ListingService     listing.Service
-	RentalService      rental.Service
-	ApplicationService application.Service
+	RentalService      rental_service.Service
+	ApplicationService application_service.Service
 	StorageService     storage.Service
 	PaymentService     payment_service.Service
+	ReminderService    reminder.Service
 	VnpService         *vnpay.Service
 	ChatService        chat.Service
 }
 
 type serverCommand struct {
 	*cobra.Command
-	config               *serverConfig
-	cronScheduler        *cron.Cron
-	tokenMaker           token.Maker
-	emailSender          email.EmailSender
-	dao                  database.DAO
-	internalServices     internalServices
-	httpServer           http.Server
-	asyncTaskDistributor asynctask.Distributor
-	asyncTaskProcessor   asynctask.Processor
-	notificationAdapter  *notification.WSNotificationAdapter
+	config                *serverConfig
+	cronScheduler         *cron.Cron
+	tokenMaker            token.Maker
+	emailSender           email.EmailSender
+	dao                   database.DAO
+	internalServices      internalServices
+	httpServer            http.Server
+	asyncTaskDistributor  asynctask.Distributor
+	asyncTaskProcessor    asynctask.Processor
+	wsNotificationAdapter notification.WSNotificationAdapter
 }
 
 func NewServerCommand() *serverCommand {
@@ -203,12 +206,7 @@ func (c *serverCommand) setup() {
 	)
 
 	// setup S3 client
-	s3Client, err := s3.NewS3Client(
-		c.config.AWSRegion,
-		c.config.AWSAccessKeyID,
-		c.config.AWSSecretAccessKey,
-		c.config.AWSS3Endpoint,
-	)
+	s3Client, err := s3.NewS3Client(c.config.AWSRegion, c.config.AWSS3Endpoint)
 	if err != nil {
 		log.Fatal("Error while initializing AWS S3 client", err)
 	}
@@ -224,16 +222,21 @@ func (c *serverCommand) setup() {
 			AllowHeaders: "Origin, Content-Type, Accept, Authorization",
 		},
 	)
-	c.notificationAdapter = notification.NewWSNotificationAdapter()
-	c.notificationAdapter.Register(c.httpServer.GetFibApp())
+	c.wsNotificationAdapter = notification.NewWSNotificationAdapter()
+	c.wsNotificationAdapter.Register(c.httpServer.GetFibApp())
 
 	// setup asynq task distributor and processor
+	c.asyncTaskDistributor = asynctask.NewRedisTaskDistributor(asynq.RedisClientOpt{
+		Addr: c.config.AsynqRedisAddress,
+	})
+	// setup asynq task processor
 	c.setupAsyncTaskProcessor(c.emailSender)
 
 	// setup internal services
 	c.setupInternalServices(
 		dao,
 		s3Client,
+		c.asyncTaskDistributor,
 	)
 
 	c.setupHttpServer()

@@ -5,7 +5,7 @@ import (
 	"strconv"
 
 	"github.com/google/uuid"
-	"github.com/user2410/rrms-backend/internal/domain/application"
+	application_service "github.com/user2410/rrms-backend/internal/domain/application/service"
 	"github.com/user2410/rrms-backend/internal/domain/listing"
 
 	"github.com/user2410/rrms-backend/internal/utils"
@@ -28,7 +28,7 @@ type Adapter interface {
 
 type adapter struct {
 	lService listing.Service
-	aService application.Service
+	aService application_service.Service
 }
 
 func (a *adapter) RegisterServer(route *fiber.Router, tokenMaker token.Maker) {
@@ -48,16 +48,17 @@ func (a *adapter) RegisterServer(route *fiber.Router, tokenMaker token.Maker) {
 		auth_http.AuthorizedMiddleware(tokenMaker),
 		a.getApplicationsToMe(),
 	)
+	applicationRoute.Get("/ids",
+		auth_http.AuthorizedMiddleware(tokenMaker),
+		a.getApplicationsByIds(),
+	)
+	applicationRoute.Group("/application/:id").Use(GetApplicationId())
 	applicationRoute.Get("/application/:id",
 		auth_http.AuthorizedMiddleware(tokenMaker),
 		CheckApplicationVisibilty(a.aService),
 		a.getApplicationById(),
 	)
-	applicationRoute.Get("/ids",
-		auth_http.AuthorizedMiddleware(tokenMaker),
-		a.getApplicationsByIds(),
-	)
-	applicationRoute.Patch("/application/status/:id",
+	applicationRoute.Patch("/application/:id/status",
 		auth_http.AuthorizedMiddleware(tokenMaker),
 		CheckApplicationUpdatability(a.aService),
 		a.updateApplicationStatus(),
@@ -77,29 +78,14 @@ func (a *adapter) RegisterServer(route *fiber.Router, tokenMaker token.Maker) {
 		CheckApplicationVisibilty(a.aService),
 		a.createReminder(),
 	)
-	applicationRoute.Get("/application/:id/reminders",
-		auth_http.AuthorizedMiddleware(tokenMaker),
-		CheckApplicationVisibilty(a.aService),
-		a.getRemindersOfCurrentUser(),
-	)
-	applicationRoute.Get("/application/:id/reminders",
-		auth_http.AuthorizedMiddleware(tokenMaker),
-		CheckApplicationVisibilty(a.aService),
-		a.getRemindersOfCurrentUser(),
-	)
 	applicationRoute.Get("/application/:id/rental",
 		auth_http.AuthorizedMiddleware(tokenMaker),
 		CheckApplicationVisibilty(a.aService),
 		a.getRentalByApplicationId(),
 	)
-	applicationRoute.Patch("/application/:id/reminders",
-		auth_http.AuthorizedMiddleware(tokenMaker),
-		CheckApplicationVisibilty(a.aService),
-		a.updateReminderStatus(),
-	)
 }
 
-func NewAdapter(lService listing.Service, aService application.Service) Adapter {
+func NewAdapter(lService listing.Service, aService application_service.Service) Adapter {
 	return &adapter{
 		lService: lService,
 		aService: aService,
@@ -150,9 +136,9 @@ func (a *adapter) createApplications() fiber.Handler {
 				return responses.DBErrorResponse(ctx, dbErr)
 			}
 
-			if errors.Is(err, application.ErrAlreadyApplied) ||
-				errors.Is(err, application.ErrListingIsClosed) ||
-				errors.Is(err, application.ErrInvalidApplicant) {
+			if errors.Is(err, application_service.ErrAlreadyApplied) ||
+				errors.Is(err, application_service.ErrListingIsClosed) ||
+				errors.Is(err, application_service.ErrInvalidApplicant) {
 				return ctx.Status(fiber.StatusConflict).JSON(fiber.Map{"message": err.Error()})
 			}
 
@@ -311,7 +297,7 @@ func (a *adapter) createApplicationMsgGroup() fiber.Handler {
 			if errors.Is(err, database.ErrRecordNotFound) {
 				return ctx.Status(fiber.StatusNotFound).JSON(fiber.Map{"message": "application not found"})
 			}
-			if errors.Is(err, application.ErrAnonymousApplicant) {
+			if errors.Is(err, application_service.ErrAnonymousApplicant) {
 				return ctx.Status(fiber.StatusConflict).JSON(fiber.Map{"message": err.Error()})
 			}
 			return ctx.SendStatus(fiber.StatusInternalServerError)
@@ -335,7 +321,7 @@ func (a *adapter) getApplicationMsgGroup() fiber.Handler {
 			if errors.Is(err, database.ErrRecordNotFound) {
 				return ctx.Status(fiber.StatusNotFound).JSON(fiber.Map{"message": "application not found"})
 			}
-			if errors.Is(err, application.ErrAnonymousApplicant) {
+			if errors.Is(err, application_service.ErrAnonymousApplicant) {
 				return ctx.Status(fiber.StatusConflict).JSON(fiber.Map{"message": err.Error()})
 			}
 			return ctx.SendStatus(fiber.StatusInternalServerError)
@@ -375,48 +361,6 @@ func (a *adapter) createReminder() fiber.Handler {
 		}
 
 		return ctx.Status(fiber.StatusCreated).JSON(res)
-	}
-}
-
-func (a *adapter) getRemindersOfCurrentUser() fiber.Handler {
-	return func(ctx *fiber.Ctx) error {
-		tkPayload := ctx.Locals(auth_http.AuthorizationPayloadKey).(*token.Payload)
-		aid := ctx.Locals(ApplicationIdLocalKey).(int64)
-
-		res, err := a.aService.GetRemindersOfUser(tkPayload.UserID, aid)
-		if err != nil {
-			if dbErr, ok := err.(*pgconn.PgError); ok {
-				return responses.DBErrorResponse(ctx, dbErr)
-			}
-			return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
-		}
-
-		return ctx.Status(fiber.StatusOK).JSON(res)
-	}
-}
-
-func (a *adapter) updateReminderStatus() fiber.Handler {
-	return func(ctx *fiber.Ctx) error {
-		var payload dto.UpdateReminderStatus
-		if err := ctx.BodyParser(&payload); err != nil {
-			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": err.Error()})
-		}
-		if errs := validation.ValidateStruct(nil, payload); len(errs) > 0 {
-			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": validation.GetValidationError(errs)})
-		}
-
-		aid := ctx.Locals(ApplicationIdLocalKey).(int64)
-		tkPayload := ctx.Locals(auth_http.AuthorizationPayloadKey).(*token.Payload)
-
-		err := a.aService.UpdateReminderStatus(aid, tkPayload.UserID, &payload)
-		if err != nil {
-			if dbErr, ok := err.(*pgconn.PgError); ok {
-				return responses.DBErrorResponse(ctx, dbErr)
-			}
-			return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
-		}
-
-		return ctx.SendStatus(fiber.StatusOK)
 	}
 }
 

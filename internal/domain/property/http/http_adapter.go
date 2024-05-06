@@ -53,6 +53,8 @@ func (a *adapter) RegisterServer(router *fiber.Router, tokenMaker token.Maker) {
 	propertyRoute.Use(auth_http.AuthorizedMiddleware(tokenMaker))
 
 	propertyRoute.Post("/", a.createProperty())
+	propertyRoute.Get("/my-properties", a.getManagedProperties())
+	propertyRoute.Group("/property/:id").Use(GetPropertyId())
 	propertyRoute.Get("/property/:id/listings",
 		CheckPropertyManageability(a.service),
 		a.getListingsOfProperty(),
@@ -61,7 +63,6 @@ func (a *adapter) RegisterServer(router *fiber.Router, tokenMaker token.Maker) {
 		CheckPropertyManageability(a.service),
 		a.getApplicationsOfProperty(),
 	)
-	propertyRoute.Get("/my-properties", a.getManagedProperties())
 	propertyRoute.Patch("/property/:id",
 		CheckPropertyManageability(a.service),
 		a.updateProperty(),

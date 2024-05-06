@@ -23,7 +23,8 @@ type RentalPayment struct {
 	UpdatedBy   uuid.UUID                    `json:"updatedBy"`
 	Status      database.RENTALPAYMENTSTATUS `json:"status"`
 	Amount      float32                      `json:"amount"`
-	Discount    float32                      `json:"discount"`
+	Discount    *float32                     `json:"discount"`
+	Penalty     *float32                     `json:"penalty"`
 	Note        *string                      `json:"note"`
 }
 
@@ -41,7 +42,8 @@ func ToRentalPaymentModel(prdb *database.RentalPayment) RentalPayment {
 		UpdatedBy:   prdb.UpdatedBy.Bytes,
 		Status:      prdb.Status,
 		Amount:      prdb.Amount,
-		Discount:    prdb.Discount.Float32,
+		Discount:    types.PNFloat32(prdb.Discount),
+		Penalty:     types.PNFloat32(prdb.Penalty),
 		Note:        types.PNStr(prdb.Note),
 	}
 }

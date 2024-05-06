@@ -18,6 +18,7 @@ type Querier interface {
 	CheckListingOwnership(ctx context.Context, arg CheckListingOwnershipParams) (int64, error)
 	CheckListingVisibility(ctx context.Context, arg CheckListingVisibilityParams) (bool, error)
 	CheckMsgGroupMembership(ctx context.Context, arg CheckMsgGroupMembershipParams) (bool, error)
+	CheckReminderVisibility(ctx context.Context, arg CheckReminderVisibilityParams) (bool, error)
 	CheckRentalVisibility(ctx context.Context, arg CheckRentalVisibilityParams) (bool, error)
 	CheckUnitManageability(ctx context.Context, arg CheckUnitManageabilityParams) (int64, error)
 	CheckUnitOfProperty(ctx context.Context, arg CheckUnitOfPropertyParams) (int64, error)
@@ -46,6 +47,8 @@ type Querier interface {
 	CreateReminderMember(ctx context.Context, arg CreateReminderMemberParams) (ReminderMember, error)
 	CreateRental(ctx context.Context, arg CreateRentalParams) (Rental, error)
 	CreateRentalCoap(ctx context.Context, arg CreateRentalCoapParams) (RentalCoap, error)
+	CreateRentalComplaint(ctx context.Context, arg CreateRentalComplaintParams) (RentalComplaint, error)
+	CreateRentalComplaintReply(ctx context.Context, arg CreateRentalComplaintReplyParams) (RentalComplaintReply, error)
 	CreateRentalMinor(ctx context.Context, arg CreateRentalMinorParams) (RentalMinor, error)
 	CreateRentalPayment(ctx context.Context, arg CreateRentalPaymentParams) (RentalPayment, error)
 	CreateRentalPet(ctx context.Context, arg CreateRentalPetParams) (RentalPet, error)
@@ -111,6 +114,9 @@ type Querier interface {
 	GetRental(ctx context.Context, id int64) (Rental, error)
 	GetRentalByApplicationId(ctx context.Context, applicationID pgtype.Int8) (Rental, error)
 	GetRentalCoapsByRentalID(ctx context.Context, rentalID int64) ([]RentalCoap, error)
+	GetRentalComplaint(ctx context.Context, id int64) (RentalComplaint, error)
+	GetRentalComplaintReplies(ctx context.Context, complaintID int64) ([]RentalComplaintReply, error)
+	GetRentalComplaintsByRentalId(ctx context.Context, rentalID int64) ([]RentalComplaint, error)
 	GetRentalMinorsByRentalID(ctx context.Context, rentalID int64) ([]RentalMinor, error)
 	GetRentalPayment(ctx context.Context, id int64) (RentalPayment, error)
 	GetRentalPetsByRentalID(ctx context.Context, rentalID int64) ([]RentalPet, error)
@@ -140,6 +146,7 @@ type Querier interface {
 	UpdateProperty(ctx context.Context, arg UpdatePropertyParams) error
 	UpdateReminder(ctx context.Context, arg UpdateReminderParams) ([]Reminder, error)
 	UpdateRental(ctx context.Context, arg UpdateRentalParams) error
+	UpdateRentalComplaint(ctx context.Context, arg UpdateRentalComplaintParams) error
 	UpdateRentalPayment(ctx context.Context, arg UpdateRentalPaymentParams) error
 	UpdateSessionBlockingStatus(ctx context.Context, arg UpdateSessionBlockingStatusParams) error
 	UpdateUnit(ctx context.Context, arg UpdateUnitParams) error

@@ -5,13 +5,13 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/user2410/rrms-backend/internal/domain/auth/http"
-	"github.com/user2410/rrms-backend/internal/domain/rental"
+	"github.com/user2410/rrms-backend/internal/domain/rental/service"
 	"github.com/user2410/rrms-backend/internal/utils/token"
 )
 
 const RentalIDLocalKey = "rental_id"
 
-func CheckRentalVisibility(s rental.Service) fiber.Handler {
+func CheckRentalVisibility(s service.Service) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		rid, err := strconv.ParseInt(c.Params("id"), 10, 64)
 		if err != nil {

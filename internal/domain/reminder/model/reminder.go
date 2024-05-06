@@ -33,8 +33,8 @@ type ReminderMemberModel struct {
 	UserID     uuid.UUID `json:"userId"`
 }
 
-func ToReminderModel(rdb *database.Reminder) *ReminderModel {
-	return &ReminderModel{
+func ToReminderModel(rdb *database.Reminder) ReminderModel {
+	return ReminderModel{
 		ID:              rdb.ID,
 		CreatorID:       rdb.CreatorID,
 		Title:           rdb.Title,

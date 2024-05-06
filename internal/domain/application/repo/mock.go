@@ -90,21 +90,6 @@ func (mr *MockRepoMockRecorder) CreateApplication(arg0, arg1 any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateApplication", reflect.TypeOf((*MockRepo)(nil).CreateApplication), arg0, arg1)
 }
 
-// CreateReminder mocks base method.
-func (m *MockRepo) CreateReminder(arg0 context.Context, arg1 int64, arg2 uuid.UUID, arg3 *dto.CreateReminder) (*model.ReminderModel, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CreateReminder", arg0, arg1, arg2, arg3)
-	ret0, _ := ret[0].(*model.ReminderModel)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// CreateReminder indicates an expected call of CreateReminder.
-func (mr *MockRepoMockRecorder) CreateReminder(arg0, arg1, arg2, arg3 any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateReminder", reflect.TypeOf((*MockRepo)(nil).CreateReminder), arg0, arg1, arg2, arg3)
-}
-
 // DeleteApplication mocks base method.
 func (m *MockRepo) DeleteApplication(arg0 context.Context, arg1 int64) error {
 	m.ctrl.T.Helper()
@@ -179,41 +164,11 @@ func (mr *MockRepoMockRecorder) GetApplicationsToUser(arg0, arg1, arg2, arg3, ar
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetApplicationsToUser", reflect.TypeOf((*MockRepo)(nil).GetApplicationsToUser), arg0, arg1, arg2, arg3, arg4)
 }
 
-// GetReminderById mocks base method.
-func (m *MockRepo) GetReminderById(arg0 context.Context, arg1 int64) (*model.ReminderModel, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetReminderById", arg0, arg1)
-	ret0, _ := ret[0].(*model.ReminderModel)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetReminderById indicates an expected call of GetReminderById.
-func (mr *MockRepoMockRecorder) GetReminderById(arg0, arg1 any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetReminderById", reflect.TypeOf((*MockRepo)(nil).GetReminderById), arg0, arg1)
-}
-
-// GetRemindersOfUser mocks base method.
-func (m *MockRepo) GetRemindersOfUser(arg0 context.Context, arg1 int64, arg2 uuid.UUID) ([]model.ReminderModel, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetRemindersOfUser", arg0, arg1, arg2)
-	ret0, _ := ret[0].([]model.ReminderModel)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetRemindersOfUser indicates an expected call of GetRemindersOfUser.
-func (mr *MockRepoMockRecorder) GetRemindersOfUser(arg0, arg1, arg2 any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRemindersOfUser", reflect.TypeOf((*MockRepo)(nil).GetRemindersOfUser), arg0, arg1, arg2)
-}
-
 // GetRentalByApplicationId mocks base method.
-func (m *MockRepo) GetRentalByApplicationId(arg0 context.Context, arg1 int64) (*model0.RentalModel, error) {
+func (m *MockRepo) GetRentalByApplicationId(arg0 context.Context, arg1 int64) (model0.RentalModel, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetRentalByApplicationId", arg0, arg1)
-	ret0, _ := ret[0].(*model0.RentalModel)
+	ret0, _ := ret[0].(model0.RentalModel)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -237,19 +192,4 @@ func (m *MockRepo) UpdateApplicationStatus(arg0 context.Context, arg1 int64, arg
 func (mr *MockRepoMockRecorder) UpdateApplicationStatus(arg0, arg1, arg2, arg3 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateApplicationStatus", reflect.TypeOf((*MockRepo)(nil).UpdateApplicationStatus), arg0, arg1, arg2, arg3)
-}
-
-// UpdateReminderStatus mocks base method.
-func (m *MockRepo) UpdateReminderStatus(arg0 context.Context, arg1, arg2 int64, arg3 uuid.UUID, arg4 database.REMINDERSTATUS) (int, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "UpdateReminderStatus", arg0, arg1, arg2, arg3, arg4)
-	ret0, _ := ret[0].(int)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// UpdateReminderStatus indicates an expected call of UpdateReminderStatus.
-func (mr *MockRepoMockRecorder) UpdateReminderStatus(arg0, arg1, arg2, arg3, arg4 any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateReminderStatus", reflect.TypeOf((*MockRepo)(nil).UpdateReminderStatus), arg0, arg1, arg2, arg3, arg4)
 }

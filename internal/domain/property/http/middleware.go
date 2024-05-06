@@ -14,19 +14,23 @@ const (
 	PropertyIDLocalKey = "property_id"
 )
 
+func GetPropertyId() fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		puid, err := uuid.Parse(c.Params("id"))
+		if err != nil {
+			return c.SendStatus(fiber.StatusBadRequest)
+		}
+		c.Locals(PropertyIDLocalKey, puid)
+
+		return c.Next()
+	}
+}
+
 // Check whether the current user is a manager of the property
 func CheckPropertyManageability(s property.Service) fiber.Handler {
 	return func(ctx *fiber.Ctx) error {
-		puid, err := uuid.Parse(ctx.Params("id"))
-		if err != nil {
-			return ctx.SendStatus(fiber.StatusBadRequest)
-		}
-		ctx.Locals(PropertyIDLocalKey, puid)
-
-		tkPayload, ok := ctx.Locals(http.AuthorizationPayloadKey).(*token.Payload)
-		if !ok {
-			return ctx.SendStatus(fiber.StatusForbidden)
-		}
+		puid := ctx.Locals(PropertyIDLocalKey).(uuid.UUID)
+		tkPayload := ctx.Locals(http.AuthorizationPayloadKey).(*token.Payload)
 
 		isManager, err := s.CheckManageability(puid, tkPayload.UserID)
 		if err != nil {

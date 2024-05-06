@@ -45,18 +45,21 @@ func (a *adapter) RegisterServer(router *fiber.Router, tokenMaker token.Maker) {
 		auth_http.GetAuthorizationMiddleware(tokenMaker),
 		a.searchListings(),
 	)
+	listingRoute.Get("/ids", a.getListingsByIds())
+	listingRoute.Get("/listing/:id/application-link", a.verifyApplicationLink())
 	listingRoute.Get("/listing/:id",
 		auth_http.GetAuthorizationMiddleware(tokenMaker),
+		GetListingId(),
 		CheckListingVisibility(a.lService),
 		a.getListingById(),
 	)
-	listingRoute.Get("/ids", a.getListingsByIds())
-	listingRoute.Get("/listing/:id/application-link", a.verifyApplicationLink())
 
 	listingRoute.Use(auth_http.AuthorizedMiddleware(tokenMaker))
 
 	listingRoute.Post("/", a.createListing())
 	listingRoute.Get("/my-listings", a.getMyListings())
+
+	listingRoute.Group("/listing/:id").Use(GetListingId())
 	listingRoute.Post("/listing/:id/payment", CheckListingManageability(a.lService), a.createListingPayment())
 	listingRoute.Post("/listing/:id/application-link", CheckListingManageability(a.lService), a.createApplicationLink())
 	listingRoute.Patch("/listing/:id", CheckListingManageability(a.lService), a.updateListing())

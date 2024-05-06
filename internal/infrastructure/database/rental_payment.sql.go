@@ -19,6 +19,8 @@ INSERT INTO "rental_payments" (
   "updated_by",
   "status",
   "amount",
+  "discount",
+  "penalty",
   "note",
   "start_date",
   "end_date"
@@ -31,8 +33,10 @@ INSERT INTO "rental_payments" (
   $6,
   $7,
   $8,
-  $9
-) RETURNING id, code, rental_id, created_at, updated_at, start_date, end_date, expiry_date, payment_date, updated_by, status, amount, discount, note
+  $9,
+  $10,
+  $11
+) RETURNING id, code, rental_id, created_at, updated_at, start_date, end_date, expiry_date, payment_date, updated_by, status, amount, discount, penalty, note
 `
 
 type CreateRentalPaymentParams struct {
@@ -42,6 +46,8 @@ type CreateRentalPaymentParams struct {
 	UserID      pgtype.UUID             `json:"user_id"`
 	Status      NullRENTALPAYMENTSTATUS `json:"status"`
 	Amount      float32                 `json:"amount"`
+	Discount    pgtype.Float4           `json:"discount"`
+	Penalty     pgtype.Float4           `json:"penalty"`
 	Note        pgtype.Text             `json:"note"`
 	StartDate   pgtype.Date             `json:"start_date"`
 	EndDate     pgtype.Date             `json:"end_date"`
@@ -55,6 +61,8 @@ func (q *Queries) CreateRentalPayment(ctx context.Context, arg CreateRentalPayme
 		arg.UserID,
 		arg.Status,
 		arg.Amount,
+		arg.Discount,
+		arg.Penalty,
 		arg.Note,
 		arg.StartDate,
 		arg.EndDate,
@@ -74,13 +82,14 @@ func (q *Queries) CreateRentalPayment(ctx context.Context, arg CreateRentalPayme
 		&i.Status,
 		&i.Amount,
 		&i.Discount,
+		&i.Penalty,
 		&i.Note,
 	)
 	return i, err
 }
 
 const getPaymentsOfRental = `-- name: GetPaymentsOfRental :many
-SELECT id, code, rental_id, created_at, updated_at, start_date, end_date, expiry_date, payment_date, updated_by, status, amount, discount, note FROM "rental_payments" WHERE "rental_id" = $1
+SELECT id, code, rental_id, created_at, updated_at, start_date, end_date, expiry_date, payment_date, updated_by, status, amount, discount, penalty, note FROM "rental_payments" WHERE "rental_id" = $1
 `
 
 func (q *Queries) GetPaymentsOfRental(ctx context.Context, rentalID int64) ([]RentalPayment, error) {
@@ -106,6 +115,7 @@ func (q *Queries) GetPaymentsOfRental(ctx context.Context, rentalID int64) ([]Re
 			&i.Status,
 			&i.Amount,
 			&i.Discount,
+			&i.Penalty,
 			&i.Note,
 		); err != nil {
 			return nil, err
@@ -119,7 +129,7 @@ func (q *Queries) GetPaymentsOfRental(ctx context.Context, rentalID int64) ([]Re
 }
 
 const getRentalPayment = `-- name: GetRentalPayment :one
-SELECT id, code, rental_id, created_at, updated_at, start_date, end_date, expiry_date, payment_date, updated_by, status, amount, discount, note FROM "rental_payments" WHERE "id" = $1 LIMIT 1
+SELECT id, code, rental_id, created_at, updated_at, start_date, end_date, expiry_date, payment_date, updated_by, status, amount, discount, penalty, note FROM "rental_payments" WHERE "id" = $1 LIMIT 1
 `
 
 func (q *Queries) GetRentalPayment(ctx context.Context, id int64) (RentalPayment, error) {
@@ -139,6 +149,7 @@ func (q *Queries) GetRentalPayment(ctx context.Context, id int64) (RentalPayment
 		&i.Status,
 		&i.Amount,
 		&i.Discount,
+		&i.Penalty,
 		&i.Note,
 	)
 	return i, err
@@ -200,7 +211,8 @@ UPDATE "rental_payments" SET
   expiry_date = coalesce($5, expiry_date),
   payment_date = coalesce($6, payment_date),
   discount = coalesce($7, discount),
-  updated_by = $8,
+  penalty = coalesce($8, penalty),
+  updated_by = $9,
   updated_at = NOW()
 WHERE "id" = $1
 `
@@ -213,6 +225,7 @@ type UpdateRentalPaymentParams struct {
 	ExpiryDate  pgtype.Date             `json:"expiry_date"`
 	PaymentDate pgtype.Date             `json:"payment_date"`
 	Discount    pgtype.Float4           `json:"discount"`
+	Penalty     pgtype.Float4           `json:"penalty"`
 	UserID      pgtype.UUID             `json:"user_id"`
 }
 
@@ -225,6 +238,7 @@ func (q *Queries) UpdateRentalPayment(ctx context.Context, arg UpdateRentalPayme
 		arg.ExpiryDate,
 		arg.PaymentDate,
 		arg.Discount,
+		arg.Penalty,
 		arg.UserID,
 	)
 	return err

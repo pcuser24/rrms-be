@@ -13,6 +13,22 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const checkReminderVisibility = `-- name: CheckReminderVisibility :one
+SELECT EXISTS(SELECT 1 FROM "reminder_members" WHERE "reminder_id" = $1 AND "user_id" = $2)
+`
+
+type CheckReminderVisibilityParams struct {
+	ReminderID int64     `json:"reminder_id"`
+	UserID     uuid.UUID `json:"user_id"`
+}
+
+func (q *Queries) CheckReminderVisibility(ctx context.Context, arg CheckReminderVisibilityParams) (bool, error) {
+	row := q.db.QueryRow(ctx, checkReminderVisibility, arg.ReminderID, arg.UserID)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
+}
+
 const createReminder = `-- name: CreateReminder :one
 INSERT INTO "reminders" (
   "creator_id",
@@ -48,7 +64,7 @@ type CreateReminderParams struct {
 	EndAt           time.Time              `json:"end_at"`
 	Note            pgtype.Text            `json:"note"`
 	Location        string                 `json:"location"`
-	Priority        int32                  `json:"priority"`
+	Priority        pgtype.Int4            `json:"priority"`
 	RecurrenceDay   pgtype.Int4            `json:"recurrence_day"`
 	RecurrenceMonth pgtype.Int4            `json:"recurrence_month"`
 	RecurrenceMode  REMINDERRECURRENCEMODE `json:"recurrence_mode"`
@@ -303,25 +319,23 @@ func (q *Queries) GetRemindersOfUserWithResourceTag(ctx context.Context, arg Get
 
 const updateReminder = `-- name: UpdateReminder :many
 UPDATE "reminders" SET
-  "title" = coalesce($3, title),
-  "start_at" = coalesce($4, start_at),
-  "end_at" = coalesce($5, end_at),
-  "note" = coalesce($6, note),
-  "location" = coalesce($7, location),
-  "priority" = coalesce($8, priority),
-  "recurrence_day" = coalesce($9, recurrence_day),
-  "recurrence_month" = coalesce($10, recurrence_month),
-  "recurrence_mode" = coalesce($11, recurrence_mode),
-  "status" = coalesce($12, status)
+  "title" = coalesce($2, title),
+  "start_at" = coalesce($3, start_at),
+  "end_at" = coalesce($4, end_at),
+  "note" = coalesce($5, note),
+  "location" = coalesce($6, location),
+  "priority" = coalesce($7, priority),
+  "recurrence_day" = coalesce($8, recurrence_day),
+  "recurrence_month" = coalesce($9, recurrence_month),
+  "recurrence_mode" = coalesce($10, recurrence_mode),
+  "status" = coalesce($11, status)
 WHERE 
   "id" = $1 
-  AND "resource_tag" = $2
 RETURNING id, creator_id, title, start_at, end_at, note, location, recurrence_day, recurrence_month, recurrence_mode, priority, status, resource_tag, created_at, updated_at
 `
 
 type UpdateReminderParams struct {
 	ID              int64                      `json:"id"`
-	ResourceTag     string                     `json:"resource_tag"`
 	Title           pgtype.Text                `json:"title"`
 	StartAt         pgtype.Timestamptz         `json:"start_at"`
 	EndAt           pgtype.Timestamptz         `json:"end_at"`
@@ -337,7 +351,6 @@ type UpdateReminderParams struct {
 func (q *Queries) UpdateReminder(ctx context.Context, arg UpdateReminderParams) ([]Reminder, error) {
 	rows, err := q.db.Query(ctx, updateReminder,
 		arg.ID,
-		arg.ResourceTag,
 		arg.Title,
 		arg.StartAt,
 		arg.EndAt,

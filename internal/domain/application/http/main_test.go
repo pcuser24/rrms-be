@@ -8,14 +8,18 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/stretchr/testify/require"
-	"github.com/user2410/rrms-backend/internal/domain/application"
 	"github.com/user2410/rrms-backend/internal/domain/application/asynctask"
 	"github.com/user2410/rrms-backend/internal/domain/application/repo"
+	application "github.com/user2410/rrms-backend/internal/domain/application/service"
 	chat_repo "github.com/user2410/rrms-backend/internal/domain/chat/repo"
 	"github.com/user2410/rrms-backend/internal/domain/listing"
 	listing_repo "github.com/user2410/rrms-backend/internal/domain/listing/repo"
+	"github.com/user2410/rrms-backend/internal/domain/notification"
 	property_repo "github.com/user2410/rrms-backend/internal/domain/property/repo"
+	"github.com/user2410/rrms-backend/internal/domain/reminder"
+	reminder_repo "github.com/user2410/rrms-backend/internal/domain/reminder/repo"
 	unit_repo "github.com/user2410/rrms-backend/internal/domain/unit/repo"
+
 	"github.com/user2410/rrms-backend/internal/infrastructure/http"
 	"github.com/user2410/rrms-backend/internal/utils/random"
 	"github.com/user2410/rrms-backend/internal/utils/token"
@@ -31,16 +35,18 @@ type server struct {
 
 func newTestServer(
 	t *testing.T,
-	ar repo.Repo, pr property_repo.Repo, ur unit_repo.Repo, lr listing_repo.Repo, cr chat_repo.Repo,
+	ar repo.Repo, pr property_repo.Repo, ur unit_repo.Repo, lr listing_repo.Repo, cr chat_repo.Repo, rRepo reminder_repo.Repo,
 	taskDistributor asynctask.TaskDistributor,
+	wsNotificationAdapter notification.WSNotificationAdapter,
 ) *server {
 
 	tokenMaker, err := token.NewJWTMaker(random.RandomAlphanumericStr(32))
 	require.NoError(t, err)
 	require.NotNil(t, tokenMaker)
 
-	// initialize lService
-	aService := application.NewService(ar, cr, lr, pr, taskDistributor, nil)
+	// initialize services
+	rService := reminder.NewService(rRepo, wsNotificationAdapter)
+	aService := application.NewService(ar, cr, lr, pr, rService, taskDistributor)
 	lService := listing.NewService(lr, pr, nil, "") // NOTE: leave paymentRepo nil for now
 
 	// initialize http router
