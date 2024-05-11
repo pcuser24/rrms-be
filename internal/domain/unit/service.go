@@ -3,7 +3,7 @@ package unit
 import (
 	"context"
 
-	repo2 "github.com/user2410/rrms-backend/internal/domain/unit/repo"
+	"github.com/user2410/rrms-backend/internal/domain/unit/repo"
 
 	"github.com/google/uuid"
 	"github.com/user2410/rrms-backend/internal/domain/unit/dto"
@@ -23,10 +23,10 @@ type Service interface {
 }
 
 type service struct {
-	repo repo2.Repo
+	repo repo.Repo
 }
 
-func NewService(repo repo2.Repo) Service {
+func NewService(repo repo.Repo) Service {
 	return &service{
 		repo: repo,
 	}

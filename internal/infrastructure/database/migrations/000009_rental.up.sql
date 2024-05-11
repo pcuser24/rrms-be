@@ -1,7 +1,7 @@
 BEGIN;
 
 CREATE TYPE "RENTALPAYMENTTYPE" AS ENUM ('PREPAID', 'POSTPAID');
-
+CREATE TYPE "RENTALSTATUS" AS ENUM ('INPROGRESS', 'END');
 CREATE TABLE IF NOT EXISTS "rentals" (
   "id" BIGSERIAL PRIMARY KEY,
   "creator_id" UUID NOT NULL,
@@ -47,6 +47,8 @@ CREATE TABLE IF NOT EXISTS "rentals" (
   -- "rental_payment_grace_period" INTEGER NOT NULL CHECK (rental_payment_grace_period >= 0),
   "note" TEXT,
 
+  "status" "RENTALSTATUS" NOT NULL DEFAULT 'INPROGRESS',
+  
   "created_at" TIMESTAMPTZ DEFAULT NOW() NOT NULL,
   "updated_at" TIMESTAMPTZ DEFAULT NOW() NOT NULL,
 

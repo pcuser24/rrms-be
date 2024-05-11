@@ -11,7 +11,7 @@ import (
 	auth_http "github.com/user2410/rrms-backend/internal/domain/auth/http"
 	"github.com/user2410/rrms-backend/internal/domain/listing"
 	"github.com/user2410/rrms-backend/internal/domain/listing/dto"
-	"github.com/user2410/rrms-backend/internal/domain/property"
+	property_service "github.com/user2410/rrms-backend/internal/domain/property/service"
 	"github.com/user2410/rrms-backend/internal/domain/unit"
 	"github.com/user2410/rrms-backend/internal/infrastructure/database"
 	"github.com/user2410/rrms-backend/internal/interfaces/rest/responses"
@@ -25,12 +25,12 @@ type Adapter interface {
 }
 
 type adapter struct {
-	pService property.Service
+	pService property_service.Service
 	uService unit.Service
 	lService listing.Service
 }
 
-func NewAdapter(lService listing.Service, pService property.Service, uService unit.Service) Adapter {
+func NewAdapter(lService listing.Service, pService property_service.Service, uService unit.Service) Adapter {
 	return &adapter{
 		lService: lService,
 		pService: pService,

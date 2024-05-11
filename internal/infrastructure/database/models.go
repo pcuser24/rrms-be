@@ -580,6 +580,48 @@ func (ns NullRENTALPAYMENTTYPE) Value() (driver.Value, error) {
 	return string(ns.RENTALPAYMENTTYPE), nil
 }
 
+type RENTALSTATUS string
+
+const (
+	RENTALSTATUSINPROGRESS RENTALSTATUS = "INPROGRESS"
+	RENTALSTATUSEND        RENTALSTATUS = "END"
+)
+
+func (e *RENTALSTATUS) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = RENTALSTATUS(s)
+	case string:
+		*e = RENTALSTATUS(s)
+	default:
+		return fmt.Errorf("unsupported scan type for RENTALSTATUS: %T", src)
+	}
+	return nil
+}
+
+type NullRENTALSTATUS struct {
+	RENTALSTATUS RENTALSTATUS `json:"RENTALSTATUS"`
+	Valid        bool         `json:"valid"` // Valid is true if RENTALSTATUS is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullRENTALSTATUS) Scan(value interface{}) error {
+	if value == nil {
+		ns.RENTALSTATUS, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.RENTALSTATUS.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullRENTALSTATUS) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.RENTALSTATUS), nil
+}
+
 type TENANTTYPE string
 
 const (
@@ -1049,6 +1091,7 @@ type Rental struct {
 	WaterProvider           pgtype.Text       `json:"water_provider"`
 	WaterPrice              pgtype.Float4     `json:"water_price"`
 	Note                    pgtype.Text       `json:"note"`
+	Status                  RENTALSTATUS      `json:"status"`
 	CreatedAt               time.Time         `json:"created_at"`
 	UpdatedAt               time.Time         `json:"updated_at"`
 }

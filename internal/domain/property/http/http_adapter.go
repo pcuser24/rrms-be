@@ -10,8 +10,8 @@ import (
 	application_dto "github.com/user2410/rrms-backend/internal/domain/application/dto"
 	auth_http "github.com/user2410/rrms-backend/internal/domain/auth/http"
 	listing_dto "github.com/user2410/rrms-backend/internal/domain/listing/dto"
-	"github.com/user2410/rrms-backend/internal/domain/property"
 	"github.com/user2410/rrms-backend/internal/domain/property/dto"
+	property_service "github.com/user2410/rrms-backend/internal/domain/property/service"
 	"github.com/user2410/rrms-backend/internal/infrastructure/database"
 	"github.com/user2410/rrms-backend/internal/interfaces/rest/responses"
 	"github.com/user2410/rrms-backend/internal/utils/token"
@@ -23,10 +23,10 @@ type Adapter interface {
 }
 
 type adapter struct {
-	service property.Service
+	service property_service.Service
 }
 
-func NewAdapter(service property.Service) Adapter {
+func NewAdapter(service property_service.Service) Adapter {
 	return &adapter{
 		service: service,
 	}
@@ -193,13 +193,13 @@ func (a *adapter) getPropertiesByIds() fiber.Handler {
 	return func(ctx *fiber.Ctx) error {
 		query := new(dto.GetPropertiesByIdsQuery)
 		if err := query.QueryParser(ctx); err != nil {
-			return fiber.NewError(fiber.StatusBadRequest)
+			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": err.Error()})
 		}
 
 		validator := validation.GetDefaultValidator()
 		validator.RegisterValidation(dto.PropertyFieldsLocalKey, dto.ValidateQuery)
 		if errs := validation.ValidateStruct(validator, *query); len(errs) > 0 {
-			return fiber.NewError(fiber.StatusBadRequest, validation.GetValidationError(errs))
+			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": validation.GetValidationError(errs)})
 		}
 
 		var userId uuid.UUID = uuid.Nil

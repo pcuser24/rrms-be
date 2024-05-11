@@ -1,12 +1,14 @@
 package dto
 
 import (
+	"errors"
 	"time"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/user2410/rrms-backend/internal/infrastructure/database"
 	"github.com/user2410/rrms-backend/internal/utils/types"
+	"github.com/user2410/rrms-backend/internal/utils/validation"
 )
 
 type CreateRentalPayment struct {
@@ -99,13 +101,25 @@ func (u *UpdateRentalPayment) ToUpdateRentalPaymentDB() database.UpdateRentalPay
 }
 
 type UpdatePlanRentalPayment struct {
-	Amount     float32                      `json:"amount" validate:"required"`
+	Amount     float32                      `json:"amount" validate:"omitempty"`
 	Discount   *float32                     `json:"discount" validate:"omitempty"`
-	ExpiryDate time.Time                    `json:"expiryDate" validate:"required"`
+	ExpiryDate time.Time                    `json:"expiryDate" validate:"omitempty"`
 	Status     database.RENTALPAYMENTSTATUS `json:"status" validate:"required,oneof=ISSUED PAID CANCELLED"`
 }
 
 func (u *UpdatePlanRentalPayment) d() {}
+
+func (u UpdatePlanRentalPayment) Validate() error {
+	if errs := validation.ValidateStruct(nil, u); len(errs) > 0 {
+		return errs[0]
+	}
+	if u.Status == database.RENTALPAYMENTSTATUSISSUED &&
+		(u.Amount == 0 || u.ExpiryDate.IsZero()) {
+		return errors.New("amount and expiry date must be set when status is ISSUED")
+	}
+
+	return nil
+}
 
 type UpdateIssuedRentalPayment struct {
 	Note   *string                      `json:"amount" validate:"omitempty"`

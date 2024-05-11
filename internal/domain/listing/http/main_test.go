@@ -12,8 +12,8 @@ import (
 	"github.com/user2410/rrms-backend/internal/domain/listing"
 	listing_repo "github.com/user2410/rrms-backend/internal/domain/listing/repo"
 	payment_repo "github.com/user2410/rrms-backend/internal/domain/payment/repo"
-	"github.com/user2410/rrms-backend/internal/domain/property"
 	property_repo "github.com/user2410/rrms-backend/internal/domain/property/repo"
+	property_service "github.com/user2410/rrms-backend/internal/domain/property/service"
 	"github.com/user2410/rrms-backend/internal/domain/unit"
 	unit_repo "github.com/user2410/rrms-backend/internal/domain/unit/repo"
 	"github.com/user2410/rrms-backend/internal/infrastructure/http"
@@ -33,7 +33,7 @@ func newTestServer(t *testing.T, pr property_repo.Repo, ur unit_repo.Repo, lr li
 	require.NotNil(t, tokenMaker)
 
 	uService := unit.NewService(ur)
-	pService := property.NewService(pr, ur, lr, ar)
+	pService := property_service.NewService(pr, ur, lr, ar)
 	lService := listing.NewService(lr, pr, paymentRepo, "")
 
 	// initialize http router

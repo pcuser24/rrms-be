@@ -21,9 +21,9 @@ import (
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/user2410/rrms-backend/internal/domain/property"
 	"github.com/user2410/rrms-backend/internal/domain/property/dto"
 	"github.com/user2410/rrms-backend/internal/domain/property/model"
+	property_service "github.com/user2410/rrms-backend/internal/domain/property/service"
 	"github.com/user2410/rrms-backend/internal/infrastructure/database"
 	"github.com/user2410/rrms-backend/internal/utils/token"
 	"go.uber.org/mock/gomock"
@@ -454,10 +454,10 @@ func TestGetManagedProperties(t *testing.T) {
 				require.Equal(t, http.StatusOK, res.StatusCode)
 				data, err := io.ReadAll(res.Body)
 				require.NoError(t, err)
-				var gotProperties []property.GetManagedPropertiesItem
+				var gotProperties []property_service.GetManagedPropertiesItem
 				err = json.Unmarshal(data, &gotProperties)
 				require.NoError(t, err)
-				match := func(t *testing.T, p1, p2 property.GetManagedPropertiesItem) {
+				match := func(t *testing.T, p1, p2 property_service.GetManagedPropertiesItem) {
 					require.Equal(t, p1.Property.Name, p2.Property.Name)
 					require.Equal(t, p1.Property.Building, p2.Property.Building)
 					require.Equal(t, p1.Property.Project, p2.Property.Project)
@@ -467,20 +467,20 @@ func TestGetManagedProperties(t *testing.T) {
 					require.Equal(t, p1.Property.Media, p2.Property.Media)
 				}
 				if gotProperties[0].Property.ID == properties[0].ID {
-					match(t, gotProperties[0], property.GetManagedPropertiesItem{
+					match(t, gotProperties[0], property_service.GetManagedPropertiesItem{
 						Role:     properties[0].Managers[0].Role,
 						Property: *properties[0],
 					})
-					match(t, gotProperties[1], property.GetManagedPropertiesItem{
+					match(t, gotProperties[1], property_service.GetManagedPropertiesItem{
 						Role:     properties[1].Managers[0].Role,
 						Property: *properties[1],
 					})
 				} else {
-					match(t, gotProperties[0], property.GetManagedPropertiesItem{
+					match(t, gotProperties[0], property_service.GetManagedPropertiesItem{
 						Role:     properties[1].Managers[0].Role,
 						Property: *properties[1],
 					})
-					match(t, gotProperties[1], property.GetManagedPropertiesItem{
+					match(t, gotProperties[1], property_service.GetManagedPropertiesItem{
 						Role:     properties[0].Managers[0].Role,
 						Property: *properties[0],
 					})

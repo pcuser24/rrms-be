@@ -27,7 +27,7 @@ func (r *repo) GetRentalPayment(ctx context.Context, id int64) (model.RentalPaym
 
 func (r *repo) GetRentalPayments(ctx context.Context, ids []int64) ([]model.RentalPayment, error) {
 	ib := sqlbuilder.PostgreSQL.NewSelectBuilder()
-	ib.Select("id", "code", "rental_id", "created_at", "updated_at", "expiry_date", "payment_date", "updated_by", "status", "amount", "note")
+	ib.Select("id", "code", "rental_id", "created_at", "updated_at", "start_date", "end_date", "expiry_date", "payment_date", "updated_by", "status", "amount", "discount", "penalty", "note")
 	ib.From("rental_payments")
 	ib.Where(ib.In("id", sqlbuilder.List(ids)))
 	query, args := ib.Build()

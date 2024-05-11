@@ -124,7 +124,7 @@ INSERT INTO rentals (
   -- sqlc.narg(rental_payment_late_fee_percentage),
   
   $32
-) RETURNING id, creator_id, property_id, unit_id, application_id, tenant_id, profile_image, tenant_type, tenant_name, tenant_phone, tenant_email, organization_name, organization_hq_address, start_date, movein_date, rental_period, payment_type, rental_price, rental_payment_basis, rental_intention, deposit, deposit_paid, electricity_setup_by, electricity_payment_type, electricity_customer_code, electricity_provider, electricity_price, water_setup_by, water_payment_type, water_customer_code, water_provider, water_price, note, created_at, updated_at
+) RETURNING id, creator_id, property_id, unit_id, application_id, tenant_id, profile_image, tenant_type, tenant_name, tenant_phone, tenant_email, organization_name, organization_hq_address, start_date, movein_date, rental_period, payment_type, rental_price, rental_payment_basis, rental_intention, deposit, deposit_paid, electricity_setup_by, electricity_payment_type, electricity_customer_code, electricity_provider, electricity_price, water_setup_by, water_payment_type, water_customer_code, water_provider, water_price, note, status, created_at, updated_at
 `
 
 type CreateRentalParams struct {
@@ -232,6 +232,7 @@ func (q *Queries) CreateRental(ctx context.Context, arg CreateRentalParams) (Ren
 		&i.WaterProvider,
 		&i.WaterPrice,
 		&i.Note,
+		&i.Status,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -461,7 +462,7 @@ func (q *Queries) DeleteRental(ctx context.Context, id int64) error {
 }
 
 const getRental = `-- name: GetRental :one
-SELECT id, creator_id, property_id, unit_id, application_id, tenant_id, profile_image, tenant_type, tenant_name, tenant_phone, tenant_email, organization_name, organization_hq_address, start_date, movein_date, rental_period, payment_type, rental_price, rental_payment_basis, rental_intention, deposit, deposit_paid, electricity_setup_by, electricity_payment_type, electricity_customer_code, electricity_provider, electricity_price, water_setup_by, water_payment_type, water_customer_code, water_provider, water_price, note, created_at, updated_at FROM rentals WHERE id = $1 LIMIT 1
+SELECT id, creator_id, property_id, unit_id, application_id, tenant_id, profile_image, tenant_type, tenant_name, tenant_phone, tenant_email, organization_name, organization_hq_address, start_date, movein_date, rental_period, payment_type, rental_price, rental_payment_basis, rental_intention, deposit, deposit_paid, electricity_setup_by, electricity_payment_type, electricity_customer_code, electricity_provider, electricity_price, water_setup_by, water_payment_type, water_customer_code, water_provider, water_price, note, status, created_at, updated_at FROM rentals WHERE id = $1 LIMIT 1
 `
 
 func (q *Queries) GetRental(ctx context.Context, id int64) (Rental, error) {
@@ -501,6 +502,7 @@ func (q *Queries) GetRental(ctx context.Context, id int64) (Rental, error) {
 		&i.WaterProvider,
 		&i.WaterPrice,
 		&i.Note,
+		&i.Status,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -508,7 +510,7 @@ func (q *Queries) GetRental(ctx context.Context, id int64) (Rental, error) {
 }
 
 const getRentalByApplicationId = `-- name: GetRentalByApplicationId :one
-SELECT id, creator_id, property_id, unit_id, application_id, tenant_id, profile_image, tenant_type, tenant_name, tenant_phone, tenant_email, organization_name, organization_hq_address, start_date, movein_date, rental_period, payment_type, rental_price, rental_payment_basis, rental_intention, deposit, deposit_paid, electricity_setup_by, electricity_payment_type, electricity_customer_code, electricity_provider, electricity_price, water_setup_by, water_payment_type, water_customer_code, water_provider, water_price, note, created_at, updated_at FROM rentals WHERE application_id = $1 LIMIT 1
+SELECT id, creator_id, property_id, unit_id, application_id, tenant_id, profile_image, tenant_type, tenant_name, tenant_phone, tenant_email, organization_name, organization_hq_address, start_date, movein_date, rental_period, payment_type, rental_price, rental_payment_basis, rental_intention, deposit, deposit_paid, electricity_setup_by, electricity_payment_type, electricity_customer_code, electricity_provider, electricity_price, water_setup_by, water_payment_type, water_customer_code, water_provider, water_price, note, status, created_at, updated_at FROM rentals WHERE application_id = $1 LIMIT 1
 `
 
 func (q *Queries) GetRentalByApplicationId(ctx context.Context, applicationID pgtype.Int8) (Rental, error) {
@@ -548,6 +550,7 @@ func (q *Queries) GetRentalByApplicationId(ctx context.Context, applicationID pg
 		&i.WaterProvider,
 		&i.WaterPrice,
 		&i.Note,
+		&i.Status,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)

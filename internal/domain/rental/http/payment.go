@@ -97,8 +97,8 @@ func (a *adapter) updatePlanRentalPayment() fiber.Handler {
 		if err := ctx.BodyParser(&payload); err != nil {
 			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": err.Error()})
 		}
-		if errs := validation.ValidateStruct(nil, payload); len(errs) > 0 {
-			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": validation.GetValidationError(errs)})
+		if err := payload.Validate(); err != nil {
+			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": err.Error()})
 		}
 
 		tkPayload := ctx.Locals(auth_http.AuthorizationPayloadKey).(*token.Payload)

@@ -36,7 +36,17 @@ func NewService(
 	}
 }
 
+var ErrOverlappingReminder = errors.New("overlapping reminder")
+
 func (s *service) CreateReminder(data *dto.CreateReminder) (model.ReminderModel, error) {
+	isOverlapping, err := s.repo.CheckOverlappingReminder(context.Background(), data.CreatorID, data.StartAt, data.EndAt)
+	if err != nil {
+		return model.ReminderModel{}, err
+	}
+	if isOverlapping {
+		return model.ReminderModel{}, ErrOverlappingReminder
+	}
+
 	res, err := s.repo.CreateReminder(context.Background(), data)
 	if err != nil {
 		return model.ReminderModel{}, err

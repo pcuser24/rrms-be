@@ -10,8 +10,8 @@ import (
 	"github.com/stretchr/testify/require"
 	application_repo "github.com/user2410/rrms-backend/internal/domain/application/repo"
 	listing_repo "github.com/user2410/rrms-backend/internal/domain/listing/repo"
-	"github.com/user2410/rrms-backend/internal/domain/property"
 	property_repo "github.com/user2410/rrms-backend/internal/domain/property/repo"
+	property_service "github.com/user2410/rrms-backend/internal/domain/property/service"
 	"github.com/user2410/rrms-backend/internal/domain/unit"
 	"github.com/user2410/rrms-backend/internal/domain/unit/repo"
 	"github.com/user2410/rrms-backend/internal/infrastructure/http"
@@ -34,7 +34,7 @@ func newTestServer(t *testing.T, pr property_repo.Repo, ur repo.Repo, lr listing
 
 	// initialize uService
 	uService := unit.NewService(ur)
-	pService := property.NewService(pr, ur, lr, ar)
+	pService := property_service.NewService(pr, ur, lr, ar)
 
 	// initialize http router
 	httpServer := http.NewServer(

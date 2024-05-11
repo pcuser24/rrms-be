@@ -13,6 +13,35 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const checkOverlappingReminder = `-- name: CheckOverlappingReminder :one
+SELECT EXISTS(
+  SELECT 1 
+  FROM "reminders" 
+  WHERE 
+    status IN ('INPROGRESS', 'COMPLETED') AND
+    EXISTS (
+      SELECT 1 FROM reminder_members WHERE reminders.id = reminder_members.reminder_id AND reminder_members.user_id = $1
+    ) AND (
+      (start_at, end_at) OVERLAPS ($2, $3)
+      OR (start_at >= $2 AND start_at < $3) 
+      OR (end_at > $2 AND end_at <= $3)
+    )
+)
+`
+
+type CheckOverlappingReminderParams struct {
+	UserID    uuid.UUID   `json:"user_id"`
+	StartTime interface{} `json:"start_time"`
+	EndTime   interface{} `json:"end_time"`
+}
+
+func (q *Queries) CheckOverlappingReminder(ctx context.Context, arg CheckOverlappingReminderParams) (bool, error) {
+	row := q.db.QueryRow(ctx, checkOverlappingReminder, arg.UserID, arg.StartTime, arg.EndTime)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
+}
+
 const checkReminderVisibility = `-- name: CheckReminderVisibility :one
 SELECT EXISTS(SELECT 1 FROM "reminder_members" WHERE "reminder_id" = $1 AND "user_id" = $2)
 `
@@ -228,6 +257,46 @@ func (q *Queries) GetRemindersByCreator(ctx context.Context, creatorID uuid.UUID
 	return items, nil
 }
 
+const getRemindersInDate = `-- name: GetRemindersInDate :many
+SELECT id, creator_id, title, start_at, end_at, note, location, recurrence_day, recurrence_month, recurrence_mode, priority, status, resource_tag, created_at, updated_at FROM "reminders" WHERE DATE_TRUNC('month', start_at) = DATE_TRUNC('month', $1)
+`
+
+func (q *Queries) GetRemindersInDate(ctx context.Context, dateTrunc pgtype.Interval) ([]Reminder, error) {
+	rows, err := q.db.Query(ctx, getRemindersInDate, dateTrunc)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Reminder
+	for rows.Next() {
+		var i Reminder
+		if err := rows.Scan(
+			&i.ID,
+			&i.CreatorID,
+			&i.Title,
+			&i.StartAt,
+			&i.EndAt,
+			&i.Note,
+			&i.Location,
+			&i.RecurrenceDay,
+			&i.RecurrenceMonth,
+			&i.RecurrenceMode,
+			&i.Priority,
+			&i.Status,
+			&i.ResourceTag,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getRemindersOfUser = `-- name: GetRemindersOfUser :many
 SELECT id, creator_id, title, start_at, end_at, note, location, recurrence_day, recurrence_month, recurrence_mode, priority, status, resource_tag, created_at, updated_at FROM "reminders" WHERE "id" IN (SELECT "reminder_id" FROM "reminder_members" WHERE "user_id" = $1)
 `
@@ -328,7 +397,8 @@ UPDATE "reminders" SET
   "recurrence_day" = coalesce($8, recurrence_day),
   "recurrence_month" = coalesce($9, recurrence_month),
   "recurrence_mode" = coalesce($10, recurrence_mode),
-  "status" = coalesce($11, status)
+  "status" = coalesce($11, status),
+  "updated_at" = NOW()
 WHERE 
   "id" = $1 
 RETURNING id, creator_id, title, start_at, end_at, note, location, recurrence_day, recurrence_month, recurrence_mode, priority, status, resource_tag, created_at, updated_at

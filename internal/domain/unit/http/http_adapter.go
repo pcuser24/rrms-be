@@ -5,7 +5,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgconn"
 	auth_http "github.com/user2410/rrms-backend/internal/domain/auth/http"
-	"github.com/user2410/rrms-backend/internal/domain/property"
+	property_service "github.com/user2410/rrms-backend/internal/domain/property/service"
 	"github.com/user2410/rrms-backend/internal/domain/unit"
 	"github.com/user2410/rrms-backend/internal/domain/unit/dto"
 	"github.com/user2410/rrms-backend/internal/infrastructure/database"
@@ -20,10 +20,10 @@ type Adapter interface {
 
 type adapter struct {
 	uService unit.Service
-	pService property.Service
+	pService property_service.Service
 }
 
-func NewAdapter(uService unit.Service, pService property.Service) Adapter {
+func NewAdapter(uService unit.Service, pService property_service.Service) Adapter {
 	return &adapter{
 		uService: uService,
 		pService: pService,

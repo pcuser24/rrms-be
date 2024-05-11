@@ -7,9 +7,10 @@ import (
 	"github.com/user2410/rrms-backend/internal/domain/listing"
 	payment_service "github.com/user2410/rrms-backend/internal/domain/payment/service"
 	vnp_service "github.com/user2410/rrms-backend/internal/domain/payment/service/vnpay"
-	"github.com/user2410/rrms-backend/internal/domain/property"
+	property_service "github.com/user2410/rrms-backend/internal/domain/property/service"
 	"github.com/user2410/rrms-backend/internal/domain/reminder"
 	rental_service "github.com/user2410/rrms-backend/internal/domain/rental/service"
+	statistic_service "github.com/user2410/rrms-backend/internal/domain/statistic/service"
 	"github.com/user2410/rrms-backend/internal/domain/storage"
 	"github.com/user2410/rrms-backend/internal/domain/unit"
 	"github.com/user2410/rrms-backend/internal/infrastructure/asynctask"
@@ -27,6 +28,7 @@ import (
 	property_repo "github.com/user2410/rrms-backend/internal/domain/property/repo"
 	reminder_repo "github.com/user2410/rrms-backend/internal/domain/reminder/repo"
 	rental_repo "github.com/user2410/rrms-backend/internal/domain/rental/repo"
+	statistic_repo "github.com/user2410/rrms-backend/internal/domain/statistic/repo"
 	unit_repo "github.com/user2410/rrms-backend/internal/domain/unit/repo"
 )
 
@@ -45,6 +47,7 @@ func (c *serverCommand) setupInternalServices(
 	paymentRepo := payment_repo.NewRepo(dao)
 	chatRepo := chat_repo.NewRepo(dao)
 	reminderRepo := reminder_repo.NewRepo(dao)
+	statisticRepo := statistic_repo.NewRepo(dao)
 
 	// Initialize storage services
 	s := storage.NewStorage(s3Client, c.config.AWSS3ImageBucket)
@@ -59,7 +62,7 @@ func (c *serverCommand) setupInternalServices(
 		c.tokenMaker, c.config.AccessTokenTTL, c.config.RefreshTokenTTL,
 		authTaskDistributor,
 	)
-	c.internalServices.PropertyService = property.NewService(
+	c.internalServices.PropertyService = property_service.NewService(
 		propertyRepo,
 		unitRepo,
 		listingRepo,
@@ -101,4 +104,5 @@ func (c *serverCommand) setupInternalServices(
 		c.config.VnpTmnCode, c.config.VnpHashSecret, c.config.VnpUrl, c.config.VnpApi,
 	)
 	c.internalServices.ChatService = chat.NewService(chatRepo)
+	c.internalServices.StatisticService = statistic_service.NewService(authRepo, statisticRepo)
 }

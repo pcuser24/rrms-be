@@ -34,11 +34,13 @@ sqlcgen:
 
 
 # Operations
-build:
-	go build -o rrmsd
+./rrmsd: build
 
-serve:
-	go run main.go serve
+build:
+	go build -o rrmsd .
+
+serve: ./rrmsd
+	./rrmsd serve
 
 payment:
 	go run main.go payment

@@ -5,7 +5,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/user2410/rrms-backend/internal/domain/auth/http"
-	"github.com/user2410/rrms-backend/internal/domain/property"
+	"github.com/user2410/rrms-backend/internal/domain/property/service"
 	"github.com/user2410/rrms-backend/internal/interfaces/rest/responses"
 	"github.com/user2410/rrms-backend/internal/utils/token"
 )
@@ -27,7 +27,7 @@ func GetPropertyId() fiber.Handler {
 }
 
 // Check whether the current user is a manager of the property
-func CheckPropertyManageability(s property.Service) fiber.Handler {
+func CheckPropertyManageability(s service.Service) fiber.Handler {
 	return func(ctx *fiber.Ctx) error {
 		puid := ctx.Locals(PropertyIDLocalKey).(uuid.UUID)
 		tkPayload := ctx.Locals(http.AuthorizationPayloadKey).(*token.Payload)
@@ -49,7 +49,7 @@ func CheckPropertyManageability(s property.Service) fiber.Handler {
 }
 
 // Check whether the current user is the owner of the property
-func CheckPropertyOwnership(s property.Service) fiber.Handler {
+func CheckPropertyOwnership(s service.Service) fiber.Handler {
 	return func(ctx *fiber.Ctx) error {
 		puid, err := uuid.Parse(ctx.Params("id"))
 		if err != nil {
@@ -80,7 +80,7 @@ func CheckPropertyOwnership(s property.Service) fiber.Handler {
 
 // Check whether the property with given id  is visible or managed by the user of the current session
 // should be stacked on top of AuthorizedMiddleware middleware
-func CheckPropertyVisibility(service property.Service) fiber.Handler {
+func CheckPropertyVisibility(service service.Service) fiber.Handler {
 	return func(ctx *fiber.Ctx) error {
 		puid, err := uuid.Parse(ctx.Params("id"))
 		if err != nil {

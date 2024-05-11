@@ -24,9 +24,10 @@ import (
 	"github.com/user2410/rrms-backend/internal/domain/notification"
 	payment_service "github.com/user2410/rrms-backend/internal/domain/payment/service"
 	"github.com/user2410/rrms-backend/internal/domain/payment/service/vnpay"
-	"github.com/user2410/rrms-backend/internal/domain/property"
+	property_service "github.com/user2410/rrms-backend/internal/domain/property/service"
 	"github.com/user2410/rrms-backend/internal/domain/reminder"
 	rental_service "github.com/user2410/rrms-backend/internal/domain/rental/service"
+	statistic_service "github.com/user2410/rrms-backend/internal/domain/statistic/service"
 	"github.com/user2410/rrms-backend/internal/domain/storage"
 	"github.com/user2410/rrms-backend/internal/domain/unit"
 	"github.com/user2410/rrms-backend/internal/infrastructure/asynctask"
@@ -69,7 +70,7 @@ type serverConfig struct {
 
 type internalServices struct {
 	AuthService        auth.Service
-	PropertyService    property.Service
+	PropertyService    property_service.Service
 	UnitService        unit.Service
 	ListingService     listing.Service
 	RentalService      rental_service.Service
@@ -79,6 +80,7 @@ type internalServices struct {
 	ReminderService    reminder.Service
 	VnpService         *vnpay.Service
 	ChatService        chat.Service
+	StatisticService   statistic_service.Service
 }
 
 type serverCommand struct {

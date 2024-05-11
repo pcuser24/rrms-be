@@ -7,6 +7,7 @@ import (
 	"github.com/google/uuid"
 	application_service "github.com/user2410/rrms-backend/internal/domain/application/service"
 	"github.com/user2410/rrms-backend/internal/domain/listing"
+	"github.com/user2410/rrms-backend/internal/domain/reminder"
 
 	"github.com/user2410/rrms-backend/internal/utils"
 	"github.com/user2410/rrms-backend/internal/utils/validation"
@@ -356,6 +357,9 @@ func (a *adapter) createReminder() fiber.Handler {
 			}
 			if errors.Is(err, database.ErrUniqueViolation) {
 				return ctx.Status(fiber.StatusConflict).JSON(fiber.Map{"message": "reminder already exists"})
+			}
+			if errors.Is(err, reminder.ErrOverlappingReminder) {
+				return ctx.Status(fiber.StatusConflict).JSON(fiber.Map{"message": err.Error()})
 			}
 			return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
 		}

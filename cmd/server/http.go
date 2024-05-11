@@ -9,7 +9,9 @@ import (
 	listing_http "github.com/user2410/rrms-backend/internal/domain/listing/http"
 	payment_http "github.com/user2410/rrms-backend/internal/domain/payment/http"
 	property_http "github.com/user2410/rrms-backend/internal/domain/property/http"
+	reminder_http "github.com/user2410/rrms-backend/internal/domain/reminder/http"
 	rental_http "github.com/user2410/rrms-backend/internal/domain/rental/http"
+	statistic_http "github.com/user2410/rrms-backend/internal/domain/statistic/http"
 	"github.com/user2410/rrms-backend/internal/domain/storage"
 	unit_http "github.com/user2410/rrms-backend/internal/domain/unit/http"
 )
@@ -46,6 +48,12 @@ func (c *serverCommand) setupHttpServer() {
 		RegisterServer(c.httpServer.GetFibApp(), c.tokenMaker)
 	chat.
 		NewHttpAdapter(c.internalServices.ChatService).
+		RegisterServer(apiRoute, c.tokenMaker)
+	reminder_http.
+		NewAdapter(c.internalServices.ReminderService).
+		RegisterServer(apiRoute, c.tokenMaker)
+	statistic_http.
+		NewAdapter(c.internalServices.StatisticService).
 		RegisterServer(apiRoute, c.tokenMaker)
 }
 
