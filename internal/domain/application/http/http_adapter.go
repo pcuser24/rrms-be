@@ -7,7 +7,6 @@ import (
 	"github.com/google/uuid"
 	application_service "github.com/user2410/rrms-backend/internal/domain/application/service"
 	"github.com/user2410/rrms-backend/internal/domain/listing"
-	"github.com/user2410/rrms-backend/internal/domain/reminder"
 
 	"github.com/user2410/rrms-backend/internal/utils"
 	"github.com/user2410/rrms-backend/internal/utils/validation"
@@ -73,11 +72,6 @@ func (a *adapter) RegisterServer(route *fiber.Router, tokenMaker token.Maker) {
 		auth_http.AuthorizedMiddleware(tokenMaker),
 		CheckApplicationVisibilty(a.aService),
 		a.getApplicationMsgGroup(),
-	)
-	applicationRoute.Post("/application/:id/reminders",
-		auth_http.AuthorizedMiddleware(tokenMaker),
-		CheckApplicationVisibilty(a.aService),
-		a.createReminder(),
 	)
 	applicationRoute.Get("/application/:id/rental",
 		auth_http.AuthorizedMiddleware(tokenMaker),
@@ -329,42 +323,6 @@ func (a *adapter) getApplicationMsgGroup() fiber.Handler {
 		}
 
 		return ctx.Status(fiber.StatusOK).JSON(res)
-	}
-}
-
-func (a *adapter) createReminder() fiber.Handler {
-	return func(ctx *fiber.Ctx) error {
-		var payload dto.CreateReminder
-		if err := ctx.BodyParser(&payload); err != nil {
-			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": err.Error()})
-		}
-		if errs := validation.ValidateStruct(nil, payload); len(errs) > 0 {
-			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": validation.GetValidationError(errs)})
-		}
-
-		// application id
-		aid, err := strconv.ParseInt(ctx.Params("id"), 10, 64)
-		if err != nil {
-			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": "invalid message group id"})
-		}
-
-		tkPayload := ctx.Locals(auth_http.AuthorizationPayloadKey).(*token.Payload)
-
-		res, err := a.aService.CreateReminder(aid, tkPayload.UserID, &payload)
-		if err != nil {
-			if errors.Is(err, database.ErrRecordNotFound) {
-				return ctx.Status(fiber.StatusNotFound).JSON(fiber.Map{"message": "application not found"})
-			}
-			if errors.Is(err, database.ErrUniqueViolation) {
-				return ctx.Status(fiber.StatusConflict).JSON(fiber.Map{"message": "reminder already exists"})
-			}
-			if errors.Is(err, reminder.ErrOverlappingReminder) {
-				return ctx.Status(fiber.StatusConflict).JSON(fiber.Map{"message": err.Error()})
-			}
-			return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
-		}
-
-		return ctx.Status(fiber.StatusCreated).JSON(res)
 	}
 }
 

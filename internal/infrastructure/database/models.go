@@ -363,50 +363,6 @@ func (ns NullREMINDERRECURRENCEMODE) Value() (driver.Value, error) {
 	return string(ns.REMINDERRECURRENCEMODE), nil
 }
 
-type REMINDERSTATUS string
-
-const (
-	REMINDERSTATUSPENDING    REMINDERSTATUS = "PENDING"
-	REMINDERSTATUSINPROGRESS REMINDERSTATUS = "INPROGRESS"
-	REMINDERSTATUSCOMPLETED  REMINDERSTATUS = "COMPLETED"
-	REMINDERSTATUSCANCELLED  REMINDERSTATUS = "CANCELLED"
-)
-
-func (e *REMINDERSTATUS) Scan(src interface{}) error {
-	switch s := src.(type) {
-	case []byte:
-		*e = REMINDERSTATUS(s)
-	case string:
-		*e = REMINDERSTATUS(s)
-	default:
-		return fmt.Errorf("unsupported scan type for REMINDERSTATUS: %T", src)
-	}
-	return nil
-}
-
-type NullREMINDERSTATUS struct {
-	REMINDERSTATUS REMINDERSTATUS `json:"REMINDERSTATUS"`
-	Valid          bool           `json:"valid"` // Valid is true if REMINDERSTATUS is not NULL
-}
-
-// Scan implements the Scanner interface.
-func (ns *NullREMINDERSTATUS) Scan(value interface{}) error {
-	if value == nil {
-		ns.REMINDERSTATUS, ns.Valid = "", false
-		return nil
-	}
-	ns.Valid = true
-	return ns.REMINDERSTATUS.Scan(value)
-}
-
-// Value implements the driver Valuer interface.
-func (ns NullREMINDERSTATUS) Value() (driver.Value, error) {
-	if !ns.Valid {
-		return nil, nil
-	}
-	return string(ns.REMINDERSTATUS), nil
-}
-
 type RENTALCOMPLAINTSTATUS string
 
 const (
@@ -1046,15 +1002,9 @@ type Reminder struct {
 	RecurrenceMonth pgtype.Int4            `json:"recurrence_month"`
 	RecurrenceMode  REMINDERRECURRENCEMODE `json:"recurrence_mode"`
 	Priority        int32                  `json:"priority"`
-	Status          REMINDERSTATUS         `json:"status"`
 	ResourceTag     string                 `json:"resource_tag"`
 	CreatedAt       time.Time              `json:"created_at"`
 	UpdatedAt       time.Time              `json:"updated_at"`
-}
-
-type ReminderMember struct {
-	ReminderID int64     `json:"reminder_id"`
-	UserID     uuid.UUID `json:"user_id"`
 }
 
 type Rental struct {

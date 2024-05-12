@@ -10,7 +10,6 @@ import (
 	"github.com/user2410/rrms-backend/internal/domain/reminder/dto"
 	"github.com/user2410/rrms-backend/internal/domain/reminder/model"
 	"github.com/user2410/rrms-backend/internal/domain/reminder/repo"
-	"github.com/user2410/rrms-backend/internal/infrastructure/database"
 )
 
 type Service interface {
@@ -18,7 +17,6 @@ type Service interface {
 	GetRemindersOfUser(userId uuid.UUID, query *dto.GetRemindersQuery) ([]model.ReminderModel, error)
 	GetReminderById(id int64) (model.ReminderModel, error)
 	CheckReminderVisibility(id int64, userId uuid.UUID) (bool, error)
-	UpdateReminderStatus(id int64, status database.REMINDERSTATUS) error
 }
 
 type service struct {
@@ -70,43 +68,6 @@ func (s *service) GetRemindersOfUser(userId uuid.UUID, query *dto.GetRemindersQu
 
 func (s *service) GetReminderById(id int64) (model.ReminderModel, error) {
 	return s.repo.GetReminder(context.Background(), id)
-}
-
-var (
-	ErrInvalidReminderStatusTransition = errors.New("invalid reminder status transition")
-)
-
-func (s *service) UpdateReminderStatus(id int64, status database.REMINDERSTATUS) error {
-	reminder, err := s.repo.GetReminder(context.Background(), id)
-	if err != nil {
-		return err
-	}
-
-	switch status {
-	case database.REMINDERSTATUSINPROGRESS:
-		if reminder.Status != database.REMINDERSTATUSPENDING {
-			return ErrInvalidReminderStatusTransition
-		}
-	case database.REMINDERSTATUSCOMPLETED:
-	case database.REMINDERSTATUSCANCELLED:
-		if reminder.Status != database.REMINDERSTATUSPENDING && reminder.Status != database.REMINDERSTATUSINPROGRESS {
-			return ErrInvalidReminderStatusTransition
-		}
-	default:
-		return ErrInvalidReminderStatusTransition
-	}
-
-	c, err := s.repo.UpdateReminder(context.Background(), &dto.UpdateReminder{
-		ID:     id,
-		Status: status,
-	})
-	if err != nil {
-		return err
-	}
-	if c == 0 {
-		return database.ErrRecordNotFound
-	}
-	return nil
 }
 
 func (s *service) CheckReminderVisibility(id int64, userId uuid.UUID) (bool, error) {

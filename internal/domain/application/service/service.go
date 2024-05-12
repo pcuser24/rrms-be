@@ -7,7 +7,6 @@ import (
 	chat_repo "github.com/user2410/rrms-backend/internal/domain/chat/repo"
 	listing_repo "github.com/user2410/rrms-backend/internal/domain/listing/repo"
 	property_repo "github.com/user2410/rrms-backend/internal/domain/property/repo"
-	reminder_model "github.com/user2410/rrms-backend/internal/domain/reminder/model"
 	rental_model "github.com/user2410/rrms-backend/internal/domain/rental/model"
 
 	reminder_service "github.com/user2410/rrms-backend/internal/domain/reminder"
@@ -28,7 +27,6 @@ type Service interface {
 	CheckApplicationUpdatability(aid int64, uid uuid.UUID) (bool, error)
 	CreateApplicationMsgGroup(aid int64, userId uuid.UUID) (*chat_model.MsgGroup, error)
 	GetApplicationMsgGroup(aid int64, userId uuid.UUID) (*chat_model.MsgGroupExtended, error)
-	CreateReminder(aid int64, userId uuid.UUID, data *dto.CreateReminder) (reminder_model.ReminderModel, error)
 	GetRentalByApplicationId(aid int64) (rental_model.RentalModel, error)
 }
 

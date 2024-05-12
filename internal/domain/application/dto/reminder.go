@@ -17,8 +17,3 @@ type CreateReminder struct {
 	RecurrenceMode database.REMINDERRECURRENCEMODE `json:"recurrenceMode" validate:"required"`
 	Members        []uuid.UUID
 }
-
-type UpdateReminderStatus struct {
-	ID     int64                   `json:"id" validate:"required"`
-	Status database.REMINDERSTATUS `json:"status" validate:"required"`
-}

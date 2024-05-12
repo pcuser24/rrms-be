@@ -35,24 +35,8 @@ func (r *repo) CreateReminder(ctx context.Context, data *dto.CreateReminder) (mo
 	if err != nil {
 		return model.ReminderModel{}, err
 	}
-	rmm := model.ToReminderModel(&rmdb)
 
-	for _, m := range data.Members {
-		mdb, err := r.dao.CreateReminderMember(ctx, database.CreateReminderMemberParams{
-			ReminderID: rmdb.ID,
-			UserID:     m,
-		})
-		if err != nil {
-			_ = r.dao.DeleteReminder(ctx, rmdb.ID)
-			return model.ReminderModel{}, err
-		}
-		rmm.ReminderMembers = append(rmm.ReminderMembers, model.ReminderMemberModel{
-			ReminderID: mdb.ReminderID,
-			UserID:     mdb.UserID,
-		})
-	}
-
-	return rmm, nil
+	return model.ToReminderModel(&rmdb), nil
 }
 
 func (r *repo) GetRemindersOfUser(ctx context.Context, userId uuid.UUID, query *dto.GetRemindersQuery) ([]model.ReminderModel, error) {
@@ -61,7 +45,7 @@ func (r *repo) GetRemindersOfUser(ctx context.Context, userId uuid.UUID, query *
 		res      []model.ReminderModel = make([]model.ReminderModel, 0)
 	)
 	sb := sqlbuilder.PostgreSQL.NewSelectBuilder()
-	sb.Select("id", "creator_id", "title", "start_at", "end_at", "note", "location", "recurrence_day", "recurrence_month", "recurrence_mode", "priority", "status", "resource_tag", "created_at", "updated_at")
+	sb.Select("id", "creator_id", "title", "start_at", "end_at", "note", "location", "recurrence_day", "recurrence_month", "recurrence_mode", "priority", "resource_tag", "created_at", "updated_at")
 	sb.From("reminders")
 	if query.CreatorID != uuid.Nil {
 		andExprs = append(andExprs, sb.Equal("creator_id", query.CreatorID))
@@ -81,9 +65,6 @@ func (r *repo) GetRemindersOfUser(ctx context.Context, userId uuid.UUID, query *
 	if query.Priority != nil {
 		andExprs = append(andExprs, sb.Equal("priority", *query.Priority))
 	}
-	if query.Status != "" {
-		andExprs = append(andExprs, sb.Equal("status", query.Status))
-	}
 	if query.RecurrenceMode != "" {
 		andExprs = append(andExprs, sb.Equal("recurrence_mode", query.RecurrenceMode))
 	}
@@ -95,17 +76,6 @@ func (r *repo) GetRemindersOfUser(ctx context.Context, userId uuid.UUID, query *
 	}
 	if query.ResourceTag != nil {
 		andExprs = append(andExprs, sb.Equal("resource_tag", *query.ResourceTag))
-	}
-	if query.Members != nil && len(query.Members) > 0 {
-		subSB := sqlbuilder.PostgreSQL.NewSelectBuilder()
-		andExprs = append(andExprs, sb.Exists(
-			subSB.Select("1").
-				From("reminder_members").
-				Where(
-					subSB.Equal("reminder_members.reminder_id", "reminders.id"),
-					subSB.In("user_id", sqlbuilder.List(query.Members)),
-				),
-		))
 	}
 	if len(andExprs) > 0 {
 		sb.Where(andExprs...)
@@ -133,7 +103,6 @@ func (r *repo) GetRemindersOfUser(ctx context.Context, userId uuid.UUID, query *
 			&i.RecurrenceMonth,
 			&i.RecurrenceMode,
 			&i.Priority,
-			&i.Status,
 			&i.ResourceTag,
 			&i.CreatedAt,
 			&i.UpdatedAt,
@@ -166,15 +135,32 @@ func (r *repo) UpdateReminder(ctx context.Context, data *dto.UpdateReminder) (in
 
 func (r *repo) CheckReminderVisibility(ctx context.Context, id int64, userId uuid.UUID) (bool, error) {
 	return r.dao.CheckReminderVisibility(ctx, database.CheckReminderVisibilityParams{
-		ReminderID: id,
-		UserID:     userId,
+		ID:        id,
+		CreatorID: userId,
 	})
 }
 
 func (r *repo) CheckOverlappingReminder(ctx context.Context, userID uuid.UUID, startTime, endTime time.Time) (bool, error) {
-	return r.dao.CheckOverlappingReminder(ctx, database.CheckOverlappingReminderParams{
-		UserID:    userID,
-		StartTime: startTime,
-		EndTime:   endTime,
-	})
+	subSB := sqlbuilder.PostgreSQL.NewSelectBuilder()
+	subSB.Select("1").From("reminders").Where(
+		subSB.Equal("creator_id", userID),
+		subSB.Or(
+			subSB.And(
+				subSB.GTE("start_at", startTime),
+				subSB.LTE("start_at", endTime),
+			),
+			subSB.And(
+				subSB.GTE("end_at", startTime),
+				subSB.LTE("end_at", endTime),
+			),
+		),
+	)
+	sb := sqlbuilder.PostgreSQL.NewSelectBuilder()
+	sb.Select(sb.Exists(subSB))
+
+	sql, args := sb.Build()
+	row := r.dao.QueryRow(ctx, sql, args...)
+	var res bool
+	err := row.Scan(&res)
+	return res, err
 }

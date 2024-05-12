@@ -58,8 +58,6 @@ func (ws *WSChatAdapter) RegisterServer(fibApp *fiber.App, tokenMaker token.Make
 	ws.handlers[CHATCREATEMESSAGE] = ws.onCreateMessage
 	ws.handlers[CHATDELETEMESSAGE] = ws.onDeleteMessage
 	ws.handlers[CHATTYPING] = ws.onTyping
-	ws.handlers[REMINDERCREATE] = ws.onCreateReminder
-	ws.handlers[REMINDERUPDATESTATUS] = ws.onUpdateReminder
 
 	fibApp.Get("/ws/chat/:id",
 		AuthorizedMiddleware(tokenMaker),

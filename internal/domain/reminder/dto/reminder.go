@@ -20,7 +20,6 @@ type CreateReminder struct {
 	RecurrenceMonth *int32                          `json:"recurrenceMonth" validate:"omitempty,min=1,max=12"`
 	RecurrenceMode  database.REMINDERRECURRENCEMODE `json:"recurrenceMode" validate:"required,oneof=NONE WEEKLY MONTHLY"`
 	ResourceTag     string                          `json:"resourceTag" validate:"required"`
-	Members         []uuid.UUID                     `json:"members" validate:"required,dive"`
 }
 
 func (c *CreateReminder) ToCreateReminderDB() database.CreateReminderParams {

@@ -13,46 +13,17 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
-const checkOverlappingReminder = `-- name: CheckOverlappingReminder :one
-SELECT EXISTS(
-  SELECT 1 
-  FROM "reminders" 
-  WHERE 
-    status IN ('INPROGRESS', 'COMPLETED') AND
-    EXISTS (
-      SELECT 1 FROM reminder_members WHERE reminders.id = reminder_members.reminder_id AND reminder_members.user_id = $1
-    ) AND (
-      (start_at, end_at) OVERLAPS ($2, $3)
-      OR (start_at >= $2 AND start_at < $3) 
-      OR (end_at > $2 AND end_at <= $3)
-    )
-)
-`
-
-type CheckOverlappingReminderParams struct {
-	UserID    uuid.UUID   `json:"user_id"`
-	StartTime interface{} `json:"start_time"`
-	EndTime   interface{} `json:"end_time"`
-}
-
-func (q *Queries) CheckOverlappingReminder(ctx context.Context, arg CheckOverlappingReminderParams) (bool, error) {
-	row := q.db.QueryRow(ctx, checkOverlappingReminder, arg.UserID, arg.StartTime, arg.EndTime)
-	var exists bool
-	err := row.Scan(&exists)
-	return exists, err
-}
-
 const checkReminderVisibility = `-- name: CheckReminderVisibility :one
-SELECT EXISTS(SELECT 1 FROM "reminder_members" WHERE "reminder_id" = $1 AND "user_id" = $2)
+SELECT EXISTS(SELECT 1 FROM "reminders" WHERE "id" = $1 AND "creator_id" = $2)
 `
 
 type CheckReminderVisibilityParams struct {
-	ReminderID int64     `json:"reminder_id"`
-	UserID     uuid.UUID `json:"user_id"`
+	ID        int64     `json:"id"`
+	CreatorID uuid.UUID `json:"creator_id"`
 }
 
 func (q *Queries) CheckReminderVisibility(ctx context.Context, arg CheckReminderVisibilityParams) (bool, error) {
-	row := q.db.QueryRow(ctx, checkReminderVisibility, arg.ReminderID, arg.UserID)
+	row := q.db.QueryRow(ctx, checkReminderVisibility, arg.ID, arg.CreatorID)
 	var exists bool
 	err := row.Scan(&exists)
 	return exists, err
@@ -83,7 +54,7 @@ INSERT INTO "reminders" (
   $9,
   $10,
   $11
-) RETURNING id, creator_id, title, start_at, end_at, note, location, recurrence_day, recurrence_month, recurrence_mode, priority, status, resource_tag, created_at, updated_at
+) RETURNING id, creator_id, title, start_at, end_at, note, location, recurrence_day, recurrence_month, recurrence_mode, priority, resource_tag, created_at, updated_at
 `
 
 type CreateReminderParams struct {
@@ -127,33 +98,10 @@ func (q *Queries) CreateReminder(ctx context.Context, arg CreateReminderParams) 
 		&i.RecurrenceMonth,
 		&i.RecurrenceMode,
 		&i.Priority,
-		&i.Status,
 		&i.ResourceTag,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
-	return i, err
-}
-
-const createReminderMember = `-- name: CreateReminderMember :one
-INSERT INTO "reminder_members" (
-  "reminder_id",
-  "user_id"
-) VALUES (
-  $1,
-  $2
-) RETURNING reminder_id, user_id
-`
-
-type CreateReminderMemberParams struct {
-	ReminderID int64     `json:"reminder_id"`
-	UserID     uuid.UUID `json:"user_id"`
-}
-
-func (q *Queries) CreateReminderMember(ctx context.Context, arg CreateReminderMemberParams) (ReminderMember, error) {
-	row := q.db.QueryRow(ctx, createReminderMember, arg.ReminderID, arg.UserID)
-	var i ReminderMember
-	err := row.Scan(&i.ReminderID, &i.UserID)
 	return i, err
 }
 
@@ -167,7 +115,7 @@ func (q *Queries) DeleteReminder(ctx context.Context, id int64) error {
 }
 
 const getReminderById = `-- name: GetReminderById :one
-SELECT id, creator_id, title, start_at, end_at, note, location, recurrence_day, recurrence_month, recurrence_mode, priority, status, resource_tag, created_at, updated_at FROM "reminders" WHERE "id" = $1
+SELECT id, creator_id, title, start_at, end_at, note, location, recurrence_day, recurrence_month, recurrence_mode, priority, resource_tag, created_at, updated_at FROM "reminders" WHERE "id" = $1
 `
 
 func (q *Queries) GetReminderById(ctx context.Context, id int64) (Reminder, error) {
@@ -185,7 +133,6 @@ func (q *Queries) GetReminderById(ctx context.Context, id int64) (Reminder, erro
 		&i.RecurrenceMonth,
 		&i.RecurrenceMode,
 		&i.Priority,
-		&i.Status,
 		&i.ResourceTag,
 		&i.CreatedAt,
 		&i.UpdatedAt,
@@ -193,32 +140,8 @@ func (q *Queries) GetReminderById(ctx context.Context, id int64) (Reminder, erro
 	return i, err
 }
 
-const getReminderMembers = `-- name: GetReminderMembers :many
-SELECT "user_id" FROM "reminder_members" WHERE "reminder_id" = $1
-`
-
-func (q *Queries) GetReminderMembers(ctx context.Context, reminderID int64) ([]uuid.UUID, error) {
-	rows, err := q.db.Query(ctx, getReminderMembers, reminderID)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []uuid.UUID
-	for rows.Next() {
-		var user_id uuid.UUID
-		if err := rows.Scan(&user_id); err != nil {
-			return nil, err
-		}
-		items = append(items, user_id)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
 const getRemindersByCreator = `-- name: GetRemindersByCreator :many
-SELECT id, creator_id, title, start_at, end_at, note, location, recurrence_day, recurrence_month, recurrence_mode, priority, status, resource_tag, created_at, updated_at FROM "reminders" WHERE "creator_id" = $1
+SELECT id, creator_id, title, start_at, end_at, note, location, recurrence_day, recurrence_month, recurrence_mode, priority, resource_tag, created_at, updated_at FROM "reminders" WHERE "creator_id" = $1
 `
 
 func (q *Queries) GetRemindersByCreator(ctx context.Context, creatorID uuid.UUID) ([]Reminder, error) {
@@ -242,7 +165,6 @@ func (q *Queries) GetRemindersByCreator(ctx context.Context, creatorID uuid.UUID
 			&i.RecurrenceMonth,
 			&i.RecurrenceMode,
 			&i.Priority,
-			&i.Status,
 			&i.ResourceTag,
 			&i.CreatedAt,
 			&i.UpdatedAt,
@@ -258,7 +180,7 @@ func (q *Queries) GetRemindersByCreator(ctx context.Context, creatorID uuid.UUID
 }
 
 const getRemindersInDate = `-- name: GetRemindersInDate :many
-SELECT id, creator_id, title, start_at, end_at, note, location, recurrence_day, recurrence_month, recurrence_mode, priority, status, resource_tag, created_at, updated_at FROM "reminders" WHERE DATE_TRUNC('month', start_at) = DATE_TRUNC('month', $1)
+SELECT id, creator_id, title, start_at, end_at, note, location, recurrence_day, recurrence_month, recurrence_mode, priority, resource_tag, created_at, updated_at FROM "reminders" WHERE DATE_TRUNC('month', start_at) = DATE_TRUNC('month', $1)
 `
 
 func (q *Queries) GetRemindersInDate(ctx context.Context, dateTrunc pgtype.Interval) ([]Reminder, error) {
@@ -282,47 +204,6 @@ func (q *Queries) GetRemindersInDate(ctx context.Context, dateTrunc pgtype.Inter
 			&i.RecurrenceMonth,
 			&i.RecurrenceMode,
 			&i.Priority,
-			&i.Status,
-			&i.ResourceTag,
-			&i.CreatedAt,
-			&i.UpdatedAt,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
-const getRemindersOfUser = `-- name: GetRemindersOfUser :many
-SELECT id, creator_id, title, start_at, end_at, note, location, recurrence_day, recurrence_month, recurrence_mode, priority, status, resource_tag, created_at, updated_at FROM "reminders" WHERE "id" IN (SELECT "reminder_id" FROM "reminder_members" WHERE "user_id" = $1)
-`
-
-func (q *Queries) GetRemindersOfUser(ctx context.Context, userID uuid.UUID) ([]Reminder, error) {
-	rows, err := q.db.Query(ctx, getRemindersOfUser, userID)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []Reminder
-	for rows.Next() {
-		var i Reminder
-		if err := rows.Scan(
-			&i.ID,
-			&i.CreatorID,
-			&i.Title,
-			&i.StartAt,
-			&i.EndAt,
-			&i.Note,
-			&i.Location,
-			&i.RecurrenceDay,
-			&i.RecurrenceMonth,
-			&i.RecurrenceMode,
-			&i.Priority,
-			&i.Status,
 			&i.ResourceTag,
 			&i.CreatedAt,
 			&i.UpdatedAt,
@@ -338,20 +219,20 @@ func (q *Queries) GetRemindersOfUser(ctx context.Context, userID uuid.UUID) ([]R
 }
 
 const getRemindersOfUserWithResourceTag = `-- name: GetRemindersOfUserWithResourceTag :many
-SELECT id, creator_id, title, start_at, end_at, note, location, recurrence_day, recurrence_month, recurrence_mode, priority, status, resource_tag, created_at, updated_at 
+SELECT id, creator_id, title, start_at, end_at, note, location, recurrence_day, recurrence_month, recurrence_mode, priority, resource_tag, created_at, updated_at 
 FROM "reminders" 
 WHERE 
-  "id" IN (SELECT "reminder_id" FROM "reminder_members" WHERE "user_id" = $1)
+  "creator_id" = $1
   AND "resource_tag" = $2
 `
 
 type GetRemindersOfUserWithResourceTagParams struct {
-	UserID      uuid.UUID `json:"user_id"`
+	CreatorID   uuid.UUID `json:"creator_id"`
 	ResourceTag string    `json:"resource_tag"`
 }
 
 func (q *Queries) GetRemindersOfUserWithResourceTag(ctx context.Context, arg GetRemindersOfUserWithResourceTagParams) ([]Reminder, error) {
-	rows, err := q.db.Query(ctx, getRemindersOfUserWithResourceTag, arg.UserID, arg.ResourceTag)
+	rows, err := q.db.Query(ctx, getRemindersOfUserWithResourceTag, arg.CreatorID, arg.ResourceTag)
 	if err != nil {
 		return nil, err
 	}
@@ -371,7 +252,6 @@ func (q *Queries) GetRemindersOfUserWithResourceTag(ctx context.Context, arg Get
 			&i.RecurrenceMonth,
 			&i.RecurrenceMode,
 			&i.Priority,
-			&i.Status,
 			&i.ResourceTag,
 			&i.CreatedAt,
 			&i.UpdatedAt,
@@ -397,11 +277,10 @@ UPDATE "reminders" SET
   "recurrence_day" = coalesce($8, recurrence_day),
   "recurrence_month" = coalesce($9, recurrence_month),
   "recurrence_mode" = coalesce($10, recurrence_mode),
-  "status" = coalesce($11, status),
   "updated_at" = NOW()
 WHERE 
   "id" = $1 
-RETURNING id, creator_id, title, start_at, end_at, note, location, recurrence_day, recurrence_month, recurrence_mode, priority, status, resource_tag, created_at, updated_at
+RETURNING id, creator_id, title, start_at, end_at, note, location, recurrence_day, recurrence_month, recurrence_mode, priority, resource_tag, created_at, updated_at
 `
 
 type UpdateReminderParams struct {
@@ -415,7 +294,6 @@ type UpdateReminderParams struct {
 	RecurrenceDay   pgtype.Int4                `json:"recurrence_day"`
 	RecurrenceMonth pgtype.Int4                `json:"recurrence_month"`
 	RecurrenceMode  NullREMINDERRECURRENCEMODE `json:"recurrence_mode"`
-	Status          NullREMINDERSTATUS         `json:"status"`
 }
 
 func (q *Queries) UpdateReminder(ctx context.Context, arg UpdateReminderParams) ([]Reminder, error) {
@@ -430,7 +308,6 @@ func (q *Queries) UpdateReminder(ctx context.Context, arg UpdateReminderParams) 
 		arg.RecurrenceDay,
 		arg.RecurrenceMonth,
 		arg.RecurrenceMode,
-		arg.Status,
 	)
 	if err != nil {
 		return nil, err
@@ -451,7 +328,6 @@ func (q *Queries) UpdateReminder(ctx context.Context, arg UpdateReminderParams) 
 			&i.RecurrenceMonth,
 			&i.RecurrenceMode,
 			&i.Priority,
-			&i.Status,
 			&i.ResourceTag,
 			&i.CreatedAt,
 			&i.UpdatedAt,

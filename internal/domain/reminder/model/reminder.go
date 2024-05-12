@@ -17,7 +17,6 @@ type ReminderModel struct {
 	Note            *string                         `json:"note"`
 	Location        string                          `json:"location"`
 	Priority        int32                           `json:"priority"`
-	Status          database.REMINDERSTATUS         `json:"status"`
 	RecurrenceDay   *int32                          `json:"recurrenceDay"`
 	RecurrenceMonth *int32                          `json:"recurrenceMonth"`
 	RecurrenceMode  database.REMINDERRECURRENCEMODE `json:"recurrenceMode"`
@@ -43,7 +42,6 @@ func ToReminderModel(rdb *database.Reminder) ReminderModel {
 		Note:            types.PNStr(rdb.Note),
 		Location:        rdb.Location,
 		Priority:        rdb.Priority,
-		Status:          rdb.Status,
 		RecurrenceDay:   types.PNInt32(rdb.RecurrenceDay),
 		RecurrenceMonth: types.PNInt32(rdb.RecurrenceMonth),
 		RecurrenceMode:  rdb.RecurrenceMode,

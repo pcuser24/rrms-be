@@ -14,11 +14,8 @@ type GetRemindersQuery struct {
 	MinEndAt        time.Time                       `query:"minEndAt" validate:"omitempty"`
 	MaxEndAt        time.Time                       `query:"maxEndAt" validate:"omitempty"`
 	Priority        *int32                          `query:"priority" validate:"omitempty"`
-	Status          database.REMINDERSTATUS         `query:"status" validate:"omitempty"`
 	RecurrenceMode  database.REMINDERRECURRENCEMODE `query:"recurrenceMode" validate:"omitempty"`
 	RecurrenceDay   *int32                          `query:"recurrenceDay" validate:"omitempty"`
 	RecurrenceMonth *int32                          `query:"recurrenceMonth" validate:"omitempty"`
 	ResourceTag     *string                         `query:"resourceTag" validate:"omitempty"`
-
-	Members []uuid.UUID `query:"members" validate:"omitempty,dive"`
 }

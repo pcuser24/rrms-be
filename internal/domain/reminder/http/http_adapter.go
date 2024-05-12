@@ -32,16 +32,36 @@ func NewAdapter(service reminder.Service) Adapter {
 func (a *adapter) RegisterServer(route *fiber.Router, tokenMaker token.Maker) {
 	reminderRoute := (*route).Group("/reminders")
 	reminderRoute.Use(auth_http.AuthorizedMiddleware(tokenMaker))
+	reminderRoute.Post("/", a.createReminder())
 	reminderRoute.Get("/", a.getRemindersOfUser())
 	reminderRoute.Group("/reminder/:id").Use(GetReminderId())
 	reminderRoute.Get("/reminder/:id",
 		CheckReminderVisibility(a.service),
 		a.getReminder(),
 	)
-	reminderRoute.Patch("/reminder/:id",
-		CheckReminderVisibility(a.service),
-		a.updateReminderStatus(),
-	)
+}
+
+func (a *adapter) createReminder() fiber.Handler {
+	return func(ctx *fiber.Ctx) error {
+		var payload dto.CreateReminder
+		if err := ctx.BodyParser(&payload); err != nil {
+			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": err.Error()})
+		}
+		payload.CreatorID = ctx.Locals(auth_http.AuthorizationPayloadKey).(*token.Payload).UserID
+		if errs := validation.ValidateStruct(nil, payload); len(errs) > 0 {
+			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": validation.GetValidationError(errs)})
+		}
+
+		reminder, err := a.service.CreateReminder(&payload)
+		if err != nil {
+			if dbErr, ok := err.(*pgconn.PgError); ok {
+				return responses.DBErrorResponse(ctx, dbErr)
+			}
+			return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
+		}
+
+		return ctx.Status(fiber.StatusCreated).JSON(reminder)
+	}
 }
 
 func (a *adapter) getReminder() fiber.Handler {
@@ -83,30 +103,5 @@ func (a *adapter) getRemindersOfUser() fiber.Handler {
 		}
 
 		return ctx.Status(fiber.StatusOK).JSON(res)
-	}
-}
-
-func (a *adapter) updateReminderStatus() fiber.Handler {
-	return func(ctx *fiber.Ctx) error {
-		id, err := strconv.ParseInt(ctx.Params("id"), 10, 64)
-		if err != nil {
-			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": err.Error()})
-		}
-
-		status := ctx.Query("status")
-		if status == "" {
-			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": "status is required"})
-		}
-
-		err = a.service.UpdateReminderStatus(id, database.REMINDERSTATUS(status))
-		if err != nil {
-			if errors.Is(err, database.ErrRecordNotFound) {
-				return ctx.Status(fiber.StatusNotFound).JSON(fiber.Map{"message": err.Error()})
-			}
-
-			return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
-		}
-
-		return ctx.SendStatus(fiber.StatusOK)
 	}
 }

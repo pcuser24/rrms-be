@@ -19,16 +19,11 @@ type UpdateReminder struct {
 	RecurrenceDay   *int32                          `json:"recurrenceDay"`
 	RecurrenceMonth *int32                          `json:"recurrenceMonth"`
 	RecurrenceMode  database.REMINDERRECURRENCEMODE `json:"recurrenceMode"`
-	Status          database.REMINDERSTATUS         `json:"status"`
 }
 
 func (u *UpdateReminder) ToUpdateReminderDB() database.UpdateReminderParams {
 	return database.UpdateReminderParams{
-		ID: u.ID,
-		Status: database.NullREMINDERSTATUS{
-			Valid:          true,
-			REMINDERSTATUS: u.Status,
-		},
+		ID:    u.ID,
 		Title: types.StrN(u.Title),
 		StartAt: pgtype.Timestamptz{
 			Time:  u.StartAt,
