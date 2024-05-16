@@ -20,10 +20,9 @@ import (
 	application_service "github.com/user2410/rrms-backend/internal/domain/application/service"
 	"github.com/user2410/rrms-backend/internal/domain/auth"
 	"github.com/user2410/rrms-backend/internal/domain/chat"
-	"github.com/user2410/rrms-backend/internal/domain/listing"
+	listing_service "github.com/user2410/rrms-backend/internal/domain/listing/service"
 	"github.com/user2410/rrms-backend/internal/domain/notification"
 	payment_service "github.com/user2410/rrms-backend/internal/domain/payment/service"
-	"github.com/user2410/rrms-backend/internal/domain/payment/service/vnpay"
 	property_service "github.com/user2410/rrms-backend/internal/domain/property/service"
 	"github.com/user2410/rrms-backend/internal/domain/reminder"
 	rental_service "github.com/user2410/rrms-backend/internal/domain/rental/service"
@@ -56,9 +55,11 @@ type serverConfig struct {
 	AWSS3Endpoint    *string `mapstructure:"AWS_S3_ENDPOINT" validate:"omitempty"`
 	AWSS3ImageBucket string  `mapstructure:"AWS_S3_IMAGE_BUCKET" validate:"required"`
 
-	EmailSenderName     string `mapstructure:"EMAIL_SENDER_NAME" validate:"required"`
-	EmailSenderAddress  string `mapstructure:"EMAIL_SENDER_ADDRESS" validate:"required"`
-	EmailSenderPassword string `mapstructure:"EMAIL_SENDER_PASSWORD" validate:"required"`
+	EmailSenderName     string `mapstructure:"EMAIL_SENDER_NAME" validate:"omitempty"`
+	EmailSenderAddress  string `mapstructure:"EMAIL_SENDER_ADDRESS" validate:"omitempty"`
+	EmailSenderPassword string `mapstructure:"EMAIL_SENDER_PASSWORD" validate:"omitempty"`
+
+	ResendAPIKey string `mapstructure:"RESEND_API_KEY" validate:"omitempty"`
 
 	AsynqRedisAddress string `mapstructure:"ASYNQ_REDIS_ADDRESS" validate:"required"`
 
@@ -72,13 +73,12 @@ type internalServices struct {
 	AuthService        auth.Service
 	PropertyService    property_service.Service
 	UnitService        unit.Service
-	ListingService     listing.Service
+	ListingService     listing_service.Service
 	RentalService      rental_service.Service
 	ApplicationService application_service.Service
 	StorageService     storage.Service
-	PaymentService     payment_service.Service
 	ReminderService    reminder.Service
-	VnpService         *vnpay.Service
+	PaymentService     payment_service.Service
 	ChatService        chat.Service
 	StatisticService   statistic_service.Service
 }
@@ -201,11 +201,7 @@ func (c *serverCommand) setup() {
 	}
 
 	// setup mailer
-	c.emailSender = email.NewGmailSender(
-		c.config.EmailSenderName,
-		c.config.EmailSenderAddress,
-		c.config.EmailSenderPassword,
-	)
+	c.emailSender = email.NewResendSender(c.config.ResendAPIKey)
 
 	// setup S3 client
 	s3Client, err := s3.NewS3Client(c.config.AWSRegion, c.config.AWSS3Endpoint)

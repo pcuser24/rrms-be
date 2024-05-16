@@ -94,6 +94,7 @@ func ToListingModel(ldb *database.Listing) *ListingModel {
 		NumberOfResidents: types.PNInt32(ldb.NumberOfResidents),
 		Policies:          make([]ListingPolicyModel, 0),
 		Units:             make([]ListingUnitModel, 0),
+		Tags:              make([]ListingTagModel, 0),
 	}
 
 	return lm

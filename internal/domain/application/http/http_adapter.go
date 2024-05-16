@@ -6,7 +6,7 @@ import (
 
 	"github.com/google/uuid"
 	application_service "github.com/user2410/rrms-backend/internal/domain/application/service"
-	"github.com/user2410/rrms-backend/internal/domain/listing"
+	listing_service "github.com/user2410/rrms-backend/internal/domain/listing/service"
 
 	"github.com/user2410/rrms-backend/internal/utils"
 	"github.com/user2410/rrms-backend/internal/utils/validation"
@@ -27,7 +27,7 @@ type Adapter interface {
 }
 
 type adapter struct {
-	lService listing.Service
+	lService listing_service.Service
 	aService application_service.Service
 }
 
@@ -80,7 +80,7 @@ func (a *adapter) RegisterServer(route *fiber.Router, tokenMaker token.Maker) {
 	)
 }
 
-func NewAdapter(lService listing.Service, aService application_service.Service) Adapter {
+func NewAdapter(lService listing_service.Service, aService application_service.Service) Adapter {
 	return &adapter{
 		lService: lService,
 		aService: aService,

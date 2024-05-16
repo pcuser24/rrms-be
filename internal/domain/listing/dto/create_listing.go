@@ -4,6 +4,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/user2410/rrms-backend/internal/domain/listing/model"
+	payment_model "github.com/user2410/rrms-backend/internal/domain/payment/model"
 	"github.com/user2410/rrms-backend/internal/infrastructure/database"
 	"github.com/user2410/rrms-backend/internal/utils/types"
 )
@@ -71,6 +72,6 @@ func (c *CreateListing) ToCreateListingDB() *database.CreateListingParams {
 }
 
 type CreateListingResponse struct {
-	Listing *model.ListingModel
-	Payment *database.Payment
+	Listing *model.ListingModel         `json:"listing"`
+	Payment *payment_model.PaymentModel `json:"payment"`
 }

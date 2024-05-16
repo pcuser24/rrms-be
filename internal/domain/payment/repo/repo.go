@@ -3,6 +3,7 @@ package repo
 import (
 	"context"
 
+	"github.com/google/uuid"
 	"github.com/user2410/rrms-backend/internal/domain/payment/dto"
 	"github.com/user2410/rrms-backend/internal/domain/payment/model"
 	"github.com/user2410/rrms-backend/internal/infrastructure/database"
@@ -13,6 +14,7 @@ type Repo interface {
 	CreatePayment(ctx context.Context, data *dto.CreatePayment) (*model.PaymentModel, error)
 	GetPaymentById(ctx context.Context, id int64) (*model.PaymentModel, error)
 	UpdatePayment(ctx context.Context, data *dto.UpdatePayment) error
+	CheckPaymentAccessible(ctx context.Context, userId uuid.UUID, id int64) (bool, error)
 }
 
 type repo struct {
@@ -87,4 +89,11 @@ func (r *repo) UpdatePayment(ctx context.Context, data *dto.UpdatePayment) error
 		}
 	}
 	return r.dao.UpdatePayment(ctx, params)
+}
+
+func (r *repo) CheckPaymentAccessible(ctx context.Context, userId uuid.UUID, id int64) (bool, error) {
+	return r.dao.CheckPaymentAccessible(ctx, database.CheckPaymentAccessibleParams{
+		UserID: userId,
+		ID:     id,
+	})
 }

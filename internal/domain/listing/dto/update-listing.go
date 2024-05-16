@@ -7,17 +7,19 @@ import (
 )
 
 type UpdateListing struct {
-	Title             *string   `json:"title"`
-	Description       *string   `json:"description"`
-	Price             *int64    `json:"price"`
-	SecurityDeposit   *int64    `json:"securityDeposit"`
-	LeaseTerm         *int32    `json:"leaseTerm"`
-	PetsAllowed       *bool     `json:"petsAllowed"`
-	NumberOfResidents *int32    `json:"numberOfResidents"`
-	ID                uuid.UUID `json:"id"`
+	Title             *string               `json:"title" validate:"omitempty"`
+	Description       *string               `json:"description" validate:"omitempty"`
+	Price             *int64                `json:"price" validate:"omitempty"`
+	SecurityDeposit   *int64                `json:"securityDeposit" validate:"omitempty"`
+	LeaseTerm         *int32                `json:"leaseTerm" validate:"omitempty"`
+	PetsAllowed       *bool                 `json:"petsAllowed" validate:"omitempty"`
+	NumberOfResidents *int32                `json:"numberOfResidents" validate:"omitempty"`
+	Policies          []CreateListingPolicy `json:"policies" validate:"omitempty,dive"`
+	Units             []CreateListingUnit   `json:"units" validate:"omitempty,dive"`
+	Tags              []string              `json:"tags" validate:"omitempty,dive"`
 }
 
-func (u *UpdateListing) ToUpdateListingDB() *database.UpdateListingParams {
+func (u *UpdateListing) ToUpdateListingDB(id uuid.UUID) *database.UpdateListingParams {
 	return &database.UpdateListingParams{
 		Title:             types.StrN(u.Title),
 		Description:       types.StrN(u.Description),
@@ -26,6 +28,6 @@ func (u *UpdateListing) ToUpdateListingDB() *database.UpdateListingParams {
 		LeaseTerm:         types.Int32N(u.LeaseTerm),
 		PetsAllowed:       types.BoolN(u.PetsAllowed),
 		NumberOfResidents: types.Int32N(u.NumberOfResidents),
-		ID:                u.ID,
+		ID:                id,
 	}
 }

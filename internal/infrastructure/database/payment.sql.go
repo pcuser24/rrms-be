@@ -12,6 +12,22 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const checkPaymentAccessible = `-- name: CheckPaymentAccessible :one
+SELECT EXISTS (SELECT 1 FROM "payments" WHERE "id" = $1 AND "user_id" = $2)
+`
+
+type CheckPaymentAccessibleParams struct {
+	ID     int64     `json:"id"`
+	UserID uuid.UUID `json:"user_id"`
+}
+
+func (q *Queries) CheckPaymentAccessible(ctx context.Context, arg CheckPaymentAccessibleParams) (bool, error) {
+	row := q.db.QueryRow(ctx, checkPaymentAccessible, arg.ID, arg.UserID)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
+}
+
 const createPayment = `-- name: CreatePayment :one
 INSERT INTO "payments" (
   "user_id",

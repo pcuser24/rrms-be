@@ -18,6 +18,7 @@ type Querier interface {
 	CheckListingOwnership(ctx context.Context, arg CheckListingOwnershipParams) (int64, error)
 	CheckListingVisibility(ctx context.Context, arg CheckListingVisibilityParams) (bool, error)
 	CheckMsgGroupMembership(ctx context.Context, arg CheckMsgGroupMembershipParams) (bool, error)
+	CheckPaymentAccessible(ctx context.Context, arg CheckPaymentAccessibleParams) (bool, error)
 	CheckReminderVisibility(ctx context.Context, arg CheckReminderVisibilityParams) (bool, error)
 	CheckRentalVisibility(ctx context.Context, arg CheckRentalVisibilityParams) (bool, error)
 	CheckUnitManageability(ctx context.Context, arg CheckUnitManageabilityParams) (int64, error)
@@ -60,6 +61,9 @@ type Querier interface {
 	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
 	DeleteApplication(ctx context.Context, id int64) error
 	DeleteListing(ctx context.Context, id uuid.UUID) error
+	DeleteListingPolicies(ctx context.Context, listingID uuid.UUID) error
+	DeleteListingTags(ctx context.Context, listingID uuid.UUID) error
+	DeleteListingUnits(ctx context.Context, listingID uuid.UUID) error
 	DeleteMsgGroup(ctx context.Context, groupID int64) error
 	DeleteMsgGroupMember(ctx context.Context, arg DeleteMsgGroupMemberParams) error
 	DeletePayment(ctx context.Context, id int64) error
@@ -153,6 +157,7 @@ type Querier interface {
 	UpdateContract(ctx context.Context, arg UpdateContractParams) error
 	UpdateContractContent(ctx context.Context, arg UpdateContractContentParams) error
 	UpdateListing(ctx context.Context, arg UpdateListingParams) error
+	UpdateListingPriority(ctx context.Context, arg UpdateListingPriorityParams) error
 	UpdateListingStatus(ctx context.Context, arg UpdateListingStatusParams) error
 	UpdateMessage(ctx context.Context, arg UpdateMessageParams) ([]int64, error)
 	UpdatePayment(ctx context.Context, arg UpdatePaymentParams) error

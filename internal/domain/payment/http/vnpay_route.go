@@ -21,6 +21,11 @@ import (
 // Website TMĐT gửi sang Cổng thanh toán VNPAY các thông tin này khi xử lý giao dịch thanh toán trực tuyến cho Khách mua hàng.
 func (a *adapter) vnpCreatePaymentUrl() fiber.Handler {
 	return func(ctx *fiber.Ctx) error {
+		paymentService, ok := a.paymentService.(*vnpay.VnPayService)
+		if !ok {
+			return ctx.Status(fiber.StatusMethodNotAllowed).JSON(fiber.Map{"message": "Method not allowed"})
+		}
+
 		ipAddr := ctx.IP()
 
 		payload := new(dto.VNPCreatePaymentUrl)
@@ -37,7 +42,7 @@ func (a *adapter) vnpCreatePaymentUrl() fiber.Handler {
 			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": err.Error()})
 		}
 
-		url, err := a.vnpayService.CreatePaymentUrl(ipAddr, tkPayload.UserID, paymentId, payload)
+		url, err := paymentService.CreatePaymentUrl(ipAddr, tkPayload.UserID, paymentId, payload)
 		if err != nil {
 			if errors.Is(err, vnpay.ErrInvalidHash) || errors.Is(err, vnpay.ErrBadStatusPayment) {
 				return ctx.Status(fiber.StatusConflict).JSON(fiber.Map{"message": err.Error()})
@@ -54,6 +59,11 @@ func (a *adapter) vnpCreatePaymentUrl() fiber.Handler {
 // TODO: make a separates frontend only accept this URL
 func (a *adapter) vnpReturn() fiber.Handler {
 	return func(ctx *fiber.Ctx) error {
+		paymentService, ok := a.paymentService.(*vnpay.VnPayService)
+		if !ok {
+			return ctx.Status(fiber.StatusMethodNotAllowed).JSON(fiber.Map{"message": "Method not allowed"})
+		}
+
 		payload := new(dto.VNPReturnQuery)
 		if err := ctx.QueryParser(payload); err != nil {
 			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": err.Error()})
@@ -63,7 +73,7 @@ func (a *adapter) vnpReturn() fiber.Handler {
 		}
 
 		queries := maps.Clone(ctx.Queries())
-		err := a.vnpayService.Return(queries)
+		err := paymentService.Return(queries)
 		if err != nil {
 			if errors.Is(err, vnpay.ErrInvalidHash) {
 				return ctx.Status(fiber.StatusOK).JSON(fiber.Map{"code": "97"})
@@ -82,6 +92,11 @@ func (a *adapter) vnpReturn() fiber.Handler {
 // Trên URL VNPAY gọi về có mang thông tin thanh toán để căn cứ vào kết quả đó Website TMĐT xử lý các bước tiếp theo (ví dụ: cập nhật kết quả thanh toán vào Database …)
 func (a *adapter) vnpIpn() fiber.Handler {
 	return func(ctx *fiber.Ctx) error {
+		paymentService, ok := a.paymentService.(*vnpay.VnPayService)
+		if !ok {
+			return ctx.Status(fiber.StatusMethodNotAllowed).JSON(fiber.Map{"message": "Method not allowed"})
+		}
+
 		payload := new(dto.VNPIpnQuery)
 		if err := ctx.QueryParser(payload); err != nil {
 			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": err.Error()})
@@ -91,13 +106,18 @@ func (a *adapter) vnpIpn() fiber.Handler {
 		}
 
 		queries := maps.Clone(ctx.Queries())
-		ret := a.vnpayService.Ipn(queries)
+		ret := paymentService.Ipn(queries)
 		return ctx.Status(fiber.StatusOK).JSON(ret)
 	}
 }
 
 func (a *adapter) vnpQuerydr() fiber.Handler {
 	return func(ctx *fiber.Ctx) error {
+		paymentService, ok := a.paymentService.(*vnpay.VnPayService)
+		if !ok {
+			return ctx.Status(fiber.StatusMethodNotAllowed).JSON(fiber.Map{"message": "Method not allowed"})
+		}
+
 		ipAddr := ctx.IP()
 
 		payload := new(dto.VNPQuerydr)
@@ -108,7 +128,7 @@ func (a *adapter) vnpQuerydr() fiber.Handler {
 			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": validation.GetValidationError(errs)})
 		}
 
-		res, err := a.vnpayService.Querydr(ipAddr, payload)
+		res, err := paymentService.Querydr(ipAddr, payload)
 		if err != nil {
 			return ctx.SendStatus(fiber.StatusInternalServerError)
 		}
@@ -123,6 +143,11 @@ func (a *adapter) vnpQuerydr() fiber.Handler {
 
 func (a *adapter) vnpRefund() fiber.Handler {
 	return func(ctx *fiber.Ctx) error {
+		paymentService, ok := a.paymentService.(*vnpay.VnPayService)
+		if !ok {
+			return ctx.Status(fiber.StatusMethodNotAllowed).JSON(fiber.Map{"message": "Method not allowed"})
+		}
+
 		ipAddr := ctx.IP()
 
 		payload := new(dto.VNPRefund)
@@ -133,7 +158,7 @@ func (a *adapter) vnpRefund() fiber.Handler {
 			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": validation.GetValidationError(errs)})
 		}
 
-		res, err := a.vnpayService.Refund(ipAddr, payload)
+		res, err := paymentService.Refund(ipAddr, payload)
 		if err != nil {
 			return ctx.SendStatus(fiber.StatusInternalServerError)
 		}

@@ -18,13 +18,11 @@ type Adapter interface {
 
 type adapter struct {
 	paymentService service.Service
-	vnpayService   *vnpay.Service
 }
 
-func NewAdapter(paymentService service.Service, vnpayService *vnpay.Service) Adapter {
+func NewAdapter(paymentService service.Service) Adapter {
 	return &adapter{
 		paymentService: paymentService,
-		vnpayService:   vnpayService,
 	}
 }
 
@@ -36,12 +34,16 @@ func (a *adapter) RegisterServer(route *fiber.Router, tokenMaker token.Maker) {
 		a.getPaymentById(),
 	)
 
-	vnpayRoute := paymentRoute.Group("/vnpay")
-	vnpayRoute.Post("/create_payment_url/:paymentId", auth_http.AuthorizedMiddleware(tokenMaker), a.vnpCreatePaymentUrl())
-	vnpayRoute.Get("/vnpay_return", a.vnpReturn())
-	vnpayRoute.Get("/vnpay_ipn", a.vnpIpn())
-	vnpayRoute.Post("/querydr", a.vnpQuerydr())
-	vnpayRoute.Post("/refund", a.vnpRefund())
+	_, ok := a.paymentService.(*vnpay.VnPayService)
+	if ok {
+		vnpayRoute := paymentRoute.Group("/vnpay")
+		vnpayRoute.Post("/create_payment_url/:paymentId", auth_http.AuthorizedMiddleware(tokenMaker), a.vnpCreatePaymentUrl())
+		vnpayRoute.Get("/vnpay_return", a.vnpReturn())
+		vnpayRoute.Get("/vnpay_ipn", a.vnpIpn())
+		vnpayRoute.Post("/querydr", a.vnpQuerydr())
+		vnpayRoute.Post("/refund", a.vnpRefund())
+	}
+
 }
 
 func (a *adapter) getPaymentById() fiber.Handler {
@@ -53,8 +55,14 @@ func (a *adapter) getPaymentById() fiber.Handler {
 			})
 		}
 
-		payment, err := a.paymentService.GetPaymentById(id)
+		tkPayload := c.Locals(auth_http.AuthorizationPayloadKey).(*token.Payload)
+		payment, err := a.paymentService.GetPaymentById(tkPayload.UserID, id)
 		if err != nil {
+			if errors.Is(err, service.ErrInaccessiblePayment) {
+				return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
+					"message": "Payment is inaccessible",
+				})
+			}
 			if errors.Is(err, database.ErrRecordNotFound) {
 				return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
 					"message": "Payment not found",

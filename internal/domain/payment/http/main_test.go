@@ -11,7 +11,6 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/spf13/viper"
 	"github.com/user2410/rrms-backend/internal/domain/payment/repo"
-	"github.com/user2410/rrms-backend/internal/domain/payment/service"
 	"github.com/user2410/rrms-backend/internal/domain/payment/service/vnpay"
 	"github.com/user2410/rrms-backend/internal/infrastructure/http"
 	"github.com/user2410/rrms-backend/internal/utils"
@@ -37,7 +36,6 @@ type server struct {
 
 func newTestServer(t *testing.T, repo repo.Repo) *server {
 	vnpService := vnpay.NewVnpayService(repo, nil, conf.VnpTmnCode, conf.VnpHashSecret, conf.VnpUrl, conf.VnpApi)
-	paymentService := service.NewService(repo)
 
 	httpServer := http.NewServer(
 		fiber.Config{
@@ -50,7 +48,7 @@ func newTestServer(t *testing.T, repo repo.Repo) *server {
 		},
 	)
 
-	NewAdapter(paymentService, vnpService).RegisterServer(httpServer.GetApiRoute(), nil)
+	NewAdapter(vnpService).RegisterServer(httpServer.GetApiRoute(), nil)
 
 	return &server{
 		router: httpServer,

@@ -4,8 +4,7 @@ import (
 	application_service "github.com/user2410/rrms-backend/internal/domain/application/service"
 	"github.com/user2410/rrms-backend/internal/domain/auth"
 	"github.com/user2410/rrms-backend/internal/domain/chat"
-	"github.com/user2410/rrms-backend/internal/domain/listing"
-	payment_service "github.com/user2410/rrms-backend/internal/domain/payment/service"
+	listing_service "github.com/user2410/rrms-backend/internal/domain/listing/service"
 	vnp_service "github.com/user2410/rrms-backend/internal/domain/payment/service/vnpay"
 	property_service "github.com/user2410/rrms-backend/internal/domain/property/service"
 	"github.com/user2410/rrms-backend/internal/domain/reminder"
@@ -69,7 +68,7 @@ func (c *serverCommand) setupInternalServices(
 		applicationRepo,
 	)
 	c.internalServices.UnitService = unit.NewService(unitRepo)
-	c.internalServices.ListingService = listing.NewService(
+	c.internalServices.ListingService = listing_service.NewService(
 		listingRepo,
 		propertyRepo,
 		paymentRepo,
@@ -96,9 +95,8 @@ func (c *serverCommand) setupInternalServices(
 		c.internalServices.ReminderService,
 		applicationTaskDistributor,
 	)
-	c.internalServices.PaymentService = payment_service.NewService(paymentRepo)
 	c.internalServices.StorageService = storage.NewService(s)
-	c.internalServices.VnpService = vnp_service.NewVnpayService(
+	c.internalServices.PaymentService = vnp_service.NewVnpayService(
 		paymentRepo,
 		listingRepo,
 		c.config.VnpTmnCode, c.config.VnpHashSecret, c.config.VnpUrl, c.config.VnpApi,

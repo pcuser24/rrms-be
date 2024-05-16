@@ -144,5 +144,21 @@ SET
   updated_at = NOW()
  WHERE id = $2;
 
+-- name: UpdateListingPriority :exec
+UPDATE listings
+SET
+  priority = $1,
+  updated_at = NOW()
+WHERE id = $2;
+
 -- name: DeleteListing :exec
 DELETE FROM listings WHERE id = $1;
+
+-- name: DeleteListingPolicies :exec
+DELETE FROM listing_policies WHERE listing_id = $1;
+
+-- name: DeleteListingUnits :exec
+DELETE FROM listing_units WHERE listing_id = $1;
+
+-- name: DeleteListingTags :exec
+DELETE FROM listing_tags WHERE listing_id = $1;

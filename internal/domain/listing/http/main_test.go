@@ -9,8 +9,8 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/stretchr/testify/require"
 	application_repo "github.com/user2410/rrms-backend/internal/domain/application/repo"
-	"github.com/user2410/rrms-backend/internal/domain/listing"
 	listing_repo "github.com/user2410/rrms-backend/internal/domain/listing/repo"
+	listing_service "github.com/user2410/rrms-backend/internal/domain/listing/service"
 	payment_repo "github.com/user2410/rrms-backend/internal/domain/payment/repo"
 	property_repo "github.com/user2410/rrms-backend/internal/domain/property/repo"
 	property_service "github.com/user2410/rrms-backend/internal/domain/property/service"
@@ -34,7 +34,7 @@ func newTestServer(t *testing.T, pr property_repo.Repo, ur unit_repo.Repo, lr li
 
 	uService := unit.NewService(ur)
 	pService := property_service.NewService(pr, ur, lr, ar)
-	lService := listing.NewService(lr, pr, paymentRepo, "")
+	lService := listing_service.NewService(lr, pr, paymentRepo, "")
 
 	// initialize http router
 	httpServer := http.NewServer(

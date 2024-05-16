@@ -41,7 +41,7 @@ func (c *serverCommand) setupHttpServer() {
 		NewAdapter(c.internalServices.StorageService).
 		RegisterServer(apiRoute, c.tokenMaker)
 	payment_http.
-		NewAdapter(c.internalServices.PaymentService, c.internalServices.VnpService).
+		NewAdapter(c.internalServices.PaymentService).
 		RegisterServer(apiRoute, c.tokenMaker)
 	chat.
 		NewWSChatAdapter(c.internalServices.ChatService).

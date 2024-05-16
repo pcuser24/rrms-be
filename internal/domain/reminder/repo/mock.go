@@ -12,6 +12,7 @@ package repo
 import (
 	context "context"
 	reflect "reflect"
+	time "time"
 
 	uuid "github.com/google/uuid"
 	dto "github.com/user2410/rrms-backend/internal/domain/reminder/dto"
@@ -40,6 +41,21 @@ func NewMockRepo(ctrl *gomock.Controller) *MockRepo {
 // EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockRepo) EXPECT() *MockRepoMockRecorder {
 	return m.recorder
+}
+
+// CheckOverlappingReminder mocks base method.
+func (m *MockRepo) CheckOverlappingReminder(arg0 context.Context, arg1 uuid.UUID, arg2, arg3 time.Time) (bool, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CheckOverlappingReminder", arg0, arg1, arg2, arg3)
+	ret0, _ := ret[0].(bool)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CheckOverlappingReminder indicates an expected call of CheckOverlappingReminder.
+func (mr *MockRepoMockRecorder) CheckOverlappingReminder(arg0, arg1, arg2, arg3 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CheckOverlappingReminder", reflect.TypeOf((*MockRepo)(nil).CheckOverlappingReminder), arg0, arg1, arg2, arg3)
 }
 
 // CheckReminderVisibility mocks base method.

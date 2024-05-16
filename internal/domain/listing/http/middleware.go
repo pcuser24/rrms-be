@@ -5,7 +5,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/user2410/rrms-backend/internal/domain/auth/http"
-	"github.com/user2410/rrms-backend/internal/domain/listing"
+	"github.com/user2410/rrms-backend/internal/domain/listing/service"
 	"github.com/user2410/rrms-backend/internal/interfaces/rest/responses"
 	"github.com/user2410/rrms-backend/internal/utils/token"
 )
@@ -26,7 +26,7 @@ func GetListingId() fiber.Handler {
 	}
 }
 
-func CheckListingManageability(s listing.Service) fiber.Handler {
+func CheckListingManageability(s service.Service) fiber.Handler {
 	return func(ctx *fiber.Ctx) error {
 		lid := ctx.Locals(ListingIDLocalKey).(uuid.UUID)
 		tkPayload := ctx.Locals(http.AuthorizationPayloadKey).(*token.Payload)
@@ -48,7 +48,7 @@ func CheckListingManageability(s listing.Service) fiber.Handler {
 	}
 }
 
-func CheckListingVisibility(s listing.Service) fiber.Handler {
+func CheckListingVisibility(s service.Service) fiber.Handler {
 	return func(ctx *fiber.Ctx) error {
 		lid := ctx.Locals(ListingIDLocalKey).(uuid.UUID)
 

@@ -266,6 +266,33 @@ func (q *Queries) DeleteListing(ctx context.Context, id uuid.UUID) error {
 	return err
 }
 
+const deleteListingPolicies = `-- name: DeleteListingPolicies :exec
+DELETE FROM listing_policies WHERE listing_id = $1
+`
+
+func (q *Queries) DeleteListingPolicies(ctx context.Context, listingID uuid.UUID) error {
+	_, err := q.db.Exec(ctx, deleteListingPolicies, listingID)
+	return err
+}
+
+const deleteListingTags = `-- name: DeleteListingTags :exec
+DELETE FROM listing_tags WHERE listing_id = $1
+`
+
+func (q *Queries) DeleteListingTags(ctx context.Context, listingID uuid.UUID) error {
+	_, err := q.db.Exec(ctx, deleteListingTags, listingID)
+	return err
+}
+
+const deleteListingUnits = `-- name: DeleteListingUnits :exec
+DELETE FROM listing_units WHERE listing_id = $1
+`
+
+func (q *Queries) DeleteListingUnits(ctx context.Context, listingID uuid.UUID) error {
+	_, err := q.db.Exec(ctx, deleteListingUnits, listingID)
+	return err
+}
+
 const getAllRentalPolicies = `-- name: GetAllRentalPolicies :many
 SELECT id, policy FROM l_policies
 `
@@ -492,6 +519,24 @@ func (q *Queries) UpdateListing(ctx context.Context, arg UpdateListingParams) er
 		arg.NumberOfResidents,
 		arg.ID,
 	)
+	return err
+}
+
+const updateListingPriority = `-- name: UpdateListingPriority :exec
+UPDATE listings
+SET
+  priority = $1,
+  updated_at = NOW()
+WHERE id = $2
+`
+
+type UpdateListingPriorityParams struct {
+	Priority int32     `json:"priority"`
+	ID       uuid.UUID `json:"id"`
+}
+
+func (q *Queries) UpdateListingPriority(ctx context.Context, arg UpdateListingPriorityParams) error {
+	_, err := q.db.Exec(ctx, updateListingPriority, arg.Priority, arg.ID)
 	return err
 }
 

@@ -16,6 +16,8 @@ import (
 	uuid "github.com/google/uuid"
 	dto "github.com/user2410/rrms-backend/internal/domain/listing/dto"
 	model "github.com/user2410/rrms-backend/internal/domain/listing/model"
+	model0 "github.com/user2410/rrms-backend/internal/domain/payment/model"
+	service "github.com/user2410/rrms-backend/internal/domain/payment/service"
 	gomock "go.uber.org/mock/gomock"
 )
 
@@ -146,6 +148,36 @@ func (mr *MockRepoMockRecorder) GetListingByID(arg0, arg1 any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetListingByID", reflect.TypeOf((*MockRepo)(nil).GetListingByID), arg0, arg1)
 }
 
+// GetListingPayments mocks base method.
+func (m *MockRepo) GetListingPayments(arg0 context.Context, arg1 uuid.UUID) ([]model0.PaymentModel, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetListingPayments", arg0, arg1)
+	ret0, _ := ret[0].([]model0.PaymentModel)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetListingPayments indicates an expected call of GetListingPayments.
+func (mr *MockRepoMockRecorder) GetListingPayments(arg0, arg1 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetListingPayments", reflect.TypeOf((*MockRepo)(nil).GetListingPayments), arg0, arg1)
+}
+
+// GetListingPaymentsByType mocks base method.
+func (m *MockRepo) GetListingPaymentsByType(arg0 context.Context, arg1 uuid.UUID, arg2 service.PAYMENTTYPE) ([]model0.PaymentModel, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetListingPaymentsByType", arg0, arg1, arg2)
+	ret0, _ := ret[0].([]model0.PaymentModel)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetListingPaymentsByType indicates an expected call of GetListingPaymentsByType.
+func (mr *MockRepoMockRecorder) GetListingPaymentsByType(arg0, arg1, arg2 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetListingPaymentsByType", reflect.TypeOf((*MockRepo)(nil).GetListingPaymentsByType), arg0, arg1, arg2)
+}
+
 // GetListingsByIds mocks base method.
 func (m *MockRepo) GetListingsByIds(arg0 context.Context, arg1, arg2 []string) ([]model.ListingModel, error) {
 	m.ctrl.T.Helper()
@@ -177,17 +209,45 @@ func (mr *MockRepoMockRecorder) SearchListingCombination(arg0, arg1 any) *gomock
 }
 
 // UpdateListing mocks base method.
-func (m *MockRepo) UpdateListing(arg0 context.Context, arg1 *dto.UpdateListing) error {
+func (m *MockRepo) UpdateListing(arg0 context.Context, arg1 uuid.UUID, arg2 *dto.UpdateListing) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "UpdateListing", arg0, arg1)
+	ret := m.ctrl.Call(m, "UpdateListing", arg0, arg1, arg2)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // UpdateListing indicates an expected call of UpdateListing.
-func (mr *MockRepoMockRecorder) UpdateListing(arg0, arg1 any) *gomock.Call {
+func (mr *MockRepoMockRecorder) UpdateListing(arg0, arg1, arg2 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateListing", reflect.TypeOf((*MockRepo)(nil).UpdateListing), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateListing", reflect.TypeOf((*MockRepo)(nil).UpdateListing), arg0, arg1, arg2)
+}
+
+// UpdateListingExpiration mocks base method.
+func (m *MockRepo) UpdateListingExpiration(arg0 context.Context, arg1 uuid.UUID, arg2 int64) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateListingExpiration", arg0, arg1, arg2)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpdateListingExpiration indicates an expected call of UpdateListingExpiration.
+func (mr *MockRepoMockRecorder) UpdateListingExpiration(arg0, arg1, arg2 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateListingExpiration", reflect.TypeOf((*MockRepo)(nil).UpdateListingExpiration), arg0, arg1, arg2)
+}
+
+// UpdateListingPriority mocks base method.
+func (m *MockRepo) UpdateListingPriority(arg0 context.Context, arg1 uuid.UUID, arg2 int) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateListingPriority", arg0, arg1, arg2)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpdateListingPriority indicates an expected call of UpdateListingPriority.
+func (mr *MockRepoMockRecorder) UpdateListingPriority(arg0, arg1, arg2 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateListingPriority", reflect.TypeOf((*MockRepo)(nil).UpdateListingPriority), arg0, arg1, arg2)
 }
 
 // UpdateListingStatus mocks base method.

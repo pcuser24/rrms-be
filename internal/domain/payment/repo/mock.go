@@ -13,6 +13,7 @@ import (
 	context "context"
 	reflect "reflect"
 
+	uuid "github.com/google/uuid"
 	dto "github.com/user2410/rrms-backend/internal/domain/payment/dto"
 	model "github.com/user2410/rrms-backend/internal/domain/payment/model"
 	gomock "go.uber.org/mock/gomock"
@@ -39,6 +40,21 @@ func NewMockRepo(ctrl *gomock.Controller) *MockRepo {
 // EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockRepo) EXPECT() *MockRepoMockRecorder {
 	return m.recorder
+}
+
+// CheckPaymentAccessible mocks base method.
+func (m *MockRepo) CheckPaymentAccessible(arg0 context.Context, arg1 uuid.UUID, arg2 int64) (bool, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CheckPaymentAccessible", arg0, arg1, arg2)
+	ret0, _ := ret[0].(bool)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CheckPaymentAccessible indicates an expected call of CheckPaymentAccessible.
+func (mr *MockRepoMockRecorder) CheckPaymentAccessible(arg0, arg1, arg2 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CheckPaymentAccessible", reflect.TypeOf((*MockRepo)(nil).CheckPaymentAccessible), arg0, arg1, arg2)
 }
 
 // CreatePayment mocks base method.

@@ -1,6 +1,7 @@
 package http
 
 import (
+	"errors"
 	"fmt"
 	"time"
 
@@ -9,8 +10,9 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgconn"
 	auth_http "github.com/user2410/rrms-backend/internal/domain/auth/http"
-	"github.com/user2410/rrms-backend/internal/domain/listing"
 	"github.com/user2410/rrms-backend/internal/domain/listing/dto"
+	listing_service "github.com/user2410/rrms-backend/internal/domain/listing/service"
+	"github.com/user2410/rrms-backend/internal/domain/listing/utils"
 	property_service "github.com/user2410/rrms-backend/internal/domain/property/service"
 	"github.com/user2410/rrms-backend/internal/domain/unit"
 	"github.com/user2410/rrms-backend/internal/infrastructure/database"
@@ -27,10 +29,10 @@ type Adapter interface {
 type adapter struct {
 	pService property_service.Service
 	uService unit.Service
-	lService listing.Service
+	lService listing_service.Service
 }
 
-func NewAdapter(lService listing.Service, pService property_service.Service, uService unit.Service) Adapter {
+func NewAdapter(lService listing_service.Service, pService property_service.Service, uService unit.Service) Adapter {
 	return &adapter{
 		lService: lService,
 		pService: pService,
@@ -60,9 +62,11 @@ func (a *adapter) RegisterServer(router *fiber.Router, tokenMaker token.Maker) {
 	listingRoute.Get("/my-listings", a.getMyListings())
 
 	listingRoute.Group("/listing/:id").Use(GetListingId())
-	listingRoute.Post("/listing/:id/payment", CheckListingManageability(a.lService), a.createListingPayment())
 	listingRoute.Post("/listing/:id/application-link", CheckListingManageability(a.lService), a.createApplicationLink())
 	listingRoute.Patch("/listing/:id", CheckListingManageability(a.lService), a.updateListing())
+	listingRoute.Get("/listing/:id/payments", CheckListingManageability(a.lService), a.getListingPayments())
+	listingRoute.Patch("/listing/:id/upgrade", CheckListingManageability(a.lService), a.upgradeListing())
+	listingRoute.Patch("/listing/:id/extend", CheckListingManageability(a.lService), a.extendListing())
 	listingRoute.Delete("/listing/:id", CheckListingManageability(a.lService), a.deleteListing())
 }
 
@@ -169,7 +173,7 @@ func (a *adapter) getMyListings() fiber.Handler {
 		}
 
 		tokenPayload := ctx.Locals(auth_http.AuthorizationPayloadKey).(*token.Payload)
-		res, err := a.lService.GetListingsOfUser(tokenPayload.UserID, query.Fields)
+		res, err := a.lService.GetListingsOfUser(tokenPayload.UserID, query)
 		if err != nil {
 			if err == database.ErrRecordNotFound {
 				return ctx.SendStatus(fiber.StatusNotFound)
@@ -232,15 +236,19 @@ func (a *adapter) updateListing() fiber.Handler {
 		if err := ctx.BodyParser(&payload); err != nil {
 			return err
 		}
-		payload.ID = lid
 		if errs := validation.ValidateStruct(nil, payload); len(errs) > 0 {
 			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": validation.GetValidationError(errs)})
 		}
 
-		err := a.lService.UpdateListing(&payload)
+		err := a.lService.UpdateListing(lid, &payload)
 		if err != nil {
-			if dbErr, ok := err.(*pgconn.PgError); ok {
-				return responses.DBErrorResponse(ctx, dbErr)
+			if txErr, ok := err.(*database.TXError); ok {
+				if txErr.RollbackErr != nil || txErr.CommitErr != nil {
+					return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": txErr.RollbackErr.Error()})
+				}
+				if dbErr, ok := txErr.Err.(*pgconn.PgError); ok {
+					return responses.DBErrorResponse(ctx, dbErr)
+				}
 			}
 
 			ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
@@ -251,13 +259,7 @@ func (a *adapter) updateListing() fiber.Handler {
 
 func (a *adapter) deleteListing() fiber.Handler {
 	return func(ctx *fiber.Ctx) error {
-		id := ctx.Params("id")
-		lid, err := uuid.Parse(id)
-		if err != nil {
-			ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": err.Error()})
-			return nil
-		}
-		err = a.lService.DeleteListing(lid)
+		err := a.lService.DeleteListing(ctx.Locals(ListingIDLocalKey).(uuid.UUID))
 		if err != nil {
 			if dbErr, ok := err.(*pgconn.PgError); ok {
 				return responses.DBErrorResponse(ctx, dbErr)
@@ -266,33 +268,6 @@ func (a *adapter) deleteListing() fiber.Handler {
 			ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
 		}
 		return nil
-	}
-}
-
-func (a *adapter) createListingPayment() fiber.Handler {
-	return func(ctx *fiber.Ctx) error {
-		var payload dto.CreateListingPayment
-		if err := ctx.BodyParser(&payload); err != nil {
-			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": err.Error()})
-		}
-
-		payload.ListingId = ctx.Locals(ListingIDLocalKey).(uuid.UUID)
-		tkPayload := ctx.Locals(auth_http.AuthorizationPayloadKey).(*token.Payload)
-		payload.UserId = tkPayload.UserID
-		if errs := validation.ValidateStruct(nil, payload); len(errs) > 0 {
-			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": validation.GetValidationError(errs)})
-		}
-
-		res, err := a.lService.CreateListingPayment(&payload)
-		if err != nil {
-			if dbErr, ok := err.(*pgconn.PgError); ok {
-				return responses.DBErrorResponse(ctx, dbErr)
-			}
-
-			return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
-		}
-
-		return ctx.Status(fiber.StatusCreated).JSON(res)
 	}
 }
 
@@ -322,11 +297,7 @@ func (a *adapter) verifyApplicationLink() fiber.Handler {
 		if err := ctx.QueryParser(&query); err != nil {
 			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": err.Error()})
 		}
-		id, err := uuid.Parse(ctx.Params("id"))
-		if err != nil {
-			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": "invalid id"})
-		}
-		query.ListingId = id
+		query.ListingId = ctx.Locals(ListingIDLocalKey).(uuid.UUID)
 		if errs := validation.ValidateStruct(nil, query); len(errs) > 0 {
 			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": validation.GetValidationError(errs)})
 		}
@@ -341,5 +312,86 @@ func (a *adapter) verifyApplicationLink() fiber.Handler {
 		}
 
 		return ctx.SendStatus(fiber.StatusOK)
+	}
+}
+
+// Request to upgrade listing
+func (a *adapter) upgradeListing() fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		var payload struct {
+			Priority int `json:"priority" validate:"required,gt=0,lte=4"`
+		}
+		if err := c.BodyParser(&payload); err != nil {
+			return err
+		}
+		if errs := validation.ValidateStruct(nil, payload); len(errs) > 0 {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": validation.GetValidationError(errs)})
+		}
+
+		payment, err := a.lService.UpgradeListing(
+			c.Locals(auth_http.AuthorizationPayloadKey).(*token.Payload).UserID,
+			c.Locals(ListingIDLocalKey).(uuid.UUID),
+			payload.Priority,
+		)
+		if err != nil {
+			if errors.Is(err, utils.ErrInvalidPriority) {
+				return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": err.Error()})
+			}
+			if dbErr, ok := err.(*pgconn.PgError); ok {
+				return responses.DBErrorResponse(c, dbErr)
+			}
+
+			c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
+		}
+
+		return c.Status(fiber.StatusOK).JSON(payment)
+	}
+}
+
+func (a *adapter) extendListing() fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		var payload struct {
+			Duration int `json:"priority" validate:"required,gt=0"`
+		}
+		if err := c.BodyParser(&payload); err != nil {
+			return err
+		}
+		if errs := validation.ValidateStruct(nil, payload); len(errs) > 0 {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": validation.GetValidationError(errs)})
+		}
+
+		payment, err := a.lService.ExtendListing(
+			c.Locals(auth_http.AuthorizationPayloadKey).(*token.Payload).UserID,
+			c.Locals(ListingIDLocalKey).(uuid.UUID),
+			payload.Duration,
+		)
+		if err != nil {
+			if errors.Is(err, utils.ErrInvalidDuration) {
+				return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": err.Error()})
+			}
+			if dbErr, ok := err.(*pgconn.PgError); ok {
+				return responses.DBErrorResponse(c, dbErr)
+			}
+
+			c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
+		}
+
+		return c.Status(fiber.StatusOK).JSON(payment)
+	}
+}
+
+func (a *adapter) getListingPayments() fiber.Handler {
+	return func(ctx *fiber.Ctx) error {
+		res, err := a.lService.GetListingPayments(ctx.Locals(ListingIDLocalKey).(uuid.UUID))
+		if err != nil {
+			if err == database.ErrRecordNotFound {
+				return ctx.SendStatus(fiber.StatusNotFound)
+			}
+
+			ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
+			return nil
+		}
+
+		return ctx.Status(fiber.StatusOK).JSON(res)
 	}
 }

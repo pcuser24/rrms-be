@@ -2,6 +2,7 @@ package repo
 
 import (
 	"context"
+	"fmt"
 	"slices"
 
 	"github.com/google/uuid"
@@ -9,6 +10,8 @@ import (
 	"github.com/user2410/rrms-backend/internal/domain/listing/dto"
 	"github.com/user2410/rrms-backend/internal/domain/listing/model"
 	"github.com/user2410/rrms-backend/internal/domain/listing/repo/sqlbuild"
+	payment_model "github.com/user2410/rrms-backend/internal/domain/payment/model"
+	payment_service "github.com/user2410/rrms-backend/internal/domain/payment/service"
 	"github.com/user2410/rrms-backend/internal/infrastructure/database"
 )
 
@@ -17,8 +20,12 @@ type Repo interface {
 	SearchListingCombination(ctx context.Context, query *dto.SearchListingCombinationQuery) (*dto.SearchListingCombinationResponse, error)
 	GetListingsByIds(ctx context.Context, ids []string, fields []string) ([]model.ListingModel, error)
 	GetListingByID(ctx context.Context, id uuid.UUID) (*model.ListingModel, error)
-	UpdateListing(ctx context.Context, data *dto.UpdateListing) error
+	GetListingPayments(ctx context.Context, id uuid.UUID) ([]payment_model.PaymentModel, error)
+	GetListingPaymentsByType(ctx context.Context, id uuid.UUID, ptype payment_service.PAYMENTTYPE) ([]payment_model.PaymentModel, error)
+	UpdateListing(ctx context.Context, id uuid.UUID, data *dto.UpdateListing) error
 	UpdateListingStatus(ctx context.Context, id uuid.UUID, active bool) error
+	UpdateListingPriority(ctx context.Context, id uuid.UUID, priority int) error
+	UpdateListingExpiration(ctx context.Context, id uuid.UUID, expiredAt int64) error
 	DeleteListing(ctx context.Context, id uuid.UUID) error
 	CheckListingOwnership(ctx context.Context, lid uuid.UUID, uid uuid.UUID) (bool, error)
 	CheckListingVisibility(ctx context.Context, lid, uid uuid.UUID) (bool, error)
@@ -171,7 +178,7 @@ func (r *repo) GetListingsByIds(ctx context.Context, ids []string, fields []stri
 	}
 
 	// get fk fields
-	for i := 0; i < len(fkFields); i++ {
+	for i := 0; i < len(items); i++ {
 		l := &items[i]
 		if slices.Contains(fkFields, "units") {
 			u, err := r.dao.GetListingUnits(ctx, l.ID)
@@ -240,8 +247,64 @@ func (r *repo) GetListingByID(ctx context.Context, id uuid.UUID) (*model.Listing
 	return res, nil
 }
 
-func (r *repo) UpdateListing(ctx context.Context, data *dto.UpdateListing) error {
-	return r.dao.UpdateListing(ctx, *data.ToUpdateListingDB())
+func (r *repo) UpdateListing(ctx context.Context, id uuid.UUID, data *dto.UpdateListing) error {
+	txErr := r.dao.ExecTx(ctx, nil, func(tx database.DAO) error {
+		err := r.dao.UpdateListing(ctx, *data.ToUpdateListingDB(id))
+		if err != nil {
+			return err
+		}
+		if len(data.Policies) > 0 {
+			err = r.dao.DeleteListingPolicies(ctx, id)
+			if err != nil {
+				return err
+			}
+			for i := 0; i < len(data.Policies); i++ {
+				p := &data.Policies[i]
+				_, err := r.dao.CreateListingPolicy(ctx, *p.ToCreateListingPolicyDB(id))
+				if err != nil {
+					return err
+				}
+			}
+		}
+		if len(data.Units) > 0 {
+			err = r.dao.DeleteListingUnits(ctx, id)
+			if err != nil {
+				return err
+			}
+			for i := 0; i < len(data.Units); i++ {
+				p := &data.Units[i]
+				_, err := r.dao.CreateListingUnit(ctx, database.CreateListingUnitParams{
+					ListingID: id,
+					UnitID:    p.UnitID,
+					Price:     p.Price,
+				})
+				if err != nil {
+					return err
+				}
+			}
+		}
+		if len(data.Tags) > 0 {
+			err = r.dao.DeleteListingTags(ctx, id)
+			if err != nil {
+				return err
+			}
+			for i := 0; i < len(data.Tags); i++ {
+				p := &data.Tags[i]
+				_, err := r.dao.CreateListingTag(ctx, database.CreateListingTagParams{
+					ListingID: id,
+					Tag:       *p,
+				})
+				if err != nil {
+					return err
+				}
+			}
+		}
+		return nil
+	})
+	if txErr != nil {
+		return error(txErr)
+	}
+	return nil
 }
 
 func (r *repo) UpdateListingStatus(ctx context.Context, id uuid.UUID, active bool) error {
@@ -249,6 +312,27 @@ func (r *repo) UpdateListingStatus(ctx context.Context, id uuid.UUID, active boo
 		ID:     id,
 		Active: active,
 	})
+}
+
+func (r *repo) UpdateListingPriority(ctx context.Context, id uuid.UUID, priority int) error {
+	return r.dao.UpdateListingPriority(ctx, database.UpdateListingPriorityParams{
+		ID:       id,
+		Priority: int32(priority),
+	})
+}
+
+func (r *repo) UpdateListingExpiration(ctx context.Context, id uuid.UUID, duration int64) error {
+	sb := sqlbuilder.PostgreSQL.NewUpdateBuilder()
+	sb.Update("listings")
+	sb.Set(
+		fmt.Sprintf("expired_at = expired_at + %d * INTERVAL '1 day'", duration),
+		"updated_at = NOW()",
+	)
+	sb.Where(sb.Equal("id", id))
+
+	sql, args := sb.Build()
+	_, err := r.dao.Exec(ctx, sql, args...)
+	return err
 }
 
 func (r *repo) DeleteListing(ctx context.Context, lid uuid.UUID) error {
@@ -324,4 +408,126 @@ func (r *repo) CheckListingVisibility(ctx context.Context, lid, uid uuid.UUID) (
 		ID:        lid,
 		ManagerID: uid,
 	})
+}
+
+func (r *repo) GetListingPayments(ctx context.Context, id uuid.UUID) ([]payment_model.PaymentModel, error) {
+	sb := sqlbuilder.PostgreSQL.NewSelectBuilder()
+	sb.Select("id", "user_id", "order_id", "order_info", "amount", "status", "created_at", "updated_at")
+	sb.From("payments")
+
+	metadata := []string{
+		fmt.Sprintf("%s%s%s", payment_service.PAYMENTTYPE_CREATELISTING, payment_service.PAYMENTTYPE_DELIMITER, id.String()),
+		fmt.Sprintf("%s%s%s", payment_service.PAYMENTTYPE_EXTENDLISTING, payment_service.PAYMENTTYPE_DELIMITER, id.String()),
+		fmt.Sprintf("%s%s%s", payment_service.PAYMENTTYPE_UPGRADELISTING, payment_service.PAYMENTTYPE_DELIMITER, id.String()),
+	}
+	sb.Where(
+		sb.Or(
+			sb.Equal(
+				fmt.Sprintf("SUBSTR(order_info, 2, %d)", len(metadata[0])),
+				metadata[0],
+			),
+			sb.Equal(
+				fmt.Sprintf("SUBSTR(order_info, 2, %d)", len(metadata[1])),
+				metadata[1],
+			),
+			sb.Equal(
+				fmt.Sprintf("SUBSTR(order_info, 2, %d)", len(metadata[2])),
+				metadata[2],
+			),
+		),
+	)
+
+	query, args := sb.Build()
+	rows, err := r.dao.Query(ctx, query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []payment_model.PaymentModel
+	for rows.Next() {
+		var i database.Payment
+		if err := rows.Scan(
+			&i.ID,
+			&i.UserID,
+			&i.OrderID,
+			&i.OrderInfo,
+			&i.Amount,
+			&i.Status,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, *payment_model.ToPaymentModel(&i))
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	for i := 0; i < len(items); i++ {
+		item := &items[i]
+		is, err := r.dao.GetPaymentItemsByPaymentId(ctx, item.ID)
+		if err != nil {
+			return nil, err
+		}
+		for _, i := range is {
+			item.Items = append(item.Items, payment_model.PaymentItemModel(i))
+		}
+	}
+	return items, nil
+}
+
+func (r *repo) GetListingPaymentsByType(ctx context.Context, id uuid.UUID, ptype payment_service.PAYMENTTYPE) ([]payment_model.PaymentModel, error) {
+	sb := sqlbuilder.PostgreSQL.NewSelectBuilder()
+	sb.Select("id", "user_id", "order_id", "order_info", "amount", "status", "created_at", "updated_at")
+	sb.From("payments")
+
+	metadata := fmt.Sprintf("%s%s%s", ptype, payment_service.PAYMENTTYPE_DELIMITER, id.String())
+
+	sb.Where(
+		sb.Equal(
+			fmt.Sprintf("SUBSTR(order_info, 2, %d)", len(metadata)),
+			metadata,
+		),
+	)
+	sb.OrderBy("created_at DESC")
+
+	query, args := sb.Build()
+	rows, err := r.dao.Query(ctx, query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []payment_model.PaymentModel
+	for rows.Next() {
+		var i database.Payment
+		if err := rows.Scan(
+			&i.ID,
+			&i.UserID,
+			&i.OrderID,
+			&i.OrderInfo,
+			&i.Amount,
+			&i.Status,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, *payment_model.ToPaymentModel(&i))
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	for i := 0; i < len(items); i++ {
+		item := &items[i]
+		is, err := r.dao.GetPaymentItemsByPaymentId(ctx, item.ID)
+		if err != nil {
+			return nil, err
+		}
+		for _, i := range is {
+			item.Items = append(item.Items, payment_model.PaymentItemModel(i))
+		}
+	}
+	return items, nil
 }

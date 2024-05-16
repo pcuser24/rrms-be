@@ -2,8 +2,10 @@ package utils
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
+	"github.com/user2410/rrms-backend/internal/domain/listing/model"
 )
 
 func TestCalculateListingPrice(t *testing.T) {
@@ -11,14 +13,14 @@ func TestCalculateListingPrice(t *testing.T) {
 		name         string
 		priority     int
 		postDuration int
-		checkResult  func(int64, error)
+		checkResult  func(*testing.T, int64, error)
 	}{
 		{
-			name:         "Test case 1",
+			name:         "OK",
 			priority:     1,
 			postDuration: 7,
 			// expected:     14000,
-			checkResult: func(result int64, err error) {
+			checkResult: func(t *testing.T, result int64, err error) {
 				require.NoError(t, err)
 				require.Equal(t, int64(14000), result)
 			},
@@ -28,7 +30,7 @@ func TestCalculateListingPrice(t *testing.T) {
 			priority:     2,
 			postDuration: 17,
 			// expected:     85000,
-			checkResult: func(result int64, err error) {
+			checkResult: func(t *testing.T, result int64, err error) {
 				require.NoError(t, err)
 				require.Equal(t, int64(85000), result)
 			},
@@ -38,7 +40,7 @@ func TestCalculateListingPrice(t *testing.T) {
 			priority:     5,
 			postDuration: 7,
 			// expected:     60000,
-			checkResult: func(result int64, err error) {
+			checkResult: func(t *testing.T, result int64, err error) {
 				require.ErrorIs(t, err, ErrInvalidPriority)
 				require.Equal(t, int64(0), result)
 			},
@@ -48,9 +50,105 @@ func TestCalculateListingPrice(t *testing.T) {
 	for i := range testcases {
 		tc := &testcases[i]
 		t.Run(tc.name, func(t *testing.T) {
-			result, err := CalculateListingPrice(tc.priority, tc.postDuration)
-			tc.checkResult(result, err)
+			result, _, err := CalculateListingPrice(tc.priority, tc.postDuration)
+			tc.checkResult(t, result, err)
 		})
 	}
 
+}
+
+func TestCalculateUpgradeListingPrice(t *testing.T) {
+	testcases := []struct {
+		name        string
+		listing     model.ListingModel
+		priority    int
+		checkResult func(*testing.T, int64, error)
+	}{
+		{
+			name: "OK",
+			listing: model.ListingModel{
+				Priority:  1,
+				CreatedAt: time.Now().AddDate(0, 0, -10),
+			},
+			priority: 2,
+			checkResult: func(t *testing.T, result int64, err error) {
+				require.NoError(t, err)
+				require.Equal(t, int64(30000), result)
+			},
+		},
+		{
+			name: "invalid priority",
+			listing: model.ListingModel{
+				Priority:  3,
+				CreatedAt: time.Now().AddDate(0, 0, -10),
+			},
+			priority: 2,
+			checkResult: func(t *testing.T, result int64, err error) {
+				require.ErrorIs(t, err, ErrInvalidPriority)
+				require.Equal(t, int64(0), result)
+			},
+		},
+		{
+			name: "invalid priority range",
+			listing: model.ListingModel{
+				Priority:  1,
+				CreatedAt: time.Now().AddDate(0, 0, -10),
+			},
+			priority: 0,
+			checkResult: func(t *testing.T, result int64, err error) {
+				require.ErrorIs(t, err, ErrInvalidPriority)
+				require.Equal(t, int64(0), result)
+			},
+		},
+	}
+
+	for i := range testcases {
+		tc := &testcases[i]
+		t.Run(tc.name, func(t *testing.T) {
+			result, _, err := CalculateUpgradeListingPrice(&tc.listing, tc.priority)
+			tc.checkResult(t, result, err)
+		})
+	}
+}
+
+func TestCalculateExtendListingPrice(t *testing.T) {
+	testcases := []struct {
+		name        string
+		listing     model.ListingModel
+		duration    int
+		checkResult func(*testing.T, int64, error)
+	}{
+		{
+			name: "OK",
+			listing: model.ListingModel{
+				Priority:  1,
+				CreatedAt: time.Now().AddDate(0, 0, -10),
+			},
+			duration: 7,
+			checkResult: func(t *testing.T, result int64, err error) {
+				require.NoError(t, err)
+				require.Equal(t, int64(14000), result)
+			},
+		},
+		{
+			name: "invalid duration",
+			listing: model.ListingModel{
+				Priority:  1,
+				CreatedAt: time.Now().AddDate(0, 0, -10),
+			},
+			duration: 0,
+			checkResult: func(t *testing.T, result int64, err error) {
+				require.Error(t, err)
+				require.Equal(t, int64(0), result)
+			},
+		},
+	}
+
+	for i := range testcases {
+		tc := &testcases[i]
+		t.Run(tc.name, func(t *testing.T) {
+			result, _, err := CalculateExtendListingPrice(&tc.listing, tc.duration)
+			tc.checkResult(t, result, err)
+		})
+	}
 }

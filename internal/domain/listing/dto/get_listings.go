@@ -21,6 +21,10 @@ func GetRetrievableFields() []string {
 
 type GetListingsQuery struct {
 	Fields []string `query:"fields" validate:"listingFields"`
+	Limit  *int32   `query:"limit" validate:"omitempty,gte=0"`
+	Offset *int32   `query:"offset" validate:"omitempty,gte=0"`
+	SortBy []string `query:"sortby" validate:"omitempty"`
+	Order  []string `query:"order" validate:"omitempty,dive,oneof=asc desc"`
 }
 
 func (q *GetListingsQuery) QueryParser(ctx *fiber.Ctx) error {

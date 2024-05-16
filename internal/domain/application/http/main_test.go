@@ -12,8 +12,8 @@ import (
 	"github.com/user2410/rrms-backend/internal/domain/application/repo"
 	application "github.com/user2410/rrms-backend/internal/domain/application/service"
 	chat_repo "github.com/user2410/rrms-backend/internal/domain/chat/repo"
-	"github.com/user2410/rrms-backend/internal/domain/listing"
 	listing_repo "github.com/user2410/rrms-backend/internal/domain/listing/repo"
+	listing_service "github.com/user2410/rrms-backend/internal/domain/listing/service"
 	"github.com/user2410/rrms-backend/internal/domain/notification"
 	property_repo "github.com/user2410/rrms-backend/internal/domain/property/repo"
 	"github.com/user2410/rrms-backend/internal/domain/reminder"
@@ -47,7 +47,7 @@ func newTestServer(
 	// initialize services
 	rService := reminder.NewService(rRepo, wsNotificationAdapter)
 	aService := application.NewService(ar, cr, lr, pr, rService, taskDistributor)
-	lService := listing.NewService(lr, pr, nil, "") // NOTE: leave paymentRepo nil for now
+	lService := listing_service.NewService(lr, pr, nil, "") // NOTE: leave paymentRepo nil for now
 
 	// initialize http router
 	httpServer := http.NewServer(

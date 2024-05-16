@@ -32,6 +32,9 @@ SELECT * FROM "payments" WHERE "id" = $1;
 -- name: GetPaymentItemsByPaymentId :many
 SELECT * FROM "payment_items" WHERE "payment_id" = $1;
 
+-- name: CheckPaymentAccessible :one
+SELECT EXISTS (SELECT 1 FROM "payments" WHERE "id" = $1 AND "user_id" = $2);
+
 -- name: UpdatePayment :exec
 UPDATE "payments" SET 
   order_id = coalesce(sqlc.narg(order_id), order_id),
