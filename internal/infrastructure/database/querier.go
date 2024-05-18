@@ -101,6 +101,7 @@ type Querier interface {
 	GetMaintenanceRequests(ctx context.Context, arg GetMaintenanceRequestsParams) ([]int64, error)
 	GetManagedProperties(ctx context.Context, managerID uuid.UUID) ([]GetManagedPropertiesRow, error)
 	GetManagedPropertiesByRole(ctx context.Context, arg GetManagedPropertiesByRoleParams) ([]uuid.UUID, error)
+	GetManagedRentals(ctx context.Context, userID uuid.UUID) ([]int64, error)
 	GetManagedUnits(ctx context.Context, managerID uuid.UUID) ([]uuid.UUID, error)
 	GetMessagesOfGroup(ctx context.Context, arg GetMessagesOfGroupParams) ([]Message, error)
 	GetMostRentedProperties(ctx context.Context, arg GetMostRentedPropertiesParams) ([]GetMostRentedPropertiesRow, error)
@@ -136,6 +137,7 @@ type Querier interface {
 	GetRentalPayment(ctx context.Context, id int64) (RentalPayment, error)
 	GetRentalPaymentArrears(ctx context.Context, arg GetRentalPaymentArrearsParams) ([]GetRentalPaymentArrearsRow, error)
 	GetRentalPetsByRentalID(ctx context.Context, rentalID int64) ([]RentalPet, error)
+	GetRentalPoliciesByRentalID(ctx context.Context, rentalID int64) ([]RentalPolicy, error)
 	GetRentalServicesByRentalID(ctx context.Context, rentalID int64) ([]RentalService, error)
 	// Get rental side: Side A (lanlord and managers) and Side B (tenant). Otherwise return C
 	GetRentalSide(ctx context.Context, arg GetRentalSideParams) (string, error)

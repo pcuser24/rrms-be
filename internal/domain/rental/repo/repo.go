@@ -12,7 +12,9 @@ import (
 type Repo interface {
 	CreateRental(ctx context.Context, data *dto.CreateRental) (model.RentalModel, error)
 	GetRental(ctx context.Context, id int64) (model.RentalModel, error)
+	GetRentalsByIds(ctx context.Context, ids []int64, query *dto.GetRentalsQuery) ([]model.RentalModel, error)
 	GetRentalSide(ctx context.Context, id int64, userId uuid.UUID) (string, error)
+	GetManagedRentals(ctx context.Context, userId uuid.UUID) ([]int64, error)
 	UpdateRental(ctx context.Context, data *dto.UpdateRental, id int64) error
 	// UpdateRentalContract(ctx context.Context, data *dto.UpdateRentalContract, id int64) error
 	CheckRentalVisibility(ctx context.Context, id int64, userId uuid.UUID) (bool, error)

@@ -2,7 +2,6 @@ package http
 
 import (
 	"errors"
-	"strconv"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/jackc/pgx/v5/pgconn"
@@ -59,10 +58,7 @@ func (a *adapter) getRental() fiber.Handler {
 
 func (a *adapter) updateRental() fiber.Handler {
 	return func(ctx *fiber.Ctx) error {
-		pid, err := strconv.ParseInt(ctx.Params("id"), 10, 64)
-		if err != nil {
-			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": err.Error()})
-		}
+		rid := ctx.Locals(RentalContractIDLocalKey).(int64)
 
 		var payload dto.UpdateRental
 		if err := ctx.BodyParser(&payload); err != nil {
@@ -72,7 +68,7 @@ func (a *adapter) updateRental() fiber.Handler {
 			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": validation.GetValidationError(errs)})
 		}
 
-		err = a.service.UpdateRental(&payload, pid)
+		err := a.service.UpdateRental(&payload, rid)
 		if err != nil {
 			if errors.Is(err, database.ErrRecordNotFound) {
 				return ctx.Status(fiber.StatusNotFound).JSON(fiber.Map{"message": "property not found"})
@@ -82,5 +78,30 @@ func (a *adapter) updateRental() fiber.Handler {
 		}
 
 		return ctx.SendStatus(fiber.StatusOK)
+	}
+}
+
+func (a *adapter) getManagedRentals() fiber.Handler {
+	return func(ctx *fiber.Ctx) error {
+		query := new(dto.GetRentalsQuery)
+		if err := query.QueryParser(ctx); err != nil {
+			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": err.Error()})
+		}
+		if err := query.ValidateQuery(); err != nil {
+			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": err.Error()})
+		}
+
+		res, err := a.service.GetManagedRentals(
+			ctx.Locals(auth_http.AuthorizationPayloadKey).(*token.Payload).UserID,
+			query,
+		)
+		if err != nil {
+			if errors.Is(err, database.ErrRecordNotFound) {
+				return ctx.Status(fiber.StatusNotFound).JSON(fiber.Map{"message": "rental profiles not found"})
+			}
+			return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
+		}
+
+		return ctx.Status(fiber.StatusOK).JSON(res)
 	}
 }

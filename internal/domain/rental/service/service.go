@@ -21,6 +21,7 @@ type Service interface {
 	GetRental(id int64) (model.RentalModel, error)
 	UpdateRental(data *dto.UpdateRental, id int64) error
 	// PrepareRentalContract(id int64, data *dto.PrepareRentalContract) (*model.RentalContractModel, error)
+	GetManagedRentals(userId uuid.UUID, query *dto.GetRentalsQuery) ([]model.RentalModel, error)
 	CheckRentalVisibility(id int64, userId uuid.UUID) (bool, error)
 
 	CreateContract(data *dto.CreateContract) (*model.ContractModel, error)

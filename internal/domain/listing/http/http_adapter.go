@@ -167,7 +167,7 @@ func (a *adapter) getMyListings() fiber.Handler {
 			return ctx.SendStatus(fiber.StatusBadRequest)
 		}
 		validator := validator.New()
-		validator.RegisterValidation("listingFields", dto.ValidateQuery)
+		validator.RegisterValidation(dto.ListingFieldsLocalKey, dto.ValidateQuery)
 		if errs := validation.ValidateStruct(validator, *query); len(errs) > 0 {
 			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": validation.GetValidationError(errs)})
 		}

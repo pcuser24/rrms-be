@@ -25,6 +25,7 @@ INSERT INTO rentals (
   rental_intention,
   deposit,
   deposit_paid,
+  notice_period,
 
   electricity_setup_by,
   electricity_payment_type,
@@ -67,6 +68,7 @@ INSERT INTO rentals (
   sqlc.arg(rental_intention),
   sqlc.arg(deposit),
   sqlc.arg(deposit_paid),
+  sqlc.narg(notice_period),
 
   sqlc.arg(electricity_setup_by),
   sqlc.narg(electricity_payment_type),
@@ -177,6 +179,9 @@ SELECT * FROM rental_minors WHERE rental_id = $1;
 -- name: GetRentalPetsByRentalID :many
 SELECT * FROM rental_pets WHERE rental_id = $1;
 
+-- name: GetRentalPoliciesByRentalID :many
+SELECT * FROM rental_policies WHERE rental_id = $1;
+
 -- name: GetRentalServicesByRentalID :many
 SELECT * FROM rental_services WHERE rental_id = $1;
 
@@ -190,6 +195,9 @@ SELECT
   END AS side
 FROM rentals
 WHERE id = $1;
+
+-- name: GetManagedRentals :many
+SELECT id FROM rentals WHERE property_id IN (SELECT property_id FROM property_managers WHERE manager_id = sqlc.arg(user_id));
 
 -- name: CheckRentalVisibility :one
 SELECT count(*) > 0 FROM rentals 
@@ -221,6 +229,7 @@ UPDATE rentals SET
   rental_price = coalesce(sqlc.narg(rental_price), rental_price),
   rental_payment_basis = coalesce(sqlc.narg(rental_payment_basis), rental_payment_basis),
   rental_intention = coalesce(sqlc.narg(rental_intention), rental_intention),
+  notice_period = coalesce(sqlc.narg(notice_period), notice_period),
   deposit = coalesce(sqlc.narg(deposit), deposit),
   deposit_paid = coalesce(sqlc.narg(deposit_paid), deposit_paid),
   electricity_setup_by = coalesce(sqlc.narg(electricity_setup_by), electricity_setup_by),

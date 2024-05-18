@@ -9,15 +9,28 @@ import (
 	"github.com/user2410/rrms-backend/internal/utils/token"
 )
 
-const RentalIDLocalKey = "rental_id"
+const (
+	RentalIDLocalKey          = "rental_id"
+	RentalContractIDLocalKey  = "rental_contract_id"
+	RentalPaymentIDLocalKey   = "rental_payment_id"
+	RentalComplaintIDLocalKey = "rental_complaint_id"
+)
 
-func CheckRentalVisibility(s service.Service) fiber.Handler {
+func GetRentalID() fiber.Handler {
 	return func(c *fiber.Ctx) error {
-		rid, err := strconv.ParseInt(c.Params("id"), 10, 64)
+		id, err := strconv.ParseInt(c.Params("id"), 10, 64)
 		if err != nil {
 			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message: Invalid rental id": err.Error()})
 		}
-		c.Locals(RentalIDLocalKey, rid)
+		c.Locals(RentalIDLocalKey, id)
+
+		return c.Next()
+	}
+}
+
+func CheckRentalVisibility(s service.Service) fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		rid := c.Locals(RentalIDLocalKey).(int64)
 
 		tkPayload := c.Locals(http.AuthorizationPayloadKey).(*token.Payload)
 
@@ -28,6 +41,42 @@ func CheckRentalVisibility(s service.Service) fiber.Handler {
 		if !isVisible {
 			return c.Status(fiber.StatusForbidden).JSON(fiber.Map{"message": "operation not permitted on this rental profile"})
 		}
+
+		return c.Next()
+	}
+}
+
+func GetContractID() fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		id, err := strconv.ParseInt(c.Params("id"), 10, 64)
+		if err != nil {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message: Invalid rental id": err.Error()})
+		}
+		c.Locals(RentalContractIDLocalKey, id)
+
+		return c.Next()
+	}
+}
+
+func GetRentalPaymentID() fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		id, err := strconv.ParseInt(c.Params("id"), 10, 64)
+		if err != nil {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message: Invalid rental id": err.Error()})
+		}
+		c.Locals(RentalPaymentIDLocalKey, id)
+
+		return c.Next()
+	}
+}
+
+func GetRentalComplaintID() fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		id, err := strconv.ParseInt(c.Params("id"), 10, 64)
+		if err != nil {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message: Invalid rental id": err.Error()})
+		}
+		c.Locals(RentalComplaintIDLocalKey, id)
 
 		return c.Next()
 	}

@@ -176,5 +176,10 @@ func ToRentalModel(pr *database.Rental) RentalModel {
 		Note:                    types.PNStr(pr.Note),
 		CreatedAt:               pr.CreatedAt,
 		UpdatedAt:               pr.UpdatedAt,
+		Coaps:                   []RentalCoapModel{},
+		Minors:                  []RentalMinor{},
+		Pets:                    []RentalPet{},
+		Services:                []RentalService{},
+		Policies:                []RentalPolicy{},
 	}
 }

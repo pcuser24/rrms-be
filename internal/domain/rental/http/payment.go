@@ -2,7 +2,6 @@ package http
 
 import (
 	"errors"
-	"strconv"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/jackc/pgx/v5/pgconn"
@@ -41,10 +40,7 @@ func (a *adapter) createRentalPayment() fiber.Handler {
 
 func (a *adapter) getRentalPayment() fiber.Handler {
 	return func(ctx *fiber.Ctx) error {
-		rpId, err := strconv.ParseInt(ctx.Params("id"), 10, 64)
-		if err != nil {
-			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": "invalid rental payment id: " + err.Error()})
-		}
+		rpId := ctx.Locals(RentalPaymentIDLocalKey).(int64)
 
 		tkPayload := ctx.Locals(auth_http.AuthorizationPayloadKey).(*token.Payload)
 
@@ -88,10 +84,7 @@ func (a *adapter) getPaymentsOfRental() fiber.Handler {
 
 func (a *adapter) updatePlanRentalPayment() fiber.Handler {
 	return func(ctx *fiber.Ctx) error {
-		id, err := strconv.ParseInt(ctx.Params("id"), 10, 64)
-		if err != nil {
-			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": err.Error()})
-		}
+		id := ctx.Locals(RentalPaymentIDLocalKey).(int64)
 
 		var payload dto.UpdatePlanRentalPayment
 		if err := ctx.BodyParser(&payload); err != nil {
@@ -103,7 +96,7 @@ func (a *adapter) updatePlanRentalPayment() fiber.Handler {
 
 		tkPayload := ctx.Locals(auth_http.AuthorizationPayloadKey).(*token.Payload)
 
-		err = a.service.UpdateRentalPayment(id, tkPayload.UserID, &payload, database.RENTALPAYMENTSTATUSPLAN)
+		err := a.service.UpdateRentalPayment(id, tkPayload.UserID, &payload, database.RENTALPAYMENTSTATUSPLAN)
 		if err != nil {
 			if dbErr, ok := err.(*pgconn.PgError); ok {
 				return responses.DBErrorResponse(ctx, dbErr)
@@ -121,10 +114,7 @@ func (a *adapter) updatePlanRentalPayment() fiber.Handler {
 
 func (a *adapter) updateIssuedRentalPayment() fiber.Handler {
 	return func(ctx *fiber.Ctx) error {
-		id, err := strconv.ParseInt(ctx.Params("id"), 10, 64)
-		if err != nil {
-			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": err.Error()})
-		}
+		id := ctx.Locals(RentalPaymentIDLocalKey).(int64)
 
 		var payload dto.UpdateIssuedRentalPayment
 		if err := ctx.BodyParser(&payload); err != nil {
@@ -136,7 +126,7 @@ func (a *adapter) updateIssuedRentalPayment() fiber.Handler {
 
 		tkPayload := ctx.Locals(auth_http.AuthorizationPayloadKey).(*token.Payload)
 
-		err = a.service.UpdateRentalPayment(id, tkPayload.UserID, &payload, database.RENTALPAYMENTSTATUSISSUED)
+		err := a.service.UpdateRentalPayment(id, tkPayload.UserID, &payload, database.RENTALPAYMENTSTATUSISSUED)
 		if err != nil {
 			if dbErr, ok := err.(*pgconn.PgError); ok {
 				return responses.DBErrorResponse(ctx, dbErr)
@@ -154,10 +144,7 @@ func (a *adapter) updateIssuedRentalPayment() fiber.Handler {
 
 func (a *adapter) updatePendingRentalPayment() fiber.Handler {
 	return func(ctx *fiber.Ctx) error {
-		id, err := strconv.ParseInt(ctx.Params("id"), 10, 64)
-		if err != nil {
-			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": err.Error()})
-		}
+		id := ctx.Locals(RentalPaymentIDLocalKey).(int64)
 
 		var payload dto.UpdatePendingRentalPayment
 		if err := ctx.BodyParser(&payload); err != nil {
@@ -169,7 +156,7 @@ func (a *adapter) updatePendingRentalPayment() fiber.Handler {
 
 		tkPayload := ctx.Locals(auth_http.AuthorizationPayloadKey).(*token.Payload)
 
-		err = a.service.UpdateRentalPayment(
+		err := a.service.UpdateRentalPayment(
 			id, tkPayload.UserID, &payload,
 			utils.Ternary(payload.Status == database.RENTALPAYMENTSTATUSREQUEST2PAY,
 				database.RENTALPAYMENTSTATUSPENDING,

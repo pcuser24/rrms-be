@@ -126,6 +126,7 @@ type CreateRental struct {
 	RentalIntention         string                     `json:"rentalIntention" validate:"required"`
 	Deposit                 float32                    `json:"deposit" validate:"omitempty,gte=0"`
 	DepositPaid             bool                       `json:"depositPaid"`
+	NoticePeriod            *int32                     `json:"noticePeriod" validate:"omitempty,gte=0"`
 	ElectricitySetupBy      string                     `json:"electricitySetupBy" validate:"required,oneof=LANDLORD TENANT"`
 	ElectricityPaymentType  *string                    `json:"electricityPaymentType" validate:"omitempty,oneof=RETAIL FIXED"`
 	ElectricityPrice        *float32                   `json:"electricityPrice" validate:"omitempty"`
@@ -178,6 +179,7 @@ func (pm *CreateRental) ToCreateRentalDB() database.CreateRentalParams {
 		RentalIntention:         pm.RentalIntention,
 		Deposit:                 pm.Deposit,
 		DepositPaid:             pm.DepositPaid,
+		NoticePeriod:            types.Int32N(pm.NoticePeriod),
 		ElectricitySetupBy:      pm.ElectricitySetupBy,
 		ElectricityPaymentType:  types.StrN(pm.ElectricityPaymentType),
 		ElectricityPrice:        types.Float32N(pm.ElectricityPrice),

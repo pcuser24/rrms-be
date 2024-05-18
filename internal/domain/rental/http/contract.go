@@ -16,7 +16,7 @@ import (
 
 func (a *adapter) createRentalContract() fiber.Handler {
 	return func(ctx *fiber.Ctx) error {
-		rid, err := strconv.ParseInt(ctx.Params("id"), 10, 64)
+		id, err := strconv.ParseInt(ctx.Params("id"), 10, 64)
 		if err != nil {
 			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": err.Error()})
 		}
@@ -25,7 +25,7 @@ func (a *adapter) createRentalContract() fiber.Handler {
 		if err := ctx.BodyParser(&payload); err != nil {
 			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": err.Error()})
 		}
-		payload.RentalID = rid
+		payload.RentalID = id
 		payload.UserID = ctx.Locals(auth_http.AuthorizationPayloadKey).(*token.Payload).UserID
 		if errs := validation.ValidateStruct(nil, payload); len(errs) > 0 {
 			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": validation.GetValidationError(errs)})
@@ -46,15 +46,12 @@ func (a *adapter) createRentalContract() fiber.Handler {
 
 func (a *adapter) getContract() fiber.Handler {
 	return func(ctx *fiber.Ctx) error {
-		rid, err := strconv.ParseInt(ctx.Params("id"), 10, 64)
-		if err != nil {
-			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": err.Error()})
-		}
+		id := ctx.Locals(RentalContractIDLocalKey).(int64)
 
-		res, err := a.service.GetContract(rid)
+		res, err := a.service.GetContract(id)
 		if err != nil {
 			if errors.Is(err, database.ErrRecordNotFound) {
-				return ctx.Status(fiber.StatusNotFound).JSON(fiber.Map{"message": "property not found"})
+				return ctx.Status(fiber.StatusNotFound).JSON(fiber.Map{"message": "contract not found"})
 			}
 
 			return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
@@ -66,15 +63,12 @@ func (a *adapter) getContract() fiber.Handler {
 
 func (a *adapter) pingContract() fiber.Handler {
 	return func(ctx *fiber.Ctx) error {
-		rid, err := strconv.ParseInt(ctx.Params("id"), 10, 64)
-		if err != nil {
-			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": err.Error()})
-		}
+		id := ctx.Locals(RentalIDLocalKey).(int64)
 
-		res, err := a.service.PingRentalContract(rid)
+		res, err := a.service.PingRentalContract(id)
 		if err != nil {
 			if errors.Is(err, database.ErrRecordNotFound) {
-				return ctx.Status(fiber.StatusNotFound).JSON(fiber.Map{"message": "property not found"})
+				return ctx.Status(fiber.StatusNotFound).JSON(fiber.Map{"message": "contract not found"})
 			}
 
 			return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
@@ -86,15 +80,12 @@ func (a *adapter) pingContract() fiber.Handler {
 
 func (a *adapter) getRentalContract() fiber.Handler {
 	return func(ctx *fiber.Ctx) error {
-		rid, err := strconv.ParseInt(ctx.Params("id"), 10, 64)
-		if err != nil {
-			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": err.Error()})
-		}
+		id := ctx.Locals(RentalContractIDLocalKey).(int64)
 
-		res, err := a.service.GetRentalContract(rid)
+		res, err := a.service.GetRentalContract(id)
 		if err != nil {
 			if errors.Is(err, database.ErrRecordNotFound) {
-				return ctx.Status(fiber.StatusNotFound).JSON(fiber.Map{"message": "property not found"})
+				return ctx.Status(fiber.StatusNotFound).JSON(fiber.Map{"message": "contract not found"})
 			}
 
 			return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
@@ -106,10 +97,7 @@ func (a *adapter) getRentalContract() fiber.Handler {
 
 func (a *adapter) updateContract() fiber.Handler {
 	return func(ctx *fiber.Ctx) error {
-		id, err := strconv.ParseInt(ctx.Params("id"), 10, 64)
-		if err != nil {
-			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": err.Error()})
-		}
+		id := ctx.Locals(RentalContractIDLocalKey).(int64)
 
 		var payload dto.UpdateContract
 		if err := ctx.BodyParser(&payload); err != nil {
@@ -121,7 +109,7 @@ func (a *adapter) updateContract() fiber.Handler {
 			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": validation.GetValidationError(errs)})
 		}
 
-		err = a.service.UpdateContract(&payload)
+		err := a.service.UpdateContract(&payload)
 		if err != nil {
 			if dbErr, ok := err.(*pgconn.PgError); ok {
 				return responses.DBErrorResponse(ctx, dbErr)
@@ -136,10 +124,7 @@ func (a *adapter) updateContract() fiber.Handler {
 
 func (a *adapter) updateContractContent() fiber.Handler {
 	return func(ctx *fiber.Ctx) error {
-		id, err := strconv.ParseInt(ctx.Params("id"), 10, 64)
-		if err != nil {
-			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": err.Error()})
-		}
+		id := ctx.Locals(RentalContractIDLocalKey).(int64)
 
 		var payload dto.UpdateContractContent
 		if err := ctx.BodyParser(&payload); err != nil {
@@ -150,7 +135,7 @@ func (a *adapter) updateContractContent() fiber.Handler {
 			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": validation.GetValidationError(errs)})
 		}
 
-		err = a.service.UpdateContractContent(&payload)
+		err := a.service.UpdateContractContent(&payload)
 		if err != nil {
 			if dbErr, ok := err.(*pgconn.PgError); ok {
 				return responses.DBErrorResponse(ctx, dbErr)

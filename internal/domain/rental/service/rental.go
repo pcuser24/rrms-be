@@ -43,3 +43,12 @@ func (s *service) UpdateRental(data *dto.UpdateRental, id int64) error {
 func (s *service) CheckRentalVisibility(id int64, userId uuid.UUID) (bool, error) {
 	return s.rRepo.CheckRentalVisibility(context.Background(), id, userId)
 }
+
+func (s *service) GetManagedRentals(userId uuid.UUID, query *dto.GetRentalsQuery) ([]model.RentalModel, error) {
+	rs, err := s.rRepo.GetManagedRentals(context.Background(), userId)
+	if err != nil {
+		return nil, err
+	}
+
+	return s.rRepo.GetRentalsByIds(context.Background(), rs, query)
+}

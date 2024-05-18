@@ -3,8 +3,10 @@ package repo
 import (
 	"context"
 	"errors"
+	"slices"
 
 	"github.com/google/uuid"
+	"github.com/huandu/go-sqlbuilder"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/user2410/rrms-backend/internal/domain/rental/dto"
 	"github.com/user2410/rrms-backend/internal/domain/rental/model"
@@ -113,6 +115,171 @@ func (r *repo) GetRentalSide(ctx context.Context, id int64, userId uuid.UUID) (s
 	})
 }
 
+func (r *repo) GetRentalsByIds(ctx context.Context, ids []int64, query *dto.GetRentalsQuery) ([]model.RentalModel, error) {
+	if len(ids) == 0 {
+		return nil, nil
+	}
+	var nonFKFields []string = []string{"id"}
+	var fkFields []string
+	for _, f := range query.Fields {
+		if slices.Contains([]string{"coaps", "minors", "pets", "services", "policies"}, f) {
+			fkFields = append(fkFields, f)
+		} else {
+			nonFKFields = append(nonFKFields, f)
+		}
+	}
+
+	ib := sqlbuilder.PostgreSQL.NewSelectBuilder()
+	ib.Select(nonFKFields...)
+	ib.From("rentals")
+	ib.Where(ib.In("id", sqlbuilder.List(ids)))
+	sql, args := ib.Build()
+	// log.Println(query, args)
+	rows, err := r.dao.Query(ctx, sql, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []model.RentalModel
+	var i database.Rental
+	var scanningFields []any = []any{&i.ID}
+	for _, f := range nonFKFields {
+		switch f {
+		case "creator_id":
+			scanningFields = append(scanningFields, &i.CreatorID)
+		case "property_id":
+			scanningFields = append(scanningFields, &i.PropertyID)
+		case "unit_id":
+			scanningFields = append(scanningFields, &i.UnitID)
+		case "application_id":
+			scanningFields = append(scanningFields, &i.ApplicationID)
+		case "tenant_id":
+			scanningFields = append(scanningFields, &i.TenantID)
+		case "profile_image":
+			scanningFields = append(scanningFields, &i.ProfileImage)
+		case "tenant_type":
+			scanningFields = append(scanningFields, &i.TenantType)
+		case "tenant_name":
+			scanningFields = append(scanningFields, &i.TenantName)
+		case "tenant_phone":
+			scanningFields = append(scanningFields, &i.TenantPhone)
+		case "tenant_email":
+			scanningFields = append(scanningFields, &i.TenantEmail)
+		case "organization_name":
+			scanningFields = append(scanningFields, &i.OrganizationName)
+		case "organization_hq_address":
+			scanningFields = append(scanningFields, &i.OrganizationHqAddress)
+		case "start_date":
+			scanningFields = append(scanningFields, &i.StartDate)
+		case "movein_date":
+			scanningFields = append(scanningFields, &i.MoveinDate)
+		case "rental_period":
+			scanningFields = append(scanningFields, &i.RentalPeriod)
+		case "payment_type":
+			scanningFields = append(scanningFields, &i.PaymentType)
+		case "rental_price":
+			scanningFields = append(scanningFields, &i.RentalPrice)
+		case "rental_payment_basis":
+			scanningFields = append(scanningFields, &i.RentalPaymentBasis)
+		case "rental_intention":
+			scanningFields = append(scanningFields, &i.RentalIntention)
+		case "deposit":
+			scanningFields = append(scanningFields, &i.Deposit)
+		case "deposit_paid":
+			scanningFields = append(scanningFields, &i.DepositPaid)
+		case "electricity_setup_by":
+			scanningFields = append(scanningFields, &i.ElectricitySetupBy)
+		case "electricity_payment_type":
+			scanningFields = append(scanningFields, &i.ElectricityPaymentType)
+		case "electricity_customer_code":
+			scanningFields = append(scanningFields, &i.ElectricityCustomerCode)
+		case "electricity_provider":
+			scanningFields = append(scanningFields, &i.ElectricityProvider)
+		case "electricity_price":
+			scanningFields = append(scanningFields, &i.ElectricityPrice)
+		case "water_setup_by":
+			scanningFields = append(scanningFields, &i.WaterSetupBy)
+		case "water_payment_type":
+			scanningFields = append(scanningFields, &i.WaterPaymentType)
+		case "water_customer_code":
+			scanningFields = append(scanningFields, &i.WaterCustomerCode)
+		case "water_provider":
+			scanningFields = append(scanningFields, &i.WaterProvider)
+		case "water_price":
+			scanningFields = append(scanningFields, &i.WaterPrice)
+		case "note":
+			scanningFields = append(scanningFields, &i.Note)
+		case "status":
+			scanningFields = append(scanningFields, &i.Status)
+		case "created_at":
+			scanningFields = append(scanningFields, &i.CreatedAt)
+		case "updated_at":
+			scanningFields = append(scanningFields, &i.UpdatedAt)
+		}
+	}
+	for rows.Next() {
+		if err := rows.Scan(scanningFields...); err != nil {
+			return nil, err
+		}
+		items = append(items, model.ToRentalModel(&i))
+	}
+	rows.Close()
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	// get fk fields
+	for i := 0; i < len(items); i++ {
+		item := &items[i]
+		if slices.Contains(fkFields, "coaps") {
+			u, err := r.dao.GetRentalCoapsByRentalID(ctx, item.ID)
+			if err != nil {
+				return nil, err
+			}
+			for _, i := range u {
+				item.Coaps = append(item.Coaps, model.ToRentalCoapModel(&i))
+			}
+		}
+		if slices.Contains(fkFields, "minors") {
+			u, err := r.dao.GetRentalMinorsByRentalID(ctx, item.ID)
+			if err != nil {
+				return nil, err
+			}
+			for _, i := range u {
+				item.Minors = append(item.Minors, model.ToRentalMinor(&i))
+			}
+		}
+		if slices.Contains(fkFields, "pets") {
+			u, err := r.dao.GetRentalPetsByRentalID(ctx, item.ID)
+			if err != nil {
+				return nil, err
+			}
+			for _, i := range u {
+				item.Pets = append(item.Pets, model.ToRentalPet(&i))
+			}
+		}
+		if slices.Contains(fkFields, "services") {
+			u, err := r.dao.GetRentalServicesByRentalID(ctx, item.ID)
+			if err != nil {
+				return nil, err
+			}
+			for _, i := range u {
+				item.Services = append(item.Services, model.ToRentalService(&i))
+			}
+		}
+		if slices.Contains(fkFields, "policies") {
+			u, err := r.dao.GetRentalPoliciesByRentalID(ctx, item.ID)
+			if err != nil {
+				return nil, err
+			}
+			for _, i := range u {
+				item.Policies = append(item.Policies, model.RentalPolicy(i))
+			}
+		}
+	}
+	return items, nil
+}
+
 func (r *repo) UpdateRental(ctx context.Context, data *dto.UpdateRental, id int64) error {
 	return r.dao.UpdateRental(ctx, data.ToUpdateRentalDB(id))
 }
@@ -125,4 +292,8 @@ func (r *repo) CheckRentalVisibility(ctx context.Context, id int64, userId uuid.
 			Valid: true,
 		},
 	})
+}
+
+func (r *repo) GetManagedRentals(ctx context.Context, userId uuid.UUID) ([]int64, error) {
+	return r.dao.GetManagedRentals(ctx, userId)
 }

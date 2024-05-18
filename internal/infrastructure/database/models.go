@@ -1030,6 +1030,7 @@ type Rental struct {
 	RentalIntention         string            `json:"rental_intention"`
 	Deposit                 float32           `json:"deposit"`
 	DepositPaid             bool              `json:"deposit_paid"`
+	NoticePeriod            pgtype.Int4       `json:"notice_period"`
 	ElectricitySetupBy      string            `json:"electricity_setup_by"`
 	ElectricityPaymentType  pgtype.Text       `json:"electricity_payment_type"`
 	ElectricityCustomerCode pgtype.Text       `json:"electricity_customer_code"`

@@ -30,6 +30,7 @@ CREATE TABLE IF NOT EXISTS "rentals" (
   "rental_intention" VARCHAR(20) NOT NULL,
   "deposit" REAL NOT NULL CHECK (deposit >= 0),
   "deposit_paid" BOOLEAN NOT NULL DEFAULT TRUE,
+  "notice_period" INTEGER DEFAULT 30,
   
   -- basic services
   "electricity_setup_by" VARCHAR(20) NOT NULL,
