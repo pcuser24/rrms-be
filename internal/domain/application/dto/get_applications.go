@@ -36,6 +36,12 @@ type GetApplicationsQuery struct {
 	Fields []string `query:"fields" validate:"applicationFields"`
 }
 
+func (q *GetApplicationsQuery) parseFields() {
+	if len(q.Fields) == 1 {
+		q.Fields = strings.Split(q.Fields[0], ",")
+	}
+}
+
 func (q *GetApplicationsQuery) QueryParser(ctx *fiber.Ctx) error {
 	err := ctx.QueryParser(q)
 	if err != nil {
@@ -43,12 +49,6 @@ func (q *GetApplicationsQuery) QueryParser(ctx *fiber.Ctx) error {
 	}
 	q.parseFields()
 	return nil
-}
-
-func (q *GetApplicationsQuery) parseFields() {
-	if len(q.Fields) == 1 {
-		q.Fields = strings.Split(q.Fields[0], ",")
-	}
 }
 
 type GetApplicationsByIdsQuery struct {

@@ -2,11 +2,9 @@ package reminder
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 
 	"github.com/google/uuid"
-	"github.com/user2410/rrms-backend/internal/domain/notification"
 	"github.com/user2410/rrms-backend/internal/domain/reminder/dto"
 	"github.com/user2410/rrms-backend/internal/domain/reminder/model"
 	"github.com/user2410/rrms-backend/internal/domain/reminder/repo"
@@ -20,17 +18,14 @@ type Service interface {
 }
 
 type service struct {
-	repo                repo.Repo
-	notificationAdapter notification.WSNotificationAdapter
+	repo repo.Repo
 }
 
 func NewService(
 	r repo.Repo,
-	notificationAdapter notification.WSNotificationAdapter,
 ) Service {
 	return &service{
-		repo:                r,
-		notificationAdapter: notificationAdapter,
+		repo: r,
 	}
 }
 
@@ -45,21 +40,7 @@ func (s *service) CreateReminder(data *dto.CreateReminder) (model.ReminderModel,
 		return model.ReminderModel{}, ErrOverlappingReminder
 	}
 
-	res, err := s.repo.CreateReminder(context.Background(), data)
-	if err != nil {
-		return model.ReminderModel{}, err
-	}
-
-	n, err := json.Marshal(res)
-	if err != nil {
-		return res, err
-	}
-	go s.notificationAdapter.PushMessage(notification.Notification{
-		UserId:  data.CreatorID,
-		Payload: n,
-	})
-
-	return res, nil
+	return s.repo.CreateReminder(context.Background(), data)
 }
 
 func (s *service) GetRemindersOfUser(userId uuid.UUID, query *dto.GetRemindersQuery) ([]model.ReminderModel, error) {

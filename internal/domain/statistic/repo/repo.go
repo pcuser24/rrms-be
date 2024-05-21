@@ -18,7 +18,6 @@ type Repo interface {
 	GetManagedPropertiesByRole(ctx context.Context, userId uuid.UUID, role string) ([]uuid.UUID, error)
 	GetPropertiesWithActiveListing(ctx context.Context, userId uuid.UUID) ([]uuid.UUID, error)
 	GetOccupiedProperties(ctx context.Context, userId uuid.UUID) ([]uuid.UUID, error)
-	GetPropertiesHavingListing(ctx context.Context, userId uuid.UUID) ([]uuid.UUID, error)
 	GetManagedUnits(ctx context.Context, userId uuid.UUID) ([]uuid.UUID, error)
 	GetOccupiedUnits(ctx context.Context, userId uuid.UUID) ([]uuid.UUID, error)
 	GetMostRentedProperties(ctx context.Context, userId uuid.UUID, limit, offset int32) ([]dto.ExtremelyRentedPropertyItem, error)
@@ -147,10 +146,6 @@ func (r *repo) GetLeastRentedUnits(ctx context.Context, userId uuid.UUID, limit,
 		}
 	}
 	return res, nil
-}
-
-func (r *repo) GetPropertiesHavingListing(ctx context.Context, userId uuid.UUID) ([]uuid.UUID, error) {
-	return r.dao.GetPropertiesHavingListing(ctx, userId)
 }
 
 func (r *repo) GetManagedUnits(ctx context.Context, userId uuid.UUID) ([]uuid.UUID, error) {

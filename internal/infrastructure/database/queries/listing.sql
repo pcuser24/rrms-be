@@ -87,13 +87,14 @@ SELECT id
 FROM listings
 WHERE 
   property_id = $1
+  AND active = TRUE
   AND CASE
-    WHEN $2 THEN expired_at <= NOW()
-    WHEN NOT $2 THEN expired_at > NOW()
+    WHEN sqlc.arg(expired)::BOOLEAN THEN expired_at <= NOW()
+    WHEN NOT sqlc.arg(expired)::BOOLEAN THEN expired_at > NOW()
   END
 ORDER BY
   created_at DESC
-LIMIT $3 OFFSET $4;
+LIMIT $2 OFFSET $3;
 
 -- name: GetAllRentalPolicies :many
 SELECT * FROM l_policies;

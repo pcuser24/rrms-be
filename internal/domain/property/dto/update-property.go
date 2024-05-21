@@ -56,3 +56,10 @@ func (u *UpdateProperty) ToUpdatePropertyDB() database.UpdatePropertyParams {
 		IsPublic:       types.BoolN(u.IsPublic),
 	}
 }
+
+type CreatePropertyManagerRequest struct {
+	PropertyID uuid.UUID
+	CreatorID  uuid.UUID
+	UserID     uuid.UUID
+	Email      string `json:"email" validate:"required,email"`
+}

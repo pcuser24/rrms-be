@@ -9,11 +9,13 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/stretchr/testify/require"
 	application_repo "github.com/user2410/rrms-backend/internal/domain/application/repo"
+	auth_repo "github.com/user2410/rrms-backend/internal/domain/auth/repo"
 	listing_repo "github.com/user2410/rrms-backend/internal/domain/listing/repo"
 	listing_service "github.com/user2410/rrms-backend/internal/domain/listing/service"
 	payment_repo "github.com/user2410/rrms-backend/internal/domain/payment/repo"
 	property_repo "github.com/user2410/rrms-backend/internal/domain/property/repo"
 	property_service "github.com/user2410/rrms-backend/internal/domain/property/service"
+	rental_repo "github.com/user2410/rrms-backend/internal/domain/rental/repo"
 	"github.com/user2410/rrms-backend/internal/domain/unit"
 	unit_repo "github.com/user2410/rrms-backend/internal/domain/unit/repo"
 	"github.com/user2410/rrms-backend/internal/infrastructure/http"
@@ -26,14 +28,14 @@ type server struct {
 	router     http.Server
 }
 
-func newTestServer(t *testing.T, pr property_repo.Repo, ur unit_repo.Repo, lr listing_repo.Repo, ar application_repo.Repo, paymentRepo payment_repo.Repo) *server {
+func newTestServer(t *testing.T, pr property_repo.Repo, ur unit_repo.Repo, lr listing_repo.Repo, ar application_repo.Repo, paymentRepo payment_repo.Repo, rr rental_repo.Repo, authRepo auth_repo.Repo) *server {
 
 	tokenMaker, err := token.NewJWTMaker(random.RandomAlphanumericStr(32))
 	require.NoError(t, err)
 	require.NotNil(t, tokenMaker)
 
 	uService := unit.NewService(ur)
-	pService := property_service.NewService(pr, ur, lr, ar)
+	pService := property_service.NewService(pr, ur, lr, ar, rr, authRepo)
 	lService := listing_service.NewService(lr, pr, paymentRepo, "")
 
 	// initialize http router

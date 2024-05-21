@@ -61,7 +61,7 @@ type CreateProperty struct {
 	Lat            *float64                `json:"lat" validate:"omitempty"`
 	Lng            *float64                `json:"lng" validate:"omitempty"`
 	Description    *string                 `json:"description" validate:"omitempty"`
-	Type           database.PROPERTYTYPE   `json:"type" validate:"required,oneof=APARTMENT PRIVATE ROOM STORE OFFICE MINIAPARTMENT"`
+	Type           database.PROPERTYTYPE   `json:"type" validate:"required,oneof=APARTMENT PRIVATE ROOM STORE OFFICE VILLA MINIAPARTMENT"`
 	PrimaryImage   string                  `json:"primaryImage" validate:"required,url"`
 	Managers       []CreatePropertyManager `json:"managers" validate:"dive"`
 	Media          []CreatePropertyMedia   `json:"media" validate:"dive"`

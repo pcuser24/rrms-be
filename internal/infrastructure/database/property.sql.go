@@ -12,6 +12,73 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const addPropertyManager = `-- name: AddPropertyManager :exec
+INSERT INTO property_managers (
+  property_id,
+  manager_id,
+  role
+) VALUES (
+  (SELECT property_id FROM new_property_manager_requests WHERE id = $1 LIMIT 1),
+  $2,
+  'MANAGER'
+)
+`
+
+type AddPropertyManagerParams struct {
+	RequestID int64     `json:"request_id"`
+	UserID    uuid.UUID `json:"user_id"`
+}
+
+func (q *Queries) AddPropertyManager(ctx context.Context, arg AddPropertyManagerParams) error {
+	_, err := q.db.Exec(ctx, addPropertyManager, arg.RequestID, arg.UserID)
+	return err
+}
+
+const createNewPropertyManagerRequest = `-- name: CreateNewPropertyManagerRequest :one
+INSERT INTO "new_property_manager_requests" (
+  "creator_id",
+  "property_id",
+  "user_id",
+  "email",
+  "created_at",
+  "updated_at"
+) VALUES (
+  $1, 
+  $2,
+  $3,
+  $4,
+  NOW(), NOW()
+) RETURNING id, creator_id, property_id, user_id, email, approved, created_at, updated_at
+`
+
+type CreateNewPropertyManagerRequestParams struct {
+	CreatorID  uuid.UUID   `json:"creator_id"`
+	PropertyID uuid.UUID   `json:"property_id"`
+	UserID     pgtype.UUID `json:"user_id"`
+	Email      string      `json:"email"`
+}
+
+func (q *Queries) CreateNewPropertyManagerRequest(ctx context.Context, arg CreateNewPropertyManagerRequestParams) (NewPropertyManagerRequest, error) {
+	row := q.db.QueryRow(ctx, createNewPropertyManagerRequest,
+		arg.CreatorID,
+		arg.PropertyID,
+		arg.UserID,
+		arg.Email,
+	)
+	var i NewPropertyManagerRequest
+	err := row.Scan(
+		&i.ID,
+		&i.CreatorID,
+		&i.PropertyID,
+		&i.UserID,
+		&i.Email,
+		&i.Approved,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
 const createProperty = `-- name: CreateProperty :one
 INSERT INTO properties (
   creator_id,
@@ -358,6 +425,70 @@ func (q *Queries) GetManagedProperties(ctx context.Context, managerID uuid.UUID)
 	return items, nil
 }
 
+const getNewPropertyManagerRequest = `-- name: GetNewPropertyManagerRequest :one
+SELECT id, creator_id, property_id, user_id, email, approved, created_at, updated_at FROM "new_property_manager_requests" WHERE "id" = $1 LIMIT 1
+`
+
+func (q *Queries) GetNewPropertyManagerRequest(ctx context.Context, id int64) (NewPropertyManagerRequest, error) {
+	row := q.db.QueryRow(ctx, getNewPropertyManagerRequest, id)
+	var i NewPropertyManagerRequest
+	err := row.Scan(
+		&i.ID,
+		&i.CreatorID,
+		&i.PropertyID,
+		&i.UserID,
+		&i.Email,
+		&i.Approved,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const getNewPropertyManagerRequestsToUser = `-- name: GetNewPropertyManagerRequestsToUser :many
+SELECT id, creator_id, property_id, user_id, email, approved, created_at, updated_at 
+FROM "new_property_manager_requests" 
+WHERE "user_id" = $1
+ORDER BY "created_at" DESC
+LIMIT $2
+OFFSET $3
+`
+
+type GetNewPropertyManagerRequestsToUserParams struct {
+	UserID pgtype.UUID `json:"user_id"`
+	Limit  int32       `json:"limit"`
+	Offset int32       `json:"offset"`
+}
+
+func (q *Queries) GetNewPropertyManagerRequestsToUser(ctx context.Context, arg GetNewPropertyManagerRequestsToUserParams) ([]NewPropertyManagerRequest, error) {
+	rows, err := q.db.Query(ctx, getNewPropertyManagerRequestsToUser, arg.UserID, arg.Limit, arg.Offset)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []NewPropertyManagerRequest
+	for rows.Next() {
+		var i NewPropertyManagerRequest
+		if err := rows.Scan(
+			&i.ID,
+			&i.CreatorID,
+			&i.PropertyID,
+			&i.UserID,
+			&i.Email,
+			&i.Approved,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getPropertyById = `-- name: GetPropertyById :one
 SELECT id, creator_id, name, building, project, area, number_of_floors, year_built, orientation, entrance_width, facade, full_address, city, district, ward, lat, lng, primary_image, description, type, is_public, created_at, updated_at FROM properties WHERE id = $1 LIMIT 1
 `
@@ -495,15 +626,43 @@ func (q *Queries) GetPropertyTags(ctx context.Context, propertyID uuid.UUID) ([]
 	return items, nil
 }
 
-const isPropertyPublic = `-- name: IsPropertyPublic :one
-SELECT is_public FROM properties WHERE id = $1 LIMIT 1
+const isPropertyVisible = `-- name: IsPropertyVisible :one
+SELECT (
+  SELECT is_public FROM "properties" WHERE properties.id = $1 LIMIT 1
+) OR (
+  SELECT EXISTS (SELECT 1 FROM "property_managers" WHERE property_managers.property_id = $1 AND property_managers.manager_id = $2 LIMIT 1)
+) OR (
+  SELECT EXISTS (SELECT 1 FROM "new_property_manager_requests" WHERE new_property_manager_requests.property_id = $1 AND new_property_manager_requests.user_id = $2 LIMIT 1)
+)
 `
 
-func (q *Queries) IsPropertyPublic(ctx context.Context, id uuid.UUID) (bool, error) {
-	row := q.db.QueryRow(ctx, isPropertyPublic, id)
-	var is_public bool
-	err := row.Scan(&is_public)
-	return is_public, err
+type IsPropertyVisibleParams struct {
+	PropertyID uuid.UUID `json:"property_id"`
+	UserID     uuid.UUID `json:"user_id"`
+}
+
+func (q *Queries) IsPropertyVisible(ctx context.Context, arg IsPropertyVisibleParams) (pgtype.Bool, error) {
+	row := q.db.QueryRow(ctx, isPropertyVisible, arg.PropertyID, arg.UserID)
+	var column_1 pgtype.Bool
+	err := row.Scan(&column_1)
+	return column_1, err
+}
+
+const updateNewPropertyManagerRequest = `-- name: UpdateNewPropertyManagerRequest :exec
+UPDATE "new_property_manager_requests" SET
+  "approved" = $2,
+  "updated_at" = NOW()
+WHERE "id" = $1
+`
+
+type UpdateNewPropertyManagerRequestParams struct {
+	ID       int64 `json:"id"`
+	Approved bool  `json:"approved"`
+}
+
+func (q *Queries) UpdateNewPropertyManagerRequest(ctx context.Context, arg UpdateNewPropertyManagerRequestParams) error {
+	_, err := q.db.Exec(ctx, updateNewPropertyManagerRequest, arg.ID, arg.Approved)
+	return err
 }
 
 const updateProperty = `-- name: UpdateProperty :exec

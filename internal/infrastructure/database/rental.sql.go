@@ -760,6 +760,52 @@ func (q *Queries) GetRentalSide(ctx context.Context, arg GetRentalSideParams) (s
 	return side, err
 }
 
+const getRentalsOfProperty = `-- name: GetRentalsOfProperty :many
+SELECT id
+FROM rentals
+WHERE 
+  property_id = $1
+  AND CASE
+    WHEN $4::BOOLEAN THEN start_date + INTERVAL '1 month' * rental_period < CURRENT_DATE OR status <> 'INPROGRESS'
+    WHEN NOT $4::BOOLEAN THEN start_date + INTERVAL '1 month' * rental_period >= CURRENT_DATE AND status = 'INPROGRESS'
+  END
+ORDER BY
+  created_at DESC
+LIMIT $2 OFFSET $3
+`
+
+type GetRentalsOfPropertyParams struct {
+	PropertyID uuid.UUID `json:"property_id"`
+	Limit      int32     `json:"limit"`
+	Offset     int32     `json:"offset"`
+	Expired    bool      `json:"expired"`
+}
+
+func (q *Queries) GetRentalsOfProperty(ctx context.Context, arg GetRentalsOfPropertyParams) ([]int64, error) {
+	rows, err := q.db.Query(ctx, getRentalsOfProperty,
+		arg.PropertyID,
+		arg.Limit,
+		arg.Offset,
+		arg.Expired,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []int64
+	for rows.Next() {
+		var id int64
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		items = append(items, id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const updateRental = `-- name: UpdateRental :exec
 UPDATE rentals SET
   tenant_id = coalesce($2, tenant_id),

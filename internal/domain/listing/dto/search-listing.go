@@ -7,7 +7,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
 	property_dto "github.com/user2410/rrms-backend/internal/domain/property/dto"
-	unitDTO "github.com/user2410/rrms-backend/internal/domain/unit/dto"
+	unit_dto "github.com/user2410/rrms-backend/internal/domain/unit/dto"
 	"github.com/user2410/rrms-backend/internal/interfaces/rest/requests"
 )
 
@@ -40,7 +40,7 @@ type SearchListingCombinationQuery struct {
 	requests.SearchSortPaginationQuery
 	SearchListingQuery
 	property_dto.SearchPropertyQuery
-	unitDTO.SearchUnitQuery
+	unit_dto.SearchUnitQuery
 }
 
 var ErrMismatchSortOrder = fiber.NewError(400, "mismatch sort order")

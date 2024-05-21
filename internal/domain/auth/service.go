@@ -6,10 +6,9 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/user2410/rrms-backend/internal/domain/auth/asynctask"
 	"github.com/user2410/rrms-backend/pkg/ds/set"
 
-	repo2 "github.com/user2410/rrms-backend/internal/domain/auth/repo"
+	"github.com/user2410/rrms-backend/internal/domain/auth/repo"
 
 	"github.com/google/uuid"
 	"github.com/user2410/rrms-backend/internal/domain/auth/dto"
@@ -31,25 +30,22 @@ type Service interface {
 }
 
 type service struct {
-	repo            repo2.Repo
+	repo            repo.Repo
 	tokenMaker      token.Maker
 	accessTokenTTL  time.Duration
 	refreshTokenTTL time.Duration
-	taskDistributor asynctask.TaskDistributor
 }
 
 func NewService(
-	repo repo2.Repo,
+	repo repo.Repo,
 	tokenMaker token.Maker,
 	accessTokenTTL, refreshToken time.Duration,
-	taskDistributor asynctask.TaskDistributor,
 ) Service {
 	return &service{
 		repo:            repo,
 		tokenMaker:      tokenMaker,
 		accessTokenTTL:  accessTokenTTL,
 		refreshTokenTTL: refreshToken,
-		taskDistributor: taskDistributor,
 	}
 }
 

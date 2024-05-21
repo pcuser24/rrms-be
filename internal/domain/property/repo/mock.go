@@ -18,6 +18,7 @@ import (
 	dto0 "github.com/user2410/rrms-backend/internal/domain/listing/dto"
 	dto1 "github.com/user2410/rrms-backend/internal/domain/property/dto"
 	model "github.com/user2410/rrms-backend/internal/domain/property/model"
+	dto2 "github.com/user2410/rrms-backend/internal/domain/rental/dto"
 	database "github.com/user2410/rrms-backend/internal/infrastructure/database"
 	gomock "go.uber.org/mock/gomock"
 )
@@ -58,6 +59,21 @@ func (m *MockRepo) CreateProperty(arg0 context.Context, arg1 *dto1.CreatePropert
 func (mr *MockRepoMockRecorder) CreateProperty(arg0, arg1 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateProperty", reflect.TypeOf((*MockRepo)(nil).CreateProperty), arg0, arg1)
+}
+
+// CreatePropertyManagerRequest mocks base method.
+func (m *MockRepo) CreatePropertyManagerRequest(arg0 context.Context, arg1 *dto1.CreatePropertyManagerRequest) (model.NewPropertyManagerRequest, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreatePropertyManagerRequest", arg0, arg1)
+	ret0, _ := ret[0].(model.NewPropertyManagerRequest)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CreatePropertyManagerRequest indicates an expected call of CreatePropertyManagerRequest.
+func (mr *MockRepoMockRecorder) CreatePropertyManagerRequest(arg0, arg1 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreatePropertyManagerRequest", reflect.TypeOf((*MockRepo)(nil).CreatePropertyManagerRequest), arg0, arg1)
 }
 
 // DeleteProperty mocks base method.
@@ -119,6 +135,21 @@ func (mr *MockRepoMockRecorder) GetManagedProperties(arg0, arg1 any) *gomock.Cal
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetManagedProperties", reflect.TypeOf((*MockRepo)(nil).GetManagedProperties), arg0, arg1)
 }
 
+// GetNewPropertyManagerRequest mocks base method.
+func (m *MockRepo) GetNewPropertyManagerRequest(arg0 context.Context, arg1 int64) (model.NewPropertyManagerRequest, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetNewPropertyManagerRequest", arg0, arg1)
+	ret0, _ := ret[0].(model.NewPropertyManagerRequest)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetNewPropertyManagerRequest indicates an expected call of GetNewPropertyManagerRequest.
+func (mr *MockRepoMockRecorder) GetNewPropertyManagerRequest(arg0, arg1 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetNewPropertyManagerRequest", reflect.TypeOf((*MockRepo)(nil).GetNewPropertyManagerRequest), arg0, arg1)
+}
+
 // GetPropertiesByIds mocks base method.
 func (m *MockRepo) GetPropertiesByIds(arg0 context.Context, arg1, arg2 []string) ([]model.PropertyModel, error) {
 	m.ctrl.T.Helper()
@@ -164,6 +195,21 @@ func (mr *MockRepoMockRecorder) GetPropertyManagers(arg0, arg1 any) *gomock.Call
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPropertyManagers", reflect.TypeOf((*MockRepo)(nil).GetPropertyManagers), arg0, arg1)
 }
 
+// GetRentalsOfProperty mocks base method.
+func (m *MockRepo) GetRentalsOfProperty(arg0 context.Context, arg1 uuid.UUID, arg2 *dto2.GetRentalsOfPropertyQuery) ([]int64, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetRentalsOfProperty", arg0, arg1, arg2)
+	ret0, _ := ret[0].([]int64)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetRentalsOfProperty indicates an expected call of GetRentalsOfProperty.
+func (mr *MockRepoMockRecorder) GetRentalsOfProperty(arg0, arg1, arg2 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRentalsOfProperty", reflect.TypeOf((*MockRepo)(nil).GetRentalsOfProperty), arg0, arg1, arg2)
+}
+
 // IsPublic mocks base method.
 func (m *MockRepo) IsPublic(arg0 context.Context, arg1 uuid.UUID) (bool, error) {
 	m.ctrl.T.Helper()
@@ -206,4 +252,18 @@ func (m *MockRepo) UpdateProperty(arg0 context.Context, arg1 *dto1.UpdatePropert
 func (mr *MockRepoMockRecorder) UpdateProperty(arg0, arg1 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateProperty", reflect.TypeOf((*MockRepo)(nil).UpdateProperty), arg0, arg1)
+}
+
+// UpdatePropertyManagerRequest mocks base method.
+func (m *MockRepo) UpdatePropertyManagerRequest(arg0 context.Context, arg1 int64, arg2 uuid.UUID, arg3 bool) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdatePropertyManagerRequest", arg0, arg1, arg2, arg3)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpdatePropertyManagerRequest indicates an expected call of UpdatePropertyManagerRequest.
+func (mr *MockRepoMockRecorder) UpdatePropertyManagerRequest(arg0, arg1, arg2, arg3 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdatePropertyManagerRequest", reflect.TypeOf((*MockRepo)(nil).UpdatePropertyManagerRequest), arg0, arg1, arg2, arg3)
 }

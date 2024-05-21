@@ -11,8 +11,10 @@ import (
 	application_dto "github.com/user2410/rrms-backend/internal/domain/application/dto"
 	listing_dto "github.com/user2410/rrms-backend/internal/domain/listing/dto"
 	property_dto "github.com/user2410/rrms-backend/internal/domain/property/dto"
+	"github.com/user2410/rrms-backend/internal/domain/property/model"
 	property_model "github.com/user2410/rrms-backend/internal/domain/property/model"
 	"github.com/user2410/rrms-backend/internal/domain/property/repo/sqlbuild"
+	rental_dto "github.com/user2410/rrms-backend/internal/domain/rental/dto"
 	"github.com/user2410/rrms-backend/internal/infrastructure/database"
 	"github.com/user2410/rrms-backend/internal/utils/types"
 )
@@ -25,10 +27,16 @@ type Repo interface {
 	GetManagedProperties(ctx context.Context, userId uuid.UUID) ([]database.GetManagedPropertiesRow, error)
 	GetListingsOfProperty(ctx context.Context, id uuid.UUID, query *listing_dto.GetListingsOfPropertyQuery) ([]uuid.UUID, error)
 	GetApplicationsOfProperty(ctx context.Context, id uuid.UUID, query *application_dto.GetApplicationsOfPropertyQuery) ([]int64, error)
+	GetRentalsOfProperty(ctx context.Context, id uuid.UUID, query *rental_dto.GetRentalsOfPropertyQuery) ([]int64, error)
 	SearchPropertyCombination(ctx context.Context, query *property_dto.SearchPropertyCombinationQuery) (*property_dto.SearchPropertyCombinationResponse, error)
-	IsPublic(ctx context.Context, id uuid.UUID) (bool, error)
+	IsPropertyVisible(ctx context.Context, uid, pid uuid.UUID) (bool, error)
 	UpdateProperty(ctx context.Context, data *property_dto.UpdateProperty) error
 	DeleteProperty(ctx context.Context, id uuid.UUID) error
+
+	CreatePropertyManagerRequest(ctx context.Context, data *property_dto.CreatePropertyManagerRequest) (model.NewPropertyManagerRequest, error)
+	GetNewPropertyManagerRequest(ctx context.Context, id int64) (model.NewPropertyManagerRequest, error)
+	GetNewPropertyManagerRequestsToUser(ctx context.Context, uid uuid.UUID, limit, offset int64) ([]model.NewPropertyManagerRequest, error)
+	UpdatePropertyManagerRequest(ctx context.Context, id int64, uid uuid.UUID, approved bool) error
 }
 
 type repo struct {
@@ -318,7 +326,7 @@ func (r *repo) GetPropertyById(ctx context.Context, id uuid.UUID) (*property_mod
 func (r *repo) GetListingsOfProperty(ctx context.Context, id uuid.UUID, query *listing_dto.GetListingsOfPropertyQuery) ([]uuid.UUID, error) {
 	params := database.GetListingsOfPropertyParams{
 		PropertyID: id,
-		Column2:    query.Expired,
+		Expired:    query.Expired,
 	}
 	if query.Offset != nil {
 		params.Offset = *query.Offset
@@ -395,8 +403,33 @@ func (r *repo) GetManagedProperties(ctx context.Context, userId uuid.UUID) ([]da
 	return r.dao.GetManagedProperties(ctx, userId)
 }
 
-func (r *repo) IsPublic(ctx context.Context, id uuid.UUID) (bool, error) {
-	return r.dao.IsPropertyPublic(ctx, id)
+func (r *repo) GetRentalsOfProperty(ctx context.Context, id uuid.UUID, query *rental_dto.GetRentalsOfPropertyQuery) ([]int64, error) {
+	params := database.GetRentalsOfPropertyParams{
+		PropertyID: id,
+		Expired:    query.Expired,
+	}
+	if query.Offset != nil {
+		params.Offset = *query.Offset
+	} else {
+		params.Offset = 0
+	}
+	if query.Limit != nil {
+		params.Limit = *query.Limit
+	} else {
+		params.Limit = 100
+	}
+	return r.dao.GetRentalsOfProperty(ctx, params)
+}
+
+func (r *repo) IsPropertyVisible(ctx context.Context, uid, pid uuid.UUID) (bool, error) {
+	res, err := r.dao.IsPropertyVisible(ctx, database.IsPropertyVisibleParams{
+		UserID:     uid,
+		PropertyID: pid,
+	})
+	if err != nil {
+		return false, err
+	}
+	return res.Bool, nil
 }
 
 func (r *repo) UpdateProperty(ctx context.Context, data *property_dto.UpdateProperty) error {
@@ -464,4 +497,105 @@ func (r *repo) UpdateProperty(ctx context.Context, data *property_dto.UpdateProp
 
 func (r *repo) DeleteProperty(ctx context.Context, id uuid.UUID) error {
 	return r.dao.DeleteProperty(ctx, id)
+}
+
+func (r *repo) CreatePropertyManagerRequest(ctx context.Context, data *property_dto.CreatePropertyManagerRequest) (model.NewPropertyManagerRequest, error) {
+	res, err := r.dao.CreateNewPropertyManagerRequest(ctx, database.CreateNewPropertyManagerRequestParams{
+		CreatorID:  data.CreatorID,
+		PropertyID: data.PropertyID,
+		UserID: pgtype.UUID{
+			Valid: data.UserID != uuid.Nil,
+			Bytes: data.UserID,
+		},
+		Email: data.Email,
+	})
+	if err != nil {
+		return model.NewPropertyManagerRequest{}, err
+	}
+
+	return model.NewPropertyManagerRequest{
+		ID:         res.ID,
+		CreatorID:  res.CreatorID,
+		PropertyID: res.PropertyID,
+		UserID:     res.UserID.Bytes,
+		Email:      res.Email,
+		Approved:   res.Approved,
+		CreatedAt:  res.CreatedAt,
+		UpdatedAt:  res.UpdatedAt,
+	}, err
+}
+
+func (r *repo) UpdatePropertyManagerRequest(ctx context.Context, id int64, uid uuid.UUID, approved bool) error {
+	if !approved {
+		sb := sqlbuilder.PostgreSQL.NewDeleteBuilder()
+		sb.DeleteFrom("new_property_manager_requests")
+		sb.Where(sb.Equal("id", id))
+
+		sql, args := sb.Build()
+		_, err := r.dao.Exec(ctx, sql, args...)
+		return err
+	} else {
+		err := r.dao.ExecTx(ctx, nil, func(dao database.DAO) error {
+			err := dao.UpdateNewPropertyManagerRequest(ctx, database.UpdateNewPropertyManagerRequestParams{
+				ID:       id,
+				Approved: true,
+			})
+			if err != nil {
+				return err
+			}
+			return dao.AddPropertyManager(ctx, database.AddPropertyManagerParams{
+				RequestID: id,
+				UserID:    uid,
+			})
+		})
+		if err == nil {
+			return error(nil)
+		}
+		return err
+	}
+}
+
+func (r *repo) GetNewPropertyManagerRequest(ctx context.Context, id int64) (model.NewPropertyManagerRequest, error) {
+	res, err := r.dao.GetNewPropertyManagerRequest(ctx, id)
+	if err != nil {
+		return model.NewPropertyManagerRequest{}, err
+	}
+	return model.NewPropertyManagerRequest{
+		ID:         res.ID,
+		CreatorID:  res.CreatorID,
+		PropertyID: res.PropertyID,
+		UserID:     res.UserID.Bytes,
+		Email:      res.Email,
+		Approved:   res.Approved,
+		CreatedAt:  res.CreatedAt,
+		UpdatedAt:  res.UpdatedAt,
+	}, nil
+}
+
+func (r *repo) GetNewPropertyManagerRequestsToUser(ctx context.Context, uid uuid.UUID, limit, offset int64) ([]model.NewPropertyManagerRequest, error) {
+	res, err := r.dao.GetNewPropertyManagerRequestsToUser(ctx, database.GetNewPropertyManagerRequestsToUserParams{
+		UserID: pgtype.UUID{
+			Valid: true,
+			Bytes: uid,
+		},
+		Limit:  int32(limit),
+		Offset: int32(offset),
+	})
+	if err != nil {
+		return nil, err
+	}
+	var items []model.NewPropertyManagerRequest
+	for _, i := range res {
+		items = append(items, model.NewPropertyManagerRequest{
+			ID:         i.ID,
+			CreatorID:  i.CreatorID,
+			PropertyID: i.PropertyID,
+			UserID:     i.UserID.Bytes,
+			Email:      i.Email,
+			Approved:   i.Approved,
+			CreatedAt:  i.CreatedAt,
+			UpdatedAt:  i.UpdatedAt,
+		})
+	}
+	return items, nil
 }

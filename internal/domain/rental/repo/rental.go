@@ -115,13 +115,13 @@ func (r *repo) GetRentalSide(ctx context.Context, id int64, userId uuid.UUID) (s
 	})
 }
 
-func (r *repo) GetRentalsByIds(ctx context.Context, ids []int64, query *dto.GetRentalsQuery) ([]model.RentalModel, error) {
+func (r *repo) GetRentalsByIds(ctx context.Context, ids []int64, fields []string) ([]model.RentalModel, error) {
 	if len(ids) == 0 {
 		return nil, nil
 	}
 	var nonFKFields []string = []string{"id"}
 	var fkFields []string
-	for _, f := range query.Fields {
+	for _, f := range fields {
 		if slices.Contains([]string{"coaps", "minors", "pets", "services", "policies"}, f) {
 			fkFields = append(fkFields, f)
 		} else {

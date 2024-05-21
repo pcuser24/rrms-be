@@ -9,7 +9,6 @@ import (
 	property_model "github.com/user2410/rrms-backend/internal/domain/property/model"
 	"github.com/user2410/rrms-backend/pkg/ds/set"
 
-	"github.com/gofiber/fiber/v2/log"
 	"github.com/google/uuid"
 	"github.com/user2410/rrms-backend/internal/domain/application/dto"
 	"github.com/user2410/rrms-backend/internal/domain/application/model"
@@ -51,22 +50,7 @@ func (s *service) CreateApplication(data *dto.CreateApplication) (*model.Applica
 		return nil, ErrAlreadyApplied
 	}
 
-	a, err := s.aRepo.CreateApplication(context.Background(), data)
-	if err != nil {
-		return nil, err
-	}
-	if err = s.taskDistributor.SendEmailOnNewApplication(
-		context.Background(),
-		&dto.SendEmailOnNewApplicationPayload{
-			Email:         a.Email,
-			Username:      a.FullName,
-			ApplicationId: a.ID,
-			ListingId:     a.ListingID,
-		},
-	); err != nil {
-		log.Errorf("failed to distribute DistributeTaskSendNewApplicationEmail task: %v", err)
-	}
-	return a, nil
+	return s.aRepo.CreateApplication(context.Background(), data)
 }
 
 func (s *service) GetApplicationById(id int64) (*model.ApplicationModel, error) {
@@ -125,14 +109,7 @@ func (s *service) UpdateApplicationStatus(aid int64, userId uuid.UUID, data *dto
 		return ErrUnauthorizedUpdate
 	}
 
-	// send email to the applicant
-	return s.taskDistributor.UpdateApplicationStatus(context.Background(), &dto.UpdateApplicationStatusPayload{
-		Email:         a.Email,
-		ApplicationId: aid,
-		OldStatus:     a.Status,
-		NewStatus:     data.Status,
-		Message:       data.Message,
-	})
+	return nil
 }
 
 func (s *service) GetApplicationsByUserId(uid uuid.UUID, q *dto.GetApplicationsToMeQuery) ([]model.ApplicationModel, error) {

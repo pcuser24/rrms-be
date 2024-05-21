@@ -87,6 +87,23 @@ INSERT INTO property_tags (
   sqlc.arg(tag)
 ) RETURNING *;
 
+-- name: CreateNewPropertyManagerRequest :one
+INSERT INTO "new_property_manager_requests" (
+  "creator_id",
+  "property_id",
+  "user_id",
+  "email",
+  "created_at",
+  "updated_at"
+) VALUES (
+  sqlc.arg(creator_id), 
+  sqlc.arg(property_id),
+  sqlc.narg(user_id),
+  sqlc.arg(email),
+  NOW(), NOW()
+) RETURNING *;
+
+
 -- name: GetPropertyById :one
 SELECT * FROM properties WHERE id = $1 LIMIT 1;
 
@@ -108,8 +125,42 @@ SELECT * FROM property_managers WHERE property_id = $1;
 -- name: GetManagedProperties :many
 SELECT property_id, role FROM property_managers WHERE manager_id = $1;
 
--- name: IsPropertyPublic :one
-SELECT is_public FROM properties WHERE id = $1 LIMIT 1;
+-- name: GetNewPropertyManagerRequest :one
+SELECT * FROM "new_property_manager_requests" WHERE "id" = $1 LIMIT 1;
+
+-- name: GetNewPropertyManagerRequestsToUser :many
+SELECT * 
+FROM "new_property_manager_requests" 
+WHERE "user_id" = $1
+ORDER BY "created_at" DESC
+LIMIT $2
+OFFSET $3;
+
+-- name: IsPropertyVisible :one
+SELECT (
+  SELECT is_public FROM "properties" WHERE properties.id = sqlc.arg(property_id) LIMIT 1
+) OR (
+  SELECT EXISTS (SELECT 1 FROM "property_managers" WHERE property_managers.property_id = sqlc.arg(property_id) AND property_managers.manager_id = sqlc.arg(user_id) LIMIT 1)
+) OR (
+  SELECT EXISTS (SELECT 1 FROM "new_property_manager_requests" WHERE new_property_manager_requests.property_id = sqlc.arg(property_id) AND new_property_manager_requests.user_id = sqlc.arg(user_id) LIMIT 1)
+);
+
+-- name: UpdateNewPropertyManagerRequest :exec
+UPDATE "new_property_manager_requests" SET
+  "approved" = sqlc.arg(approved),
+  "updated_at" = NOW()
+WHERE "id" = $1;
+
+-- name: AddPropertyManager :exec
+INSERT INTO property_managers (
+  property_id,
+  manager_id,
+  role
+) VALUES (
+  (SELECT property_id FROM new_property_manager_requests WHERE id = sqlc.arg(request_id) LIMIT 1),
+  sqlc.arg(user_id),
+  'MANAGER'
+);
 
 -- name: UpdateProperty :exec
 UPDATE properties SET

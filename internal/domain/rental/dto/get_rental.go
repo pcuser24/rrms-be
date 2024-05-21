@@ -30,14 +30,18 @@ type GetRentalsQuery struct {
 	// Order  []string `query:"order" validate:"omitempty,dive,oneof=asc desc"`
 }
 
+func (q *GetRentalsQuery) parseFields() {
+	if len(q.Fields) == 1 {
+		q.Fields = strings.Split(q.Fields[0], ",")
+	}
+}
+
 func (q *GetRentalsQuery) QueryParser(ctx *fiber.Ctx) error {
 	err := ctx.QueryParser(q)
 	if err != nil {
 		return err
 	}
-	if len(q.Fields) == 1 {
-		q.Fields = strings.Split(q.Fields[0], ",")
-	}
+	q.parseFields()
 	return nil
 }
 
@@ -68,4 +72,20 @@ func ValidateQuery(fl validator.FieldLevel) bool {
 		return true
 	}
 	return false
+}
+
+type GetRentalsOfPropertyQuery struct {
+	GetRentalsQuery
+	Expired bool   `query:"expired" validate:"omitempty"`
+	Limit   *int32 `query:"limit" validate:"omitempty,gte=0"`
+	Offset  *int32 `json:"offset" validate:"omitempty,gte=0"`
+}
+
+func (q *GetRentalsOfPropertyQuery) QueryParser(ctx *fiber.Ctx) error {
+	err := ctx.QueryParser(q)
+	if err != nil {
+		return err
+	}
+	q.parseFields()
+	return nil
 }

@@ -50,5 +50,5 @@ func (s *service) GetManagedRentals(userId uuid.UUID, query *dto.GetRentalsQuery
 		return nil, err
 	}
 
-	return s.rRepo.GetRentalsByIds(context.Background(), rs, query)
+	return s.rRepo.GetRentalsByIds(context.Background(), rs, query.Fields)
 }

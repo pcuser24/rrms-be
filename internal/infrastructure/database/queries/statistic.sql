@@ -6,7 +6,7 @@ SELECT property_id FROM rentals WHERE tenant_id = $1;
 
 -- name: GetPropertiesWithActiveListing :many
 SELECT DISTINCT property_id FROM listings WHERE 
-  creator_id = $1 AND
+  EXISTS (SELECT 1 FROM property_managers WHERE property_managers.property_id = listings.property_id AND property_managers.manager_id = $1) AND
   active = TRUE AND
   expired_at > NOW()
 ;
@@ -105,12 +105,6 @@ SELECT DISTINCT unit_id FROM rentals WHERE
   ) AND 
   start_date + INTERVAL '1 month' * rental_period >= CURRENT_DATE AND
   status = 'INPROGRESS';
-
--- name: GetPropertiesHavingListing :many
-SELECT DISTINCT property_id FROM listings WHERE 
-  property_id IN (SELECT property_id FROM property_managers WHERE manager_id = $1) AND
-  expired_at::DATE > CURRENT_DATE;
-
 
 -- name: GetNewApplications :many
 SELECT id FROM applications WHERE 

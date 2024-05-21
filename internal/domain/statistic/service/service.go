@@ -46,11 +46,6 @@ func (s *service) GetPropertiesStatistic(userId uuid.UUID, query dto.PropertiesS
 		return
 	}
 
-	res.PropertiesHavingListings, err = s.statisticRepo.GetPropertiesHavingListing(context.Background(), userId)
-	if err != nil {
-		return
-	}
-
 	res.Units, err = s.statisticRepo.GetManagedUnits(context.Background(), userId)
 	if err != nil {
 		return

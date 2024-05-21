@@ -12,12 +12,8 @@ import (
 	statistic_service "github.com/user2410/rrms-backend/internal/domain/statistic/service"
 	"github.com/user2410/rrms-backend/internal/domain/storage"
 	"github.com/user2410/rrms-backend/internal/domain/unit"
-	"github.com/user2410/rrms-backend/internal/infrastructure/asynctask"
 	"github.com/user2410/rrms-backend/internal/infrastructure/aws/s3"
 	"github.com/user2410/rrms-backend/internal/infrastructure/database"
-
-	application_asynctask "github.com/user2410/rrms-backend/internal/domain/application/asynctask"
-	auth_asynctask "github.com/user2410/rrms-backend/internal/domain/auth/asynctask"
 
 	application_repo "github.com/user2410/rrms-backend/internal/domain/application/repo"
 	auth_repo "github.com/user2410/rrms-backend/internal/domain/auth/repo"
@@ -34,7 +30,6 @@ import (
 func (c *serverCommand) setupInternalServices(
 	dao database.DAO,
 	s3Client *s3.S3Client,
-	taskDistributor asynctask.Distributor,
 ) {
 	// Initialize repositories
 	authRepo := auth_repo.NewRepo(dao)
@@ -51,21 +46,18 @@ func (c *serverCommand) setupInternalServices(
 	// Initialize storage services
 	s := storage.NewStorage(s3Client, c.config.AWSS3ImageBucket)
 
-	// Initialize async task distributor
-	authTaskDistributor := auth_asynctask.NewTaskDistributor(taskDistributor)
-	applicationTaskDistributor := application_asynctask.NewTaskDistributor(taskDistributor)
-
 	// Initialize internal services
 	c.internalServices.AuthService = auth.NewService(
 		authRepo,
 		c.tokenMaker, c.config.AccessTokenTTL, c.config.RefreshTokenTTL,
-		authTaskDistributor,
 	)
 	c.internalServices.PropertyService = property_service.NewService(
 		propertyRepo,
 		unitRepo,
 		listingRepo,
 		applicationRepo,
+		rentalRepo,
+		authRepo,
 	)
 	c.internalServices.UnitService = unit.NewService(unitRepo)
 	c.internalServices.ListingService = listing_service.NewService(
@@ -85,7 +77,6 @@ func (c *serverCommand) setupInternalServices(
 	)
 	c.internalServices.ReminderService = reminder.NewService(
 		reminderRepo,
-		c.wsNotificationAdapter,
 	)
 	c.internalServices.ApplicationService = application_service.NewService(
 		applicationRepo,
@@ -93,7 +84,6 @@ func (c *serverCommand) setupInternalServices(
 		listingRepo,
 		propertyRepo,
 		c.internalServices.ReminderService,
-		applicationTaskDistributor,
 	)
 	c.internalServices.StorageService = storage.NewService(s)
 	c.internalServices.PaymentService = vnp_service.NewVnpayService(

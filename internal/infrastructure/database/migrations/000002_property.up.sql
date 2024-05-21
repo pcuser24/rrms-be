@@ -4,6 +4,7 @@ CREATE TYPE "PROPERTYTYPE" AS ENUM (
   'APARTMENT', 'PRIVATE',
   'ROOM', 
   'STORE', 'OFFICE',
+  'VILLA',
   'MINIAPARTMENT'
 );
 
@@ -94,5 +95,18 @@ CREATE TABLE IF NOT EXISTS "property_media" (
 );
 ALTER TABLE "property_media" ADD CONSTRAINT "property_id_media_fkey" FOREIGN KEY ("property_id") REFERENCES "properties"("id") ON DELETE CASCADE;
 ALTER TABLE "properties" ADD CONSTRAINT "property_primary_image_fkey" FOREIGN KEY ("primary_image") REFERENCES "property_media"("id") ON DELETE SET NULL;
+
+CREATE TABLE IF NOT EXISTS "new_property_manager_requests" (
+  "id" BIGSERIAL PRIMARY KEY,
+  "creator_id" UUID NOT NULL,
+  "property_id" UUID NOT NULL,
+  "user_id" UUID,
+  "email" TEXT NOT NULL,
+  "approved" BOOLEAN NOT NULL DEFAULT FALSE,
+  "created_at" TIMESTAMPTZ DEFAULT NOW() NOT NULL,
+  "updated_at" TIMESTAMPTZ DEFAULT NOW() NOT NULL
+);
+ALTER TABLE "new_property_manager_requests" ADD CONSTRAINT "new_property_manager_requests_creator_fkey" FOREIGN KEY ("creator_id") REFERENCES "User"("id") ON DELETE CASCADE;
+ALTER TABLE "new_property_manager_requests" ADD CONSTRAINT "new_property_manager_requests_property_fkey" FOREIGN KEY ("property_id") REFERENCES "properties"("id") ON DELETE CASCADE;
 
 END;

@@ -1,7 +1,6 @@
 package service
 
 import (
-	application_asynctask "github.com/user2410/rrms-backend/internal/domain/application/asynctask"
 	"github.com/user2410/rrms-backend/internal/domain/application/repo"
 	chat_model "github.com/user2410/rrms-backend/internal/domain/chat/model"
 	chat_repo "github.com/user2410/rrms-backend/internal/domain/chat/repo"
@@ -31,12 +30,11 @@ type Service interface {
 }
 
 type service struct {
-	aRepo           repo.Repo
-	cRepo           chat_repo.Repo
-	lRepo           listing_repo.Repo
-	pRepo           property_repo.Repo
-	rService        reminder_service.Service
-	taskDistributor application_asynctask.TaskDistributor
+	aRepo    repo.Repo
+	cRepo    chat_repo.Repo
+	lRepo    listing_repo.Repo
+	pRepo    property_repo.Repo
+	rService reminder_service.Service
 }
 
 func NewService(
@@ -45,14 +43,12 @@ func NewService(
 	lRepo listing_repo.Repo,
 	pRepo property_repo.Repo,
 	rService reminder_service.Service,
-	taskDistributor application_asynctask.TaskDistributor,
 ) Service {
 	return &service{
-		aRepo:           aRepo,
-		cRepo:           cRepo,
-		lRepo:           lRepo,
-		pRepo:           pRepo,
-		rService:        rService,
-		taskDistributor: taskDistributor,
+		aRepo:    aRepo,
+		cRepo:    cRepo,
+		lRepo:    lRepo,
+		pRepo:    pRepo,
+		rService: rService,
 	}
 }

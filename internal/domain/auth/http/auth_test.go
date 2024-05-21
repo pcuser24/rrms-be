@@ -13,7 +13,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/user2410/rrms-backend/internal/domain/auth/asynctask"
 	"github.com/user2410/rrms-backend/internal/domain/auth/dto"
 	"github.com/user2410/rrms-backend/internal/domain/auth/model"
 	"github.com/user2410/rrms-backend/internal/domain/auth/repo"
@@ -138,9 +137,7 @@ func TestRegister(t *testing.T) {
 			repo := repo.NewMockRepo(ctrl)
 			tc.buildStubs(repo)
 
-			a := asynctask.NewMockTaskDistributor(ctrl)
-
-			srv := newTestServer(t, repo, a)
+			srv := newTestServer(t, repo)
 
 			data, err := json.Marshal(tc.body)
 			require.NoError(t, err)
@@ -392,9 +389,7 @@ func TestLogin(t *testing.T) {
 			repo := repo.NewMockRepo(ctrl)
 			tc.buildStubs(repo)
 
-			a := asynctask.NewMockTaskDistributor(ctrl)
-
-			srv := newTestServer(t, repo, a)
+			srv := newTestServer(t, repo)
 
 			data, err := json.Marshal(tc.body)
 			require.NoError(t, err)
@@ -498,9 +493,7 @@ func TestRefreshAccessToken(t *testing.T) {
 			repo := repo.NewMockRepo(ctrl)
 			tc.buildStubs(repo)
 
-			a := asynctask.NewMockTaskDistributor(ctrl)
-
-			srv := newTestServer(t, repo, a)
+			srv := newTestServer(t, repo)
 
 			data, err := json.Marshal(tc.body(t, srv.tokenMaker))
 			require.NoError(t, err)
@@ -641,9 +634,7 @@ func TestUpdateUser(t *testing.T) {
 			repo := repo.NewMockRepo(ctrl)
 			tc.buildStubs(repo)
 
-			a := asynctask.NewMockTaskDistributor(ctrl)
-
-			srv := newTestServer(t, repo, a)
+			srv := newTestServer(t, repo)
 
 			data, err := json.Marshal(tc.body)
 			require.NoError(t, err)

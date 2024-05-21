@@ -282,6 +282,7 @@ const (
 	PROPERTYTYPEROOM          PROPERTYTYPE = "ROOM"
 	PROPERTYTYPESTORE         PROPERTYTYPE = "STORE"
 	PROPERTYTYPEOFFICE        PROPERTYTYPE = "OFFICE"
+	PROPERTYTYPEVILLA         PROPERTYTYPE = "VILLA"
 	PROPERTYTYPEMINIAPARTMENT PROPERTYTYPE = "MINIAPARTMENT"
 )
 
@@ -908,6 +909,17 @@ type MsgGroup struct {
 type MsgGroupMember struct {
 	GroupID int64     `json:"group_id"`
 	UserID  uuid.UUID `json:"user_id"`
+}
+
+type NewPropertyManagerRequest struct {
+	ID         int64       `json:"id"`
+	CreatorID  uuid.UUID   `json:"creator_id"`
+	PropertyID uuid.UUID   `json:"property_id"`
+	UserID     pgtype.UUID `json:"user_id"`
+	Email      string      `json:"email"`
+	Approved   bool        `json:"approved"`
+	CreatedAt  time.Time   `json:"created_at"`
+	UpdatedAt  time.Time   `json:"updated_at"`
 }
 
 // Security guard, Parking, Gym, ...

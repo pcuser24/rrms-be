@@ -162,6 +162,21 @@ func (mr *MockRepoMockRecorder) GetContractByRentalID(arg0, arg1 any) *gomock.Ca
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetContractByRentalID", reflect.TypeOf((*MockRepo)(nil).GetContractByRentalID), arg0, arg1)
 }
 
+// GetManagedRentals mocks base method.
+func (m *MockRepo) GetManagedRentals(arg0 context.Context, arg1 uuid.UUID) ([]int64, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetManagedRentals", arg0, arg1)
+	ret0, _ := ret[0].([]int64)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetManagedRentals indicates an expected call of GetManagedRentals.
+func (mr *MockRepoMockRecorder) GetManagedRentals(arg0, arg1 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetManagedRentals", reflect.TypeOf((*MockRepo)(nil).GetManagedRentals), arg0, arg1)
+}
+
 // GetPaymentsOfRental mocks base method.
 func (m *MockRepo) GetPaymentsOfRental(arg0 context.Context, arg1 int64) ([]model.RentalPayment, error) {
 	m.ctrl.T.Helper()
@@ -265,6 +280,21 @@ func (m *MockRepo) GetRentalSide(arg0 context.Context, arg1 int64, arg2 uuid.UUI
 func (mr *MockRepoMockRecorder) GetRentalSide(arg0, arg1, arg2 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRentalSide", reflect.TypeOf((*MockRepo)(nil).GetRentalSide), arg0, arg1, arg2)
+}
+
+// GetRentalsByIds mocks base method.
+func (m *MockRepo) GetRentalsByIds(arg0 context.Context, arg1 []int64, arg2 []string) ([]model.RentalModel, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetRentalsByIds", arg0, arg1, arg2)
+	ret0, _ := ret[0].([]model.RentalModel)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetRentalsByIds indicates an expected call of GetRentalsByIds.
+func (mr *MockRepoMockRecorder) GetRentalsByIds(arg0, arg1, arg2 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRentalsByIds", reflect.TypeOf((*MockRepo)(nil).GetRentalsByIds), arg0, arg1, arg2)
 }
 
 // PingRentalContract mocks base method.

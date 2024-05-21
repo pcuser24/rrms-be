@@ -48,21 +48,15 @@ payment:
 
 # Mocking:
 mock_repo:
+	mockgen -package repo -destination internal/domain/${DOMAIN}/repo/mock.go github.com/user2410/rrms-backend/internal/domain/${DOMAIN}/repo Repo; \
+
+mock_repos:
 	@directory_path="internal/domain"; \
 	subdirectories=$$(find "$$directory_path" -mindepth 1 -maxdepth 1 -type d); \
 	for subdir in $$subdirectories; do \
 		mockgen -package repo -destination $$subdir/repo/mock.go github.com/user2410/rrms-backend/$$subdir/repo Repo; \
 	done; \
 	true;
-
-mock_asynctask:
-	@directory_path="internal/domain"; \
-	subdirectories=$$(find "$$directory_path" -mindepth 1 -maxdepth 1 -type d); \
-	for subdir in $$subdirectories; do \
-		mockgen -package asynctask -destination $$subdir/asynctask/mock.go github.com/user2410/rrms-backend/$$subdir/asynctask TaskDistributor,TaskProcessor; \
-	done; \
-	true;
-
 
 # Test
 # Test db container for local development

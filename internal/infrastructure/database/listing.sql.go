@@ -426,29 +426,30 @@ SELECT id
 FROM listings
 WHERE 
   property_id = $1
+  AND active = TRUE
   AND CASE
-    WHEN $2 THEN expired_at <= NOW()
-    WHEN NOT $2 THEN expired_at > NOW()
+    WHEN $4::BOOLEAN THEN expired_at <= NOW()
+    WHEN NOT $4::BOOLEAN THEN expired_at > NOW()
   END
 ORDER BY
   created_at DESC
-LIMIT $3 OFFSET $4
+LIMIT $2 OFFSET $3
 `
 
 type GetListingsOfPropertyParams struct {
-	PropertyID uuid.UUID   `json:"property_id"`
-	Column2    interface{} `json:"column_2"`
-	Limit      int32       `json:"limit"`
-	Offset     int32       `json:"offset"`
+	PropertyID uuid.UUID `json:"property_id"`
+	Limit      int32     `json:"limit"`
+	Offset     int32     `json:"offset"`
+	Expired    bool      `json:"expired"`
 }
 
 // Get expired / active listings
 func (q *Queries) GetListingsOfProperty(ctx context.Context, arg GetListingsOfPropertyParams) ([]uuid.UUID, error) {
 	rows, err := q.db.Query(ctx, getListingsOfProperty,
 		arg.PropertyID,
-		arg.Column2,
 		arg.Limit,
 		arg.Offset,
+		arg.Expired,
 	)
 	if err != nil {
 		return nil, err

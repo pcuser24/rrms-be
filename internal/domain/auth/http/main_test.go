@@ -9,7 +9,6 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/stretchr/testify/require"
 	"github.com/user2410/rrms-backend/internal/domain/auth"
-	"github.com/user2410/rrms-backend/internal/domain/auth/asynctask"
 	"github.com/user2410/rrms-backend/internal/domain/auth/repo"
 	"github.com/user2410/rrms-backend/internal/infrastructure/http"
 	"github.com/user2410/rrms-backend/internal/utils/token"
@@ -17,18 +16,17 @@ import (
 
 type server struct {
 	r          repo.Repo
-	a          asynctask.TaskDistributor
 	tokenMaker token.Maker
 	router     http.Server
 }
 
-func newTestServer(t *testing.T, r repo.Repo, a asynctask.TaskDistributor) *server {
+func newTestServer(t *testing.T, r repo.Repo) *server {
 	tokenMaker, err := token.NewJWTMaker("cae1X53au6agHqAOulzCRhgDr0BG52yv")
 	require.NoError(t, err)
 	require.NotNil(t, tokenMaker)
 
 	// initialize service
-	service := auth.NewService(r, tokenMaker, time.Minute, time.Hour, a)
+	service := auth.NewService(r, tokenMaker, time.Minute, time.Hour)
 
 	// initialize http router
 	httpServer := http.NewServer(
@@ -45,7 +43,6 @@ func newTestServer(t *testing.T, r repo.Repo, a asynctask.TaskDistributor) *serv
 
 	return &server{
 		r:          r,
-		a:          a,
 		tokenMaker: tokenMaker,
 		router:     httpServer,
 	}

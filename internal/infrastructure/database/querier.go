@@ -12,6 +12,7 @@ import (
 )
 
 type Querier interface {
+	AddPropertyManager(ctx context.Context, arg AddPropertyManagerParams) error
 	CheckApplicationUpdatabilty(ctx context.Context, arg CheckApplicationUpdatabiltyParams) (bool, error)
 	CheckApplicationVisibility(ctx context.Context, arg CheckApplicationVisibilityParams) (bool, error)
 	CheckListingExpired(ctx context.Context, id uuid.UUID) (pgtype.Bool, error)
@@ -37,6 +38,7 @@ type Querier interface {
 	CreateMessage(ctx context.Context, arg CreateMessageParams) (Message, error)
 	CreateMsgGroup(ctx context.Context, arg CreateMsgGroupParams) (MsgGroup, error)
 	CreateMsgGroupMember(ctx context.Context, arg CreateMsgGroupMemberParams) (MsgGroupMember, error)
+	CreateNewPropertyManagerRequest(ctx context.Context, arg CreateNewPropertyManagerRequestParams) (NewPropertyManagerRequest, error)
 	CreatePayment(ctx context.Context, arg CreatePaymentParams) (Payment, error)
 	CreatePaymentItem(ctx context.Context, arg CreatePaymentItemParams) (PaymentItem, error)
 	CreateProperty(ctx context.Context, arg CreatePropertyParams) (Property, error)
@@ -110,13 +112,14 @@ type Querier interface {
 	GetMsgGroupByName(ctx context.Context, arg GetMsgGroupByNameParams) (MsgGroup, error)
 	GetMsgGroupMembers(ctx context.Context, groupID int64) ([]GetMsgGroupMembersRow, error)
 	GetNewApplications(ctx context.Context, arg GetNewApplicationsParams) ([]int64, error)
+	GetNewPropertyManagerRequest(ctx context.Context, id int64) (NewPropertyManagerRequest, error)
+	GetNewPropertyManagerRequestsToUser(ctx context.Context, arg GetNewPropertyManagerRequestsToUserParams) ([]NewPropertyManagerRequest, error)
 	GetOccupiedProperties(ctx context.Context, managerID uuid.UUID) ([]uuid.UUID, error)
 	GetOccupiedUnits(ctx context.Context, managerID uuid.UUID) ([]uuid.UUID, error)
 	GetPaymentById(ctx context.Context, id int64) (Payment, error)
 	GetPaymentItemsByPaymentId(ctx context.Context, paymentID int64) ([]PaymentItem, error)
 	GetPaymentsOfRental(ctx context.Context, rentalID int64) ([]RentalPayment, error)
-	GetPropertiesHavingListing(ctx context.Context, managerID uuid.UUID) ([]uuid.UUID, error)
-	GetPropertiesWithActiveListing(ctx context.Context, creatorID uuid.UUID) ([]uuid.UUID, error)
+	GetPropertiesWithActiveListing(ctx context.Context, managerID uuid.UUID) ([]uuid.UUID, error)
 	GetPropertyById(ctx context.Context, id uuid.UUID) (Property, error)
 	GetPropertyFeatures(ctx context.Context, propertyID uuid.UUID) ([]PropertyFeature, error)
 	GetPropertyManagers(ctx context.Context, propertyID uuid.UUID) ([]PropertyManager, error)
@@ -141,6 +144,7 @@ type Querier interface {
 	GetRentalServicesByRentalID(ctx context.Context, rentalID int64) ([]RentalService, error)
 	// Get rental side: Side A (lanlord and managers) and Side B (tenant). Otherwise return C
 	GetRentalSide(ctx context.Context, arg GetRentalSideParams) (string, error)
+	GetRentalsOfProperty(ctx context.Context, arg GetRentalsOfPropertyParams) ([]int64, error)
 	GetRentedProperties(ctx context.Context, tenantID pgtype.UUID) ([]uuid.UUID, error)
 	GetSessionById(ctx context.Context, id uuid.UUID) (Session, error)
 	GetUnitAmenities(ctx context.Context, unitID uuid.UUID) ([]UnitAmenity, error)
@@ -150,7 +154,7 @@ type Querier interface {
 	GetUnitsOfProperty(ctx context.Context, propertyID uuid.UUID) ([]Unit, error)
 	GetUserByEmail(ctx context.Context, email string) (User, error)
 	GetUserById(ctx context.Context, id uuid.UUID) (User, error)
-	IsPropertyPublic(ctx context.Context, id uuid.UUID) (bool, error)
+	IsPropertyVisible(ctx context.Context, arg IsPropertyVisibleParams) (pgtype.Bool, error)
 	IsUnitPublic(ctx context.Context, id uuid.UUID) (bool, error)
 	PingContractByRentalID(ctx context.Context, rentalID int64) (PingContractByRentalIDRow, error)
 	PlanRentalPayment(ctx context.Context, rentalID int64) ([]int64, error)
@@ -162,6 +166,7 @@ type Querier interface {
 	UpdateListingPriority(ctx context.Context, arg UpdateListingPriorityParams) error
 	UpdateListingStatus(ctx context.Context, arg UpdateListingStatusParams) error
 	UpdateMessage(ctx context.Context, arg UpdateMessageParams) ([]int64, error)
+	UpdateNewPropertyManagerRequest(ctx context.Context, arg UpdateNewPropertyManagerRequestParams) error
 	UpdatePayment(ctx context.Context, arg UpdatePaymentParams) error
 	UpdateProperty(ctx context.Context, arg UpdatePropertyParams) error
 	UpdateReminder(ctx context.Context, arg UpdateReminderParams) ([]Reminder, error)

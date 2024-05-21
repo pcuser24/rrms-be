@@ -2,11 +2,13 @@ package service
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	application_dto "github.com/user2410/rrms-backend/internal/domain/application/dto"
 	application_model "github.com/user2410/rrms-backend/internal/domain/application/model"
 	application_repo "github.com/user2410/rrms-backend/internal/domain/application/repo"
+	auth_repo "github.com/user2410/rrms-backend/internal/domain/auth/repo"
 	property_repo "github.com/user2410/rrms-backend/internal/domain/property/repo"
 	"github.com/user2410/rrms-backend/internal/infrastructure/database"
 
@@ -16,6 +18,9 @@ import (
 	listing_repo "github.com/user2410/rrms-backend/internal/domain/listing/repo"
 	property_dto "github.com/user2410/rrms-backend/internal/domain/property/dto"
 	property_model "github.com/user2410/rrms-backend/internal/domain/property/model"
+	rental_dto "github.com/user2410/rrms-backend/internal/domain/rental/dto"
+	rental_model "github.com/user2410/rrms-backend/internal/domain/rental/model"
+	rental_repo "github.com/user2410/rrms-backend/internal/domain/rental/repo"
 	unit_model "github.com/user2410/rrms-backend/internal/domain/unit/model"
 	unit_repo "github.com/user2410/rrms-backend/internal/domain/unit/repo"
 	"github.com/user2410/rrms-backend/internal/utils"
@@ -36,39 +41,40 @@ type Service interface {
 	SearchListingCombination(data *property_dto.SearchPropertyCombinationQuery) (*property_dto.SearchPropertyCombinationResponse, error)
 	UpdateProperty(data *property_dto.UpdateProperty) error
 	DeleteProperty(id uuid.UUID) error
+
+	CreatePropertyManagerRequest(data *property_dto.CreatePropertyManagerRequest) (property_model.NewPropertyManagerRequest, error)
+	GetRentalsOfProperty(id uuid.UUID, query *rental_dto.GetRentalsOfPropertyQuery) ([]rental_model.RentalModel, error)
+	GetNewPropertyManagerRequestsToUser(uid uuid.UUID, limit, offset int64) ([]property_model.NewPropertyManagerRequest, error)
+	UpdatePropertyManagerRequest(pid, uid uuid.UUID, requestId int64, approved bool) error
 }
 
 type service struct {
-	pRepo property_repo.Repo
-	uRepo unit_repo.Repo
-	lRepo listing_repo.Repo
-	aRepo application_repo.Repo
+	pRepo    property_repo.Repo
+	uRepo    unit_repo.Repo
+	lRepo    listing_repo.Repo
+	aRepo    application_repo.Repo
+	rRepo    rental_repo.Repo
+	authRepo auth_repo.Repo
 }
 
-func NewService(pRepo property_repo.Repo, uRepo unit_repo.Repo, lRepo listing_repo.Repo, aRepo application_repo.Repo) Service {
+func NewService(pRepo property_repo.Repo, uRepo unit_repo.Repo, lRepo listing_repo.Repo, aRepo application_repo.Repo, rRepo rental_repo.Repo, authRepo auth_repo.Repo) Service {
 	return &service{
-		pRepo: pRepo,
-		uRepo: uRepo,
-		lRepo: lRepo,
-		aRepo: aRepo,
+		pRepo:    pRepo,
+		uRepo:    uRepo,
+		lRepo:    lRepo,
+		aRepo:    aRepo,
+		rRepo:    rRepo,
+		authRepo: authRepo,
 	}
 }
 
 func (s *service) CreateProperty(data *property_dto.CreateProperty, creatorID uuid.UUID) (*property_model.PropertyModel, error) {
 	data.CreatorID = creatorID
-	foundCreator := false
-	for _, m := range data.Managers {
-		if m.ManagerID == creatorID {
-			foundCreator = true
-			// m.Role = "OWNER"
-			break
-		}
-	}
-	if !foundCreator {
-		data.Managers = append(data.Managers, property_dto.CreatePropertyManager{
+	data.Managers = []property_dto.CreatePropertyManager{
+		{
 			ManagerID: creatorID,
-			Role:      "OWNER", // TODO: add role to user
-		})
+			Role:      "OWNER",
+		},
 	}
 	return s.pRepo.CreateProperty(context.Background(), data)
 }
@@ -115,6 +121,15 @@ func (s *service) GetApplicationsOfProperty(id uuid.UUID, query *application_dto
 	}
 
 	return s.aRepo.GetApplicationsByIds(context.Background(), ids, query.Fields)
+}
+
+func (s *service) GetRentalsOfProperty(id uuid.UUID, query *rental_dto.GetRentalsOfPropertyQuery) ([]rental_model.RentalModel, error) {
+	ids, err := s.pRepo.GetRentalsOfProperty(context.Background(), id, query)
+	if err != nil {
+		return nil, err
+	}
+
+	return s.rRepo.GetRentalsByIds(context.Background(), ids, query.Fields)
 }
 
 var (
@@ -174,23 +189,7 @@ func (s *service) CheckOwnership(pid uuid.UUID, userId uuid.UUID) (bool, error) 
 }
 
 func (s *service) CheckVisibility(id uuid.UUID, uid uuid.UUID) (bool, error) {
-	isPublic, err := s.pRepo.IsPublic(context.Background(), id)
-	if err != nil {
-		return false, err
-	}
-	if isPublic {
-		return true, nil
-	}
-	managers, err := s.pRepo.GetPropertyManagers(context.Background(), id)
-	if err != nil {
-		return false, err
-	}
-	for _, manager := range managers {
-		if manager.ManagerID == uid {
-			return true, nil
-		}
-	}
-	return false, nil
+	return s.pRepo.IsPropertyVisible(context.Background(), uid, id)
 }
 
 func (s *service) DeleteProperty(id uuid.UUID) error {
@@ -200,6 +199,10 @@ func (s *service) DeleteProperty(id uuid.UUID) error {
 type GetManagedPropertiesItem struct {
 	Role     string                       `json:"role"`
 	Property property_model.PropertyModel `json:"property"`
+	// Active listings of the property
+	Listings []uuid.UUID `json:"listings"`
+	// Active rentals of the property
+	Rentals []int64 `json:"rentals"`
 }
 
 func (s *service) GetManagedProperties(userId uuid.UUID, fields []string) ([]GetManagedPropertiesItem, error) {
@@ -227,6 +230,25 @@ func (s *service) GetManagedProperties(userId uuid.UUID, fields []string) ([]Get
 				r.Property = pp
 			}
 		}
+		// get active listings
+		r.Listings, err = s.pRepo.GetListingsOfProperty(
+			context.Background(), p.PropertyID, &listing_dto.GetListingsOfPropertyQuery{
+				Expired: false,
+				Offset:  types.Ptr(int32(0)),
+				Limit:   types.Ptr(int32(1000)),
+			})
+		if err != nil {
+			return nil, err
+		}
+		// get active rentals
+		r.Rentals, err = s.pRepo.GetRentalsOfProperty(context.Background(), p.PropertyID, &rental_dto.GetRentalsOfPropertyQuery{
+			Expired: false,
+			Offset:  types.Ptr(int32(0)),
+			Limit:   types.Ptr(int32(1000)),
+		})
+		if err != nil {
+			return nil, err
+		}
 		res = append(res, r)
 	}
 
@@ -241,4 +263,65 @@ func (s *service) SearchListingCombination(q *property_dto.SearchPropertyCombina
 	q.Limit = types.Ptr(utils.PtrDerefence(q.Limit, 1000))
 	q.Offset = types.Ptr(utils.PtrDerefence(q.Offset, 0))
 	return s.pRepo.SearchPropertyCombination(context.Background(), q)
+}
+
+var ErrUserIsAlreadyManager = errors.New("user is already a manager of the property")
+
+func (s *service) CreatePropertyManagerRequest(data *property_dto.CreatePropertyManagerRequest) (property_model.NewPropertyManagerRequest, error) {
+	managers, err := s.pRepo.GetPropertyManagers(context.Background(), data.PropertyID)
+	if err != nil {
+		return property_model.NewPropertyManagerRequest{}, err
+	}
+	if exists, err := func() (bool, error) {
+		for _, manager := range managers {
+			user, err := s.authRepo.GetUserById(context.Background(), manager.ManagerID)
+			if err != nil {
+				return false, err
+			}
+			if user.Email == data.Email {
+				return true, nil
+			}
+		}
+		return false, nil
+	}(); exists || err != nil {
+		if err != nil {
+			return property_model.NewPropertyManagerRequest{}, err
+		}
+		return property_model.NewPropertyManagerRequest{}, ErrUserIsAlreadyManager
+	}
+
+	user, err := s.authRepo.GetUserByEmail(context.Background(), data.Email)
+	if err != nil && !errors.Is(err, database.ErrRecordNotFound) {
+		return property_model.NewPropertyManagerRequest{}, err
+	} else {
+		data.UserID = user.ID
+	}
+
+	return s.pRepo.CreatePropertyManagerRequest(context.Background(), data)
+
+	// TODO: send email to user, push notification if user is already registered
+}
+
+func (s *service) GetNewPropertyManagerRequestsToUser(uid uuid.UUID, limit, offset int64) ([]property_model.NewPropertyManagerRequest, error) {
+	return s.pRepo.GetNewPropertyManagerRequestsToUser(context.Background(), uid, limit, offset)
+}
+
+var ErrUpdateRequestInfoMismatch = errors.New("request update info mismatch")
+
+func (s *service) UpdatePropertyManagerRequest(pid, uid uuid.UUID, requestId int64, approved bool) error {
+	user, err := s.authRepo.GetUserById(context.Background(), uid)
+	if err != nil {
+		return err
+	}
+	request, err := s.pRepo.GetNewPropertyManagerRequest(context.Background(), requestId)
+	if err != nil {
+		return err
+	}
+	if (request.UserID != uuid.Nil && uid != request.UserID) ||
+		request.PropertyID != pid ||
+		user.Email != request.Email {
+		return ErrUpdateRequestInfoMismatch
+	}
+
+	return s.pRepo.UpdatePropertyManagerRequest(context.Background(), requestId, user.ID, approved)
 }

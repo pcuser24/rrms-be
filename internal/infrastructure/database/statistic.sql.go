@@ -396,41 +396,15 @@ func (q *Queries) GetOccupiedUnits(ctx context.Context, managerID uuid.UUID) ([]
 	return items, nil
 }
 
-const getPropertiesHavingListing = `-- name: GetPropertiesHavingListing :many
-SELECT DISTINCT property_id FROM listings WHERE 
-  property_id IN (SELECT property_id FROM property_managers WHERE manager_id = $1) AND
-  expired_at::DATE > CURRENT_DATE
-`
-
-func (q *Queries) GetPropertiesHavingListing(ctx context.Context, managerID uuid.UUID) ([]uuid.UUID, error) {
-	rows, err := q.db.Query(ctx, getPropertiesHavingListing, managerID)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []uuid.UUID
-	for rows.Next() {
-		var property_id uuid.UUID
-		if err := rows.Scan(&property_id); err != nil {
-			return nil, err
-		}
-		items = append(items, property_id)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
 const getPropertiesWithActiveListing = `-- name: GetPropertiesWithActiveListing :many
 SELECT DISTINCT property_id FROM listings WHERE 
-  creator_id = $1 AND
+  EXISTS (SELECT 1 FROM property_managers WHERE property_managers.property_id = listings.property_id AND property_managers.manager_id = $1) AND
   active = TRUE AND
   expired_at > NOW()
 `
 
-func (q *Queries) GetPropertiesWithActiveListing(ctx context.Context, creatorID uuid.UUID) ([]uuid.UUID, error) {
-	rows, err := q.db.Query(ctx, getPropertiesWithActiveListing, creatorID)
+func (q *Queries) GetPropertiesWithActiveListing(ctx context.Context, managerID uuid.UUID) ([]uuid.UUID, error) {
+	rows, err := q.db.Query(ctx, getPropertiesWithActiveListing, managerID)
 	if err != nil {
 		return nil, err
 	}

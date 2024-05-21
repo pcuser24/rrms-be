@@ -2,6 +2,7 @@ package http
 
 import (
 	"errors"
+	"strconv"
 
 	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
@@ -12,6 +13,7 @@ import (
 	listing_dto "github.com/user2410/rrms-backend/internal/domain/listing/dto"
 	"github.com/user2410/rrms-backend/internal/domain/property/dto"
 	property_service "github.com/user2410/rrms-backend/internal/domain/property/service"
+	rental_dto "github.com/user2410/rrms-backend/internal/domain/rental/dto"
 	"github.com/user2410/rrms-backend/internal/infrastructure/database"
 	"github.com/user2410/rrms-backend/internal/interfaces/rest/responses"
 	"github.com/user2410/rrms-backend/internal/utils/token"
@@ -49,12 +51,23 @@ func (a *adapter) RegisterServer(router *fiber.Router, tokenMaker token.Maker) {
 		auth_http.GetAuthorizationMiddleware(tokenMaker),
 		a.getPropertiesByIds(),
 	)
+	propertyRoute.Get("/new-manager-requests",
+		auth_http.AuthorizedMiddleware(tokenMaker),
+		a.getNewPropertyManagerRequests(),
+	)
 
 	propertyRoute.Use(auth_http.AuthorizedMiddleware(tokenMaker))
 
 	propertyRoute.Post("/", a.createProperty())
-	propertyRoute.Get("/my-properties", a.getManagedProperties())
+	propertyRoute.Get("/managed-properties", a.getManagedProperties())
 	propertyRoute.Group("/property/:id").Use(GetPropertyId())
+	propertyRoute.Post("/property/:id/new-manager-requests",
+		CheckPropertyManageability(a.service),
+		a.createPropertyManagerRequest(),
+	)
+	propertyRoute.Patch("/property/:id/new-manager-requests/:requestId",
+		a.updatePropertyManagerRequest(),
+	)
 	propertyRoute.Get("/property/:id/listings",
 		CheckPropertyManageability(a.service),
 		a.getListingsOfProperty(),
@@ -62,6 +75,10 @@ func (a *adapter) RegisterServer(router *fiber.Router, tokenMaker token.Maker) {
 	propertyRoute.Get("/property/:id/applications",
 		CheckPropertyManageability(a.service),
 		a.getApplicationsOfProperty(),
+	)
+	propertyRoute.Get("/property/:id/rentals",
+		CheckPropertyManageability(a.service),
+		a.getRentalsOfProperty(),
 	)
 	propertyRoute.Patch("/property/:id",
 		CheckPropertyManageability(a.service),
@@ -189,6 +206,33 @@ func (a *adapter) getApplicationsOfProperty() fiber.Handler {
 	}
 }
 
+func (a *adapter) getRentalsOfProperty() fiber.Handler {
+	return func(ctx *fiber.Ctx) error {
+		puid := ctx.Locals(PropertyIDLocalKey).(uuid.UUID)
+
+		query := new(rental_dto.GetRentalsOfPropertyQuery)
+		if err := query.QueryParser(ctx); err != nil {
+			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": err.Error()})
+		}
+		validator := validation.GetDefaultValidator()
+		validator.RegisterValidation(rental_dto.RentalFieldsLocalKey, rental_dto.ValidateQuery)
+		if errs := validation.ValidateStruct(validator, *query); len(errs) > 0 {
+			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": validation.GetValidationError(errs)})
+		}
+
+		res, err := a.service.GetRentalsOfProperty(puid, query)
+		if err != nil {
+			if errors.Is(err, database.ErrRecordNotFound) {
+				return ctx.Status(fiber.StatusNotFound).JSON(fiber.Map{"message": "property not found"})
+			}
+
+			return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
+		}
+
+		return ctx.Status(fiber.StatusOK).JSON(res)
+	}
+}
+
 func (a *adapter) getPropertiesByIds() fiber.Handler {
 	return func(ctx *fiber.Ctx) error {
 		query := new(dto.GetPropertiesByIdsQuery)
@@ -284,5 +328,89 @@ func (a *adapter) deleteProperty() fiber.Handler {
 			ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
 		}
 		return nil
+	}
+}
+
+func (a *adapter) createPropertyManagerRequest() fiber.Handler {
+	return func(ctx *fiber.Ctx) error {
+		puid := ctx.Locals(PropertyIDLocalKey).(uuid.UUID)
+		tkPayload := ctx.Locals(auth_http.AuthorizationPayloadKey).(*token.Payload)
+
+		var payload dto.CreatePropertyManagerRequest
+		if err := ctx.BodyParser(&payload); err != nil {
+			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": err.Error()})
+		}
+		payload.CreatorID = tkPayload.UserID
+		payload.PropertyID = puid
+		if errs := validation.ValidateStruct(nil, payload); len(errs) > 0 {
+			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": validation.GetValidationError(errs)})
+		}
+
+		res, err := a.service.CreatePropertyManagerRequest(&payload)
+		if err != nil {
+			if dbErr, ok := err.(*pgconn.PgError); ok {
+				return responses.DBErrorResponse(ctx, dbErr)
+			}
+			if dbErr, ok := err.(*database.TXError); ok {
+				return responses.DBTXErrorResponse(ctx, dbErr)
+			}
+
+			return ctx.Status(fiber.StatusInternalServerError).JSON(res)
+		}
+
+		return ctx.Status(fiber.StatusCreated).JSON(res)
+	}
+}
+
+func (a *adapter) getNewPropertyManagerRequests() fiber.Handler {
+	return func(ctx *fiber.Ctx) error {
+		tkPayload := ctx.Locals(auth_http.AuthorizationPayloadKey).(*token.Payload)
+		limit, err := strconv.ParseInt(ctx.Query("limit"), 10, 64)
+		if err != nil {
+			limit = 100
+		}
+		offset, err := strconv.ParseInt(ctx.Query("offset"), 10, 64)
+		if err != nil {
+			offset = 0
+		}
+
+		res, err := a.service.GetNewPropertyManagerRequestsToUser(tkPayload.UserID, limit, offset)
+		if err != nil {
+			if errors.Is(err, database.ErrRecordNotFound) {
+				return ctx.Status(fiber.StatusNotFound).JSON(fiber.Map{"message": "no new requests"})
+			}
+
+			return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
+		}
+
+		return ctx.Status(fiber.StatusOK).JSON(res)
+	}
+}
+
+func (a *adapter) updatePropertyManagerRequest() fiber.Handler {
+	return func(ctx *fiber.Ctx) error {
+		tkPayload := ctx.Locals(auth_http.AuthorizationPayloadKey).(*token.Payload)
+		pid := ctx.Locals(PropertyIDLocalKey).(uuid.UUID)
+		requestId, err := strconv.ParseInt(ctx.Params("requestId"), 10, 64)
+		if err != nil {
+			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": "invalid request id"})
+		}
+		approved := (ctx.Query("approved") == "true")
+
+		err = a.service.UpdatePropertyManagerRequest(pid, tkPayload.UserID, requestId, approved)
+		if err != nil {
+			if txErr, ok := err.(*database.TXError); ok {
+				return responses.DBTXErrorResponse(ctx, txErr)
+			}
+			if dbErr, ok := err.(*pgconn.PgError); ok {
+				return responses.DBErrorResponse(ctx, dbErr)
+			}
+			if errors.Is(err, property_service.ErrUpdateRequestInfoMismatch) {
+				return ctx.Status(fiber.StatusForbidden).JSON(fiber.Map{"message": err.Error()})
+			}
+			ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
+		}
+
+		return ctx.SendStatus(fiber.StatusOK)
 	}
 }

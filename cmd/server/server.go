@@ -12,7 +12,6 @@ import (
 	"github.com/go-playground/validator"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
-	"github.com/hibiken/asynq"
 	"github.com/robfig/cron/v3"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -21,7 +20,6 @@ import (
 	"github.com/user2410/rrms-backend/internal/domain/auth"
 	"github.com/user2410/rrms-backend/internal/domain/chat"
 	listing_service "github.com/user2410/rrms-backend/internal/domain/listing/service"
-	"github.com/user2410/rrms-backend/internal/domain/notification"
 	payment_service "github.com/user2410/rrms-backend/internal/domain/payment/service"
 	property_service "github.com/user2410/rrms-backend/internal/domain/property/service"
 	"github.com/user2410/rrms-backend/internal/domain/reminder"
@@ -29,7 +27,6 @@ import (
 	statistic_service "github.com/user2410/rrms-backend/internal/domain/statistic/service"
 	"github.com/user2410/rrms-backend/internal/domain/storage"
 	"github.com/user2410/rrms-backend/internal/domain/unit"
-	"github.com/user2410/rrms-backend/internal/infrastructure/asynctask"
 	"github.com/user2410/rrms-backend/internal/infrastructure/aws/s3"
 	"github.com/user2410/rrms-backend/internal/infrastructure/database"
 	"github.com/user2410/rrms-backend/internal/infrastructure/email"
@@ -85,16 +82,13 @@ type internalServices struct {
 
 type serverCommand struct {
 	*cobra.Command
-	config                *serverConfig
-	cronScheduler         *cron.Cron
-	tokenMaker            token.Maker
-	emailSender           email.EmailSender
-	dao                   database.DAO
-	internalServices      internalServices
-	httpServer            http.Server
-	asyncTaskDistributor  asynctask.Distributor
-	asyncTaskProcessor    asynctask.Processor
-	wsNotificationAdapter notification.WSNotificationAdapter
+	config           *serverConfig
+	cronScheduler    *cron.Cron
+	tokenMaker       token.Maker
+	emailSender      email.EmailSender
+	dao              database.DAO
+	internalServices internalServices
+	httpServer       http.Server
 }
 
 func NewServerCommand() *serverCommand {
@@ -144,7 +138,6 @@ func (c *serverCommand) run(cmd *cobra.Command, args []string) {
 
 	errChan := make(chan error, 1)
 	c.cronScheduler.Start()
-	go c.runAsyncTaskProcessor(errChan)
 	go c.runHttpServer(errChan)
 
 	select {
@@ -164,8 +157,6 @@ func (c *serverCommand) shutdown() {
 	if err := c.httpServer.Shutdown(); err != nil {
 		log.Fatal(err)
 	}
-
-	c.asyncTaskProcessor.Shutdown()
 
 	c.cronScheduler.Stop()
 
@@ -220,21 +211,11 @@ func (c *serverCommand) setup() {
 			AllowHeaders: "Origin, Content-Type, Accept, Authorization",
 		},
 	)
-	c.wsNotificationAdapter = notification.NewWSNotificationAdapter()
-	c.wsNotificationAdapter.Register(c.httpServer.GetFibApp())
-
-	// setup asynq task distributor and processor
-	c.asyncTaskDistributor = asynctask.NewRedisTaskDistributor(asynq.RedisClientOpt{
-		Addr: c.config.AsynqRedisAddress,
-	})
-	// setup asynq task processor
-	c.setupAsyncTaskProcessor(c.emailSender)
 
 	// setup internal services
 	c.setupInternalServices(
 		dao,
 		s3Client,
-		c.asyncTaskDistributor,
 	)
 
 	c.setupHttpServer()

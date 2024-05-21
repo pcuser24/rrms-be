@@ -16,8 +16,10 @@ import (
 	"github.com/stretchr/testify/require"
 	application_repo "github.com/user2410/rrms-backend/internal/domain/application/repo"
 	auth_http "github.com/user2410/rrms-backend/internal/domain/auth/http"
+	auth_repo "github.com/user2410/rrms-backend/internal/domain/auth/repo"
 	listing_repo "github.com/user2410/rrms-backend/internal/domain/listing/repo"
 	property_repo "github.com/user2410/rrms-backend/internal/domain/property/repo"
+	rental_repo "github.com/user2410/rrms-backend/internal/domain/rental/repo"
 	unit_dto "github.com/user2410/rrms-backend/internal/domain/unit/dto"
 	unit_model "github.com/user2410/rrms-backend/internal/domain/unit/model"
 	unit_repo "github.com/user2410/rrms-backend/internal/domain/unit/repo"
@@ -126,10 +128,12 @@ func TestGetUnitById(t *testing.T) {
 			uRepo := unit_repo.NewMockRepo(ctrl)
 			lRepo := listing_repo.NewMockRepo(ctrl)
 			aRepo := application_repo.NewMockRepo(ctrl)
+			rRepo := rental_repo.NewMockRepo(ctrl)
+			authRepo := auth_repo.NewMockRepo(ctrl)
 
 			tc.buildStubs(pRepo, uRepo)
 
-			srv := newTestServer(t, pRepo, uRepo, lRepo, aRepo)
+			srv := newTestServer(t, pRepo, uRepo, lRepo, aRepo, rRepo, authRepo)
 
 			req := httptest.NewRequest(
 				http.MethodGet,
@@ -394,10 +398,12 @@ func TestGetUnitsByIds(t *testing.T) {
 			uRepo := unit_repo.NewMockRepo(ctrl)
 			lRepo := listing_repo.NewMockRepo(ctrl)
 			aRepo := application_repo.NewMockRepo(ctrl)
+			rRepo := rental_repo.NewMockRepo(ctrl)
+			authRepo := auth_repo.NewMockRepo(ctrl)
 
 			tc.buildStubs(pRepo, uRepo)
 
-			srv := newTestServer(t, pRepo, uRepo, lRepo, aRepo)
+			srv := newTestServer(t, pRepo, uRepo, lRepo, aRepo, rRepo, authRepo)
 
 			var queries []string
 			for _, v := range tc.query {

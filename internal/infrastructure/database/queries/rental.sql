@@ -199,6 +199,19 @@ WHERE id = $1;
 -- name: GetManagedRentals :many
 SELECT id FROM rentals WHERE property_id IN (SELECT property_id FROM property_managers WHERE manager_id = sqlc.arg(user_id));
 
+-- name: GetRentalsOfProperty :many
+SELECT id
+FROM rentals
+WHERE 
+  property_id = $1
+  AND CASE
+    WHEN sqlc.arg(expired)::BOOLEAN THEN start_date + INTERVAL '1 month' * rental_period < CURRENT_DATE OR status <> 'INPROGRESS'
+    WHEN NOT sqlc.arg(expired)::BOOLEAN THEN start_date + INTERVAL '1 month' * rental_period >= CURRENT_DATE AND status = 'INPROGRESS'
+  END
+ORDER BY
+  created_at DESC
+LIMIT $2 OFFSET $3;
+
 -- name: CheckRentalVisibility :one
 SELECT count(*) > 0 FROM rentals 
 WHERE 

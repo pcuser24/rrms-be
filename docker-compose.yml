@@ -18,13 +18,6 @@ services:
       - ./db_data:/var/lib/postgresql/data
     networks:
       - intranet
-  asynq_redis:
-    container_name: rrms_asynq_redis
-    image: redis:7.2.4-alpine
-    ports:
-      - 32756:6379
-    networks:
-      - intranet
 networks:
   intranet:
     name: rrms_network
