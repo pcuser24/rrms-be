@@ -92,5 +92,9 @@ func (c *serverCommand) setupInternalServices(
 		c.config.VnpTmnCode, c.config.VnpHashSecret, c.config.VnpUrl, c.config.VnpApi,
 	)
 	c.internalServices.ChatService = chat.NewService(chatRepo)
-	c.internalServices.StatisticService = statistic_service.NewService(authRepo, statisticRepo)
+	c.internalServices.StatisticService = statistic_service.NewService(
+		authRepo,
+		statisticRepo,
+		propertyRepo,
+	)
 }

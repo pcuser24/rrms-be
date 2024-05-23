@@ -23,7 +23,7 @@ type GetListingsQuery struct {
 	Fields []string `query:"fields" validate:"listingFields"`
 	Limit  *int32   `query:"limit" validate:"omitempty,gte=0"`
 	Offset *int32   `query:"offset" validate:"omitempty,gte=0"`
-	SortBy []string `query:"sortby" validate:"omitempty"`
+	SortBy []string `query:"sortby" validate:"omitempty,dive,oneof=created_at price title"`
 	Order  []string `query:"order" validate:"omitempty,dive,oneof=asc desc"`
 }
 
@@ -67,7 +67,7 @@ type GetListingsOfPropertyQuery struct {
 	GetListingsQuery
 	Expired bool   `query:"expired" validate:"omitempty"`
 	Limit   *int32 `query:"limit" validate:"omitempty,gte=0"`
-	Offset  *int32 `json:"offset" validate:"omitempty,gte=0"`
+	Offset  *int32 `query:"offset" validate:"omitempty,gte=0"`
 }
 
 func (q *GetListingsOfPropertyQuery) QueryParser(ctx *fiber.Ctx) error {

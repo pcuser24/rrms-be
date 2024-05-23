@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 	"github.com/user2410/rrms-backend/internal/domain/property/dto"
 	"github.com/user2410/rrms-backend/internal/domain/property/model"
@@ -139,7 +140,7 @@ func TestPublicity(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	isPublic, err := testPropertyRepo.IsPublic(context.Background(), p.ID)
+	isPublic, err := testPropertyRepo.IsPropertyVisible(context.Background(), uuid.Nil, p.ID)
 	require.NoError(t, err)
 	require.True(t, isPublic)
 }

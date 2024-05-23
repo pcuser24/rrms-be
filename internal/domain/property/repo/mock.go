@@ -19,7 +19,6 @@ import (
 	dto1 "github.com/user2410/rrms-backend/internal/domain/property/dto"
 	model "github.com/user2410/rrms-backend/internal/domain/property/model"
 	dto2 "github.com/user2410/rrms-backend/internal/domain/rental/dto"
-	database "github.com/user2410/rrms-backend/internal/infrastructure/database"
 	gomock "go.uber.org/mock/gomock"
 )
 
@@ -121,18 +120,18 @@ func (mr *MockRepoMockRecorder) GetListingsOfProperty(arg0, arg1, arg2 any) *gom
 }
 
 // GetManagedProperties mocks base method.
-func (m *MockRepo) GetManagedProperties(arg0 context.Context, arg1 uuid.UUID) ([]database.GetManagedPropertiesRow, error) {
+func (m *MockRepo) GetManagedProperties(arg0 context.Context, arg1 uuid.UUID, arg2 *dto1.GetPropertiesQuery) ([]GetManagedPropertiesRow, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetManagedProperties", arg0, arg1)
-	ret0, _ := ret[0].([]database.GetManagedPropertiesRow)
+	ret := m.ctrl.Call(m, "GetManagedProperties", arg0, arg1, arg2)
+	ret0, _ := ret[0].([]GetManagedPropertiesRow)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetManagedProperties indicates an expected call of GetManagedProperties.
-func (mr *MockRepoMockRecorder) GetManagedProperties(arg0, arg1 any) *gomock.Call {
+func (mr *MockRepoMockRecorder) GetManagedProperties(arg0, arg1, arg2 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetManagedProperties", reflect.TypeOf((*MockRepo)(nil).GetManagedProperties), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetManagedProperties", reflect.TypeOf((*MockRepo)(nil).GetManagedProperties), arg0, arg1, arg2)
 }
 
 // GetNewPropertyManagerRequest mocks base method.
@@ -148,6 +147,21 @@ func (m *MockRepo) GetNewPropertyManagerRequest(arg0 context.Context, arg1 int64
 func (mr *MockRepoMockRecorder) GetNewPropertyManagerRequest(arg0, arg1 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetNewPropertyManagerRequest", reflect.TypeOf((*MockRepo)(nil).GetNewPropertyManagerRequest), arg0, arg1)
+}
+
+// GetNewPropertyManagerRequestsToUser mocks base method.
+func (m *MockRepo) GetNewPropertyManagerRequestsToUser(arg0 context.Context, arg1 uuid.UUID, arg2, arg3 int64) ([]model.NewPropertyManagerRequest, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetNewPropertyManagerRequestsToUser", arg0, arg1, arg2, arg3)
+	ret0, _ := ret[0].([]model.NewPropertyManagerRequest)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetNewPropertyManagerRequestsToUser indicates an expected call of GetNewPropertyManagerRequestsToUser.
+func (mr *MockRepoMockRecorder) GetNewPropertyManagerRequestsToUser(arg0, arg1, arg2, arg3 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetNewPropertyManagerRequestsToUser", reflect.TypeOf((*MockRepo)(nil).GetNewPropertyManagerRequestsToUser), arg0, arg1, arg2, arg3)
 }
 
 // GetPropertiesByIds mocks base method.
@@ -210,19 +224,19 @@ func (mr *MockRepoMockRecorder) GetRentalsOfProperty(arg0, arg1, arg2 any) *gomo
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRentalsOfProperty", reflect.TypeOf((*MockRepo)(nil).GetRentalsOfProperty), arg0, arg1, arg2)
 }
 
-// IsPublic mocks base method.
-func (m *MockRepo) IsPublic(arg0 context.Context, arg1 uuid.UUID) (bool, error) {
+// IsPropertyVisible mocks base method.
+func (m *MockRepo) IsPropertyVisible(arg0 context.Context, arg1, arg2 uuid.UUID) (bool, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "IsPublic", arg0, arg1)
+	ret := m.ctrl.Call(m, "IsPropertyVisible", arg0, arg1, arg2)
 	ret0, _ := ret[0].(bool)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// IsPublic indicates an expected call of IsPublic.
-func (mr *MockRepoMockRecorder) IsPublic(arg0, arg1 any) *gomock.Call {
+// IsPropertyVisible indicates an expected call of IsPropertyVisible.
+func (mr *MockRepoMockRecorder) IsPropertyVisible(arg0, arg1, arg2 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsPublic", reflect.TypeOf((*MockRepo)(nil).IsPublic), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsPropertyVisible", reflect.TypeOf((*MockRepo)(nil).IsPropertyVisible), arg0, arg1, arg2)
 }
 
 // SearchPropertyCombination mocks base method.

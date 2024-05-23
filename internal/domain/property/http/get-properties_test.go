@@ -25,7 +25,6 @@ import (
 	"github.com/user2410/rrms-backend/internal/domain/property/dto"
 	"github.com/user2410/rrms-backend/internal/domain/property/model"
 	property_service "github.com/user2410/rrms-backend/internal/domain/property/service"
-	"github.com/user2410/rrms-backend/internal/infrastructure/database"
 	"github.com/user2410/rrms-backend/internal/utils/token"
 	"go.uber.org/mock/gomock"
 )
@@ -52,7 +51,7 @@ func TestGetPropertyById(t *testing.T) {
 			},
 			buildStubs: func(pRepo *property_repo.MockRepo, uRepo *unit_repo.MockRepo) {
 				pRepo.EXPECT().
-					IsPublic(gomock.Any(), gomock.Eq(property.ID)).
+					IsPropertyVisible(gomock.Any(), gomock.Eq(userId), gomock.Eq(property.ID)).
 					Times(1).
 					Return(property.IsPublic, nil)
 				pRepo.EXPECT().
@@ -95,7 +94,7 @@ func TestGetPropertyById(t *testing.T) {
 			},
 			buildStubs: func(pRepo *property_repo.MockRepo, uRepo *unit_repo.MockRepo) {
 				pRepo.EXPECT().
-					IsPublic(gomock.Any(), gomock.Eq(property.ID)).
+					IsPropertyVisible(gomock.Any(), gomock.Eq(userId), gomock.Eq(property.ID)).
 					Times(1).
 					Return(property.IsPublic, nil)
 				pRepo.EXPECT().
@@ -170,11 +169,11 @@ func TestGetPropertyByIds(t *testing.T) {
 			},
 			buildStubs: func(pRepo *property_repo.MockRepo, uRepo *unit_repo.MockRepo) {
 				pRepo.EXPECT().
-					IsPublic(gomock.Any(), gomock.Eq(properties[0].ID)).
+					IsPropertyVisible(gomock.Any(), gomock.Eq(userId), gomock.Eq(properties[0].ID)).
 					Times(1).
 					Return(properties[0].IsPublic, nil)
 				pRepo.EXPECT().
-					IsPublic(gomock.Any(), gomock.Eq(properties[1].ID)).
+					IsPropertyVisible(gomock.Any(), gomock.Eq(userId), gomock.Eq(properties[1].ID)).
 					Times(1).
 					Return(properties[1].IsPublic, nil)
 				pRepo.EXPECT().
@@ -215,11 +214,11 @@ func TestGetPropertyByIds(t *testing.T) {
 			},
 			buildStubs: func(pRepo *property_repo.MockRepo, uRepo *unit_repo.MockRepo) {
 				pRepo.EXPECT().
-					IsPublic(gomock.Any(), gomock.Eq(properties[0].ID)).
+					IsPropertyVisible(gomock.Any(), gomock.Eq(userId), gomock.Eq(properties[0].ID)).
 					Times(1).
 					Return(properties[0].IsPublic, nil)
 				pRepo.EXPECT().
-					IsPublic(gomock.Any(), gomock.Eq(properties[1].ID)).
+					IsPropertyVisible(gomock.Any(), gomock.Eq(userId), gomock.Eq(properties[1].ID)).
 					Times(1).
 					Return(properties[1].IsPublic, nil)
 				pRepo.EXPECT().
@@ -285,7 +284,7 @@ func TestGetPropertyByIds(t *testing.T) {
 			},
 			buildStubs: func(pRepo *property_repo.MockRepo, uRepo *unit_repo.MockRepo) {
 				pRepo.EXPECT().
-					IsPublic(gomock.Any(), gomock.Any()).
+					IsPropertyVisible(gomock.Any(), gomock.Any(), gomock.Any()).
 					Times(0)
 				pRepo.EXPECT().
 					GetPropertyManagers(gomock.Any(), gomock.Any()).
@@ -312,7 +311,7 @@ func TestGetPropertyByIds(t *testing.T) {
 			},
 			buildStubs: func(pRepo *property_repo.MockRepo, uRepo *unit_repo.MockRepo) {
 				pRepo.EXPECT().
-					IsPublic(gomock.Any(), gomock.Any()).
+					IsPropertyVisible(gomock.Any(), gomock.Any(), gomock.Any()).
 					Times(0)
 				pRepo.EXPECT().
 					GetPropertyManagers(gomock.Any(), gomock.Any()).
@@ -394,9 +393,9 @@ func TestGetManagedProperties(t *testing.T) {
 			},
 			buildStubs: func(pRepo *property_repo.MockRepo, uRepo *unit_repo.MockRepo) {
 				pRepo.EXPECT().
-					GetManagedProperties(gomock.Any(), gomock.Eq(userId)).
+					GetManagedProperties(gomock.Any(), gomock.Eq(userId), gomock.Eq(&dto.GetPropertiesQuery{})).
 					Times(1).
-					Return([]database.GetManagedPropertiesRow{
+					Return([]property_repo.GetManagedPropertiesRow{
 						{
 							PropertyID: properties[0].Managers[0].PropertyID,
 							Role:       properties[0].Managers[0].Role,
@@ -431,9 +430,9 @@ func TestGetManagedProperties(t *testing.T) {
 			},
 			buildStubs: func(pRepo *property_repo.MockRepo, uRepo *unit_repo.MockRepo) {
 				pRepo.EXPECT().
-					GetManagedProperties(gomock.Any(), gomock.Eq(userId)).
+					GetManagedProperties(gomock.Any(), gomock.Eq(userId), gomock.Eq(&dto.GetPropertiesQuery{})).
 					Times(1).
-					Return([]database.GetManagedPropertiesRow{
+					Return([]property_repo.GetManagedPropertiesRow{
 						{
 							PropertyID: properties[0].Managers[0].PropertyID,
 							Role:       properties[0].Managers[0].Role,
@@ -497,7 +496,7 @@ func TestGetManagedProperties(t *testing.T) {
 			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {},
 			buildStubs: func(pRepo *property_repo.MockRepo, uRepo *unit_repo.MockRepo) {
 				pRepo.EXPECT().
-					GetManagedProperties(gomock.Any(), gomock.Any()).
+					GetManagedProperties(gomock.Any(), gomock.Any(), gomock.Any()).
 					Times(0)
 				pRepo.EXPECT().
 					GetPropertiesByIds(gomock.Any(), gomock.Any(), gomock.Any()).

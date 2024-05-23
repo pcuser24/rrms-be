@@ -6,6 +6,8 @@ import (
 
 	"github.com/google/uuid"
 	auth_repo "github.com/user2410/rrms-backend/internal/domain/auth/repo"
+	property_dto "github.com/user2410/rrms-backend/internal/domain/property/dto"
+	property_repo "github.com/user2410/rrms-backend/internal/domain/property/repo"
 	"github.com/user2410/rrms-backend/internal/domain/statistic/dto"
 	statistic_repo "github.com/user2410/rrms-backend/internal/domain/statistic/repo"
 )
@@ -21,19 +23,24 @@ type Service interface {
 type service struct {
 	authRepo      auth_repo.Repo
 	statisticRepo statistic_repo.Repo
+	propertyRepo  property_repo.Repo
 }
 
-func NewService(authRepo auth_repo.Repo, statisticRepo statistic_repo.Repo) Service {
+func NewService(authRepo auth_repo.Repo, statisticRepo statistic_repo.Repo, propertyRepo property_repo.Repo) Service {
 	return &service{
 		authRepo:      authRepo,
 		statisticRepo: statisticRepo,
+		propertyRepo:  propertyRepo,
 	}
 }
 
 func (s *service) GetPropertiesStatistic(userId uuid.UUID, query dto.PropertiesStatisticQuery) (res dto.PropertiesStatisticResponse, err error) {
-	res.Properties, err = s.statisticRepo.GetManagedProperties(context.Background(), userId)
+	managedProperties, err := s.propertyRepo.GetManagedProperties(context.Background(), userId, &property_dto.GetPropertiesQuery{})
 	if err != nil {
 		return
+	}
+	for _, p := range managedProperties {
+		res.Properties = append(res.Properties, p.PropertyID)
 	}
 
 	res.OwnedProperties, err = s.statisticRepo.GetManagedPropertiesByRole(context.Background(), userId, "OWNER")

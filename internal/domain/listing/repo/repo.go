@@ -370,13 +370,13 @@ func (r *repo) CheckListingExpired(ctx context.Context, lid uuid.UUID) (bool, er
 }
 
 func (r *repo) SearchListingCombination(ctx context.Context, query *dto.SearchListingCombinationQuery) (*dto.SearchListingCombinationResponse, error) {
-	sqSql, args := sqlbuild.SearchListingCombinationBuilder(query)
-	rows, err := r.dao.Query(context.Background(), sqSql, args...)
+	sql, args := sqlbuild.SearchListingCombinationBuilder(query)
+	rows, err := r.dao.Query(context.Background(), sql, args...)
 	if err != nil {
 		return nil, err
 	}
 
-	res1, err := func() (*dto.SearchListingCombinationResponse, error) {
+	res, err := func() (*dto.SearchListingCombinationResponse, error) {
 		defer rows.Close()
 		var r dto.SearchListingCombinationResponse
 		for rows.Next() {
@@ -398,8 +398,8 @@ func (r *repo) SearchListingCombination(ctx context.Context, query *dto.SearchLi
 		Order:  query.Order,
 		Limit:  *query.Limit,
 		Offset: *query.Offset,
-		Items:  res1.Items,
-		Count:  res1.Count,
+		Items:  res.Items,
+		Count:  res.Count,
 	}, nil
 }
 

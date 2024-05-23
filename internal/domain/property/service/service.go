@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"math"
 
 	application_dto "github.com/user2410/rrms-backend/internal/domain/application/dto"
 	application_model "github.com/user2410/rrms-backend/internal/domain/application/model"
@@ -37,7 +38,7 @@ type Service interface {
 	GetUnitsOfProperty(id uuid.UUID) ([]unit_model.UnitModel, error)
 	GetListingsOfProperty(id uuid.UUID, query *listing_dto.GetListingsOfPropertyQuery) ([]listing_model.ListingModel, error)
 	GetApplicationsOfProperty(id uuid.UUID, query *application_dto.GetApplicationsOfPropertyQuery) ([]application_model.ApplicationModel, error)
-	GetManagedProperties(userId uuid.UUID, fields []string) ([]GetManagedPropertiesItem, error)
+	GetManagedProperties(userId uuid.UUID, query *property_dto.GetPropertiesQuery) (int, []GetManagedPropertiesItem, error)
 	SearchListingCombination(data *property_dto.SearchPropertyCombinationQuery) (*property_dto.SearchPropertyCombinationResponse, error)
 	UpdateProperty(data *property_dto.UpdateProperty) error
 	DeleteProperty(id uuid.UUID) error
@@ -205,32 +206,41 @@ type GetManagedPropertiesItem struct {
 	Rentals []int64 `json:"rentals"`
 }
 
-func (s *service) GetManagedProperties(userId uuid.UUID, fields []string) ([]GetManagedPropertiesItem, error) {
-	managedProps, err := s.pRepo.GetManagedProperties(context.Background(), userId)
+func (s *service) GetManagedProperties(userId uuid.UUID, query *property_dto.GetPropertiesQuery) (int, []GetManagedPropertiesItem, error) {
+	var _query property_dto.GetPropertiesQuery = *query
+	_query.Limit = types.Ptr[int32](math.MaxInt32)
+	managedProps, err := s.pRepo.GetManagedProperties(context.Background(), userId, &_query)
 	if err != nil {
-		return nil, err
+		return 0, nil, err
 	}
 
-	var pids []string
-	for _, p := range managedProps {
+	total := len(managedProps)
+	var actualLength int
+	if query.Limit == nil {
+		actualLength = total
+	} else {
+		actualLength = utils.Ternary(total > int(*query.Limit), int(*query.Limit), total)
+	}
+	pids := make([]string, 0, actualLength)
+	for _, p := range managedProps[0:actualLength] {
 		pid := p.PropertyID.String()
 		pids = append(pids, pid)
 	}
 
-	ps, err := s.pRepo.GetPropertiesByIds(context.Background(), pids, fields)
+	ps, err := s.pRepo.GetPropertiesByIds(context.Background(), pids, query.Fields)
 	if err != nil {
-		return nil, err
+		return total, nil, err
 	}
 
-	var res []GetManagedPropertiesItem
-	for _, p := range managedProps {
+	res := make([]GetManagedPropertiesItem, 0, actualLength)
+	for _, p := range managedProps[0:actualLength] {
 		r := GetManagedPropertiesItem{Role: p.Role}
 		for _, pp := range ps {
 			if pp.ID == p.PropertyID {
 				r.Property = pp
 			}
 		}
-		// get active listings
+		// get active listings of the property
 		r.Listings, err = s.pRepo.GetListingsOfProperty(
 			context.Background(), p.PropertyID, &listing_dto.GetListingsOfPropertyQuery{
 				Expired: false,
@@ -238,7 +248,7 @@ func (s *service) GetManagedProperties(userId uuid.UUID, fields []string) ([]Get
 				Limit:   types.Ptr(int32(1000)),
 			})
 		if err != nil {
-			return nil, err
+			return total, nil, err
 		}
 		// get active rentals
 		r.Rentals, err = s.pRepo.GetRentalsOfProperty(context.Background(), p.PropertyID, &rental_dto.GetRentalsOfPropertyQuery{
@@ -247,12 +257,12 @@ func (s *service) GetManagedProperties(userId uuid.UUID, fields []string) ([]Get
 			Limit:   types.Ptr(int32(1000)),
 		})
 		if err != nil {
-			return nil, err
+			return total, nil, err
 		}
 		res = append(res, r)
 	}
 
-	return res, nil
+	return total, res, nil
 }
 
 func (s *service) SearchListingCombination(q *property_dto.SearchPropertyCombinationQuery) (*property_dto.SearchPropertyCombinationResponse, error) {

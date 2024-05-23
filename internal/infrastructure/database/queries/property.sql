@@ -122,9 +122,6 @@ SELECT * FROM property_media WHERE property_id = $1;
 -- name: GetPropertyManagers :many
 SELECT * FROM property_managers WHERE property_id = $1;
 
--- name: GetManagedProperties :many
-SELECT property_id, role FROM property_managers WHERE manager_id = $1;
-
 -- name: GetNewPropertyManagerRequest :one
 SELECT * FROM "new_property_manager_requests" WHERE "id" = $1 LIMIT 1;
 

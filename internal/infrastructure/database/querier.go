@@ -101,7 +101,6 @@ type Querier interface {
 	// Get expired / active listings
 	GetListingsOfProperty(ctx context.Context, arg GetListingsOfPropertyParams) ([]uuid.UUID, error)
 	GetMaintenanceRequests(ctx context.Context, arg GetMaintenanceRequestsParams) ([]int64, error)
-	GetManagedProperties(ctx context.Context, managerID uuid.UUID) ([]GetManagedPropertiesRow, error)
 	GetManagedPropertiesByRole(ctx context.Context, arg GetManagedPropertiesByRoleParams) ([]uuid.UUID, error)
 	GetManagedRentals(ctx context.Context, userID uuid.UUID) ([]int64, error)
 	GetManagedUnits(ctx context.Context, managerID uuid.UUID) ([]uuid.UUID, error)

@@ -87,21 +87,6 @@ func (mr *MockRepoMockRecorder) GetMaintenanceRequests(arg0, arg1, arg2 any) *go
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetMaintenanceRequests", reflect.TypeOf((*MockRepo)(nil).GetMaintenanceRequests), arg0, arg1, arg2)
 }
 
-// GetManagedProperties mocks base method.
-func (m *MockRepo) GetManagedProperties(arg0 context.Context, arg1 uuid.UUID) ([]uuid.UUID, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetManagedProperties", arg0, arg1)
-	ret0, _ := ret[0].([]uuid.UUID)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetManagedProperties indicates an expected call of GetManagedProperties.
-func (mr *MockRepoMockRecorder) GetManagedProperties(arg0, arg1 any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetManagedProperties", reflect.TypeOf((*MockRepo)(nil).GetManagedProperties), arg0, arg1)
-}
-
 // GetManagedPropertiesByRole mocks base method.
 func (m *MockRepo) GetManagedPropertiesByRole(arg0 context.Context, arg1 uuid.UUID, arg2 string) ([]uuid.UUID, error) {
 	m.ctrl.T.Helper()
@@ -205,21 +190,6 @@ func (m *MockRepo) GetOccupiedUnits(arg0 context.Context, arg1 uuid.UUID) ([]uui
 func (mr *MockRepoMockRecorder) GetOccupiedUnits(arg0, arg1 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOccupiedUnits", reflect.TypeOf((*MockRepo)(nil).GetOccupiedUnits), arg0, arg1)
-}
-
-// GetPropertiesHavingListing mocks base method.
-func (m *MockRepo) GetPropertiesHavingListing(arg0 context.Context, arg1 uuid.UUID) ([]uuid.UUID, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetPropertiesHavingListing", arg0, arg1)
-	ret0, _ := ret[0].([]uuid.UUID)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetPropertiesHavingListing indicates an expected call of GetPropertiesHavingListing.
-func (mr *MockRepoMockRecorder) GetPropertiesHavingListing(arg0, arg1 any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPropertiesHavingListing", reflect.TypeOf((*MockRepo)(nil).GetPropertiesHavingListing), arg0, arg1)
 }
 
 // GetPropertiesWithActiveListing mocks base method.

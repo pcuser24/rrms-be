@@ -59,7 +59,7 @@ func (a *adapter) RegisterServer(router *fiber.Router, tokenMaker token.Maker) {
 	listingRoute.Use(auth_http.AuthorizedMiddleware(tokenMaker))
 
 	listingRoute.Post("/", a.createListing())
-	listingRoute.Get("/my-listings", a.getMyListings())
+	listingRoute.Get("/managed-listings", a.getManagedListings())
 
 	listingRoute.Group("/listing/:id").Use(GetListingId())
 	listingRoute.Post("/listing/:id/application-link", CheckListingManageability(a.lService), a.createApplicationLink())
@@ -160,7 +160,7 @@ func (a *adapter) searchListings() fiber.Handler {
 	}
 }
 
-func (a *adapter) getMyListings() fiber.Handler {
+func (a *adapter) getManagedListings() fiber.Handler {
 	return func(ctx *fiber.Ctx) error {
 		query := new(dto.GetListingsQuery)
 		if err := query.QueryParser(ctx); err != nil {
@@ -173,7 +173,7 @@ func (a *adapter) getMyListings() fiber.Handler {
 		}
 
 		tokenPayload := ctx.Locals(auth_http.AuthorizationPayloadKey).(*token.Payload)
-		res, err := a.lService.GetListingsOfUser(tokenPayload.UserID, query)
+		count, listings, err := a.lService.GetListingsOfUser(tokenPayload.UserID, query)
 		if err != nil {
 			if err == database.ErrRecordNotFound {
 				return ctx.SendStatus(fiber.StatusNotFound)
@@ -182,7 +182,10 @@ func (a *adapter) getMyListings() fiber.Handler {
 			return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
 		}
 
-		return ctx.Status(fiber.StatusOK).JSON(res)
+		return ctx.Status(fiber.StatusOK).JSON(fiber.Map{
+			"count": count,
+			"items": listings,
+		})
 	}
 }
 

@@ -275,7 +275,7 @@ func (a *adapter) getManagedProperties() fiber.Handler {
 		}
 
 		tokenPayload := ctx.Locals(auth_http.AuthorizationPayloadKey).(*token.Payload)
-		res, err := a.service.GetManagedProperties(tokenPayload.UserID, query.Fields)
+		total, props, err := a.service.GetManagedProperties(tokenPayload.UserID, query)
 		if err != nil {
 			if dbErr, ok := err.(*pgconn.PgError); ok {
 				return responses.DBErrorResponse(ctx, dbErr)
@@ -284,7 +284,10 @@ func (a *adapter) getManagedProperties() fiber.Handler {
 			return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
 		}
 
-		return ctx.Status(fiber.StatusOK).JSON(res)
+		return ctx.Status(fiber.StatusOK).JSON(fiber.Map{
+			"total": total,
+			"items": props,
+		})
 	}
 }
 

@@ -99,10 +99,17 @@ func SearchPropertyBuilder(
 		args = append(args, *query.PMaxUpdatedAt)
 	}
 	if len(query.PFeatures) > 0 {
-		searchQueries = append(searchQueries, "EXISTS (SELECT 1 FROM property_features WHERE property_id = properties.id AND feature_id IN ($?))")
+		searchQueries = append(searchQueries, "EXISTS (SELECT 1 FROM property_features WHERE property_features.property_id = properties.id AND feature_id IN ($?))")
 		args = append(args, sqlbuilder.List(query.PFeatures))
 	}
-
+	if len(query.PManagerIDS) > 0 {
+		searchQueries = append(searchQueries, "EXISTS (SELECT 1 FROM property_managers WHERE property_managers.property_id = properties.id AND property_managers.manager_id::TEXT IN ($?))")
+		args = append(args, sqlbuilder.List(query.PManagerIDS))
+	}
+	if query.PManagerRole != nil {
+		searchQueries = append(searchQueries, "EXISTS (SELECT 1 FROM property_managers WHERE property_managers.property_id = properties.id AND property_managers.role = $?)")
+		args = append(args, *query.PManagerRole)
+	}
 	// no field is specified and check exisence only
 	if len(searchQueries) == 0 && searchFields[0] == "1" {
 		return "", []interface{}{}

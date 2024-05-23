@@ -12,7 +12,7 @@ import (
 
 type SearchPropertyQuery struct {
 	PTypes          []string   `query:"ptypes" validate:"omitempty"`
-	PCreatorID      *string    `query:"pcreatorId" validate:"omitempty"`
+	PCreatorID      *string    `query:"pcreatorId" validate:"omitempty,uuid4"`
 	PName           *string    `query:"pname" validate:"omitempty"`
 	PBuilding       *string    `query:"pbuilding" validate:"omitempty"`
 	PProject        *string    `query:"pproject" validate:"omitempty"`
@@ -28,6 +28,8 @@ type SearchPropertyQuery struct {
 	PMinFacade      *int32     `query:"pfacade" validate:"omitempty"`
 	PIsPublic       *bool      `query:"pisPublic" validate:"omitempty"`
 	PFeatures       []int32    `query:"pfeatures" validate:"omitempty"`
+	PManagerIDS     []string   `query:"pmanagerIds" validate:"omitempty,dive,uuid4"`
+	PManagerRole    *string    `query:"pmanagerRole" validate:"omitempty"`
 	PMinCreatedAt   *time.Time `query:"pminCreatedAt" validate:"omitempty"`
 	PMaxCreatedAt   *time.Time `query:"pmaxCreatedAt" validate:"omitempty"`
 	PMinUpdatedAt   *time.Time `query:"pminUpdatedAt" validate:"omitempty"`

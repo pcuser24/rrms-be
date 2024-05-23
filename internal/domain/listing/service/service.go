@@ -4,10 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"math"
 	"net/url"
 
 	"github.com/user2410/rrms-backend/internal/domain/listing/repo"
 	"github.com/user2410/rrms-backend/internal/infrastructure/database"
+	"github.com/user2410/rrms-backend/pkg/ds/set"
 
 	"github.com/google/uuid"
 	"github.com/user2410/rrms-backend/internal/domain/listing/dto"
@@ -17,6 +19,7 @@ import (
 	payment_model "github.com/user2410/rrms-backend/internal/domain/payment/model"
 	payment_repo "github.com/user2410/rrms-backend/internal/domain/payment/repo"
 	payment_service "github.com/user2410/rrms-backend/internal/domain/payment/service"
+	property_dto "github.com/user2410/rrms-backend/internal/domain/property/dto"
 	property_repo "github.com/user2410/rrms-backend/internal/domain/property/repo"
 	"github.com/user2410/rrms-backend/internal/interfaces/rest/requests"
 	"github.com/user2410/rrms-backend/internal/utils"
@@ -28,7 +31,7 @@ type Service interface {
 	SearchListingCombination(data *dto.SearchListingCombinationQuery, userId uuid.UUID) (*dto.SearchListingCombinationResponse, error)
 	GetListingByID(id uuid.UUID) (*model.ListingModel, error)
 	GetListingsByIds(ids []uuid.UUID, fields []string) ([]model.ListingModel, error)
-	GetListingsOfUser(userId uuid.UUID, query *dto.GetListingsQuery) ([]model.ListingModel, error)
+	GetListingsOfUser(userId uuid.UUID, query *dto.GetListingsQuery) (int, []model.ListingModel, error)
 	GetListingPayments(id uuid.UUID) ([]payment_model.PaymentModel, error)
 	UpdateListing(id uuid.UUID, data *dto.UpdateListing) error
 	DeleteListing(id uuid.UUID) error
@@ -146,28 +149,56 @@ func (s *service) CheckValidUnitForListing(lid uuid.UUID, uid uuid.UUID) (bool, 
 	return s.lRepo.CheckValidUnitForListing(context.Background(), lid, uid)
 }
 
-func (s *service) GetListingsOfUser(userId uuid.UUID, query *dto.GetListingsQuery) ([]model.ListingModel, error) {
+func (s *service) GetListingsOfUser(userId uuid.UUID, query *dto.GetListingsQuery) (int, []model.ListingModel, error) {
+	sspq := requests.SearchSortPaginationQuery{
+		Limit:  types.Ptr[int32](math.MaxInt32),
+		Offset: utils.Ternary(query.Offset == nil, types.Ptr[int32](0), query.Offset),
+		SortBy: utils.Ternary(len(query.SortBy) == 0, []string{"listings.created_at"}, query.SortBy),
+		Order:  utils.Ternary(len(query.Order) == 0, []string{"DESC"}, query.Order),
+	}
+
 	myListings, err := s.lRepo.SearchListingCombination(context.Background(), &dto.SearchListingCombinationQuery{
 		SearchListingQuery: dto.SearchListingQuery{
 			LCreatorID: types.Ptr(userId.String()),
 		},
-		SearchSortPaginationQuery: requests.SearchSortPaginationQuery{
-			Limit:  utils.Ternary(query.Limit == nil, types.Ptr[int32](1000), query.Limit),
-			Offset: utils.Ternary(query.Offset == nil, types.Ptr[int32](0), query.Offset),
-			SortBy: utils.Ternary(len(query.SortBy) == 0, []string{"listings.created_at"}, query.SortBy),
-			Order:  utils.Ternary(len(query.Order) == 0, []string{"DESC"}, query.Order),
-		},
+		SearchSortPaginationQuery: sspq,
 	})
 	if err != nil {
-		return nil, err
+		return 0, nil, err
 	}
 
-	var lids []string
-	for _, listing := range myListings.Items {
-		lids = append(lids, listing.LId.String())
+	managedListings, err := s.lRepo.SearchListingCombination(context.Background(), &dto.SearchListingCombinationQuery{
+		SearchPropertyQuery: property_dto.SearchPropertyQuery{
+			PManagerIDS:  []string{userId.String()},
+			PManagerRole: types.Ptr("OWNER"),
+		},
+		SearchSortPaginationQuery: sspq,
+	})
+	if err != nil {
+		return 0, nil, err
 	}
 
-	return s.lRepo.GetListingsByIds(context.Background(), lids, query.Fields)
+	lids := func() []string {
+		ids := set.NewSet[string]()
+		for _, listing := range myListings.Items {
+			ids.Add(listing.LId.String())
+		}
+		for _, listing := range managedListings.Items {
+			ids.Add(listing.LId.String())
+		}
+		return ids.ToSlice()
+	}()
+
+	total := len(lids)
+	var actualLength int
+	if query.Limit == nil {
+		actualLength = total
+	} else {
+		actualLength = utils.Ternary(total > int(*query.Limit), int(*query.Limit), total)
+	}
+	items, err := s.lRepo.GetListingsByIds(context.Background(), lids[0:actualLength], query.Fields)
+
+	return total, items, err
 }
 
 func (s *service) GetListingPayments(id uuid.UUID) ([]payment_model.PaymentModel, error) {

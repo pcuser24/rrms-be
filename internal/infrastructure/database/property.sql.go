@@ -396,35 +396,6 @@ func (q *Queries) GetAllPropertyFeatures(ctx context.Context) ([]PFeature, error
 	return items, nil
 }
 
-const getManagedProperties = `-- name: GetManagedProperties :many
-SELECT property_id, role FROM property_managers WHERE manager_id = $1
-`
-
-type GetManagedPropertiesRow struct {
-	PropertyID uuid.UUID `json:"property_id"`
-	Role       string    `json:"role"`
-}
-
-func (q *Queries) GetManagedProperties(ctx context.Context, managerID uuid.UUID) ([]GetManagedPropertiesRow, error) {
-	rows, err := q.db.Query(ctx, getManagedProperties, managerID)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []GetManagedPropertiesRow
-	for rows.Next() {
-		var i GetManagedPropertiesRow
-		if err := rows.Scan(&i.PropertyID, &i.Role); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
 const getNewPropertyManagerRequest = `-- name: GetNewPropertyManagerRequest :one
 SELECT id, creator_id, property_id, user_id, email, approved, created_at, updated_at FROM "new_property_manager_requests" WHERE "id" = $1 LIMIT 1
 `

@@ -14,7 +14,6 @@ import (
 )
 
 type Repo interface {
-	GetManagedProperties(ctx context.Context, userId uuid.UUID) ([]uuid.UUID, error)
 	GetManagedPropertiesByRole(ctx context.Context, userId uuid.UUID, role string) ([]uuid.UUID, error)
 	GetPropertiesWithActiveListing(ctx context.Context, userId uuid.UUID) ([]uuid.UUID, error)
 	GetOccupiedProperties(ctx context.Context, userId uuid.UUID) ([]uuid.UUID, error)
@@ -38,19 +37,6 @@ func NewRepo(dao database.DAO) Repo {
 	return &repo{
 		dao: dao,
 	}
-}
-
-func (r *repo) GetManagedProperties(ctx context.Context, userId uuid.UUID) ([]uuid.UUID, error) {
-	res, err := r.dao.GetManagedProperties(ctx, userId)
-	if err != nil {
-		return nil, err
-	}
-
-	ids := make([]uuid.UUID, len(res))
-	for i, v := range res {
-		ids[i] = v.PropertyID
-	}
-	return ids, nil
 }
 
 func (r *repo) GetManagedPropertiesByRole(ctx context.Context, userId uuid.UUID, role string) ([]uuid.UUID, error) {

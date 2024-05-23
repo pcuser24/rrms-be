@@ -45,6 +45,12 @@ serve: ./rrmsd
 payment:
 	go run main.go payment
 
+dev:
+	air serve
+
+# Tunnel for local development, use localtunnel (`npm install -g localtunnel`)
+tunnel:
+	lt --port 8000 --subdomain rrms
 
 # Mocking:
 mock_repo:
@@ -87,4 +93,4 @@ ls_s3:
 	fi
 
 
-.PHONY: sqlcgen build serve migratecreate migrateup migrateup1 migratedown migratedown1 mock_repo mock_asynctask test test_db test_pkg ls_s3
+.PHONY: sqlcgen build serve tunnel dev migratecreate migrateup migrateup1 migratedown migratedown1 mock_repo mock_asynctask test test_db test_pkg ls_s3
