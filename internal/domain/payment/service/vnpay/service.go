@@ -7,6 +7,7 @@ import (
 )
 
 type VnPayService struct {
+	service.PaymentService
 	repo          repo.Repo
 	lRepo         listing_repo.Repo
 	vnpTmnCode    string
@@ -20,11 +21,12 @@ func NewVnpayService(
 	vnpTmnCode string, vnpHashSecret string, vnpUrl string, vnpApi string,
 ) service.Service {
 	return &VnPayService{
-		repo:          repo,
-		lRepo:         lRepo,
-		vnpTmnCode:    vnpTmnCode,
-		vnpHashSecret: vnpHashSecret,
-		vnpUrl:        vnpUrl,
-		vnpApi:        vnpApi,
+		PaymentService: service.NewPaymentService(repo),
+		repo:           repo,
+		lRepo:          lRepo,
+		vnpTmnCode:     vnpTmnCode,
+		vnpHashSecret:  vnpHashSecret,
+		vnpUrl:         vnpUrl,
+		vnpApi:         vnpApi,
 	}
 }

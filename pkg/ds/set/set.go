@@ -15,6 +15,12 @@ func (s Set[K]) Add(k K) {
 	s[k] = struct{}{}
 }
 
+func (s Set[K]) AddAll(keys ...K) {
+	for _, k := range keys {
+		s[k] = struct{}{}
+	}
+}
+
 func (s Set[K]) Remove(k K) {
 	delete(s, k)
 }

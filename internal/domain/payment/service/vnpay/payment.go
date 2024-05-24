@@ -7,22 +7,9 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/user2410/rrms-backend/internal/domain/payment/dto"
-	"github.com/user2410/rrms-backend/internal/domain/payment/model"
 	"github.com/user2410/rrms-backend/internal/domain/payment/service"
 	"github.com/user2410/rrms-backend/internal/infrastructure/database"
 )
-
-func (s *VnPayService) GetPaymentById(userId uuid.UUID, id int64) (*model.PaymentModel, error) {
-	visible, err := s.repo.CheckPaymentAccessible(context.Background(), userId, id)
-	if err != nil {
-		return nil, err
-	}
-	if !visible {
-		return nil, service.ErrInaccessiblePayment
-	}
-
-	return s.repo.GetPaymentById(context.Background(), id)
-}
 
 func (s *VnPayService) HandleReturn(data *dto.UpdatePayment, paymentInfo string) error {
 	end := strings.Index(paymentInfo, "]")

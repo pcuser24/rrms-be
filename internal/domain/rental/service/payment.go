@@ -2,11 +2,14 @@ package service
 
 import (
 	"context"
+	"math"
 
 	"github.com/google/uuid"
 	"github.com/user2410/rrms-backend/internal/domain/rental/dto"
 	"github.com/user2410/rrms-backend/internal/domain/rental/model"
 	"github.com/user2410/rrms-backend/internal/infrastructure/database"
+	"github.com/user2410/rrms-backend/internal/utils/types"
+	"github.com/user2410/rrms-backend/pkg/ds/set"
 )
 
 func (s *service) CreateRentalPayment(data *dto.CreateRentalPayment) (model.RentalPayment, error) {
@@ -20,6 +23,19 @@ func (s *service) GetRentalPayment(id int64) (model.RentalPayment, error) {
 
 func (s *service) GetPaymentsOfRental(rentalID int64) ([]model.RentalPayment, error) {
 	return s.rRepo.GetPaymentsOfRental(context.Background(), rentalID)
+}
+
+func (s *service) GetManagedRentalPayments(uid uuid.UUID, query *dto.GetManagedRentalPaymentsQuery) ([]dto.GetManagedRentalPaymentsItem, error) {
+	if query.Limit == nil {
+		query.Limit = types.Ptr[int32](math.MaxInt32)
+	}
+	if query.Offset == nil {
+		query.Offset = types.Ptr[int32](0)
+	}
+	statusSet := set.NewSet[database.RENTALPAYMENTSTATUS]()
+	statusSet.AddAll(query.Status...)
+	query.Status = statusSet.ToSlice()
+	return s.rRepo.GetManagedRentalPayments(context.Background(), uid, query)
 }
 
 func (s *service) UpdateRentalPayment(id int64, userId uuid.UUID, data dto.IUpdateRentalPayment, status database.RENTALPAYMENTSTATUS) error {

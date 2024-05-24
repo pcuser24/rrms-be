@@ -172,6 +172,49 @@ func (q *Queries) GetPaymentItemsByPaymentId(ctx context.Context, paymentID int6
 	return items, nil
 }
 
+const getPaymentsOfUser = `-- name: GetPaymentsOfUser :many
+SELECT id, user_id, order_id, order_info, amount, status, created_at, updated_at 
+FROM "payments" 
+WHERE "user_id" = $3
+ORDER BY "created_at" DESC
+LIMIT $1 OFFSET $2
+`
+
+type GetPaymentsOfUserParams struct {
+	Limit  int32     `json:"limit"`
+	Offset int32     `json:"offset"`
+	UserID uuid.UUID `json:"user_id"`
+}
+
+func (q *Queries) GetPaymentsOfUser(ctx context.Context, arg GetPaymentsOfUserParams) ([]Payment, error) {
+	rows, err := q.db.Query(ctx, getPaymentsOfUser, arg.Limit, arg.Offset, arg.UserID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Payment
+	for rows.Next() {
+		var i Payment
+		if err := rows.Scan(
+			&i.ID,
+			&i.UserID,
+			&i.OrderID,
+			&i.OrderInfo,
+			&i.Amount,
+			&i.Status,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const updatePayment = `-- name: UpdatePayment :exec
 UPDATE "payments" SET 
   order_id = coalesce($2, order_id),

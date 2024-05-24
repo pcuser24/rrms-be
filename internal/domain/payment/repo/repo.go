@@ -12,6 +12,7 @@ import (
 
 type Repo interface {
 	CreatePayment(ctx context.Context, data *dto.CreatePayment) (*model.PaymentModel, error)
+	GetPaymentsOfUser(ctx context.Context, uid uuid.UUID, limit, offset int32) ([]model.PaymentModel, error)
 	GetPaymentById(ctx context.Context, id int64) (*model.PaymentModel, error)
 	UpdatePayment(ctx context.Context, data *dto.UpdatePayment) error
 	CheckPaymentAccessible(ctx context.Context, userId uuid.UUID, id int64) (bool, error)
@@ -55,6 +56,32 @@ func (r *repo) CreatePayment(ctx context.Context, data *dto.CreatePayment) (*mod
 	}
 
 	return payment, nil
+}
+
+func (r *repo) GetPaymentsOfUser(ctx context.Context, uid uuid.UUID, limit, offset int32) ([]model.PaymentModel, error) {
+	payments, err := r.dao.GetPaymentsOfUser(ctx, database.GetPaymentsOfUserParams{
+		UserID: uid,
+		Limit:  limit,
+		Offset: offset,
+	})
+	if err != nil {
+		return nil, err
+	}
+	var result []model.PaymentModel
+	for _, p := range payments {
+		payment := model.ToPaymentModel(&p)
+
+		items, err := r.dao.GetPaymentItemsByPaymentId(ctx, p.ID)
+		if err != nil {
+			return nil, err
+		}
+		for _, item := range items {
+			payment.Items = append(payment.Items, model.PaymentItemModel(item))
+		}
+
+		result = append(result, *payment)
+	}
+	return result, nil
 }
 
 func (r *repo) GetPaymentById(ctx context.Context, id int64) (*model.PaymentModel, error) {

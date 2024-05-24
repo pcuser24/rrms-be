@@ -29,6 +29,7 @@ type Repo interface {
 	CreateRentalPayment(ctx context.Context, data *dto.CreateRentalPayment) (model.RentalPayment, error)
 	GetRentalPayment(ctx context.Context, id int64) (model.RentalPayment, error)
 	GetPaymentsOfRental(ctx context.Context, rentalID int64) ([]model.RentalPayment, error)
+	GetManagedRentalPayments(ctx context.Context, uid uuid.UUID, query *dto.GetManagedRentalPaymentsQuery) ([]dto.GetManagedRentalPaymentsItem, error)
 	UpdateRentalPayment(ctx context.Context, data *dto.UpdateRentalPayment) error
 	PlanRentalPayments(ctx context.Context) ([]int64, error)
 	PlanRentalPayment(ctx context.Context, rentalId int64) ([]int64, error)

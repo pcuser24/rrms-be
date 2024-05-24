@@ -6,6 +6,10 @@ import (
 
 	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
+	property_model "github.com/user2410/rrms-backend/internal/domain/property/model"
+	rental_model "github.com/user2410/rrms-backend/internal/domain/rental/model"
+	unit_model "github.com/user2410/rrms-backend/internal/domain/unit/model"
+	"github.com/user2410/rrms-backend/internal/infrastructure/database"
 	"github.com/user2410/rrms-backend/internal/utils/validation"
 )
 
@@ -88,4 +92,17 @@ func (q *GetRentalsOfPropertyQuery) QueryParser(ctx *fiber.Ctx) error {
 	}
 	q.parseFields()
 	return nil
+}
+
+type GetManagedRentalPaymentsQuery struct {
+	Limit  *int32                         `query:"limit" validate:"omitempty,gte=0"`
+	Offset *int32                         `json:"offset" validate:"omitempty,gte=0"`
+	Status []database.RENTALPAYMENTSTATUS `query:"status" validate:"required,dive,oneof=PLAN ISSUED PENDING REQUEST2PAY PAID CANCELLED"`
+}
+
+type GetManagedRentalPaymentsItem struct {
+	Payment  rental_model.RentalPayment    `json:"payment"`
+	Rental   rental_model.RentalModel      `json:"rental"`
+	Property *property_model.PropertyModel `json:"property"`
+	Unit     *unit_model.UnitModel         `json:"unit"`
 }

@@ -21,6 +21,11 @@ type CreatePayment struct {
 	Items []CreatePaymentItem `json:"items" validate:"required,dive"`
 }
 
+type GetPaymentsOfUserQuery struct {
+	Limit  *int32 `query:"limit" validate:"omitempty,gte=0"`
+	Offset *int32 `query:"offset" validate:"omitempty,gte=0"`
+}
+
 type UpdatePayment struct {
 	ID        int64                   `json:"id" validate:"required"`
 	OrderId   *string                 `json:"orderId" validate:"omitempty"`

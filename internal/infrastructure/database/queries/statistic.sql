@@ -146,8 +146,10 @@ LIMIT $2
 OFFSET $3
 ;
 
--- name: GetRentalIncome :one
-SELECT coalesce(SUM(amount), 0) FROM rental_payments WHERE 
+-- name: GetRentalPaymentIncomes :one
+SELECT coalesce(SUM(amount), 0)::REAL 
+FROM rental_payments 
+WHERE 
   status = 'PAID' AND 
   EXISTS (
     SELECT 1 FROM rentals WHERE 
@@ -158,4 +160,14 @@ SELECT coalesce(SUM(amount), 0) FROM rental_payments WHERE
   ) AND
   payment_date >= sqlc.arg(start_date) AND
   payment_date <= sqlc.arg(end_date)
+  ;
+
+-- name: GetPaymentsStatistic :one
+SELECT coalesce(SUM(amount), 0)::REAL 
+FROM payments 
+WHERE 
+  status = 'SUCCESS' AND 
+  user_id = $1 AND
+  created_at >= sqlc.arg(start_date) AND
+  created_at <= sqlc.arg(end_date)
   ;

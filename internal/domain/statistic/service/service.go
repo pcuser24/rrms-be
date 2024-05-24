@@ -18,6 +18,7 @@ type Service interface {
 	GetRentalStatistic(userId uuid.UUID) (res dto.RentalStatisticResponse, err error)
 	GetRentalPaymentArrears(userId uuid.UUID, query *dto.RentalPaymentStatisticQuery) (res []dto.RentalPaymentArrearsItem, err error)
 	GetRentalPaymentIncomes(userId uuid.UUID, query *dto.RentalPaymentStatisticQuery) (res []dto.RentalPaymentIncomeItem, err error)
+	GetPaymentsStatistic(userId uuid.UUID, query dto.PaymentsStatisticQuery) (res []dto.PaymentsStatisticItem, err error)
 }
 
 type service struct {
@@ -202,4 +203,45 @@ func (s *service) GetRentalPaymentIncomes(userId uuid.UUID, query *dto.RentalPay
 	}
 
 	return
+}
+
+func (s *service) GetPaymentsStatistic(userId uuid.UUID, query dto.PaymentsStatisticQuery) (res []dto.PaymentsStatisticItem, err error) {
+	user, err := s.authRepo.GetUserById(context.Background(), userId)
+	if err != nil {
+		return
+	}
+	if query.StartTime.Before(user.CreatedAt) {
+		query.StartTime = user.CreatedAt
+	}
+
+	// Start from the first day of the start month
+	current := query.StartTime
+
+	for current.Before(query.EndTime) {
+		// Calculate the end of the current month
+		endOfMonth := time.Date(current.Year(), current.Month(), current.Day(), 23, 59, 59, 0, query.StartTime.Location()).AddDate(0, 1, -1)
+
+		// Choose the end of the current month or the end date, whichever is earlier
+		intervalEnd := endOfMonth
+		if endOfMonth.After(query.EndTime) {
+			intervalEnd = query.EndTime
+		}
+
+		payment, err := s.statisticRepo.GetPaymentsStatistic(context.Background(), userId, dto.PaymentsStatisticQuery{
+			StartTime: current,
+			EndTime:   intervalEnd,
+		})
+		if err != nil {
+			return nil, err
+		}
+		res = append(res, dto.PaymentsStatisticItem{
+			StartTime: current,
+			EndTime:   intervalEnd,
+			Amount:    payment,
+		})
+
+		// Move to the next month
+		current = endOfMonth.AddDate(0, 0, 1)
+	}
+	return nil, nil
 }

@@ -82,6 +82,31 @@ func (a *adapter) getPaymentsOfRental() fiber.Handler {
 	}
 }
 
+func (a *adapter) getManagedRentalPayments() fiber.Handler {
+	return func(ctx *fiber.Ctx) error {
+		tkPayload := ctx.Locals(auth_http.AuthorizationPayloadKey).(*token.Payload)
+
+		var query dto.GetManagedRentalPaymentsQuery
+		if err := ctx.QueryParser(&query); err != nil {
+			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": err.Error()})
+		}
+		if errs := validation.ValidateStruct(nil, query); len(errs) > 0 {
+			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": validation.GetValidationError(errs)})
+		}
+
+		res, err := a.service.GetManagedRentalPayments(tkPayload.UserID, &query)
+		if err != nil {
+			if errors.Is(err, database.ErrRecordNotFound) {
+				return ctx.Status(fiber.StatusNotFound).JSON(fiber.Map{"message": "No payments found"})
+			}
+
+			return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
+		}
+
+		return ctx.Status(fiber.StatusOK).JSON(res)
+	}
+}
+
 func (a *adapter) updatePlanRentalPayment() fiber.Handler {
 	return func(ctx *fiber.Ctx) error {
 		id := ctx.Locals(RentalPaymentIDLocalKey).(int64)

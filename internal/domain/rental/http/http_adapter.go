@@ -43,6 +43,7 @@ func (a *adapter) RegisterServer(route *fiber.Router, tokenMaker token.Maker) {
 
 	rentalPaymentRoute := (*route).Group("/rental-payments")
 	rentalPaymentRoute.Use(auth_http.AuthorizedMiddleware(tokenMaker))
+	rentalPaymentRoute.Get("/managed-payments", a.getManagedRentalPayments())
 	rentalPaymentRoute.Post("/", a.createRentalPayment())
 	rentalPaymentRoute.Get("/rental/:id",
 		GetRentalID(),

@@ -27,6 +27,7 @@ type Repo interface {
 	GetRentalPaymentArrears(ctx context.Context, userId uuid.UUID, query dto.RentalPaymentStatisticQuery) ([]dto.RentalPayment, error)
 	GetRentalPaymentIncomes(ctx context.Context, userId uuid.UUID, query dto.RentalPaymentStatisticQuery) (float32, error)
 	GetMaintenanceRequests(ctx context.Context, userId uuid.UUID, month time.Time) ([]int64, error)
+	GetPaymentsStatistic(ctx context.Context, userId uuid.UUID, query dto.PaymentsStatisticQuery) (float32, error)
 }
 
 type repo struct {
@@ -283,7 +284,7 @@ func (r *repo) GetRentalPaymentArrears(ctx context.Context, userId uuid.UUID, qu
 }
 
 func (r *repo) GetRentalPaymentIncomes(ctx context.Context, userId uuid.UUID, query dto.RentalPaymentStatisticQuery) (float32, error) {
-	res, err := r.dao.GetRentalIncome(ctx, database.GetRentalIncomeParams{
+	res, err := r.dao.GetRentalPaymentIncomes(ctx, database.GetRentalPaymentIncomesParams{
 		ManagerID: userId,
 		StartDate: pgtype.Date{
 			Time:  query.StartTime,
@@ -298,5 +299,18 @@ func (r *repo) GetRentalPaymentIncomes(ctx context.Context, userId uuid.UUID, qu
 		return 0, err
 	}
 
-	return res.(float32), nil
+	return res, nil
+}
+
+func (r *repo) GetPaymentsStatistic(ctx context.Context, userId uuid.UUID, query dto.PaymentsStatisticQuery) (float32, error) {
+	res, err := r.dao.GetPaymentsStatistic(ctx, database.GetPaymentsStatisticParams{
+		UserID:    userId,
+		StartDate: query.StartTime,
+		EndDate:   query.EndTime,
+	})
+	if err != nil {
+		return 0, err
+	}
+
+	return res, nil
 }

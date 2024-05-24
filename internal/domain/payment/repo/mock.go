@@ -87,6 +87,21 @@ func (mr *MockRepoMockRecorder) GetPaymentById(arg0, arg1 any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPaymentById", reflect.TypeOf((*MockRepo)(nil).GetPaymentById), arg0, arg1)
 }
 
+// GetPaymentsOfUser mocks base method.
+func (m *MockRepo) GetPaymentsOfUser(arg0 context.Context, arg1 uuid.UUID, arg2, arg3 int32) ([]model.PaymentModel, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetPaymentsOfUser", arg0, arg1, arg2, arg3)
+	ret0, _ := ret[0].([]model.PaymentModel)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetPaymentsOfUser indicates an expected call of GetPaymentsOfUser.
+func (mr *MockRepoMockRecorder) GetPaymentsOfUser(arg0, arg1, arg2, arg3 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPaymentsOfUser", reflect.TypeOf((*MockRepo)(nil).GetPaymentsOfUser), arg0, arg1, arg2, arg3)
+}
+
 // UpdatePayment mocks base method.
 func (m *MockRepo) UpdatePayment(arg0 context.Context, arg1 *dto.UpdatePayment) error {
 	m.ctrl.T.Helper()

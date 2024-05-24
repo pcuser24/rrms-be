@@ -33,6 +33,7 @@ func (a *adapter) RegisterServer(route *fiber.Router, tokenMaker token.Maker) {
 	statisticRoute.Get("/properties", a.getPropertiesStatistic())
 	statisticRoute.Get("/listings", a.getListingsStatistic())
 	statisticRoute.Get("/applications", a.getApplicationStatistic())
+	statisticRoute.Get("/payments", a.getPaymentsStatistic())
 	statisticRoute.Get("/rentals", a.getRentalStatistic())
 	statisticRoute.Get("/rentals/payments/arrears", a.getRentalPaymentArrearsStatistic())
 	statisticRoute.Get("/rentals/payments/incomes", a.getRentalPaymentIncomesStatistic())
@@ -140,6 +141,30 @@ func (a *adapter) getRentalPaymentIncomesStatistic() fiber.Handler {
 		}
 
 		res, err := a.service.GetRentalPaymentIncomes(tkPayload.UserID, &query)
+		if err != nil {
+			if errors.Is(err, database.ErrRecordNotFound) {
+				return ctx.Status(fiber.StatusOK).JSON([]dto.RentalPaymentIncomeItem{})
+			}
+			return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
+		}
+
+		return ctx.Status(fiber.StatusOK).JSON(res)
+	}
+}
+
+func (a *adapter) getPaymentsStatistic() fiber.Handler {
+	return func(ctx *fiber.Ctx) error {
+		tkPayload := ctx.Locals(auth_http.AuthorizationPayloadKey).(*token.Payload)
+
+		var query dto.PaymentsStatisticQuery
+		if err := ctx.QueryParser(&query); err != nil {
+			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": err.Error()})
+		}
+		if errs := validation.ValidateStruct(nil, query); len(errs) > 0 {
+			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": validation.GetValidationError(errs)})
+		}
+
+		res, err := a.service.GetPaymentsStatistic(tkPayload.UserID, query)
 		if err != nil {
 			if errors.Is(err, database.ErrRecordNotFound) {
 				return ctx.Status(fiber.StatusOK).JSON([]dto.RentalPaymentIncomeItem{})

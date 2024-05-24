@@ -396,6 +396,29 @@ func (q *Queries) GetOccupiedUnits(ctx context.Context, managerID uuid.UUID) ([]
 	return items, nil
 }
 
+const getPaymentsStatistic = `-- name: GetPaymentsStatistic :one
+SELECT coalesce(SUM(amount), 0)::REAL 
+FROM payments 
+WHERE 
+  status = 'SUCCESS' AND 
+  user_id = $1 AND
+  created_at >= $2 AND
+  created_at <= $3
+`
+
+type GetPaymentsStatisticParams struct {
+	UserID    uuid.UUID `json:"user_id"`
+	StartDate time.Time `json:"start_date"`
+	EndDate   time.Time `json:"end_date"`
+}
+
+func (q *Queries) GetPaymentsStatistic(ctx context.Context, arg GetPaymentsStatisticParams) (float32, error) {
+	row := q.db.QueryRow(ctx, getPaymentsStatistic, arg.UserID, arg.StartDate, arg.EndDate)
+	var column_1 float32
+	err := row.Scan(&column_1)
+	return column_1, err
+}
+
 const getPropertiesWithActiveListing = `-- name: GetPropertiesWithActiveListing :many
 SELECT DISTINCT property_id FROM listings WHERE 
   EXISTS (SELECT 1 FROM property_managers WHERE property_managers.property_id = listings.property_id AND property_managers.manager_id = $1) AND
@@ -421,33 +444,6 @@ func (q *Queries) GetPropertiesWithActiveListing(ctx context.Context, managerID 
 		return nil, err
 	}
 	return items, nil
-}
-
-const getRentalIncome = `-- name: GetRentalIncome :one
-SELECT coalesce(SUM(amount), 0) FROM rental_payments WHERE 
-  status = 'PAID' AND 
-  EXISTS (
-    SELECT 1 FROM rentals WHERE 
-      rental_payments.rental_id = rentals.id AND
-      EXISTS (
-        SELECT 1 FROM property_managers WHERE manager_id = $1 AND property_managers.property_id = rentals.property_id 
-      )
-  ) AND
-  payment_date >= $2 AND
-  payment_date <= $3
-`
-
-type GetRentalIncomeParams struct {
-	ManagerID uuid.UUID   `json:"manager_id"`
-	StartDate pgtype.Date `json:"start_date"`
-	EndDate   pgtype.Date `json:"end_date"`
-}
-
-func (q *Queries) GetRentalIncome(ctx context.Context, arg GetRentalIncomeParams) (interface{}, error) {
-	row := q.db.QueryRow(ctx, getRentalIncome, arg.ManagerID, arg.StartDate, arg.EndDate)
-	var coalesce interface{}
-	err := row.Scan(&coalesce)
-	return coalesce, err
 }
 
 const getRentalPaymentArrears = `-- name: GetRentalPaymentArrears :many
@@ -546,6 +542,35 @@ func (q *Queries) GetRentalPaymentArrears(ctx context.Context, arg GetRentalPaym
 		return nil, err
 	}
 	return items, nil
+}
+
+const getRentalPaymentIncomes = `-- name: GetRentalPaymentIncomes :one
+SELECT coalesce(SUM(amount), 0)::REAL 
+FROM rental_payments 
+WHERE 
+  status = 'PAID' AND 
+  EXISTS (
+    SELECT 1 FROM rentals WHERE 
+      rental_payments.rental_id = rentals.id AND
+      EXISTS (
+        SELECT 1 FROM property_managers WHERE manager_id = $1 AND property_managers.property_id = rentals.property_id 
+      )
+  ) AND
+  payment_date >= $2 AND
+  payment_date <= $3
+`
+
+type GetRentalPaymentIncomesParams struct {
+	ManagerID uuid.UUID   `json:"manager_id"`
+	StartDate pgtype.Date `json:"start_date"`
+	EndDate   pgtype.Date `json:"end_date"`
+}
+
+func (q *Queries) GetRentalPaymentIncomes(ctx context.Context, arg GetRentalPaymentIncomesParams) (float32, error) {
+	row := q.db.QueryRow(ctx, getRentalPaymentIncomes, arg.ManagerID, arg.StartDate, arg.EndDate)
+	var column_1 float32
+	err := row.Scan(&column_1)
+	return column_1, err
 }
 
 const getRentedProperties = `-- name: GetRentedProperties :many

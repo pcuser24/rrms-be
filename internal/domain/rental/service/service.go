@@ -34,6 +34,7 @@ type Service interface {
 	CreateRentalPayment(data *dto.CreateRentalPayment) (model.RentalPayment, error)
 	GetRentalPayment(id int64) (model.RentalPayment, error)
 	GetPaymentsOfRental(id int64) ([]model.RentalPayment, error)
+	GetManagedRentalPayments(uid uuid.UUID, query *dto.GetManagedRentalPaymentsQuery) ([]dto.GetManagedRentalPaymentsItem, error)
 	UpdateRentalPayment(id int64, userId uuid.UUID, data dto.IUpdateRentalPayment, status database.RENTALPAYMENTSTATUS) error
 
 	CreateRentalComplaint(data *dto.CreateRentalComplaint) (model.RentalComplaint, error)

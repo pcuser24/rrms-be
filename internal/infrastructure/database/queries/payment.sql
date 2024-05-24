@@ -32,6 +32,13 @@ SELECT * FROM "payments" WHERE "id" = $1;
 -- name: GetPaymentItemsByPaymentId :many
 SELECT * FROM "payment_items" WHERE "payment_id" = $1;
 
+-- name: GetPaymentsOfUser :many
+SELECT * 
+FROM "payments" 
+WHERE "user_id" = sqlc.arg(user_id)
+ORDER BY "created_at" DESC
+LIMIT $1 OFFSET $2;
+
 -- name: CheckPaymentAccessible :one
 SELECT EXISTS (SELECT 1 FROM "payments" WHERE "id" = $1 AND "user_id" = $2);
 
