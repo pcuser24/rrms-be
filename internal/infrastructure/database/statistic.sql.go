@@ -114,6 +114,22 @@ func (q *Queries) GetLeastRentedUnits(ctx context.Context, arg GetLeastRentedUni
 	return items, nil
 }
 
+const getListingsCountByCity = `-- name: GetListingsCountByCity :one
+SELECT COUNT(*) 
+FROM listings 
+WHERE
+  EXISTS (
+    SELECT 1 FROM properties WHERE city = $1 AND properties.id = listings.property_id
+  )
+`
+
+func (q *Queries) GetListingsCountByCity(ctx context.Context, city string) (int64, error) {
+	row := q.db.QueryRow(ctx, getListingsCountByCity, city)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const getMaintenanceRequests = `-- name: GetMaintenanceRequests :many
 SELECT id FROM rental_complaints WHERE 
   EXISTS (

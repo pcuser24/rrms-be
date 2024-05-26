@@ -7,6 +7,7 @@ import (
 	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
+	"github.com/user2410/rrms-backend/pkg/ds/set"
 )
 
 var retrievableFields = []string{"name", "property_id", "area", "floor", "price", "number_of_living_rooms", "number_of_bedrooms", "number_of_bathrooms", "number_of_toilets", "number_of_balconies", "number_of_kitchens", "type", "created_at", "updated_at", "amenities", "media"}
@@ -30,7 +31,9 @@ func (q *GetUnitsByIdsQuery) QueryParser(ctx *fiber.Ctx) error {
 		return err
 	}
 	if len(q.Fields) == 1 {
-		q.Fields = strings.Split(q.Fields[0], ",")
+		fieldSet := set.NewSet[string]()
+		fieldSet.AddAll(strings.Split(q.Fields[0], ",")...)
+		q.Fields = fieldSet.ToSlice()
 	}
 	return nil
 }

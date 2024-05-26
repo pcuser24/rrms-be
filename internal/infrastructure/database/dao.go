@@ -26,6 +26,9 @@ type DAO interface {
 	GetConn() *pgxpool.Pool
 	ExecTx(ctx context.Context, txOptions any, fn func(DAO) error) *TXError
 	QueryTx(ctx context.Context, txOptions any, fn func(DAO) (interface{}, error)) (interface{}, *TXError)
+	QueryBatch(ctx context.Context, queries []BatchedQuery) error
+	QueryRowBatch(ctx context.Context, queries []BatchedQueryRow) error
+	ExecBatch(ctx context.Context, queries []BatchedExec) error
 	Close()
 }
 
@@ -148,6 +151,55 @@ func (d *postgresDAO) QueryTx(ctx context.Context, txOptions any, fn func(DAO) (
 	}
 
 	return res, nil
+}
+
+// Batch Query
+
+type BatchedQuery struct {
+	SQL    string
+	Params []interface{}
+	Fn     func(row pgx.Rows) error
+}
+
+func (d *postgresDAO) QueryBatch(ctx context.Context, queries []BatchedQuery) error {
+	batch := &pgx.Batch{}
+	for _, q := range queries {
+		batch.Queue(q.SQL, q.Params...).Query(q.Fn)
+	}
+
+	return d.db.SendBatch(ctx, batch).Close()
+}
+
+type BatchedQueryRow struct {
+	SQL    string
+	Params []interface{}
+	Fn     func(row pgx.Row) error
+}
+
+func (d *postgresDAO) QueryRowBatch(ctx context.Context, queries []BatchedQueryRow) error {
+	batch := &pgx.Batch{}
+	for _, q := range queries {
+		batch.Queue(q.SQL, q.Params...).QueryRow(q.Fn)
+	}
+
+	return d.db.SendBatch(ctx, batch).Close()
+}
+
+// Batch Exec
+
+type BatchedExec struct {
+	SQL    string
+	Params []interface{}
+	Fn     func(ct pgconn.CommandTag) error
+}
+
+func (d *postgresDAO) ExecBatch(ctx context.Context, queries []BatchedExec) error {
+	batch := &pgx.Batch{}
+	for _, q := range queries {
+		batch.Queue(q.SQL, q.Params...).Exec(q.Fn)
+	}
+
+	return d.db.SendBatch(ctx, batch).Close()
 }
 
 func (d *postgresDAO) Close() {

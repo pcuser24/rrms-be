@@ -192,6 +192,21 @@ func (mr *MockRepoMockRecorder) GetOccupiedUnits(arg0, arg1 any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOccupiedUnits", reflect.TypeOf((*MockRepo)(nil).GetOccupiedUnits), arg0, arg1)
 }
 
+// GetPaymentsStatistic mocks base method.
+func (m *MockRepo) GetPaymentsStatistic(arg0 context.Context, arg1 uuid.UUID, arg2 dto.PaymentsStatisticQuery) (float32, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetPaymentsStatistic", arg0, arg1, arg2)
+	ret0, _ := ret[0].(float32)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetPaymentsStatistic indicates an expected call of GetPaymentsStatistic.
+func (mr *MockRepoMockRecorder) GetPaymentsStatistic(arg0, arg1, arg2 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPaymentsStatistic", reflect.TypeOf((*MockRepo)(nil).GetPaymentsStatistic), arg0, arg1, arg2)
+}
+
 // GetPropertiesWithActiveListing mocks base method.
 func (m *MockRepo) GetPropertiesWithActiveListing(arg0 context.Context, arg1 uuid.UUID) ([]uuid.UUID, error) {
 	m.ctrl.T.Helper()

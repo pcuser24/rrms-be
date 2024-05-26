@@ -3,7 +3,6 @@ package http
 import (
 	"errors"
 	"fmt"
-	"time"
 
 	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
@@ -18,7 +17,6 @@ import (
 	"github.com/user2410/rrms-backend/internal/infrastructure/database"
 	"github.com/user2410/rrms-backend/internal/interfaces/rest/responses"
 	"github.com/user2410/rrms-backend/internal/utils/token"
-	"github.com/user2410/rrms-backend/internal/utils/types"
 	"github.com/user2410/rrms-backend/internal/utils/validation"
 )
 
@@ -47,7 +45,7 @@ func (a *adapter) RegisterServer(router *fiber.Router, tokenMaker token.Maker) {
 		auth_http.GetAuthorizationMiddleware(tokenMaker),
 		a.searchListings(),
 	)
-	listingRoute.Get("/ids", a.getListingsByIds())
+	listingRoute.Get("/ids", auth_http.GetAuthorizationMiddleware(tokenMaker), a.getListingsByIds())
 	listingRoute.Get("/listing/:id/application-link", a.verifyApplicationLink())
 	listingRoute.Get("/listing/:id",
 		auth_http.GetAuthorizationMiddleware(tokenMaker),
@@ -137,8 +135,6 @@ func (a *adapter) searchListings() fiber.Handler {
 		// log.Println(payload)
 
 		// make sure properties are public and listings not expired
-		payload.PIsPublic = types.Ptr[bool](true)
-		payload.LMinExpiredAt = types.Ptr[time.Time](time.Now())
 
 		var userId uuid.UUID
 		tkPayload, ok := ctx.Locals(auth_http.AuthorizationPayloadKey).(*token.Payload)
@@ -222,7 +218,12 @@ func (a *adapter) getListingsByIds() fiber.Handler {
 			return fiber.NewError(fiber.StatusBadRequest, validation.GetValidationError(errs))
 		}
 
-		res, err := a.lService.GetListingsByIds(query.IDs, query.Fields)
+		uid := uuid.Nil
+		tkPayload, ok := ctx.Locals(auth_http.AuthorizationPayloadKey).(*token.Payload)
+		if ok {
+			tkPayload.UserID = uid
+		}
+		res, err := a.lService.GetListingsByIds(uid, query.IDs, query.Fields)
 		if err != nil {
 			return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
 		}

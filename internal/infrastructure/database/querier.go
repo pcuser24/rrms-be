@@ -98,6 +98,7 @@ type Querier interface {
 	GetListingPolicies(ctx context.Context, listingID uuid.UUID) ([]ListingPolicy, error)
 	GetListingTags(ctx context.Context, listingID uuid.UUID) ([]ListingTag, error)
 	GetListingUnits(ctx context.Context, listingID uuid.UUID) ([]ListingUnit, error)
+	GetListingsCountByCity(ctx context.Context, city string) (int64, error)
 	// Get expired / active listings
 	GetListingsOfProperty(ctx context.Context, arg GetListingsOfPropertyParams) ([]uuid.UUID, error)
 	GetMaintenanceRequests(ctx context.Context, arg GetMaintenanceRequestsParams) ([]int64, error)

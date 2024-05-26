@@ -8,6 +8,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/huandu/go-sqlbuilder"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 	application_dto "github.com/user2410/rrms-backend/internal/domain/application/dto"
 	listing_dto "github.com/user2410/rrms-backend/internal/domain/listing/dto"
@@ -23,13 +24,14 @@ type Repo interface {
 	CreateProperty(ctx context.Context, data *property_dto.CreateProperty) (*property_model.PropertyModel, error)
 	GetPropertyManagers(ctx context.Context, id uuid.UUID) ([]property_model.PropertyManagerModel, error)
 	GetPropertyById(ctx context.Context, id uuid.UUID) (*property_model.PropertyModel, error)
-	GetPropertiesByIds(ctx context.Context, ids []string, fields []string) ([]property_model.PropertyModel, error) // Get properties with custom fields by ids
+	GetPropertiesByIds(ctx context.Context, ids []uuid.UUID, fields []string) ([]property_model.PropertyModel, error) // Get properties with custom fields by ids
 	GetManagedProperties(ctx context.Context, userId uuid.UUID, query *property_dto.GetPropertiesQuery) ([]GetManagedPropertiesRow, error)
 	GetListingsOfProperty(ctx context.Context, id uuid.UUID, query *listing_dto.GetListingsOfPropertyQuery) ([]uuid.UUID, error)
 	GetApplicationsOfProperty(ctx context.Context, id uuid.UUID, query *application_dto.GetApplicationsOfPropertyQuery) ([]int64, error)
 	GetRentalsOfProperty(ctx context.Context, id uuid.UUID, query *rental_dto.GetRentalsOfPropertyQuery) ([]int64, error)
 	SearchPropertyCombination(ctx context.Context, query *property_dto.SearchPropertyCombinationQuery) (*property_dto.SearchPropertyCombinationResponse, error)
 	IsPropertyVisible(ctx context.Context, uid, pid uuid.UUID) (bool, error)
+	FilterVisibleProperties(ctx context.Context, pids []uuid.UUID, uid uuid.UUID) ([]uuid.UUID, error)
 	UpdateProperty(ctx context.Context, data *property_dto.UpdateProperty) error
 	DeleteProperty(ctx context.Context, id uuid.UUID) error
 
@@ -155,7 +157,7 @@ func (r *repo) SearchPropertyCombination(ctx context.Context, query *property_dt
 	}, nil
 }
 
-func (r *repo) GetPropertiesByIds(ctx context.Context, ids []string, fields []string) ([]property_model.PropertyModel, error) {
+func (r *repo) GetPropertiesByIds(ctx context.Context, ids []uuid.UUID, fields []string) ([]property_model.PropertyModel, error) {
 	if len(ids) == 0 {
 		return nil, nil
 	}
@@ -174,7 +176,13 @@ func (r *repo) GetPropertiesByIds(ctx context.Context, ids []string, fields []st
 	ib := sqlbuilder.PostgreSQL.NewSelectBuilder()
 	ib.Select(nonFKFields...)
 	ib.From("properties")
-	ib.Where(ib.In("id::text", sqlbuilder.List(ids)))
+	ib.Where(ib.In("properties.id::text", sqlbuilder.List(func() []string {
+		var res []string
+		for _, id := range ids {
+			res = append(res, id.String())
+		}
+		return res
+	}())))
 	query, args := ib.Build()
 	// log.Println(query, args)
 	rows, err := r.dao.Query(ctx, query, args...)
@@ -648,4 +656,41 @@ func (r *repo) GetNewPropertyManagerRequestsToUser(ctx context.Context, uid uuid
 		})
 	}
 	return items, nil
+}
+
+func (r *repo) FilterVisibleProperties(ctx context.Context, pids []uuid.UUID, uid uuid.UUID) ([]uuid.UUID, error) {
+	buildSQL := func(pid uuid.UUID) (string, []interface{}) {
+		return `
+		SELECT (
+			SELECT is_public FROM "properties" WHERE properties.id = $1 LIMIT 1
+		) OR (
+			SELECT EXISTS (SELECT 1 FROM "property_managers" WHERE property_managers.property_id = $1 AND property_managers.manager_id = $2 LIMIT 1)
+		) OR (
+			SELECT EXISTS (SELECT 1 FROM "new_property_manager_requests" WHERE new_property_manager_requests.property_id = $1 AND new_property_manager_requests.user_id = $2 LIMIT 1)
+		)
+		`, []interface{}{pid, uid}
+	}
+
+	resIDs := make([]uuid.UUID, 0, len(pids))
+
+	queries := make([]database.BatchedQueryRow, 0, len(pids))
+	for _, uid := range pids {
+		sql, args := buildSQL(uid)
+		queries = append(queries, database.BatchedQueryRow{
+			SQL:    sql,
+			Params: args,
+			Fn: func(row pgx.Row) error {
+				var res bool
+				if err := row.Scan(&res); err != nil {
+					return err
+				}
+				resIDs = append(resIDs, uid)
+				return nil
+			},
+		})
+	}
+
+	err := r.dao.QueryRowBatch(ctx, queries)
+
+	return resIDs, err
 }

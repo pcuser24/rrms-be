@@ -133,6 +133,21 @@ func (mr *MockRepoMockRecorder) DeleteListing(arg0, arg1 any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteListing", reflect.TypeOf((*MockRepo)(nil).DeleteListing), arg0, arg1)
 }
 
+// FilterVisibleListings mocks base method.
+func (m *MockRepo) FilterVisibleListings(arg0 context.Context, arg1 []uuid.UUID, arg2 uuid.UUID) ([]uuid.UUID, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FilterVisibleListings", arg0, arg1, arg2)
+	ret0, _ := ret[0].([]uuid.UUID)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// FilterVisibleListings indicates an expected call of FilterVisibleListings.
+func (mr *MockRepoMockRecorder) FilterVisibleListings(arg0, arg1, arg2 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FilterVisibleListings", reflect.TypeOf((*MockRepo)(nil).FilterVisibleListings), arg0, arg1, arg2)
+}
+
 // GetListingByID mocks base method.
 func (m *MockRepo) GetListingByID(arg0 context.Context, arg1 uuid.UUID) (*model.ListingModel, error) {
 	m.ctrl.T.Helper()
@@ -179,7 +194,7 @@ func (mr *MockRepoMockRecorder) GetListingPaymentsByType(arg0, arg1, arg2 any) *
 }
 
 // GetListingsByIds mocks base method.
-func (m *MockRepo) GetListingsByIds(arg0 context.Context, arg1, arg2 []string) ([]model.ListingModel, error) {
+func (m *MockRepo) GetListingsByIds(arg0 context.Context, arg1 []uuid.UUID, arg2 []string) ([]model.ListingModel, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetListingsByIds", arg0, arg1, arg2)
 	ret0, _ := ret[0].([]model.ListingModel)

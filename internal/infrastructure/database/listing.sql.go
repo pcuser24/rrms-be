@@ -40,15 +40,14 @@ func (q *Queries) CheckListingOwnership(ctx context.Context, arg CheckListingOwn
 }
 
 const checkListingVisibility = `-- name: CheckListingVisibility :one
-SELECT count(*) > 0
-FROM listings INNER JOIN property_managers ON listings.property_id = property_managers.property_id
-WHERE listings.id = $1 
-	AND (
-		property_managers.manager_id = $2
-	OR (
-		listings.active AND listings.expired_at > NOW()
-	)
-	)
+SELECT COUNT(*) > 0
+FROM listings
+WHERE id = $1
+  AND (
+    active AND expired_at > NOW()
+    OR
+    EXISTS (SELECT 1 FROM property_managers WHERE property_managers.property_id = listings.property_id AND manager_id = $2)
+  )
 LIMIT 1
 `
 
@@ -422,7 +421,7 @@ func (q *Queries) GetListingUnits(ctx context.Context, listingID uuid.UUID) ([]L
 }
 
 const getListingsOfProperty = `-- name: GetListingsOfProperty :many
-SELECT id
+SELECT DISTINCT id
 FROM listings
 WHERE 
   property_id = $1

@@ -8,6 +8,7 @@ import (
 	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
+	"github.com/user2410/rrms-backend/pkg/ds/set"
 )
 
 const ApplicationFieldsLocalKey = "applicationFields"
@@ -38,7 +39,9 @@ type GetApplicationsQuery struct {
 
 func (q *GetApplicationsQuery) parseFields() {
 	if len(q.Fields) == 1 {
-		q.Fields = strings.Split(q.Fields[0], ",")
+		fieldSet := set.NewSet[string]()
+		fieldSet.AddAll(strings.Split(q.Fields[0], ",")...)
+		q.Fields = fieldSet.ToSlice()
 	}
 }
 

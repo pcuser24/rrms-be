@@ -94,6 +94,7 @@ func (c *serverCommand) setupInternalServices(
 	c.internalServices.ChatService = chat.NewService(chatRepo)
 	c.internalServices.StatisticService = statistic_service.NewService(
 		authRepo,
+		listingRepo,
 		statisticRepo,
 		propertyRepo,
 	)

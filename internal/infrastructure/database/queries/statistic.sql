@@ -171,3 +171,13 @@ WHERE
   created_at >= sqlc.arg(start_date) AND
   created_at <= sqlc.arg(end_date)
   ;
+
+
+
+-- name: GetListingsCountByCity :one
+SELECT COUNT(*) 
+FROM listings 
+WHERE
+  EXISTS (
+    SELECT 1 FROM properties WHERE city = sqlc.arg(city) AND properties.id = listings.property_id
+  );

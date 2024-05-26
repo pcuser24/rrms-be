@@ -12,6 +12,7 @@ import (
 	auth_repo "github.com/user2410/rrms-backend/internal/domain/auth/repo"
 	property_repo "github.com/user2410/rrms-backend/internal/domain/property/repo"
 	"github.com/user2410/rrms-backend/internal/infrastructure/database"
+	"github.com/user2410/rrms-backend/pkg/ds/set"
 
 	"github.com/google/uuid"
 	listing_dto "github.com/user2410/rrms-backend/internal/domain/listing/dto"
@@ -84,18 +85,12 @@ func (s *service) GetPropertyById(id uuid.UUID) (*property_model.PropertyModel, 
 	return s.pRepo.GetPropertyById(context.Background(), id)
 }
 
-func (s *service) GetPropertiesByIds(ids []uuid.UUID, fields []string, userId uuid.UUID) ([]property_model.PropertyModel, error) {
-	var _ids []string
-	for _, id := range ids {
-		isVisible, err := s.CheckVisibility(id, userId)
-		if err != nil {
-			return nil, err
-		}
-		if isVisible {
-			_ids = append(_ids, id.String())
-		}
+func (s *service) GetPropertiesByIds(ids []uuid.UUID, fields []string, uid uuid.UUID) ([]property_model.PropertyModel, error) {
+	visibleIDS, err := s.FilterVisibleProperties(ids, uid)
+	if err != nil {
+		return nil, err
 	}
-	return s.pRepo.GetPropertiesByIds(context.Background(), _ids, fields)
+	return s.pRepo.GetPropertiesByIds(context.Background(), visibleIDS, fields)
 }
 
 func (s *service) GetUnitsOfProperty(id uuid.UUID) ([]unit_model.UnitModel, error) {
@@ -108,11 +103,7 @@ func (s *service) GetListingsOfProperty(id uuid.UUID, query *listing_dto.GetList
 		return nil, err
 	}
 
-	idsStr := make([]string, 0, len(ids))
-	for _, id := range ids {
-		idsStr = append(idsStr, id.String())
-	}
-	return s.lRepo.GetListingsByIds(context.Background(), idsStr, query.Fields)
+	return s.lRepo.GetListingsByIds(context.Background(), ids, query.Fields)
 }
 
 func (s *service) GetApplicationsOfProperty(id uuid.UUID, query *application_dto.GetApplicationsOfPropertyQuery) ([]application_model.ApplicationModel, error) {
@@ -189,6 +180,12 @@ func (s *service) CheckOwnership(pid uuid.UUID, userId uuid.UUID) (bool, error) 
 	return false, nil
 }
 
+func (s *service) FilterVisibleProperties(pids []uuid.UUID, uid uuid.UUID) ([]uuid.UUID, error) {
+	lidSet := set.NewSet[uuid.UUID]()
+	lidSet.AddAll(pids...)
+	return s.pRepo.FilterVisibleProperties(context.Background(), lidSet.ToSlice(), uid)
+}
+
 func (s *service) CheckVisibility(id uuid.UUID, uid uuid.UUID) (bool, error) {
 	return s.pRepo.IsPropertyVisible(context.Background(), uid, id)
 }
@@ -221,10 +218,9 @@ func (s *service) GetManagedProperties(userId uuid.UUID, query *property_dto.Get
 	} else {
 		actualLength = utils.Ternary(total > int(*query.Limit), int(*query.Limit), total)
 	}
-	pids := make([]string, 0, actualLength)
+	pids := make([]uuid.UUID, 0, actualLength)
 	for _, p := range managedProps[0:actualLength] {
-		pid := p.PropertyID.String()
-		pids = append(pids, pid)
+		pids = append(pids, p.PropertyID)
 	}
 
 	ps, err := s.pRepo.GetPropertiesByIds(context.Background(), pids, query.Fields)

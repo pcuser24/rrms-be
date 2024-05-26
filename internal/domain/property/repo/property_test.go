@@ -59,7 +59,7 @@ func TestGetPropertyByIds(t *testing.T) {
 
 	ps, err := testPropertyRepo.GetPropertiesByIds(
 		context.Background(),
-		[]string{p1.ID.String(), p2.ID.String()},
+		[]uuid.UUID{p1.ID, p2.ID},
 		selectedFields,
 	)
 	require.NoError(t, err)

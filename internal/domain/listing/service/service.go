@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"math"
 	"net/url"
+	"time"
 
 	"github.com/user2410/rrms-backend/internal/domain/listing/repo"
 	"github.com/user2410/rrms-backend/internal/infrastructure/database"
@@ -30,7 +31,7 @@ type Service interface {
 	CreateListing(data *dto.CreateListing) (dto.CreateListingResponse, error)
 	SearchListingCombination(data *dto.SearchListingCombinationQuery, userId uuid.UUID) (*dto.SearchListingCombinationResponse, error)
 	GetListingByID(id uuid.UUID) (*model.ListingModel, error)
-	GetListingsByIds(ids []uuid.UUID, fields []string) ([]model.ListingModel, error)
+	GetListingsByIds(uid uuid.UUID, ids []uuid.UUID, fields []string) ([]model.ListingModel, error)
 	GetListingsOfUser(userId uuid.UUID, query *dto.GetListingsQuery) (int, []model.ListingModel, error)
 	GetListingPayments(id uuid.UUID) ([]payment_model.PaymentModel, error)
 	UpdateListing(id uuid.UUID, data *dto.UpdateListing) error
@@ -103,34 +104,22 @@ func (s *service) SearchListingCombination(q *dto.SearchListingCombinationQuery,
 	}
 	q.Limit = types.Ptr(utils.PtrDerefence(q.Limit, 1000))
 	q.Offset = types.Ptr(utils.PtrDerefence(q.Offset, 0))
-	res, err := s.lRepo.SearchListingCombination(context.Background(), q)
-	if err != nil {
-		return nil, err
-	}
-	var items []dto.SearchListingCombinationItem
-	for _, item := range res.Items {
-		isVisible, err := s.CheckListingVisibility(item.LId, userId)
-		if err != nil {
-			return nil, err
-		}
-		if isVisible {
-			items = append(items, item)
-		}
-	}
-	res.Items = items
-	return res, nil
+	q.LActive = types.Ptr(true)
+	q.PIsPublic = types.Ptr(true)
+	q.LMinExpiredAt = types.Ptr(time.Now())
+	return s.lRepo.SearchListingCombination(context.Background(), q)
 }
 
 func (s *service) GetListingByID(id uuid.UUID) (*model.ListingModel, error) {
 	return s.lRepo.GetListingByID(context.Background(), id)
 }
 
-func (s *service) GetListingsByIds(ids []uuid.UUID, fields []string) ([]model.ListingModel, error) {
-	idsStr := make([]string, len(ids))
-	for i, id := range ids {
-		idsStr[i] = id.String()
+func (s *service) GetListingsByIds(uid uuid.UUID, ids []uuid.UUID, fields []string) ([]model.ListingModel, error) {
+	visibleIDS, err := s.FilterVisibleListings(ids, uid)
+	if err != nil {
+		return nil, err
 	}
-	return s.lRepo.GetListingsByIds(context.Background(), idsStr, fields)
+	return s.lRepo.GetListingsByIds(context.Background(), visibleIDS, fields)
 }
 
 func (s *service) UpdateListing(id uuid.UUID, data *dto.UpdateListing) error {
@@ -178,13 +167,13 @@ func (s *service) GetListingsOfUser(userId uuid.UUID, query *dto.GetListingsQuer
 		return 0, nil, err
 	}
 
-	lids := func() []string {
-		ids := set.NewSet[string]()
+	lids := func() []uuid.UUID {
+		ids := set.NewSet[uuid.UUID]()
 		for _, listing := range myListings.Items {
-			ids.Add(listing.LId.String())
+			ids.Add(listing.LId)
 		}
 		for _, listing := range managedListings.Items {
-			ids.Add(listing.LId.String())
+			ids.Add(listing.LId)
 		}
 		return ids.ToSlice()
 	}()
@@ -223,6 +212,12 @@ func (s *service) CreateApplicationLink(data *dto.CreateApplicationLink) (string
 
 func (s *service) VerifyApplicationLink(query *dto.VerifyApplicationLink) (bool, error) {
 	return listing_utils.VerifyApplicationLink(query, s.hashSecret)
+}
+
+func (s *service) FilterVisibleListings(lids []uuid.UUID, uid uuid.UUID) ([]uuid.UUID, error) {
+	lidSet := set.NewSet[uuid.UUID]()
+	lidSet.AddAll(lids...)
+	return s.lRepo.FilterVisibleListings(context.Background(), lidSet.ToSlice(), uid)
 }
 
 func (s *service) CheckListingVisibility(lid uuid.UUID, uid uuid.UUID) (bool, error) {

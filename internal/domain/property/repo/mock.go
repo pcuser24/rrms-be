@@ -89,6 +89,21 @@ func (mr *MockRepoMockRecorder) DeleteProperty(arg0, arg1 any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteProperty", reflect.TypeOf((*MockRepo)(nil).DeleteProperty), arg0, arg1)
 }
 
+// FilterVisibleProperties mocks base method.
+func (m *MockRepo) FilterVisibleProperties(arg0 context.Context, arg1 []uuid.UUID, arg2 uuid.UUID) ([]uuid.UUID, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FilterVisibleProperties", arg0, arg1, arg2)
+	ret0, _ := ret[0].([]uuid.UUID)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// FilterVisibleProperties indicates an expected call of FilterVisibleProperties.
+func (mr *MockRepoMockRecorder) FilterVisibleProperties(arg0, arg1, arg2 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FilterVisibleProperties", reflect.TypeOf((*MockRepo)(nil).FilterVisibleProperties), arg0, arg1, arg2)
+}
+
 // GetApplicationsOfProperty mocks base method.
 func (m *MockRepo) GetApplicationsOfProperty(arg0 context.Context, arg1 uuid.UUID, arg2 *dto.GetApplicationsOfPropertyQuery) ([]int64, error) {
 	m.ctrl.T.Helper()
@@ -165,7 +180,7 @@ func (mr *MockRepoMockRecorder) GetNewPropertyManagerRequestsToUser(arg0, arg1, 
 }
 
 // GetPropertiesByIds mocks base method.
-func (m *MockRepo) GetPropertiesByIds(arg0 context.Context, arg1, arg2 []string) ([]model.PropertyModel, error) {
+func (m *MockRepo) GetPropertiesByIds(arg0 context.Context, arg1 []uuid.UUID, arg2 []string) ([]model.PropertyModel, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetPropertiesByIds", arg0, arg1, arg2)
 	ret0, _ := ret[0].([]model.PropertyModel)

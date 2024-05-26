@@ -7,6 +7,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/huandu/go-sqlbuilder"
+	"github.com/jackc/pgx/v5"
 	"github.com/user2410/rrms-backend/internal/domain/listing/dto"
 	"github.com/user2410/rrms-backend/internal/domain/listing/model"
 	"github.com/user2410/rrms-backend/internal/domain/listing/repo/sqlbuild"
@@ -18,7 +19,7 @@ import (
 type Repo interface {
 	CreateListing(ctx context.Context, data *dto.CreateListing) (*model.ListingModel, error)
 	SearchListingCombination(ctx context.Context, query *dto.SearchListingCombinationQuery) (*dto.SearchListingCombinationResponse, error)
-	GetListingsByIds(ctx context.Context, ids []string, fields []string) ([]model.ListingModel, error)
+	GetListingsByIds(ctx context.Context, ids []uuid.UUID, fields []string) ([]model.ListingModel, error)
 	GetListingByID(ctx context.Context, id uuid.UUID) (*model.ListingModel, error)
 	GetListingPayments(ctx context.Context, id uuid.UUID) ([]payment_model.PaymentModel, error)
 	GetListingPaymentsByType(ctx context.Context, id uuid.UUID, ptype payment_service.PAYMENTTYPE) ([]payment_model.PaymentModel, error)
@@ -31,6 +32,7 @@ type Repo interface {
 	CheckListingVisibility(ctx context.Context, lid, uid uuid.UUID) (bool, error)
 	CheckValidUnitForListing(ctx context.Context, lid uuid.UUID, uid uuid.UUID) (bool, error)
 	CheckListingExpired(ctx context.Context, lid uuid.UUID) (bool, error)
+	FilterVisibleListings(ctx context.Context, lids []uuid.UUID, uid uuid.UUID) ([]uuid.UUID, error)
 }
 
 type repo struct {
@@ -96,7 +98,7 @@ func (r *repo) CreateListing(ctx context.Context, data *dto.CreateListing) (*mod
 	return lm, nil
 }
 
-func (r *repo) GetListingsByIds(ctx context.Context, ids []string, fields []string) ([]model.ListingModel, error) {
+func (r *repo) GetListingsByIds(ctx context.Context, ids []uuid.UUID, fields []string) ([]model.ListingModel, error) {
 	if len(ids) == 0 {
 		return nil, nil
 	}
@@ -113,7 +115,13 @@ func (r *repo) GetListingsByIds(ctx context.Context, ids []string, fields []stri
 	ib := sqlbuilder.PostgreSQL.NewSelectBuilder()
 	ib.Select(nonFKFields...)
 	ib.From("listings")
-	ib.Where(ib.In("id::text", sqlbuilder.List(ids)))
+	ib.Where(ib.In("listings.id", sqlbuilder.List(func() []string {
+		var res []string
+		for _, id := range ids {
+			res = append(res, id.String())
+		}
+		return res
+	}())))
 	query, args := ib.Build()
 	// log.Println(query, args)
 	rows, err := r.dao.Query(ctx, query, args...)
@@ -386,6 +394,9 @@ func (r *repo) SearchListingCombination(ctx context.Context, query *dto.SearchLi
 			}
 			r.Items = append(r.Items, i)
 		}
+		if err := rows.Err(); err != nil {
+			return nil, err
+		}
 		return &r, nil
 	}()
 
@@ -530,4 +541,47 @@ func (r *repo) GetListingPaymentsByType(ctx context.Context, id uuid.UUID, ptype
 		}
 	}
 	return items, nil
+}
+
+func (r *repo) FilterVisibleListings(ctx context.Context, lids []uuid.UUID, uid uuid.UUID) ([]uuid.UUID, error) {
+	buildSQL := func(lid uuid.UUID) (string, []interface{}) {
+		subSB := sqlbuilder.PostgreSQL.NewSelectBuilder()
+		subSB.Select("1")
+		subSB.From("property_managers")
+		subSB.Where(
+			"property_managers.property_id = listings.property_id",
+			subSB.Equal("property_managers.manager_id", uid),
+		)
+		sb := sqlbuilder.PostgreSQL.NewSelectBuilder()
+		sb.Select("COUNT(*) > 0")
+		sb.From("listings")
+		sb.Where(
+			sb.Equal("listings.id", lid),
+			sb.Exists(subSB),
+		)
+		return sb.Build()
+	}
+
+	resIDs := make([]uuid.UUID, 0, len(lids))
+
+	queries := make([]database.BatchedQueryRow, 0, len(lids))
+	for _, lid := range lids {
+		sql, args := buildSQL(lid)
+		queries = append(queries, database.BatchedQueryRow{
+			SQL:    sql,
+			Params: args,
+			Fn: func(row pgx.Row) error {
+				var res bool
+				if err := row.Scan(&res); err != nil {
+					return err
+				}
+				resIDs = append(resIDs, lid)
+				return nil
+			},
+		})
+	}
+
+	err := r.dao.QueryRowBatch(ctx, queries)
+
+	return resIDs, err
 }
