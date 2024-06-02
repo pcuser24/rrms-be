@@ -43,7 +43,7 @@ func newTestServer(
 	// initialize services
 	rService := reminder.NewService(rRepo)
 	aService := application.NewService(ar, cr, lr, pr, rService)
-	lService := listing_service.NewService(lr, pr, nil, "") // NOTE: leave paymentRepo nil for now
+	lService := listing_service.NewService(lr, pr, ur, nil, "") // NOTE: leave paymentRepo nil for now
 
 	// initialize http router
 	httpServer := http.NewServer(

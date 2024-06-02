@@ -137,8 +137,8 @@ type CreateApplicationParams struct {
 	ListingID               uuid.UUID   `json:"listing_id"`
 	PropertyID              uuid.UUID   `json:"property_id"`
 	UnitID                  uuid.UUID   `json:"unit_id"`
-	ListingPrice            int64       `json:"listing_price"`
-	OfferedPrice            int64       `json:"offered_price"`
+	ListingPrice            float32     `json:"listing_price"`
+	OfferedPrice            float32     `json:"offered_price"`
 	TenantType              TENANTTYPE  `json:"tenant_type"`
 	FullName                string      `json:"full_name"`
 	Dob                     pgtype.Date `json:"dob"`

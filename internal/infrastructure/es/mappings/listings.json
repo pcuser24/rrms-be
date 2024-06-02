@@ -1,0 +1,221 @@
+{
+  "mappings": {
+    "properties": {
+      "id": {
+        "type": "keyword"
+      },
+      "creator_id": {
+        "type": "keyword"
+      },
+      "title": {
+        "type": "text"
+      },
+      "description": {
+        "type": "text"
+      },
+      "full_name": {
+        "type": "text"
+      },
+      "email": {
+        "type": "text"
+      },
+      "phone": {
+        "type": "text"
+      },
+      "contact_type": {
+        "type": "keyword"
+      },
+      "price": {
+        "type": "float"
+      },
+      "price_negotiable": {
+        "type": "boolean"
+      },
+      "security_deposit": {
+        "type": "float"
+      },
+      "lease_term": {
+        "type": "integer"
+      },
+      "pets_allowed": {
+        "type": "boolean"
+      },
+      "number_of_residents": {
+        "type": "integer"
+      },
+      "priority": {
+        "type": "integer"
+      },
+      "active": {
+        "type": "boolean"
+      },
+      "created_at": {
+        "type": "date",
+        "format": "date_optional_time"
+      },
+      "updated_at": {
+        "type": "date",
+        "format": "date_optional_time"
+      },
+      "expired_at": {
+        "type": "date",
+        "format": "date_optional_time"
+      },
+      "tags": {
+        "type": "nested",
+        "properties": {
+          "tag": {
+            "type": "text"
+          }
+        }
+      },
+      "listing_units": {
+        "type": "nested",
+        "properties": {
+          "unit_id": {
+            "type": "keyword"
+          },
+          "price": {
+            "type": "long"
+          },
+          "name": {
+            "type": "text"
+          },
+          "area": {
+            "type": "float"
+          },
+          "floor": {
+            "type": "integer"
+          },
+          "number_of_living_rooms": {
+            "type": "integer"
+          },
+          "number_of_bedrooms": {
+            "type": "integer"
+          },
+          "number_of_bathrooms": {
+            "type": "integer"
+          },
+          "number_of_toilets": {
+            "type": "integer"
+          },
+          "number_of_balconies": {
+            "type": "integer"
+          },
+          "number_of_kitchens": {
+            "type": "integer"
+          },
+          "type": {
+            "type": "keyword"
+          },
+          "created_at": {
+            "type": "date",
+            "format": "date_optional_time"
+          },
+          "updated_at": {
+            "type": "date",
+            "format": "date_optional_time"
+          },
+          "amenities": {
+            "type": "nested",
+            "properties": {
+              "amenity_id": {
+                "type": "long"
+              },
+              "description": {
+                "type": "text"
+              }
+            }
+          }
+        }
+      },
+      "property": {
+        "properties": {
+          "id": {
+            "type": "keyword"
+          },
+          "creator_id": {
+            "type": "keyword"
+          },
+          "name": {
+            "type": "text"
+          },
+          "building": {
+            "type": "text"
+          },
+          "project": {
+            "type": "text"
+          },
+          "area": {
+            "type": "float"
+          },
+          "number_of_floors": {
+            "type": "integer"
+          },
+          "year_built": {
+            "type": "integer"
+          },
+          "orientation": {
+            "type": "keyword"
+          },
+          "entrance_width": {
+            "type": "float"
+          },
+          "facade": {
+            "type": "float"
+          },
+          "full_address": {
+            "type": "text"
+          },
+          "city": {
+            "type": "text"
+          },
+          "district": {
+            "type": "text"
+          },
+          "ward": {
+            "type": "text"
+          },
+          "lat": {
+            "type": "double"
+          },
+          "lng": {
+            "type": "double"
+          },
+          "primary_image": {
+            "type": "long"
+          },
+          "description": {
+            "type": "text"
+          },
+          "type": {
+            "type": "keyword"
+          },
+          "is_public": {
+            "type": "boolean"
+          },
+          "created_at": {
+            "type": "date",
+            "format": "date_optional_time"
+          },
+          "updated_at": {
+            "type": "date",
+            "format": "date_optional_time"
+          },
+          "features": {
+            "type": "nested",
+            "properties": {
+              "feature_id": {
+                "type": "long"
+              },
+              "description": {
+                "type": "text"
+              }
+            }
+          }
+
+        }
+      }
+    }
+  }
+}

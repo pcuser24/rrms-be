@@ -6,10 +6,10 @@ import (
 	"fmt"
 	"math"
 	"net/url"
-	"time"
 
 	"github.com/user2410/rrms-backend/internal/domain/listing/repo"
 	"github.com/user2410/rrms-backend/internal/infrastructure/database"
+	"github.com/user2410/rrms-backend/internal/infrastructure/es"
 	"github.com/user2410/rrms-backend/pkg/ds/set"
 
 	"github.com/google/uuid"
@@ -22,13 +22,14 @@ import (
 	payment_service "github.com/user2410/rrms-backend/internal/domain/payment/service"
 	property_dto "github.com/user2410/rrms-backend/internal/domain/property/dto"
 	property_repo "github.com/user2410/rrms-backend/internal/domain/property/repo"
+	unit_repo "github.com/user2410/rrms-backend/internal/domain/unit/repo"
 	"github.com/user2410/rrms-backend/internal/interfaces/rest/requests"
 	"github.com/user2410/rrms-backend/internal/utils"
 	"github.com/user2410/rrms-backend/internal/utils/types"
 )
 
 type Service interface {
-	CreateListing(data *dto.CreateListing) (dto.CreateListingResponse, error)
+	CreateListing(data *dto.CreateListing) (*dto.CreateListingResponse, error)
 	SearchListingCombination(data *dto.SearchListingCombinationQuery, userId uuid.UUID) (*dto.SearchListingCombinationResponse, error)
 	GetListingByID(id uuid.UUID) (*model.ListingModel, error)
 	GetListingsByIds(uid uuid.UUID, ids []uuid.UUID, fields []string) ([]model.ListingModel, error)
@@ -42,6 +43,9 @@ type Service interface {
 	CreateApplicationLink(data *dto.CreateApplicationLink) (string, error)
 	VerifyApplicationLink(query *dto.VerifyApplicationLink) (bool, error)
 	UpgradeListing(userId uuid.UUID, lid uuid.UUID, priority int) (*payment_model.PaymentModel, error)
+	UpdateListingStatus(id uuid.UUID, active bool) error
+	UpdateListingExpiration(id uuid.UUID, duration int64) error
+	UpdateListingPriority(id uuid.UUID, priority int) error
 	ExtendListing(userId uuid.UUID, lid uuid.UUID, duration int) (*payment_model.PaymentModel, error)
 }
 
@@ -49,65 +53,23 @@ type service struct {
 	hashSecret  string
 	lRepo       repo.Repo
 	pRepo       property_repo.Repo
+	uRepo       unit_repo.Repo
 	paymentRepo payment_repo.Repo
+
+	esClient *es.ElasticSearchClient
 }
 
 func NewService(
-	lRepo repo.Repo, pRepo property_repo.Repo, paymentRepo payment_repo.Repo,
+	lRepo repo.Repo, pRepo property_repo.Repo, uRepo unit_repo.Repo, paymentRepo payment_repo.Repo,
 	hashSecret string,
 ) Service {
 	return &service{
 		hashSecret:  hashSecret,
 		lRepo:       lRepo,
 		pRepo:       pRepo,
+		uRepo:       uRepo,
 		paymentRepo: paymentRepo,
 	}
-}
-
-func (s *service) CreateListing(data *dto.CreateListing) (dto.CreateListingResponse, error) {
-	listing, err := s.lRepo.CreateListing(context.Background(), data)
-	if err != nil {
-		return dto.CreateListingResponse{}, err
-	}
-
-	params := payment_dto.CreatePayment{UserId: data.CreatorID}
-	amount, discount, err := listing_utils.CalculateListingPrice(int(data.Priority), data.PostDuration)
-	if err != nil {
-		return dto.CreateListingResponse{}, err
-	}
-	params.Amount = amount
-	params.OrderInfo = fmt.Sprintf("[%s%s%s] Phi dang tin nha cho thue", payment_service.PAYMENTTYPE_CREATELISTING, payment_service.PAYMENTTYPE_DELIMITER, listing.ID.String())
-	params.Items = []payment_dto.CreatePaymentItem{
-		{
-			Name:     "Phi dang tin",
-			Price:    amount,
-			Quantity: 1,
-			Discount: int32(discount),
-		},
-	}
-
-	payment, err := s.paymentRepo.CreatePayment(context.Background(), &params)
-	if err != nil {
-		return dto.CreateListingResponse{}, err
-	}
-
-	return dto.CreateListingResponse{
-		Listing: listing,
-		Payment: payment,
-	}, nil
-}
-
-func (s *service) SearchListingCombination(q *dto.SearchListingCombinationQuery, userId uuid.UUID) (*dto.SearchListingCombinationResponse, error) {
-	if len(q.SortBy) == 0 {
-		q.SortBy = append(q.SortBy, "listings.created_at", "listings.priority")
-		q.Order = append(q.Order, "desc", "desc")
-	}
-	q.Limit = types.Ptr(utils.PtrDerefence(q.Limit, 1000))
-	q.Offset = types.Ptr(utils.PtrDerefence(q.Offset, 0))
-	q.LActive = types.Ptr(true)
-	q.PIsPublic = types.Ptr(true)
-	q.LMinExpiredAt = types.Ptr(time.Now())
-	return s.lRepo.SearchListingCombination(context.Background(), q)
 }
 
 func (s *service) GetListingByID(id uuid.UUID) (*model.ListingModel, error) {
@@ -120,10 +82,6 @@ func (s *service) GetListingsByIds(uid uuid.UUID, ids []uuid.UUID, fields []stri
 		return nil, err
 	}
 	return s.lRepo.GetListingsByIds(context.Background(), visibleIDS, fields)
-}
-
-func (s *service) UpdateListing(id uuid.UUID, data *dto.UpdateListing) error {
-	return s.lRepo.UpdateListing(context.Background(), id, data)
 }
 
 func (s *service) DeleteListing(id uuid.UUID) error {

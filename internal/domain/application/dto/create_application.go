@@ -87,8 +87,8 @@ type CreateApplication struct {
 	ListingID               uuid.UUID           `json:"listingId" validate:"omitempty,uuid4"`
 	PropertyID              uuid.UUID           `json:"propertyId" validate:"required,uuid4"`
 	UnitID                  uuid.UUID           `json:"unitId" validate:"required,uuid4"`
-	ListingPrice            int64               `json:"listingPrice" validate:"required,gt=0"`
-	OfferedPrice            int64               `json:"offeredPrice" validate:"required,gt=0"`
+	ListingPrice            float32             `json:"listingPrice" validate:"required,gt=0"`
+	OfferedPrice            float32             `json:"offeredPrice" validate:"required,gt=0"`
 	CreatorID               uuid.UUID           `json:"creatorId"`
 	TenantType              database.TENANTTYPE `json:"tenantType" validate:"required,oneof=INDIVIDUAL FAMILY ORGANIZATION"`
 	FullName                string              `json:"fullName" validate:"required"`

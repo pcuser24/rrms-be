@@ -11,24 +11,35 @@ func (s Set[K]) Contains(k K) bool {
 	return ok
 }
 
-func (s Set[K]) Add(k K) {
+func (s Set[K]) Add(k K) Set[K] {
 	s[k] = struct{}{}
+	return s
 }
 
-func (s Set[K]) AddAll(keys ...K) {
+func (s Set[K]) AddAll(keys ...K) Set[K] {
 	for _, k := range keys {
 		s[k] = struct{}{}
 	}
+	return s
 }
 
-func (s Set[K]) Remove(k K) {
+func (s Set[K]) Remove(k K) Set[K] {
 	delete(s, k)
+	return s
 }
 
-func (s Set[K]) Clear() {
+func (s Set[K]) RemoveAll(keys ...K) Set[K] {
+	for _, k := range keys {
+		delete(s, k)
+	}
+	return s
+}
+
+func (s Set[K]) Clear() Set[K] {
 	for k := range s {
 		delete(s, k)
 	}
+	return s
 }
 
 func (s Set[K]) Size() int {

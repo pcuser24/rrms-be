@@ -36,9 +36,9 @@ type CreateListing struct {
 	Email             string                `json:"email" validate:"required,email"`
 	Phone             string                `json:"phone" validate:"required"`
 	ContactType       string                `json:"contactType" validate:"required"`
-	Price             int64                 `json:"price" validate:"required,gt=0"`
+	Price             float32               `json:"price" validate:"required,gt=0"`
 	PriceNegotiable   bool                  `json:"priceNegotiable"`
-	SecurityDeposit   *int64                `json:"securityDeposit" validate:"omitempty,gte=0"`
+	SecurityDeposit   *float32              `json:"securityDeposit" validate:"omitempty,gte=0"`
 	LeaseTerm         *int32                `json:"leaseTerm" validate:"required,gt=0"`
 	PetsAllowed       *bool                 `json:"petsAllowed"`
 	NumberOfResidents *int32                `json:"numberOfResidents" validate:"omitempty,gte=0"`
@@ -61,7 +61,7 @@ func (c *CreateListing) ToCreateListingDB() *database.CreateListingParams {
 		ContactType:       c.ContactType,
 		Price:             c.Price,
 		PriceNegotiable:   pgtype.Bool{Valid: true, Bool: c.PriceNegotiable},
-		SecurityDeposit:   types.Int64N(c.SecurityDeposit),
+		SecurityDeposit:   types.Float32N(c.SecurityDeposit),
 		LeaseTerm:         types.Int32N(c.LeaseTerm),
 		PetsAllowed:       types.BoolN(c.PetsAllowed),
 		NumberOfResidents: types.Int32N(c.NumberOfResidents),

@@ -99,6 +99,17 @@ LIMIT $2 OFFSET $3;
 -- name: GetAllRentalPolicies :many
 SELECT * FROM l_policies;
 
+-- name: GetRecentListings :many
+SELECT id 
+FROM listings 
+WHERE active = TRUE AND expired_at > NOW() 
+ORDER BY created_at DESC LIMIT $1;
+
+-- name: GetSomeListings :many
+SELECT *
+FROM listings
+LIMIT $1 OFFSET $2;
+
 -- name: CheckListingOwnership :one
 SELECT count(*) FROM listings WHERE id = $1 AND creator_id = $2 LIMIT 1;
 

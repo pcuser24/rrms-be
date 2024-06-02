@@ -12,6 +12,7 @@ package repo
 import (
 	context "context"
 	reflect "reflect"
+	time "time"
 
 	uuid "github.com/google/uuid"
 	dto "github.com/user2410/rrms-backend/internal/domain/listing/dto"
@@ -238,11 +239,12 @@ func (mr *MockRepoMockRecorder) UpdateListing(arg0, arg1, arg2 any) *gomock.Call
 }
 
 // UpdateListingExpiration mocks base method.
-func (m *MockRepo) UpdateListingExpiration(arg0 context.Context, arg1 uuid.UUID, arg2 int64) error {
+func (m *MockRepo) UpdateListingExpiration(arg0 context.Context, arg1 uuid.UUID, arg2 int64) (time.Time, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "UpdateListingExpiration", arg0, arg1, arg2)
-	ret0, _ := ret[0].(error)
-	return ret0
+	ret0, _ := ret[0].(time.Time)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
 // UpdateListingExpiration indicates an expected call of UpdateListingExpiration.

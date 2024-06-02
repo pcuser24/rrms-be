@@ -99,8 +99,8 @@ type ApplicationModel struct {
 	ListingID               uuid.UUID                  `json:"listingId"`
 	PropertyID              uuid.UUID                  `json:"propertyId"`
 	UnitID                  uuid.UUID                  `json:"unitId"`
-	ListingPrice            int64                      `json:"listingPrice"`
-	OfferedPrice            int64                      `json:"offeredPrice"`
+	ListingPrice            float32                    `json:"listingPrice"`
+	OfferedPrice            float32                    `json:"offeredPrice"`
 	Status                  database.APPLICATIONSTATUS `json:"status"`
 	CreatorID               uuid.UUID                  `json:"creatorId"`
 	TenantType              database.TENANTTYPE        `json:"tenantType"`

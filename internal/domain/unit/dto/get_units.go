@@ -10,7 +10,7 @@ import (
 	"github.com/user2410/rrms-backend/pkg/ds/set"
 )
 
-var retrievableFields = []string{"name", "property_id", "area", "floor", "price", "number_of_living_rooms", "number_of_bedrooms", "number_of_bathrooms", "number_of_toilets", "number_of_balconies", "number_of_kitchens", "type", "created_at", "updated_at", "amenities", "media"}
+var retrievableFields = []string{"name", "property_id", "area", "floor", "number_of_living_rooms", "number_of_bedrooms", "number_of_bathrooms", "number_of_toilets", "number_of_balconies", "number_of_kitchens", "type", "created_at", "updated_at", "amenities", "media"}
 
 func GetRetrievableFields() []string {
 	rfs := make([]string, len(retrievableFields))

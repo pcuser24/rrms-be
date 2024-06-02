@@ -63,7 +63,7 @@ func (s *VnPayService) CreatePaymentUrl(ipAddr string, userId uuid.UUID, payment
 	vnpParams["vnp_TxnRef"] = orderId
 	vnpParams["vnp_OrderInfo"] = fmt.Sprintf("[%d]%s", paymentId, payment.OrderInfo)
 	vnpParams["vnp_OrderType"] = "other"
-	vnpParams["vnp_Amount"] = strconv.FormatInt(payment.Amount*100, 10)
+	vnpParams["vnp_Amount"] = strconv.FormatInt(int64(payment.Amount*100), 10)
 	vnpParams["vnp_ReturnUrl"] = data.ReturnUrl
 	vnpParams["vnp_IpAddr"] = ipAddr
 	vnpParams["vnp_CreateDate"] = createDate

@@ -9,8 +9,8 @@ import (
 type UpdateListing struct {
 	Title             *string               `json:"title" validate:"omitempty"`
 	Description       *string               `json:"description" validate:"omitempty"`
-	Price             *int64                `json:"price" validate:"omitempty"`
-	SecurityDeposit   *int64                `json:"securityDeposit" validate:"omitempty"`
+	Price             *float32              `json:"price" validate:"omitempty"`
+	SecurityDeposit   *float32              `json:"securityDeposit" validate:"omitempty"`
 	LeaseTerm         *int32                `json:"leaseTerm" validate:"omitempty"`
 	PetsAllowed       *bool                 `json:"petsAllowed" validate:"omitempty"`
 	NumberOfResidents *int32                `json:"numberOfResidents" validate:"omitempty"`
@@ -23,8 +23,8 @@ func (u *UpdateListing) ToUpdateListingDB(id uuid.UUID) *database.UpdateListingP
 	return &database.UpdateListingParams{
 		Title:             types.StrN(u.Title),
 		Description:       types.StrN(u.Description),
-		Price:             types.Int64N(u.Price),
-		SecurityDeposit:   types.Int64N(u.SecurityDeposit),
+		Price:             types.Float32N(u.Price),
+		SecurityDeposit:   types.Float32N(u.SecurityDeposit),
 		LeaseTerm:         types.Int32N(u.LeaseTerm),
 		PetsAllowed:       types.BoolN(u.PetsAllowed),
 		NumberOfResidents: types.Int32N(u.NumberOfResidents),

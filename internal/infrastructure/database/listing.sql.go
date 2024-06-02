@@ -121,22 +121,22 @@ INSERT INTO listings (
 `
 
 type CreateListingParams struct {
-	CreatorID         uuid.UUID   `json:"creator_id"`
-	PropertyID        uuid.UUID   `json:"property_id"`
-	Title             string      `json:"title"`
-	Description       string      `json:"description"`
-	FullName          string      `json:"full_name"`
-	Email             string      `json:"email"`
-	Phone             string      `json:"phone"`
-	ContactType       string      `json:"contact_type"`
-	Price             int64       `json:"price"`
-	PriceNegotiable   pgtype.Bool `json:"price_negotiable"`
-	SecurityDeposit   pgtype.Int8 `json:"security_deposit"`
-	LeaseTerm         pgtype.Int4 `json:"lease_term"`
-	PetsAllowed       pgtype.Bool `json:"pets_allowed"`
-	NumberOfResidents pgtype.Int4 `json:"number_of_residents"`
-	Priority          int32       `json:"priority"`
-	PostDuration      interface{} `json:"post_duration"`
+	CreatorID         uuid.UUID     `json:"creator_id"`
+	PropertyID        uuid.UUID     `json:"property_id"`
+	Title             string        `json:"title"`
+	Description       string        `json:"description"`
+	FullName          string        `json:"full_name"`
+	Email             string        `json:"email"`
+	Phone             string        `json:"phone"`
+	ContactType       string        `json:"contact_type"`
+	Price             float32       `json:"price"`
+	PriceNegotiable   pgtype.Bool   `json:"price_negotiable"`
+	SecurityDeposit   pgtype.Float4 `json:"security_deposit"`
+	LeaseTerm         pgtype.Int4   `json:"lease_term"`
+	PetsAllowed       pgtype.Bool   `json:"pets_allowed"`
+	NumberOfResidents pgtype.Int4   `json:"number_of_residents"`
+	Priority          int32         `json:"priority"`
+	PostDuration      interface{}   `json:"post_duration"`
 }
 
 func (q *Queries) CreateListing(ctx context.Context, arg CreateListingParams) (Listing, error) {
@@ -468,6 +468,85 @@ func (q *Queries) GetListingsOfProperty(ctx context.Context, arg GetListingsOfPr
 	return items, nil
 }
 
+const getRecentListings = `-- name: GetRecentListings :many
+SELECT id 
+FROM listings 
+WHERE active = TRUE AND expired_at > NOW() 
+ORDER BY created_at DESC LIMIT $1
+`
+
+func (q *Queries) GetRecentListings(ctx context.Context, limit int32) ([]uuid.UUID, error) {
+	rows, err := q.db.Query(ctx, getRecentListings, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []uuid.UUID
+	for rows.Next() {
+		var id uuid.UUID
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		items = append(items, id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getSomeListings = `-- name: GetSomeListings :many
+SELECT id, creator_id, property_id, title, description, full_name, email, phone, contact_type, price, price_negotiable, security_deposit, lease_term, pets_allowed, number_of_residents, priority, active, created_at, updated_at, expired_at
+FROM listings
+LIMIT $1 OFFSET $2
+`
+
+type GetSomeListingsParams struct {
+	Limit  int32 `json:"limit"`
+	Offset int32 `json:"offset"`
+}
+
+func (q *Queries) GetSomeListings(ctx context.Context, arg GetSomeListingsParams) ([]Listing, error) {
+	rows, err := q.db.Query(ctx, getSomeListings, arg.Limit, arg.Offset)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Listing
+	for rows.Next() {
+		var i Listing
+		if err := rows.Scan(
+			&i.ID,
+			&i.CreatorID,
+			&i.PropertyID,
+			&i.Title,
+			&i.Description,
+			&i.FullName,
+			&i.Email,
+			&i.Phone,
+			&i.ContactType,
+			&i.Price,
+			&i.PriceNegotiable,
+			&i.SecurityDeposit,
+			&i.LeaseTerm,
+			&i.PetsAllowed,
+			&i.NumberOfResidents,
+			&i.Priority,
+			&i.Active,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.ExpiredAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const updateListing = `-- name: UpdateListing :exec
 UPDATE listings SET
   title = coalesce($1, title),
@@ -488,19 +567,19 @@ WHERE id = $13
 `
 
 type UpdateListingParams struct {
-	Title             pgtype.Text `json:"title"`
-	Description       pgtype.Text `json:"description"`
-	FullName          pgtype.Text `json:"full_name"`
-	Email             pgtype.Text `json:"email"`
-	Phone             pgtype.Text `json:"phone"`
-	ContactType       pgtype.Text `json:"contact_type"`
-	Price             pgtype.Int8 `json:"price"`
-	PriceNegotiable   pgtype.Bool `json:"price_negotiable"`
-	SecurityDeposit   pgtype.Int8 `json:"security_deposit"`
-	LeaseTerm         pgtype.Int4 `json:"lease_term"`
-	PetsAllowed       pgtype.Bool `json:"pets_allowed"`
-	NumberOfResidents pgtype.Int4 `json:"number_of_residents"`
-	ID                uuid.UUID   `json:"id"`
+	Title             pgtype.Text   `json:"title"`
+	Description       pgtype.Text   `json:"description"`
+	FullName          pgtype.Text   `json:"full_name"`
+	Email             pgtype.Text   `json:"email"`
+	Phone             pgtype.Text   `json:"phone"`
+	ContactType       pgtype.Text   `json:"contact_type"`
+	Price             pgtype.Float4 `json:"price"`
+	PriceNegotiable   pgtype.Bool   `json:"price_negotiable"`
+	SecurityDeposit   pgtype.Float4 `json:"security_deposit"`
+	LeaseTerm         pgtype.Int4   `json:"lease_term"`
+	PetsAllowed       pgtype.Bool   `json:"pets_allowed"`
+	NumberOfResidents pgtype.Int4   `json:"number_of_residents"`
+	ID                uuid.UUID     `json:"id"`
 }
 
 func (q *Queries) UpdateListing(ctx context.Context, arg UpdateListingParams) error {

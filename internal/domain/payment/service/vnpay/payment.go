@@ -1,17 +1,16 @@
 package vnpay
 
 import (
-	"context"
 	"strconv"
 	"strings"
 
 	"github.com/google/uuid"
-	"github.com/user2410/rrms-backend/internal/domain/payment/dto"
+	payment_dto "github.com/user2410/rrms-backend/internal/domain/payment/dto"
 	"github.com/user2410/rrms-backend/internal/domain/payment/service"
 	"github.com/user2410/rrms-backend/internal/infrastructure/database"
 )
 
-func (s *VnPayService) HandleReturn(data *dto.UpdatePayment, paymentInfo string) error {
+func (s *VnPayService) HandleReturn(data *payment_dto.UpdatePayment, paymentInfo string) error {
 	end := strings.Index(paymentInfo, "]")
 	if end == -1 || paymentInfo[0] != '[' {
 		return service.ErrInvalidPaymentInfo
@@ -40,7 +39,7 @@ func (s *VnPayService) handlePayCreateListing(listingId string, success bool) er
 	if err != nil {
 		return err
 	}
-	return s.lRepo.UpdateListingStatus(context.Background(), id, success)
+	return s.lService.UpdateListingStatus(id, success)
 }
 
 func (s *VnPayService) handlePayExtendListing(paymentObject string) error {
@@ -57,7 +56,7 @@ func (s *VnPayService) handlePayExtendListing(paymentObject string) error {
 		return service.ErrInvalidPaymentInfo
 	}
 
-	return s.lRepo.UpdateListingExpiration(context.Background(), listingId, duration)
+	return s.lService.UpdateListingExpiration(listingId, duration)
 }
 
 func (s *VnPayService) handlePayUpgradeListing(paymentObject string) error {
@@ -74,5 +73,5 @@ func (s *VnPayService) handlePayUpgradeListing(paymentObject string) error {
 		return service.ErrInvalidPaymentInfo
 	}
 
-	return s.lRepo.UpdateListingPriority(context.Background(), listingId, int(priority))
+	return s.lService.UpdateListingPriority(listingId, int(priority))
 }

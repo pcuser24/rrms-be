@@ -28,6 +28,7 @@ type Repo interface {
 	GetRentalPaymentIncomes(ctx context.Context, userId uuid.UUID, query dto.RentalPaymentStatisticQuery) (float32, error)
 	GetMaintenanceRequests(ctx context.Context, userId uuid.UUID, month time.Time) ([]int64, error)
 	GetPaymentsStatistic(ctx context.Context, userId uuid.UUID, query dto.PaymentsStatisticQuery) (float32, error)
+	GetRecentListings(ctx context.Context, limit int32) ([]uuid.UUID, error)
 }
 
 type repo struct {

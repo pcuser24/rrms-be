@@ -41,7 +41,7 @@ func NewAdapter(lService listing_service.Service, pService property_service.Serv
 func (a *adapter) RegisterServer(router *fiber.Router, tokenMaker token.Maker) {
 	listingRoute := (*router).Group("/listings")
 
-	listingRoute.Get("/",
+	listingRoute.Get("/search",
 		auth_http.GetAuthorizationMiddleware(tokenMaker),
 		a.searchListings(),
 	)

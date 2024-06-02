@@ -65,3 +65,30 @@ func TestPointerToStructType(t *testing.T) {
 	require.False(t, s.Contains(&alice))
 	require.True(t, s.Contains(&bob))
 }
+
+func TestAddAll(t *testing.T) {
+	s := NewSet[string]()
+	s.AddAll("abc", "def", "ghi")
+	require.True(t, s.Contains("abc"))
+	require.True(t, s.Contains("def"))
+	require.True(t, s.Contains("ghi"))
+	s.AddAll("abc", "def").RemoveAll("abc", "def")
+	require.False(t, s.Contains("abc"))
+	require.False(t, s.Contains("def"))
+	require.True(t, s.Contains("ghi"))
+}
+
+func TestToSlice(t *testing.T) {
+	s := NewSet[int]().AddAll(1, 3, 2, 5, 1, 4, 2, 3)
+	require.ElementsMatch(t, s.ToSlice(), []int{1, 2, 3, 4, 5})
+}
+
+func TestIsEmpty(t *testing.T) {
+	s := NewSet[int]()
+	require.True(t, s.IsEmpty())
+	s.AddAll(1, 2, 3, 3, 2)
+	require.Equal(t, s.Size(), 3)
+	require.False(t, s.IsEmpty())
+	s.Clear()
+	require.True(t, s.IsEmpty())
+}

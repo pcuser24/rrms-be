@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"slices"
-	"time"
 
 	property_model "github.com/user2410/rrms-backend/internal/domain/property/model"
 	"github.com/user2410/rrms-backend/pkg/ds/set"
@@ -40,14 +39,6 @@ func (s *service) CreateApplication(data *dto.CreateApplication) (*model.Applica
 	}
 	if slices.IndexFunc(pManagers, func(m property_model.PropertyManagerModel) bool { return m.ManagerID == data.CreatorID }) != -1 {
 		return nil, ErrInvalidApplicant
-	}
-	// Check if there is any application of this user within 30 days
-	appIds, err := s.aRepo.GetApplicationsByUserId(context.Background(), data.CreatorID, time.Now().AddDate(0, 0, -30), 1, 0)
-	if err != nil {
-		return nil, err
-	}
-	if len(appIds) > 0 {
-		return nil, ErrAlreadyApplied
 	}
 
 	return s.aRepo.CreateApplication(context.Background(), data)

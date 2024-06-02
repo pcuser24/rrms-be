@@ -25,7 +25,7 @@ type SearchListingQuery struct {
 	LPriority             *int32     `json:"lpriority"`
 	LActive               *bool      `json:"lactive"`
 	LPolicies             []int32    `json:"lpolicies"`
-	LTags                 []string   `query:"ptags" validate:"omitempty"`
+	LTags                 []string   `query:"ltags" validate:"omitempty"`
 	LMinCreatedAt         *time.Time `json:"lminCreatedAt"`
 	LMaxCreatedAt         *time.Time `json:"lmaxCreatedAt"`
 	LMinUpdatedAt         *time.Time `json:"lminUpdatedAt"`

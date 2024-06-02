@@ -18,7 +18,7 @@ import (
 type Repo interface {
 	CreateUnit(ctx context.Context, data *dto.CreateUnit) (*model.UnitModel, error)
 	GetUnitById(ctx context.Context, id uuid.UUID) (*model.UnitModel, error)
-	GetUnitsByIds(ctx context.Context, ids []string, fields []string) ([]model.UnitModel, error)
+	GetUnitsByIds(ctx context.Context, ids []uuid.UUID, fields []string) ([]model.UnitModel, error)
 	GetUnitsOfProperty(ctx context.Context, pid uuid.UUID) ([]model.UnitModel, error)
 	SearchUnitCombination(ctx context.Context, query *dto.SearchUnitCombinationQuery) (*dto.SearchUnitCombinationResponse, error)
 	CheckUnitManageability(ctx context.Context, uid uuid.UUID, userId uuid.UUID) (bool, error)
@@ -208,7 +208,7 @@ func (r *repo) IsPublic(ctx context.Context, id uuid.UUID) (bool, error) {
 	return r.dao.IsUnitPublic(ctx, id)
 }
 
-func (r *repo) GetUnitsByIds(ctx context.Context, ids []string, fields []string) ([]model.UnitModel, error) {
+func (r *repo) GetUnitsByIds(ctx context.Context, ids []uuid.UUID, fields []string) ([]model.UnitModel, error) {
 	if len(ids) == 0 {
 		return nil, nil
 	}
@@ -227,7 +227,13 @@ func (r *repo) GetUnitsByIds(ctx context.Context, ids []string, fields []string)
 	ib := sqlbuilder.PostgreSQL.NewSelectBuilder()
 	ib.Select(nonFKFields...)
 	ib.From("units")
-	ib.Where(ib.In("id::text", sqlbuilder.List(ids)))
+	ib.Where(ib.In("id::text", sqlbuilder.List(func() []string {
+		var res []string
+		for _, id := range ids {
+			res = append(res, id.String())
+		}
+		return res
+	}())))
 	query, args := ib.Build()
 	// log.Println(query, args)
 	rows, err := r.dao.Query(ctx, query, args...)

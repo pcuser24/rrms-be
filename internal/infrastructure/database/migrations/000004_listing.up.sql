@@ -13,9 +13,9 @@ CREATE TABLE IF NOT EXISTS "listings" (
   "phone" TEXT NOT NULL,
   "contact_type" TEXT NOT NULL,
 
-  "price" BIGINT NOT NULL,
+  "price" REAL NOT NULL,
   "price_negotiable" BOOL NOT NULL DEFAULT FALSE,
-  "security_deposit" BIGINT,
+  "security_deposit" REAL,
   "lease_term" INTEGER,
 
   "pets_allowed" BOOL,

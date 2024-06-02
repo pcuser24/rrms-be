@@ -46,7 +46,7 @@ type CreatePaymentParams struct {
 	UserID    uuid.UUID `json:"user_id"`
 	OrderID   string    `json:"order_id"`
 	OrderInfo string    `json:"order_info"`
-	Amount    int64     `json:"amount"`
+	Amount    float32   `json:"amount"`
 }
 
 func (q *Queries) CreatePayment(ctx context.Context, arg CreatePaymentParams) (Payment, error) {
@@ -87,11 +87,11 @@ INSERT INTO "payment_items" (
 `
 
 type CreatePaymentItemParams struct {
-	PaymentID int64  `json:"payment_id"`
-	Name      string `json:"name"`
-	Price     int64  `json:"price"`
-	Quantity  int32  `json:"quantity"`
-	Discount  int32  `json:"discount"`
+	PaymentID int64   `json:"payment_id"`
+	Name      string  `json:"name"`
+	Price     float32 `json:"price"`
+	Quantity  int32   `json:"quantity"`
+	Discount  int32   `json:"discount"`
 }
 
 func (q *Queries) CreatePaymentItem(ctx context.Context, arg CreatePaymentItemParams) (PaymentItem, error) {
@@ -229,7 +229,7 @@ type UpdatePaymentParams struct {
 	ID        int64             `json:"id"`
 	OrderID   pgtype.Text       `json:"order_id"`
 	OrderInfo pgtype.Text       `json:"order_info"`
-	Amount    pgtype.Int8       `json:"amount"`
+	Amount    pgtype.Float4     `json:"amount"`
 	Status    NullPAYMENTSTATUS `json:"status"`
 }
 

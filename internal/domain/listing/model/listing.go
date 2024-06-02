@@ -52,9 +52,9 @@ type ListingModel struct {
 	Phone       string `json:"phone"`
 	ContactType string `json:"contactType"`
 
-	Price           int64  `json:"price"`
-	PriceNegotiable bool   `json:"priceNegotiable"`
-	SecurityDeposit *int64 `json:"securityDeposit"`
+	Price           float32  `json:"price"`
+	PriceNegotiable bool     `json:"priceNegotiable"`
+	SecurityDeposit *float32 `json:"securityDeposit"`
 
 	LeaseTerm         *int32 `json:"leaseTerm"`
 	PetsAllowed       *bool  `json:"petsAllowed"`
@@ -88,7 +88,7 @@ func ToListingModel(ldb *database.Listing) *ListingModel {
 		CreatedAt:         ldb.CreatedAt,
 		UpdatedAt:         ldb.UpdatedAt,
 		ExpiredAt:         ldb.ExpiredAt,
-		SecurityDeposit:   types.PNInt64(ldb.SecurityDeposit),
+		SecurityDeposit:   types.PNFloat32(ldb.SecurityDeposit),
 		LeaseTerm:         types.PNInt32(ldb.LeaseTerm),
 		PetsAllowed:       types.PNBool(ldb.PetsAllowed),
 		NumberOfResidents: types.PNInt32(ldb.NumberOfResidents),

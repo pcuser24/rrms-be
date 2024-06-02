@@ -8,11 +8,11 @@ import (
 )
 
 type PaymentItemModel struct {
-	PaymentID int64  `json:"paymentId"`
-	Name      string `json:"name"`
-	Price     int64  `json:"price"`
-	Quantity  int32  `json:"quantity"`
-	Discount  int32  `json:"discount"`
+	PaymentID int64   `json:"paymentId"`
+	Name      string  `json:"name"`
+	Price     float32 `json:"price"`
+	Quantity  int32   `json:"quantity"`
+	Discount  int32   `json:"discount"`
 }
 
 type PaymentModel struct {
@@ -20,7 +20,7 @@ type PaymentModel struct {
 	UserID    uuid.UUID              `json:"userId"`
 	OrderID   string                 `json:"orderId"`
 	OrderInfo string                 `json:"orderInfo"`
-	Amount    int64                  `json:"amount"`
+	Amount    float32                `json:"amount"`
 	Status    database.PAYMENTSTATUS `json:"status"`
 	CreatedAt time.Time              `json:"createdAt"`
 	UpdatedAt time.Time              `json:"updatedAt"`

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"slices"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/huandu/go-sqlbuilder"
@@ -26,7 +27,7 @@ type Repo interface {
 	UpdateListing(ctx context.Context, id uuid.UUID, data *dto.UpdateListing) error
 	UpdateListingStatus(ctx context.Context, id uuid.UUID, active bool) error
 	UpdateListingPriority(ctx context.Context, id uuid.UUID, priority int) error
-	UpdateListingExpiration(ctx context.Context, id uuid.UUID, expiredAt int64) error
+	UpdateListingExpiration(ctx context.Context, id uuid.UUID, expiredAt int64) (time.Time, error)
 	DeleteListing(ctx context.Context, id uuid.UUID) error
 	CheckListingOwnership(ctx context.Context, lid uuid.UUID, uid uuid.UUID) (bool, error)
 	CheckListingVisibility(ctx context.Context, lid, uid uuid.UUID) (bool, error)
@@ -329,7 +330,7 @@ func (r *repo) UpdateListingPriority(ctx context.Context, id uuid.UUID, priority
 	})
 }
 
-func (r *repo) UpdateListingExpiration(ctx context.Context, id uuid.UUID, duration int64) error {
+func (r *repo) UpdateListingExpiration(ctx context.Context, id uuid.UUID, duration int64) (time.Time, error) {
 	sb := sqlbuilder.PostgreSQL.NewUpdateBuilder()
 	sb.Update("listings")
 	sb.Set(
@@ -339,8 +340,12 @@ func (r *repo) UpdateListingExpiration(ctx context.Context, id uuid.UUID, durati
 	sb.Where(sb.Equal("id", id))
 
 	sql, args := sb.Build()
-	_, err := r.dao.Exec(ctx, sql, args...)
-	return err
+	sql += " RETURNING expired_at"
+	row := r.dao.QueryRow(ctx, sql, args...)
+	var res time.Time
+	err := row.Scan(&res)
+
+	return res, err
 }
 
 func (r *repo) DeleteListing(ctx context.Context, lid uuid.UUID) error {

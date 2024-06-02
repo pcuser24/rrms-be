@@ -29,7 +29,7 @@ import (
 	"github.com/user2410/rrms-backend/internal/domain/unit"
 	"github.com/user2410/rrms-backend/internal/infrastructure/aws/s3"
 	"github.com/user2410/rrms-backend/internal/infrastructure/database"
-	"github.com/user2410/rrms-backend/internal/infrastructure/email"
+	"github.com/user2410/rrms-backend/internal/infrastructure/es"
 	"github.com/user2410/rrms-backend/internal/infrastructure/http"
 	"github.com/user2410/rrms-backend/internal/utils/token"
 )
@@ -58,12 +58,19 @@ type serverConfig struct {
 
 	ResendAPIKey string `mapstructure:"RESEND_API_KEY" validate:"omitempty"`
 
-	AsynqRedisAddress string `mapstructure:"ASYNQ_REDIS_ADDRESS" validate:"required"`
-
 	VnpTmnCode    string `mapstructure:"VNP_TMNCODE" validate:"required"`
 	VnpHashSecret string `mapstructure:"VNP_HASHSECRET" validate:"required"`
 	VnpUrl        string `mapstructure:"VNP_URL" validate:"required"`
 	VnpApi        string `mapstructure:"VNP_API" validate:"required"`
+
+	// Elasticsearch
+	ElasticsearchAddresses  *string `mapstructure:"ELASTICSEARCH_ADDRESSES" validate:"omitempty"`
+	ElasticsearchUsername   *string `mapstructure:"ELASTICSEARCH_USERNAME" validate:"omitempty"`
+	ElasticsearchPassword   *string `mapstructure:"ELASTICSEARCH_PASSWORD" validate:"omitempty"`
+	ElasticsearchCACertPath *string `mapstructure:"ELASTICSEARCH_CACERT_PATH" validate:"omitempty"`
+	ElasticsearchURL        *string `mapstructure:"ELASTICSEARCH_URL" validate:"omitempty"`
+	ElasticsearchCloudID    *string `mapstructure:"ELASTICSEARCH_CLOUD_ID" validate:"omitempty"`
+	ElasticsearchAPIKey     *string `mapstructure:"ELASTICSEARCH_API_KEY" validate:"omitempty"`
 }
 
 type internalServices struct {
@@ -82,13 +89,15 @@ type internalServices struct {
 
 type serverCommand struct {
 	*cobra.Command
-	config           *serverConfig
-	cronScheduler    *cron.Cron
-	tokenMaker       token.Maker
-	emailSender      email.EmailSender
+	config        *serverConfig
+	cronScheduler *cron.Cron
+	tokenMaker    token.Maker
+	// emailSender      email.EmailSender
+	s3Client         *s3.S3Client
 	dao              database.DAO
 	internalServices internalServices
 	httpServer       http.Server
+	elasticsearch    *es.ElasticSearchClient
 }
 
 func NewServerCommand() *serverCommand {
@@ -192,12 +201,26 @@ func (c *serverCommand) setup() {
 	}
 
 	// setup mailer
-	c.emailSender = email.NewResendSender(c.config.ResendAPIKey)
+	// c.emailSender = email.NewResendSender(c.config.ResendAPIKey)
 
 	// setup S3 client
-	s3Client, err := s3.NewS3Client(c.config.AWSRegion, c.config.AWSS3Endpoint)
+	c.s3Client, err = s3.NewS3Client(c.config.AWSRegion, c.config.AWSS3Endpoint)
 	if err != nil {
 		log.Fatal("Error while initializing AWS S3 client", err)
+	}
+
+	// setup elasticsearch client
+	c.elasticsearch, err = es.NewElasticSearchClient(es.ElasticSearchClientParams{
+		Addresses:  c.config.ElasticsearchAddresses,
+		Username:   c.config.ElasticsearchUsername,
+		Password:   c.config.ElasticsearchPassword,
+		CACertPath: c.config.ElasticsearchCACertPath,
+		Url:        c.config.ElasticsearchURL,
+		CloudID:    c.config.ElasticsearchCloudID,
+		APIKey:     c.config.ElasticsearchAPIKey,
+	})
+	if err != nil {
+		log.Fatal("Error while initializing Elasticsearch client", err)
 	}
 
 	// new http server
@@ -213,10 +236,7 @@ func (c *serverCommand) setup() {
 	)
 
 	// setup internal services
-	c.setupInternalServices(
-		dao,
-		s3Client,
-	)
+	c.setupInternalServices()
 
 	c.setupHttpServer()
 }

@@ -117,7 +117,7 @@ func (mr *MockRepoMockRecorder) GetUnitById(arg0, arg1 any) *gomock.Call {
 }
 
 // GetUnitsByIds mocks base method.
-func (m *MockRepo) GetUnitsByIds(arg0 context.Context, arg1, arg2 []string) ([]model.UnitModel, error) {
+func (m *MockRepo) GetUnitsByIds(arg0 context.Context, arg1 []uuid.UUID, arg2 []string) ([]model.UnitModel, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetUnitsByIds", arg0, arg1, arg2)
 	ret0, _ := ret[0].([]model.UnitModel)

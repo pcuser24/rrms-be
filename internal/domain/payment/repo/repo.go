@@ -107,7 +107,7 @@ func (r *repo) UpdatePayment(ctx context.Context, data *dto.UpdatePayment) error
 		ID:        data.ID,
 		OrderID:   types.StrN(data.OrderId),
 		OrderInfo: types.StrN(data.OrderInfo),
-		Amount:    types.Int64N(data.Amount),
+		Amount:    types.Float32N(data.Amount),
 	}
 	if data.Status != nil {
 		params.Status = database.NullPAYMENTSTATUS{

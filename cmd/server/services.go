@@ -12,8 +12,6 @@ import (
 	statistic_service "github.com/user2410/rrms-backend/internal/domain/statistic/service"
 	"github.com/user2410/rrms-backend/internal/domain/storage"
 	"github.com/user2410/rrms-backend/internal/domain/unit"
-	"github.com/user2410/rrms-backend/internal/infrastructure/aws/s3"
-	"github.com/user2410/rrms-backend/internal/infrastructure/database"
 
 	application_repo "github.com/user2410/rrms-backend/internal/domain/application/repo"
 	auth_repo "github.com/user2410/rrms-backend/internal/domain/auth/repo"
@@ -27,24 +25,21 @@ import (
 	unit_repo "github.com/user2410/rrms-backend/internal/domain/unit/repo"
 )
 
-func (c *serverCommand) setupInternalServices(
-	dao database.DAO,
-	s3Client *s3.S3Client,
-) {
+func (c *serverCommand) setupInternalServices() {
 	// Initialize repositories
-	authRepo := auth_repo.NewRepo(dao)
-	propertyRepo := property_repo.NewRepo(dao)
-	unitRepo := unit_repo.NewRepo(dao)
-	listingRepo := listing_repo.NewRepo(dao)
-	rentalRepo := rental_repo.NewRepo(dao)
-	applicationRepo := application_repo.NewRepo(dao)
-	paymentRepo := payment_repo.NewRepo(dao)
-	chatRepo := chat_repo.NewRepo(dao)
-	reminderRepo := reminder_repo.NewRepo(dao)
-	statisticRepo := statistic_repo.NewRepo(dao)
+	authRepo := auth_repo.NewRepo(c.dao)
+	propertyRepo := property_repo.NewRepo(c.dao)
+	unitRepo := unit_repo.NewRepo(c.dao)
+	listingRepo := listing_repo.NewRepo(c.dao)
+	rentalRepo := rental_repo.NewRepo(c.dao)
+	applicationRepo := application_repo.NewRepo(c.dao)
+	paymentRepo := payment_repo.NewRepo(c.dao)
+	chatRepo := chat_repo.NewRepo(c.dao)
+	reminderRepo := reminder_repo.NewRepo(c.dao)
+	statisticRepo := statistic_repo.NewRepo(c.dao)
 
 	// Initialize storage services
-	s := storage.NewStorage(s3Client, c.config.AWSS3ImageBucket)
+	s := storage.NewStorage(c.s3Client, c.config.AWSS3ImageBucket)
 
 	// Initialize internal services
 	c.internalServices.AuthService = auth.NewService(
@@ -63,6 +58,7 @@ func (c *serverCommand) setupInternalServices(
 	c.internalServices.ListingService = listing_service.NewService(
 		listingRepo,
 		propertyRepo,
+		unitRepo,
 		paymentRepo,
 		c.config.TokenSecreteKey,
 	)
@@ -88,7 +84,7 @@ func (c *serverCommand) setupInternalServices(
 	c.internalServices.StorageService = storage.NewService(s)
 	c.internalServices.PaymentService = vnp_service.NewVnpayService(
 		paymentRepo,
-		listingRepo,
+		c.internalServices.ListingService,
 		c.config.VnpTmnCode, c.config.VnpHashSecret, c.config.VnpUrl, c.config.VnpApi,
 	)
 	c.internalServices.ChatService = chat.NewService(chatRepo)
@@ -97,5 +93,7 @@ func (c *serverCommand) setupInternalServices(
 		listingRepo,
 		statisticRepo,
 		propertyRepo,
+		unitRepo,
+		c.elasticsearch,
 	)
 }

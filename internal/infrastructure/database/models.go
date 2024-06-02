@@ -729,8 +729,8 @@ type Application struct {
 	ListingID               uuid.UUID         `json:"listing_id"`
 	PropertyID              uuid.UUID         `json:"property_id"`
 	UnitID                  uuid.UUID         `json:"unit_id"`
-	ListingPrice            int64             `json:"listing_price"`
-	OfferedPrice            int64             `json:"offered_price"`
+	ListingPrice            float32           `json:"listing_price"`
+	OfferedPrice            float32           `json:"offered_price"`
 	Status                  APPLICATIONSTATUS `json:"status"`
 	CreatedAt               time.Time         `json:"created_at"`
 	UpdatedAt               time.Time         `json:"updated_at"`
@@ -854,9 +854,9 @@ type Listing struct {
 	Phone       string    `json:"phone"`
 	ContactType string    `json:"contact_type"`
 	// Rental price per month in vietnamese dong
-	Price           int64       `json:"price"`
-	PriceNegotiable bool        `json:"price_negotiable"`
-	SecurityDeposit pgtype.Int8 `json:"security_deposit"`
+	Price           float32       `json:"price"`
+	PriceNegotiable bool          `json:"price_negotiable"`
+	SecurityDeposit pgtype.Float4 `json:"security_deposit"`
 	// Lease term in months
 	LeaseTerm         pgtype.Int4 `json:"lease_term"`
 	PetsAllowed       pgtype.Bool `json:"pets_allowed"`
@@ -933,18 +933,18 @@ type Payment struct {
 	UserID    uuid.UUID     `json:"user_id"`
 	OrderID   string        `json:"order_id"`
 	OrderInfo string        `json:"order_info"`
-	Amount    int64         `json:"amount"`
+	Amount    float32       `json:"amount"`
 	Status    PAYMENTSTATUS `json:"status"`
 	CreatedAt time.Time     `json:"created_at"`
 	UpdatedAt time.Time     `json:"updated_at"`
 }
 
 type PaymentItem struct {
-	PaymentID int64  `json:"payment_id"`
-	Name      string `json:"name"`
-	Price     int64  `json:"price"`
-	Quantity  int32  `json:"quantity"`
-	Discount  int32  `json:"discount"`
+	PaymentID int64   `json:"payment_id"`
+	Name      string  `json:"name"`
+	Price     float32 `json:"price"`
+	Quantity  int32   `json:"quantity"`
+	Discount  int32   `json:"discount"`
 }
 
 type Property struct {

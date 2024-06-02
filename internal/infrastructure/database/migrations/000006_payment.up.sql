@@ -9,7 +9,7 @@ CREATE TABLE IF NOT EXISTS "payments" (
   "user_id" UUID NOT NULL,
   "order_id" TEXT NOT NULL,
   "order_info" TEXT NOT NULL,
-  "amount" BIGINT NOT NULL,
+  "amount" REAL NOT NULL,
   "status" "PAYMENTSTATUS" NOT NULL DEFAULT 'PENDING',
   "created_at" TIMESTAMPTZ DEFAULT NOW() NOT NULL,
   "updated_at" TIMESTAMPTZ DEFAULT NOW() NOT NULL
@@ -19,7 +19,7 @@ ALTER TABLE "payments" ADD CONSTRAINT "fk_payments_user_id" FOREIGN KEY ("user_i
 CREATE TABLE IF NOT EXISTS "payment_items" (
   "payment_id" BIGINT NOT NULL,
   "name" TEXT NOT NULL,
-  "price" BIGINT NOT NULL,
+  "price" REAL NOT NULL,
   "quantity" INTEGER NOT NULL,
   "discount" INTEGER NOT NULL
 );

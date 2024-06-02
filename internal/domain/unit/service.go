@@ -51,11 +51,8 @@ func (s *service) GetUnitsByIds(ids []uuid.UUID, fields []string, userId uuid.UU
 			_ids = append(_ids, id)
 		}
 	}
-	idsStr := make([]string, len(_ids))
-	for i, id := range _ids {
-		idsStr[i] = id.String()
-	}
-	return s.repo.GetUnitsByIds(context.Background(), idsStr, fields)
+
+	return s.repo.GetUnitsByIds(context.Background(), _ids, fields)
 }
 
 func (s *service) UpdateUnit(data *dto.UpdateUnit) error {
