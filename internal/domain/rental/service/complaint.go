@@ -79,8 +79,8 @@ func (s *service) GetRentalComplaintReplies(rid int64, limit, offset int32) ([]m
 	return s.rRepo.GetRentalComplaintReplies(context.Background(), rid, limit, offset)
 }
 
-func (s *service) GetRentalComplaintsOfUser(userId uuid.UUID, limit, offset int32) ([]model.RentalComplaint, error) {
-	return s.rRepo.GetRentalComplaintsOfUser(context.Background(), userId, limit, offset)
+func (s *service) GetRentalComplaintsOfUser(userId uuid.UUID, query dto.GetRentalComplaintsOfUserQuery) ([]model.RentalComplaint, error) {
+	return s.rRepo.GetRentalComplaintsOfUser(context.Background(), userId, query)
 }
 
 func (s *service) UpdateRentalComplaint(data *dto.UpdateRentalComplaint) error {

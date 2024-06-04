@@ -6,6 +6,7 @@ import (
 	listing_model "github.com/user2410/rrms-backend/internal/domain/listing/model"
 	listing_repo "github.com/user2410/rrms-backend/internal/domain/listing/repo"
 	property_repo "github.com/user2410/rrms-backend/internal/domain/property/repo"
+	rental_repo "github.com/user2410/rrms-backend/internal/domain/rental/repo"
 	"github.com/user2410/rrms-backend/internal/domain/statistic/dto"
 	statistic_repo "github.com/user2410/rrms-backend/internal/domain/statistic/repo"
 	unit_repo "github.com/user2410/rrms-backend/internal/domain/unit/repo"
@@ -19,7 +20,10 @@ type Service interface {
 	GetRentalPaymentArrears(userId uuid.UUID, query *dto.RentalPaymentStatisticQuery) (res []dto.RentalPaymentArrearsItem, err error)
 	GetRentalPaymentIncomes(userId uuid.UUID, query *dto.RentalPaymentStatisticQuery) (res []dto.RentalPaymentIncomeItem, err error)
 	GetPaymentsStatistic(userId uuid.UUID, query dto.PaymentsStatisticQuery) (res []dto.PaymentsStatisticItem, err error)
-
+	GetTenantRentalStatistic(userId uuid.UUID) (res dto.TenantRentalStatisticResponse, err error)
+	GetTenantMaintenanceStatistic(userId uuid.UUID) (res dto.TenantMaintenanceStatisticResponse, err error)
+	GetTenantExpenditureStatistic(userId uuid.UUID, query *dto.RentalPaymentStatisticQuery) ([]dto.TenantExpenditureStatisticItem, error)
+	GetTenantArrearsStatistic(userId uuid.UUID, query *dto.RentalPaymentStatisticQuery) (dto.TenantArrearsStatistic, error)
 	// Landing
 	GetRecentListings(limit int32, fields []string) ([]listing_model.ListingModel, error)
 	GetListingSuggestion(id uuid.UUID, limit int) (dto.ListingsSuggestionResult, error)
@@ -32,12 +36,13 @@ type service struct {
 	statisticRepo statistic_repo.Repo
 	propertyRepo  property_repo.Repo
 	unitRepo      unit_repo.Repo
+	rentalRepo    rental_repo.Repo
 	// ElasticSearch
 	esClient *es.ElasticSearchClient
 }
 
 func NewService(
-	authRepo auth_repo.Repo, listingRepo listing_repo.Repo, statisticRepo statistic_repo.Repo, propertyRepo property_repo.Repo, unitRepo unit_repo.Repo,
+	authRepo auth_repo.Repo, listingRepo listing_repo.Repo, statisticRepo statistic_repo.Repo, propertyRepo property_repo.Repo, unitRepo unit_repo.Repo, rentalRepo rental_repo.Repo,
 	esClient *es.ElasticSearchClient,
 ) Service {
 	return &service{
@@ -46,6 +51,7 @@ func NewService(
 		statisticRepo: statisticRepo,
 		propertyRepo:  propertyRepo,
 		unitRepo:      unitRepo,
+		rentalRepo:    rentalRepo,
 
 		esClient: esClient,
 	}

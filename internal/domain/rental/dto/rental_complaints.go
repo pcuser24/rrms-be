@@ -90,3 +90,9 @@ func (c *CreateRentalComplaintReply) ToCreateRentalComplaintReplyDB() database.C
 		Media:       c.Media,
 	}
 }
+
+type GetRentalComplaintsOfUserQuery struct {
+	Limit  int32                          `query:"limit" validate:"omitempty,gte=0"`
+	Offset int32                          `query:"offset" validate:"omitempty,gte=0"`
+	Status database.RENTALCOMPLAINTSTATUS `query:"status" validate:"omitempty,oneof=PENDING RESOLVED CLOSED"`
+}

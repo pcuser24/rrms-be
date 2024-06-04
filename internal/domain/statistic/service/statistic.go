@@ -2,11 +2,15 @@ package service
 
 import (
 	"context"
+	"math"
 	"time"
 
 	"github.com/google/uuid"
 	property_dto "github.com/user2410/rrms-backend/internal/domain/property/dto"
+	rental_dto "github.com/user2410/rrms-backend/internal/domain/rental/dto"
 	"github.com/user2410/rrms-backend/internal/domain/statistic/dto"
+	"github.com/user2410/rrms-backend/internal/infrastructure/database"
+	"github.com/user2410/rrms-backend/internal/utils/types"
 )
 
 func (s *service) GetPropertiesStatistic(userId uuid.UUID, query dto.PropertiesStatisticQuery) (res dto.PropertiesStatisticResponse, err error) {
@@ -218,4 +222,92 @@ func (s *service) GetPaymentsStatistic(userId uuid.UUID, query dto.PaymentsStati
 		current = endOfMonth.AddDate(0, 0, 1)
 	}
 	return nil, nil
+}
+
+func (s *service) GetTenantRentalStatistic(userId uuid.UUID) (res dto.TenantRentalStatisticResponse, err error) {
+	query := rental_dto.GetRentalsQuery{
+		Limit:   types.Ptr[int32](math.MaxInt32),
+		Offset:  types.Ptr[int32](0),
+		Expired: false,
+		Fields:  []string{"property_id,unit_id", "start_date", "rental_period"},
+	}
+
+	currentRentalIds, err := s.rentalRepo.GetMyRentals(context.Background(), userId, &query)
+	if err != nil {
+		return
+	}
+	query.Expired = true
+	res.EndedRentalIds, err = s.rentalRepo.GetMyRentals(context.Background(), userId, &query)
+	if err != nil {
+		return
+	}
+
+	res.CurrentRentals, err = s.rentalRepo.GetRentalsByIds(context.Background(), currentRentalIds, query.Fields)
+	if err != nil {
+		return
+	}
+
+	return
+}
+
+func (s *service) GetTenantMaintenanceStatistic(userId uuid.UUID) (res dto.TenantMaintenanceStatisticResponse, err error) {
+	res.Pending, err = s.statisticRepo.GetRentalComplaintStatistics(context.Background(), userId, database.RENTALCOMPLAINTSTATUSPENDING)
+	res.Resolved, err = s.statisticRepo.GetRentalComplaintStatistics(context.Background(), userId, database.RENTALCOMPLAINTSTATUSRESOLVED)
+	res.Closed, err = s.statisticRepo.GetRentalComplaintStatistics(context.Background(), userId, database.RENTALCOMPLAINTSTATUSCLOSED)
+	return
+}
+
+func (s *service) GetTenantExpenditureStatistic(userId uuid.UUID, query *dto.RentalPaymentStatisticQuery) ([]dto.TenantExpenditureStatisticItem, error) {
+	user, err := s.authRepo.GetUserById(context.Background(), userId)
+	if err != nil {
+		return nil, err
+	}
+	if query.StartTime.Before(user.CreatedAt) {
+		query.StartTime = user.CreatedAt
+	}
+
+	// for example: endDate = May 18th 2024, startDate = March 10th 2024, then derived intervals are [March 10th - April 1st], [April 2nd - May 1st], [May 2nd - May 18th]
+
+	// Start from the first day of the start month
+	current := query.StartTime
+	res := make([]dto.TenantExpenditureStatisticItem, 0)
+	for current.Before(query.EndTime) {
+		// Calculate the end of the current month
+		endOfMonth := time.Date(current.Year(), current.Month(), current.Day(), 23, 59, 59, 0, query.StartTime.Location()).AddDate(0, 1, -1)
+
+		// Choose the end of the current month or the end date, whichever is earlier
+		intervalEnd := endOfMonth
+		if endOfMonth.After(query.EndTime) {
+			intervalEnd = query.EndTime
+		}
+
+		expenditure, err := s.statisticRepo.GetTenantExpenditure(context.Background(), userId, dto.RentalPaymentStatisticQuery{
+			StartTime: current,
+			EndTime:   intervalEnd,
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		res = append(res, dto.TenantExpenditureStatisticItem{
+			StartTime:   current,
+			EndTime:     intervalEnd,
+			Expenditure: expenditure,
+		})
+
+		// Move to the next month
+		current = endOfMonth.AddDate(0, 0, 1)
+	}
+
+	return res, nil
+}
+
+func (s *service) GetTenantArrearsStatistic(userId uuid.UUID, query *dto.RentalPaymentStatisticQuery) (res dto.TenantArrearsStatistic, err error) {
+	res.Payments, err = s.statisticRepo.GetTenantPendingPayments(context.Background(), userId, *query)
+	if err != nil {
+		return
+	}
+
+	res.Total, err = s.statisticRepo.GetTotalTenantPendingPayments(context.Background(), userId)
+	return
 }

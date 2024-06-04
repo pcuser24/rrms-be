@@ -62,14 +62,15 @@ func (r *repo) GetRentalComplaintReplies(ctx context.Context, rid int64, limit, 
 	return result, nil
 }
 
-func (r *repo) GetRentalComplaintsOfUser(ctx context.Context, userId uuid.UUID, limit, offset int32) ([]model.RentalComplaint, error) {
+func (r *repo) GetRentalComplaintsOfUser(ctx context.Context, userId uuid.UUID, query dto.GetRentalComplaintsOfUserQuery) ([]model.RentalComplaint, error) {
 	res, err := r.dao.GetRentalComplaintsOfUser(ctx, database.GetRentalComplaintsOfUserParams{
 		UserID: pgtype.UUID{
 			Bytes: userId,
 			Valid: userId != uuid.Nil,
 		},
-		Limit:  limit,
-		Offset: offset,
+		Limit:  query.Limit,
+		Offset: query.Offset,
+		Status: string(query.Status),
 	})
 	if err != nil {
 		return nil, err

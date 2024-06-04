@@ -8,7 +8,7 @@ import (
 	"github.com/huandu/go-sqlbuilder"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/user2410/rrms-backend/internal/domain/rental/model"
-	"github.com/user2410/rrms-backend/internal/domain/statistic/dto"
+	statistic_dto "github.com/user2410/rrms-backend/internal/domain/statistic/dto"
 	"github.com/user2410/rrms-backend/internal/infrastructure/database"
 	"github.com/user2410/rrms-backend/internal/utils/types"
 )
@@ -19,16 +19,20 @@ type Repo interface {
 	GetOccupiedProperties(ctx context.Context, userId uuid.UUID) ([]uuid.UUID, error)
 	GetManagedUnits(ctx context.Context, userId uuid.UUID) ([]uuid.UUID, error)
 	GetOccupiedUnits(ctx context.Context, userId uuid.UUID) ([]uuid.UUID, error)
-	GetMostRentedProperties(ctx context.Context, userId uuid.UUID, limit, offset int32) ([]dto.ExtremelyRentedPropertyItem, error)
-	GetMostRentedUnits(ctx context.Context, userId uuid.UUID, limit, offset int32) ([]dto.ExtremelyRentedUnitItem, error)
-	GetLeastRentedProperties(ctx context.Context, userId uuid.UUID, limit, offset int32) ([]dto.ExtremelyRentedPropertyItem, error)
-	GetLeastRentedUnits(ctx context.Context, userId uuid.UUID, limit, offset int32) ([]dto.ExtremelyRentedUnitItem, error)
+	GetMostRentedProperties(ctx context.Context, userId uuid.UUID, limit, offset int32) ([]statistic_dto.ExtremelyRentedPropertyItem, error)
+	GetMostRentedUnits(ctx context.Context, userId uuid.UUID, limit, offset int32) ([]statistic_dto.ExtremelyRentedUnitItem, error)
+	GetLeastRentedProperties(ctx context.Context, userId uuid.UUID, limit, offset int32) ([]statistic_dto.ExtremelyRentedPropertyItem, error)
+	GetLeastRentedUnits(ctx context.Context, userId uuid.UUID, limit, offset int32) ([]statistic_dto.ExtremelyRentedUnitItem, error)
 	GetNewApplications(ctx context.Context, userId uuid.UUID, month time.Time) ([]int64, error)
-	GetRentalPaymentArrears(ctx context.Context, userId uuid.UUID, query dto.RentalPaymentStatisticQuery) ([]dto.RentalPayment, error)
-	GetRentalPaymentIncomes(ctx context.Context, userId uuid.UUID, query dto.RentalPaymentStatisticQuery) (float32, error)
+	GetRentalPaymentArrears(ctx context.Context, userId uuid.UUID, query statistic_dto.RentalPaymentStatisticQuery) ([]statistic_dto.RentalPayment, error)
+	GetRentalPaymentIncomes(ctx context.Context, userId uuid.UUID, query statistic_dto.RentalPaymentStatisticQuery) (float32, error)
 	GetMaintenanceRequests(ctx context.Context, userId uuid.UUID, month time.Time) ([]int64, error)
-	GetPaymentsStatistic(ctx context.Context, userId uuid.UUID, query dto.PaymentsStatisticQuery) (float32, error)
+	GetPaymentsStatistic(ctx context.Context, userId uuid.UUID, query statistic_dto.PaymentsStatisticQuery) (float32, error)
 	GetRecentListings(ctx context.Context, limit int32) ([]uuid.UUID, error)
+	GetTotalTenantPendingPayments(ctx context.Context, userId uuid.UUID) (float32, error)
+	GetTenantPendingPayments(ctx context.Context, userId uuid.UUID, query statistic_dto.RentalPaymentStatisticQuery) ([]statistic_dto.RentalPayment, error)
+	GetTenantExpenditure(ctx context.Context, userId uuid.UUID, query statistic_dto.RentalPaymentStatisticQuery) (float32, error)
+	GetRentalComplaintStatistics(ctx context.Context, userId uuid.UUID, status database.RENTALCOMPLAINTSTATUS) (int64, error)
 }
 
 type repo struct {
@@ -56,7 +60,7 @@ func (r *repo) GetOccupiedProperties(ctx context.Context, userId uuid.UUID) ([]u
 	return r.dao.GetOccupiedProperties(ctx, userId)
 }
 
-func (r *repo) GetMostRentedProperties(ctx context.Context, userId uuid.UUID, limit, offset int32) ([]dto.ExtremelyRentedPropertyItem, error) {
+func (r *repo) GetMostRentedProperties(ctx context.Context, userId uuid.UUID, limit, offset int32) ([]statistic_dto.ExtremelyRentedPropertyItem, error) {
 	resDB, err := r.dao.GetMostRentedProperties(ctx, database.GetMostRentedPropertiesParams{
 		ManagerID: userId,
 		Limit:     limit,
@@ -65,9 +69,9 @@ func (r *repo) GetMostRentedProperties(ctx context.Context, userId uuid.UUID, li
 	if err != nil {
 		return nil, err
 	}
-	res := make([]dto.ExtremelyRentedPropertyItem, len(resDB))
+	res := make([]statistic_dto.ExtremelyRentedPropertyItem, len(resDB))
 	for i, v := range resDB {
-		res[i] = dto.ExtremelyRentedPropertyItem{
+		res[i] = statistic_dto.ExtremelyRentedPropertyItem{
 			PropertyID: v.ID,
 			Count:      v.Count,
 		}
@@ -75,7 +79,7 @@ func (r *repo) GetMostRentedProperties(ctx context.Context, userId uuid.UUID, li
 	return res, nil
 }
 
-func (r *repo) GetLeastRentedProperties(ctx context.Context, userId uuid.UUID, limit, offset int32) ([]dto.ExtremelyRentedPropertyItem, error) {
+func (r *repo) GetLeastRentedProperties(ctx context.Context, userId uuid.UUID, limit, offset int32) ([]statistic_dto.ExtremelyRentedPropertyItem, error) {
 	resDB, err := r.dao.GetLeastRentedProperties(ctx, database.GetLeastRentedPropertiesParams{
 		ManagerID: userId,
 		Limit:     limit,
@@ -84,9 +88,9 @@ func (r *repo) GetLeastRentedProperties(ctx context.Context, userId uuid.UUID, l
 	if err != nil {
 		return nil, err
 	}
-	res := make([]dto.ExtremelyRentedPropertyItem, len(resDB))
+	res := make([]statistic_dto.ExtremelyRentedPropertyItem, len(resDB))
 	for i, v := range resDB {
-		res[i] = dto.ExtremelyRentedPropertyItem{
+		res[i] = statistic_dto.ExtremelyRentedPropertyItem{
 			PropertyID: v.ID,
 			Count:      v.Count,
 		}
@@ -94,7 +98,7 @@ func (r *repo) GetLeastRentedProperties(ctx context.Context, userId uuid.UUID, l
 	return res, nil
 }
 
-func (r *repo) GetMostRentedUnits(ctx context.Context, userId uuid.UUID, limit, offset int32) ([]dto.ExtremelyRentedUnitItem, error) {
+func (r *repo) GetMostRentedUnits(ctx context.Context, userId uuid.UUID, limit, offset int32) ([]statistic_dto.ExtremelyRentedUnitItem, error) {
 
 	resDB, err := r.dao.GetMostRentedUnits(ctx, database.GetMostRentedUnitsParams{
 		ManagerID: userId,
@@ -104,9 +108,9 @@ func (r *repo) GetMostRentedUnits(ctx context.Context, userId uuid.UUID, limit, 
 	if err != nil {
 		return nil, err
 	}
-	res := make([]dto.ExtremelyRentedUnitItem, len(resDB))
+	res := make([]statistic_dto.ExtremelyRentedUnitItem, len(resDB))
 	for i, v := range resDB {
-		res[i] = dto.ExtremelyRentedUnitItem{
+		res[i] = statistic_dto.ExtremelyRentedUnitItem{
 			PropertyID: v.PropertyID,
 			UnitID:     v.ID,
 			Count:      v.Count,
@@ -115,7 +119,7 @@ func (r *repo) GetMostRentedUnits(ctx context.Context, userId uuid.UUID, limit, 
 	return res, nil
 }
 
-func (r *repo) GetLeastRentedUnits(ctx context.Context, userId uuid.UUID, limit, offset int32) ([]dto.ExtremelyRentedUnitItem, error) {
+func (r *repo) GetLeastRentedUnits(ctx context.Context, userId uuid.UUID, limit, offset int32) ([]statistic_dto.ExtremelyRentedUnitItem, error) {
 
 	resDB, err := r.dao.GetLeastRentedUnits(ctx, database.GetLeastRentedUnitsParams{
 		ManagerID: userId,
@@ -125,9 +129,9 @@ func (r *repo) GetLeastRentedUnits(ctx context.Context, userId uuid.UUID, limit,
 	if err != nil {
 		return nil, err
 	}
-	res := make([]dto.ExtremelyRentedUnitItem, len(resDB))
+	res := make([]statistic_dto.ExtremelyRentedUnitItem, len(resDB))
 	for i, v := range resDB {
-		res[i] = dto.ExtremelyRentedUnitItem{
+		res[i] = statistic_dto.ExtremelyRentedUnitItem{
 			PropertyID: v.PropertyID,
 			UnitID:     v.ID,
 			Count:      v.Count,
@@ -236,7 +240,7 @@ func (r *repo) GetMaintenanceRequests(ctx context.Context, userId uuid.UUID, mon
 	return ids, nil
 }
 
-func (r *repo) GetRentalPaymentArrears(ctx context.Context, userId uuid.UUID, query dto.RentalPaymentStatisticQuery) ([]dto.RentalPayment, error) {
+func (r *repo) GetRentalPaymentArrears(ctx context.Context, userId uuid.UUID, query statistic_dto.RentalPaymentStatisticQuery) ([]statistic_dto.RentalPayment, error) {
 	res, err := r.dao.GetRentalPaymentArrears(ctx, database.GetRentalPaymentArrearsParams{
 		ManagerID: userId,
 		StartDate: pgtype.Date{
@@ -254,9 +258,9 @@ func (r *repo) GetRentalPaymentArrears(ctx context.Context, userId uuid.UUID, qu
 		return nil, err
 	}
 
-	items := make([]dto.RentalPayment, len(res))
+	items := make([]statistic_dto.RentalPayment, len(res))
 	for i, v := range res {
-		items[i] = dto.RentalPayment{
+		items[i] = statistic_dto.RentalPayment{
 			RentalPayment: model.RentalPayment{
 				ID:          v.ID,
 				Code:        v.Code,
@@ -284,7 +288,7 @@ func (r *repo) GetRentalPaymentArrears(ctx context.Context, userId uuid.UUID, qu
 	return items, nil
 }
 
-func (r *repo) GetRentalPaymentIncomes(ctx context.Context, userId uuid.UUID, query dto.RentalPaymentStatisticQuery) (float32, error) {
+func (r *repo) GetRentalPaymentIncomes(ctx context.Context, userId uuid.UUID, query statistic_dto.RentalPaymentStatisticQuery) (float32, error) {
 	res, err := r.dao.GetRentalPaymentIncomes(ctx, database.GetRentalPaymentIncomesParams{
 		ManagerID: userId,
 		StartDate: pgtype.Date{
@@ -303,7 +307,7 @@ func (r *repo) GetRentalPaymentIncomes(ctx context.Context, userId uuid.UUID, qu
 	return res, nil
 }
 
-func (r *repo) GetPaymentsStatistic(ctx context.Context, userId uuid.UUID, query dto.PaymentsStatisticQuery) (float32, error) {
+func (r *repo) GetPaymentsStatistic(ctx context.Context, userId uuid.UUID, query statistic_dto.PaymentsStatisticQuery) (float32, error) {
 	res, err := r.dao.GetPaymentsStatistic(ctx, database.GetPaymentsStatisticParams{
 		UserID:    userId,
 		StartDate: query.StartTime,
@@ -314,4 +318,95 @@ func (r *repo) GetPaymentsStatistic(ctx context.Context, userId uuid.UUID, query
 	}
 
 	return res, nil
+}
+
+func (r *repo) GetTotalTenantPendingPayments(ctx context.Context, userId uuid.UUID) (float32, error) {
+	return r.dao.GetTotalTenantPendingPayments(ctx, pgtype.UUID{
+		Bytes: userId,
+		Valid: userId != uuid.Nil,
+	})
+}
+
+func (r *repo) GetTenantPendingPayments(ctx context.Context, userId uuid.UUID, query statistic_dto.RentalPaymentStatisticQuery) ([]statistic_dto.RentalPayment, error) {
+	res, err := r.dao.GetTenantPendingPayments(ctx, database.GetTenantPendingPaymentsParams{
+		UserID: pgtype.UUID{
+			Bytes: userId,
+			Valid: userId != uuid.Nil,
+		},
+		Limit:  query.Limit,
+		Offset: query.Offset,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	items := make([]statistic_dto.RentalPayment, len(res))
+	for i, v := range res {
+		items[i] = statistic_dto.RentalPayment{
+			RentalPayment: model.RentalPayment{
+				ID:          v.ID,
+				Code:        v.Code,
+				RentalID:    v.RentalID,
+				CreatedAt:   v.CreatedAt,
+				UpdatedAt:   v.UpdatedAt,
+				StartDate:   v.StartDate.Time,
+				EndDate:     v.EndDate.Time,
+				ExpiryDate:  v.ExpiryDate.Time,
+				PaymentDate: v.PaymentDate.Time,
+				UpdatedBy:   v.UpdatedBy.Bytes,
+				Status:      v.Status,
+				Amount:      v.Amount,
+				Discount:    types.PNFloat32(v.Discount),
+				Penalty:     types.PNFloat32(v.Penalty),
+				Note:        types.PNStr(v.Note),
+			},
+			ExpiryDuration: v.ExpiryDuration,
+			TenantId:       v.TenantID.Bytes,
+			TenantName:     v.TenantName,
+			PropertyID:     v.PropertyID,
+			UnitID:         v.UnitID,
+		}
+		servicedb, err := r.dao.GetRentalServicesByRentalID(ctx, items[i].RentalID)
+		if err != nil {
+			return nil, err
+		}
+		services := make([]model.RentalService, 0, len(servicedb))
+		for _, item := range servicedb {
+			services = append(services, model.ToRentalService(&item))
+		}
+		items[i].Services = services
+	}
+	return items, nil
+}
+
+func (r *repo) GetTenantExpenditure(ctx context.Context, userId uuid.UUID, query statistic_dto.RentalPaymentStatisticQuery) (float32, error) {
+	res, err := r.dao.GetTenantExpenditure(ctx, database.GetTenantExpenditureParams{
+		UserID: pgtype.UUID{
+			Bytes: userId,
+			Valid: userId != uuid.Nil,
+		},
+		StartDate: pgtype.Date{
+			Time:  query.StartTime,
+			Valid: !query.StartTime.IsZero(),
+		},
+		EndDate: pgtype.Date{
+			Time:  query.EndTime,
+			Valid: !query.EndTime.IsZero(),
+		},
+	})
+	if err != nil {
+		return 0, err
+	}
+
+	return res, nil
+}
+
+func (r *repo) GetRentalComplaintStatistics(ctx context.Context, userId uuid.UUID, status database.RENTALCOMPLAINTSTATUS) (int64, error) {
+	return r.dao.GetRentalComplaintStatistics(ctx, database.GetRentalComplaintStatisticsParams{
+		UserID: pgtype.UUID{
+			Bytes: userId,
+			Valid: userId != uuid.Nil,
+		},
+		Status: status,
+	})
 }

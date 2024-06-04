@@ -181,3 +181,56 @@ WHERE
   EXISTS (
     SELECT 1 FROM properties WHERE city = sqlc.arg(city) AND properties.id = listings.property_id
   );
+
+-- name: GetTenantPendingPayments :many
+SELECT rental_payments.*, (rental_payments.expiry_date - CURRENT_DATE) AS expiry_duration, rentals.tenant_id, rentals.tenant_name, rentals.property_id, rentals.unit_id 
+FROM rental_payments INNER JOIN rentals ON rentals.id = rental_payments.rental_id
+WHERE 
+  rental_payments.status IN ('ISSUED', 'PENDING', 'REQUEST2PAY') AND 
+  EXISTS (
+    SELECT 1 FROM rentals WHERE 
+      rental_payments.rental_id = rentals.id AND
+      rentals.tenant_id = sqlc.arg(user_id)
+  )
+ORDER BY
+  (rental_payments.expiry_date - CURRENT_DATE) ASC
+LIMIT $1 OFFSET $2;
+
+-- name: GetTotalTenantPendingPayments :one
+SELECT SUM(rental_payments.amount)::REAL
+FROM rental_payments 
+WHERE 
+  status IN ('ISSUED', 'PENDING', 'REQUEST2PAY') AND 
+  EXISTS (
+    SELECT 1 FROM rentals WHERE 
+      rental_payments.rental_id = rentals.id AND
+      rentals.tenant_id = sqlc.arg(user_id)
+  );
+
+-- name: GetTenantExpenditure :one
+SELECT coalesce(SUM(amount), 0)::REAL 
+FROM rental_payments 
+WHERE 
+  status = 'PAID' AND 
+  EXISTS (
+    SELECT 1 FROM rentals WHERE 
+      rental_payments.rental_id = rentals.id AND
+      rentals.tenant_id = sqlc.arg(user_id)
+  ) AND
+  payment_date >= sqlc.arg(start_date) AND
+  payment_date <= sqlc.arg(end_date)
+  ;
+
+-- name: GetRentalComplaintStatistics :one
+SELECT COUNT(*) FROM rental_complaints
+WHERE
+  rental_complaints.status = sqlc.arg(status) AND
+  EXISTS (
+    SELECT 1 FROM rentals WHERE 
+      rentals.id = rental_complaints.rental_id AND (
+        rentals.tenant_id = sqlc.arg(user_id)
+        OR EXISTS (
+          SELECT 1 FROM property_managers WHERE property_managers.property_id = rentals.property_id AND manager_id = sqlc.arg(user_id)
+        )
+      )
+  );

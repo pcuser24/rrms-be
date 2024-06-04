@@ -39,7 +39,7 @@ type Repo interface {
 
 	CreateRentalComplaint(ctx context.Context, data *dto.CreateRentalComplaint) (model.RentalComplaint, error)
 	GetRentalComplaint(ctx context.Context, id int64) (model.RentalComplaint, error)
-	GetRentalComplaintsOfUser(ctx context.Context, userId uuid.UUID, limit, offset int32) ([]model.RentalComplaint, error)
+	GetRentalComplaintsOfUser(ctx context.Context, userId uuid.UUID, query dto.GetRentalComplaintsOfUserQuery) ([]model.RentalComplaint, error)
 	GetRentalComplaintsByRentalId(ctx context.Context, rid int64) ([]model.RentalComplaint, error)
 	CreateRentalComplaintReply(ctx context.Context, data *dto.CreateRentalComplaintReply) (model.RentalComplaintReply, error)
 	GetRentalComplaintReplies(ctx context.Context, rid int64, limit, offset int32) ([]model.RentalComplaintReply, error)

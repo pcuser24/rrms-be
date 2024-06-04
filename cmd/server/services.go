@@ -77,6 +77,7 @@ func (c *serverCommand) setupInternalServices() {
 		statisticRepo,
 		propertyRepo,
 		unitRepo,
+		rentalRepo,
 		c.elasticsearch,
 	)
 }

@@ -18,15 +18,12 @@ func (a *adapter) getRentalComplaintsOfUser() fiber.Handler {
 	return func(ctx *fiber.Ctx) error {
 		tkPayload := ctx.Locals(auth_http.AuthorizationPayloadKey).(*token.Payload)
 
-		var query struct {
-			Limit  int32 `query:"limit"`
-			Offset int32 `query:"offset"`
-		}
+		var query dto.GetRentalComplaintsOfUserQuery
 		if err := ctx.QueryParser(&query); err != nil {
 			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": err.Error()})
 		}
 
-		res, err := a.service.GetRentalComplaintsOfUser(tkPayload.UserID, query.Limit, query.Offset)
+		res, err := a.service.GetRentalComplaintsOfUser(tkPayload.UserID, query)
 		if err != nil {
 			if errors.Is(err, database.ErrRecordNotFound) {
 				return ctx.Status(fiber.StatusNotFound).JSON(fiber.Map{"message": "rental complaint not found"})

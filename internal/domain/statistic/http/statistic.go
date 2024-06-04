@@ -57,7 +57,7 @@ func (a *adapter) getApplicationStatistic() fiber.Handler {
 	}
 }
 
-func (a *adapter) getRentalStatistic() fiber.Handler {
+func (a *adapter) getManagerRentalStatistic() fiber.Handler {
 	return func(ctx *fiber.Ctx) error {
 		tkPayload := ctx.Locals(auth_http.AuthorizationPayloadKey).(*token.Payload)
 
@@ -137,6 +137,86 @@ func (a *adapter) getPaymentsStatistic() fiber.Handler {
 		}
 
 		res, err := a.service.GetPaymentsStatistic(tkPayload.UserID, query)
+		if err != nil {
+			if errors.Is(err, database.ErrRecordNotFound) {
+				return ctx.Status(fiber.StatusOK).JSON([]dto.RentalPaymentIncomeItem{})
+			}
+			return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
+		}
+
+		return ctx.Status(fiber.StatusOK).JSON(res)
+	}
+}
+
+// get non-expired rental of the current users, unfinished rental complaints
+func (a *adapter) getTenantRentalStatistic() fiber.Handler {
+	return func(ctx *fiber.Ctx) error {
+		tkPayload := ctx.Locals(auth_http.AuthorizationPayloadKey).(*token.Payload)
+
+		res, err := a.service.GetTenantRentalStatistic(tkPayload.UserID)
+		if err != nil {
+			if errors.Is(err, database.ErrRecordNotFound) {
+				return ctx.Status(fiber.StatusOK).JSON(dto.TenantRentalStatisticResponse{})
+			}
+			return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
+		}
+
+		return ctx.Status(fiber.StatusOK).JSON(res)
+	}
+}
+
+// how many maintenances requests, pending requests
+func (a *adapter) getTenantMaintenanceStatistic() fiber.Handler {
+	return func(ctx *fiber.Ctx) error {
+		tkPayload := ctx.Locals(auth_http.AuthorizationPayloadKey).(*token.Payload)
+
+		res, err := a.service.GetTenantMaintenanceStatistic(tkPayload.UserID)
+		if err != nil {
+			return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
+		}
+
+		return ctx.Status(fiber.StatusOK).JSON(res)
+	}
+}
+
+// how much money the tenant has spent within a time range. what bills are pending
+func (a *adapter) getTenantExpenditureStatistic() fiber.Handler {
+	return func(ctx *fiber.Ctx) error {
+		tkPayload := ctx.Locals(auth_http.AuthorizationPayloadKey).(*token.Payload)
+
+		var query dto.RentalPaymentStatisticQuery
+		if err := ctx.QueryParser(&query); err != nil {
+			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": err.Error()})
+		}
+		if errs := validation.ValidateStruct(nil, query); len(errs) > 0 {
+			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": validation.GetValidationError(errs)})
+		}
+
+		res, err := a.service.GetTenantExpenditureStatistic(tkPayload.UserID, &query)
+		if err != nil {
+			if errors.Is(err, database.ErrRecordNotFound) {
+				return ctx.Status(fiber.StatusOK).JSON([]dto.RentalPaymentIncomeItem{})
+			}
+			return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
+		}
+
+		return ctx.Status(fiber.StatusOK).JSON(res)
+	}
+}
+
+func (a *adapter) getTenantArrearsStatistic() fiber.Handler {
+	return func(ctx *fiber.Ctx) error {
+		tkPayload := ctx.Locals(auth_http.AuthorizationPayloadKey).(*token.Payload)
+
+		var query dto.RentalPaymentStatisticQuery
+		if err := ctx.QueryParser(&query); err != nil {
+			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": err.Error()})
+		}
+		if errs := validation.ValidateStruct(nil, query); len(errs) > 0 {
+			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": validation.GetValidationError(errs)})
+		}
+
+		res, err := a.service.GetTenantArrearsStatistic(tkPayload.UserID, &query)
 		if err != nil {
 			if errors.Is(err, database.ErrRecordNotFound) {
 				return ctx.Status(fiber.StatusOK).JSON([]dto.RentalPaymentIncomeItem{})

@@ -462,6 +462,33 @@ func (q *Queries) GetPropertiesWithActiveListing(ctx context.Context, managerID 
 	return items, nil
 }
 
+const getRentalComplaintStatistics = `-- name: GetRentalComplaintStatistics :one
+SELECT COUNT(*) FROM rental_complaints
+WHERE
+  rental_complaints.status = $1 AND
+  EXISTS (
+    SELECT 1 FROM rentals WHERE 
+      rentals.id = rental_complaints.rental_id AND (
+        rentals.tenant_id = $2
+        OR EXISTS (
+          SELECT 1 FROM property_managers WHERE property_managers.property_id = rentals.property_id AND manager_id = $2
+        )
+      )
+  )
+`
+
+type GetRentalComplaintStatisticsParams struct {
+	Status RENTALCOMPLAINTSTATUS `json:"status"`
+	UserID pgtype.UUID           `json:"user_id"`
+}
+
+func (q *Queries) GetRentalComplaintStatistics(ctx context.Context, arg GetRentalComplaintStatisticsParams) (int64, error) {
+	row := q.db.QueryRow(ctx, getRentalComplaintStatistics, arg.Status, arg.UserID)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const getRentalPaymentArrears = `-- name: GetRentalPaymentArrears :many
 SELECT rental_payments.id, rental_payments.code, rental_payments.rental_id, rental_payments.created_at, rental_payments.updated_at, rental_payments.start_date, rental_payments.end_date, rental_payments.expiry_date, rental_payments.payment_date, rental_payments.updated_by, rental_payments.status, rental_payments.amount, rental_payments.discount, rental_payments.penalty, rental_payments.note, (rental_payments.expiry_date - CURRENT_DATE) AS expiry_duration, rentals.tenant_id, rentals.tenant_name, rentals.property_id, rentals.unit_id 
 FROM rental_payments INNER JOIN rentals ON rentals.id = rental_payments.rental_id
@@ -611,4 +638,135 @@ func (q *Queries) GetRentedProperties(ctx context.Context, tenantID pgtype.UUID)
 		return nil, err
 	}
 	return items, nil
+}
+
+const getTenantExpenditure = `-- name: GetTenantExpenditure :one
+SELECT coalesce(SUM(amount), 0)::REAL 
+FROM rental_payments 
+WHERE 
+  status = 'PAID' AND 
+  EXISTS (
+    SELECT 1 FROM rentals WHERE 
+      rental_payments.rental_id = rentals.id AND
+      rentals.tenant_id = $1
+  ) AND
+  payment_date >= $2 AND
+  payment_date <= $3
+`
+
+type GetTenantExpenditureParams struct {
+	UserID    pgtype.UUID `json:"user_id"`
+	StartDate pgtype.Date `json:"start_date"`
+	EndDate   pgtype.Date `json:"end_date"`
+}
+
+func (q *Queries) GetTenantExpenditure(ctx context.Context, arg GetTenantExpenditureParams) (float32, error) {
+	row := q.db.QueryRow(ctx, getTenantExpenditure, arg.UserID, arg.StartDate, arg.EndDate)
+	var column_1 float32
+	err := row.Scan(&column_1)
+	return column_1, err
+}
+
+const getTenantPendingPayments = `-- name: GetTenantPendingPayments :many
+SELECT rental_payments.id, rental_payments.code, rental_payments.rental_id, rental_payments.created_at, rental_payments.updated_at, rental_payments.start_date, rental_payments.end_date, rental_payments.expiry_date, rental_payments.payment_date, rental_payments.updated_by, rental_payments.status, rental_payments.amount, rental_payments.discount, rental_payments.penalty, rental_payments.note, (rental_payments.expiry_date - CURRENT_DATE) AS expiry_duration, rentals.tenant_id, rentals.tenant_name, rentals.property_id, rentals.unit_id 
+FROM rental_payments INNER JOIN rentals ON rentals.id = rental_payments.rental_id
+WHERE 
+  rental_payments.status IN ('ISSUED', 'PENDING', 'REQUEST2PAY') AND 
+  EXISTS (
+    SELECT 1 FROM rentals WHERE 
+      rental_payments.rental_id = rentals.id AND
+      rentals.tenant_id = $3
+  )
+ORDER BY
+  (rental_payments.expiry_date - CURRENT_DATE) ASC
+LIMIT $1 OFFSET $2
+`
+
+type GetTenantPendingPaymentsParams struct {
+	Limit  int32       `json:"limit"`
+	Offset int32       `json:"offset"`
+	UserID pgtype.UUID `json:"user_id"`
+}
+
+type GetTenantPendingPaymentsRow struct {
+	ID             int64               `json:"id"`
+	Code           string              `json:"code"`
+	RentalID       int64               `json:"rental_id"`
+	CreatedAt      time.Time           `json:"created_at"`
+	UpdatedAt      time.Time           `json:"updated_at"`
+	StartDate      pgtype.Date         `json:"start_date"`
+	EndDate        pgtype.Date         `json:"end_date"`
+	ExpiryDate     pgtype.Date         `json:"expiry_date"`
+	PaymentDate    pgtype.Date         `json:"payment_date"`
+	UpdatedBy      pgtype.UUID         `json:"updated_by"`
+	Status         RENTALPAYMENTSTATUS `json:"status"`
+	Amount         float32             `json:"amount"`
+	Discount       pgtype.Float4       `json:"discount"`
+	Penalty        pgtype.Float4       `json:"penalty"`
+	Note           pgtype.Text         `json:"note"`
+	ExpiryDuration int32               `json:"expiry_duration"`
+	TenantID       pgtype.UUID         `json:"tenant_id"`
+	TenantName     string              `json:"tenant_name"`
+	PropertyID     uuid.UUID           `json:"property_id"`
+	UnitID         uuid.UUID           `json:"unit_id"`
+}
+
+func (q *Queries) GetTenantPendingPayments(ctx context.Context, arg GetTenantPendingPaymentsParams) ([]GetTenantPendingPaymentsRow, error) {
+	rows, err := q.db.Query(ctx, getTenantPendingPayments, arg.Limit, arg.Offset, arg.UserID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetTenantPendingPaymentsRow
+	for rows.Next() {
+		var i GetTenantPendingPaymentsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Code,
+			&i.RentalID,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.StartDate,
+			&i.EndDate,
+			&i.ExpiryDate,
+			&i.PaymentDate,
+			&i.UpdatedBy,
+			&i.Status,
+			&i.Amount,
+			&i.Discount,
+			&i.Penalty,
+			&i.Note,
+			&i.ExpiryDuration,
+			&i.TenantID,
+			&i.TenantName,
+			&i.PropertyID,
+			&i.UnitID,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getTotalTenantPendingPayments = `-- name: GetTotalTenantPendingPayments :one
+SELECT SUM(rental_payments.amount)::REAL
+FROM rental_payments 
+WHERE 
+  status IN ('ISSUED', 'PENDING', 'REQUEST2PAY') AND 
+  EXISTS (
+    SELECT 1 FROM rentals WHERE 
+      rental_payments.rental_id = rentals.id AND
+      rentals.tenant_id = $1
+  )
+`
+
+func (q *Queries) GetTotalTenantPendingPayments(ctx context.Context, userID pgtype.UUID) (float32, error) {
+	row := q.db.QueryRow(ctx, getTotalTenantPendingPayments, userID)
+	var column_1 float32
+	err := row.Scan(&column_1)
+	return column_1, err
 }

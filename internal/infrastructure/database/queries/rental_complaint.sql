@@ -71,7 +71,14 @@ WHERE
           SELECT 1 FROM property_managers WHERE property_managers.property_id = rentals.property_id AND manager_id = sqlc.arg(user_id)
         )
       )
-  )
+  ) AND
+  CASE
+    WHEN sqlc.arg(status)::TEXT = 'PENDING' THEN rental_complaints.status = 'PENDING'
+    WHEN sqlc.arg(status)::TEXT = 'RESOLVED' THEN rental_complaints.status = 'RESOLVED'
+    WHEN sqlc.arg(status)::TEXT = 'CLOSED' THEN rental_complaints.status = 'CLOSED'
+    ELSE TRUE
+  END
+ORDER BY created_at DESC
 LIMIT $1 OFFSET $2;
 
 -- SELECT 

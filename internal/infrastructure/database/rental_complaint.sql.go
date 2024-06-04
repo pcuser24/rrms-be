@@ -231,7 +231,14 @@ WHERE
           SELECT 1 FROM property_managers WHERE property_managers.property_id = rentals.property_id AND manager_id = $3
         )
       )
-  )
+  ) AND
+  CASE
+    WHEN $4::TEXT = 'PENDING' THEN rental_complaints.status = 'PENDING'
+    WHEN $4::TEXT = 'RESOLVED' THEN rental_complaints.status = 'RESOLVED'
+    WHEN $4::TEXT = 'CLOSED' THEN rental_complaints.status = 'CLOSED'
+    ELSE TRUE
+  END
+ORDER BY created_at DESC
 LIMIT $1 OFFSET $2
 `
 
@@ -239,10 +246,16 @@ type GetRentalComplaintsOfUserParams struct {
 	Limit  int32       `json:"limit"`
 	Offset int32       `json:"offset"`
 	UserID pgtype.UUID `json:"user_id"`
+	Status string      `json:"status"`
 }
 
 func (q *Queries) GetRentalComplaintsOfUser(ctx context.Context, arg GetRentalComplaintsOfUserParams) ([]RentalComplaint, error) {
-	rows, err := q.db.Query(ctx, getRentalComplaintsOfUser, arg.Limit, arg.Offset, arg.UserID)
+	rows, err := q.db.Query(ctx, getRentalComplaintsOfUser,
+		arg.Limit,
+		arg.Offset,
+		arg.UserID,
+		arg.Status,
+	)
 	if err != nil {
 		return nil, err
 	}

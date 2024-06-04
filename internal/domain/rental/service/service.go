@@ -52,8 +52,8 @@ type Service interface {
 	GetRentalComplaintsByRentalId(rid int64) ([]model.RentalComplaint, error)
 	PreCreateRentalComplaintReply(data *dto.PreCreateRentalComplaint, creatorID uuid.UUID) error
 	CreateRentalComplaintReply(data *dto.CreateRentalComplaintReply) (model.RentalComplaintReply, error)
-	GetRentalComplaintsOfUser(userId uuid.UUID, limit, offset int32) ([]model.RentalComplaint, error)
-	GetRentalComplaintReplies(rid int64, limit, offset int32) ([]model.RentalComplaintReply, error)
+	GetRentalComplaintsOfUser(userId uuid.UUID, query dto.GetRentalComplaintsOfUserQuery) ([]model.RentalComplaint, error)
+	GetRentalComplaintReplies(id int64, limit, offset int32) ([]model.RentalComplaintReply, error)
 	UpdateRentalComplaint(data *dto.UpdateRentalComplaint) error
 }
 
