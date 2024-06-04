@@ -143,11 +143,21 @@ func (q *Queries) GetRentalComplaint(ctx context.Context, id int64) (RentalCompl
 }
 
 const getRentalComplaintReplies = `-- name: GetRentalComplaintReplies :many
-SELECT complaint_id, replier_id, reply, media, created_at FROM rental_complaint_replies WHERE complaint_id = $1
+SELECT complaint_id, replier_id, reply, media, created_at 
+FROM rental_complaint_replies 
+WHERE complaint_id = $1
+ORDER BY created_at DESC
+LIMIT $2 OFFSET $3
 `
 
-func (q *Queries) GetRentalComplaintReplies(ctx context.Context, complaintID int64) ([]RentalComplaintReply, error) {
-	rows, err := q.db.Query(ctx, getRentalComplaintReplies, complaintID)
+type GetRentalComplaintRepliesParams struct {
+	ComplaintID int64 `json:"complaint_id"`
+	Limit       int32 `json:"limit"`
+	Offset      int32 `json:"offset"`
+}
+
+func (q *Queries) GetRentalComplaintReplies(ctx context.Context, arg GetRentalComplaintRepliesParams) ([]RentalComplaintReply, error) {
+	rows, err := q.db.Query(ctx, getRentalComplaintReplies, arg.ComplaintID, arg.Limit, arg.Offset)
 	if err != nil {
 		return nil, err
 	}
@@ -178,6 +188,61 @@ SELECT id, rental_id, creator_id, title, content, suggestion, media, occurred_at
 
 func (q *Queries) GetRentalComplaintsByRentalId(ctx context.Context, rentalID int64) ([]RentalComplaint, error) {
 	rows, err := q.db.Query(ctx, getRentalComplaintsByRentalId, rentalID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []RentalComplaint
+	for rows.Next() {
+		var i RentalComplaint
+		if err := rows.Scan(
+			&i.ID,
+			&i.RentalID,
+			&i.CreatorID,
+			&i.Title,
+			&i.Content,
+			&i.Suggestion,
+			&i.Media,
+			&i.OccurredAt,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.UpdatedBy,
+			&i.Type,
+			&i.Status,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getRentalComplaintsOfUser = `-- name: GetRentalComplaintsOfUser :many
+SELECT id, rental_id, creator_id, title, content, suggestion, media, occurred_at, created_at, updated_at, updated_by, type, status FROM rental_complaints 
+WHERE
+  EXISTS (
+    SELECT 1 FROM rentals WHERE 
+      rentals.id = rental_complaints.rental_id AND (
+        rentals.tenant_id = $3
+        OR EXISTS (
+          SELECT 1 FROM property_managers WHERE property_managers.property_id = rentals.property_id AND manager_id = $3
+        )
+      )
+  )
+LIMIT $1 OFFSET $2
+`
+
+type GetRentalComplaintsOfUserParams struct {
+	Limit  int32       `json:"limit"`
+	Offset int32       `json:"offset"`
+	UserID pgtype.UUID `json:"user_id"`
+}
+
+func (q *Queries) GetRentalComplaintsOfUser(ctx context.Context, arg GetRentalComplaintsOfUserParams) ([]RentalComplaint, error) {
+	rows, err := q.db.Query(ctx, getRentalComplaintsOfUser, arg.Limit, arg.Offset, arg.UserID)
 	if err != nil {
 		return nil, err
 	}

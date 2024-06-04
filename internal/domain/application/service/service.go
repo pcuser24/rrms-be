@@ -7,6 +7,7 @@ import (
 	listing_repo "github.com/user2410/rrms-backend/internal/domain/listing/repo"
 	property_repo "github.com/user2410/rrms-backend/internal/domain/property/repo"
 	rental_model "github.com/user2410/rrms-backend/internal/domain/rental/model"
+	"github.com/user2410/rrms-backend/internal/infrastructure/aws/s3"
 
 	reminder_service "github.com/user2410/rrms-backend/internal/domain/reminder"
 
@@ -16,6 +17,7 @@ import (
 )
 
 type Service interface {
+	PreCreateApplication(data *dto.PreCreateApplication, creatorID uuid.UUID) error
 	CreateApplication(data *dto.CreateApplication) (*model.ApplicationModel, error)
 	GetApplicationById(id int64) (*model.ApplicationModel, error)
 	GetApplicationByIds(ids []int64, fields []string, userId uuid.UUID) ([]model.ApplicationModel, error)
@@ -35,6 +37,9 @@ type service struct {
 	lRepo    listing_repo.Repo
 	pRepo    property_repo.Repo
 	rService reminder_service.Service
+
+	s3Client        *s3.S3Client
+	imageBucketName string
 }
 
 func NewService(
@@ -43,6 +48,9 @@ func NewService(
 	lRepo listing_repo.Repo,
 	pRepo property_repo.Repo,
 	rService reminder_service.Service,
+
+	s3Client *s3.S3Client,
+	imageBucketName string,
 ) Service {
 	return &service{
 		aRepo:    aRepo,
@@ -50,5 +58,8 @@ func NewService(
 		lRepo:    lRepo,
 		pRepo:    pRepo,
 		rService: rService,
+
+		s3Client:        s3Client,
+		imageBucketName: imageBucketName,
 	}
 }

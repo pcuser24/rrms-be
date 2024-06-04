@@ -3,8 +3,11 @@ package repo
 import (
 	"context"
 
+	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/user2410/rrms-backend/internal/domain/rental/dto"
 	"github.com/user2410/rrms-backend/internal/domain/rental/model"
+	"github.com/user2410/rrms-backend/internal/infrastructure/database"
 )
 
 func (r *repo) CreateRentalComplaint(ctx context.Context, data *dto.CreateRentalComplaint) (model.RentalComplaint, error) {
@@ -43,14 +46,37 @@ func (r *repo) CreateRentalComplaintReply(ctx context.Context, data *dto.CreateR
 	return model.RentalComplaintReply(res), nil
 }
 
-func (r *repo) GetRentalComplaintReplies(ctx context.Context, id int64) ([]model.RentalComplaintReply, error) {
-	res, err := r.dao.GetRentalComplaintReplies(ctx, id)
+func (r *repo) GetRentalComplaintReplies(ctx context.Context, rid int64, limit, offset int32) ([]model.RentalComplaintReply, error) {
+	res, err := r.dao.GetRentalComplaintReplies(ctx, database.GetRentalComplaintRepliesParams{
+		ComplaintID: rid,
+		Limit:       limit,
+		Offset:      offset,
+	})
 	if err != nil {
 		return nil, err
 	}
 	var result []model.RentalComplaintReply
 	for _, v := range res {
 		result = append(result, model.RentalComplaintReply(v))
+	}
+	return result, nil
+}
+
+func (r *repo) GetRentalComplaintsOfUser(ctx context.Context, userId uuid.UUID, limit, offset int32) ([]model.RentalComplaint, error) {
+	res, err := r.dao.GetRentalComplaintsOfUser(ctx, database.GetRentalComplaintsOfUserParams{
+		UserID: pgtype.UUID{
+			Bytes: userId,
+			Valid: userId != uuid.Nil,
+		},
+		Limit:  limit,
+		Offset: offset,
+	})
+	if err != nil {
+		return nil, err
+	}
+	var result []model.RentalComplaint
+	for _, v := range res {
+		result = append(result, model.ToRentalComplaintModel(&v))
 	}
 	return result, nil
 }

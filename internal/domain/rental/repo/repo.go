@@ -14,12 +14,15 @@ type Repo interface {
 	GetRental(ctx context.Context, id int64) (model.RentalModel, error)
 	GetRentalsByIds(ctx context.Context, ids []int64, fields []string) ([]model.RentalModel, error)
 	GetRentalSide(ctx context.Context, id int64, userId uuid.UUID) (string, error)
-	GetManagedRentals(ctx context.Context, userId uuid.UUID) ([]int64, error)
+	GetManagedRentals(ctx context.Context, userId uuid.UUID, query *dto.GetRentalsQuery) ([]int64, error)
+	GetMyRentals(ctx context.Context, userId uuid.UUID, query *dto.GetRentalsQuery) ([]int64, error)
 	UpdateRental(ctx context.Context, data *dto.UpdateRental, id int64) error
 	// UpdateRentalContract(ctx context.Context, data *dto.UpdateRentalContract, id int64) error
 	CheckRentalVisibility(ctx context.Context, id int64, userId uuid.UUID) (bool, error)
 
 	CreateContract(ctx context.Context, data *dto.CreateContract) (*model.ContractModel, error)
+	GetRentalContractsOfUser(ctx context.Context, userId uuid.UUID, query *dto.GetRentalContracts) ([]int64, error)
+	GetContractsByIds(ctx context.Context, ids []int64, fields []string) ([]model.ContractModel, error)
 	GetContractByID(ctx context.Context, id int64) (*model.ContractModel, error)
 	GetContractByRentalID(ctx context.Context, id int64) (*model.ContractModel, error)
 	PingRentalContract(ctx context.Context, id int64) (any, error)
@@ -36,9 +39,10 @@ type Repo interface {
 
 	CreateRentalComplaint(ctx context.Context, data *dto.CreateRentalComplaint) (model.RentalComplaint, error)
 	GetRentalComplaint(ctx context.Context, id int64) (model.RentalComplaint, error)
+	GetRentalComplaintsOfUser(ctx context.Context, userId uuid.UUID, limit, offset int32) ([]model.RentalComplaint, error)
 	GetRentalComplaintsByRentalId(ctx context.Context, rid int64) ([]model.RentalComplaint, error)
 	CreateRentalComplaintReply(ctx context.Context, data *dto.CreateRentalComplaintReply) (model.RentalComplaintReply, error)
-	GetRentalComplaintReplies(ctx context.Context, id int64) ([]model.RentalComplaintReply, error)
+	GetRentalComplaintReplies(ctx context.Context, rid int64, limit, offset int32) ([]model.RentalComplaintReply, error)
 	UpdateRentalComplaint(ctx context.Context, data *dto.UpdateRentalComplaint) error
 }
 

@@ -104,6 +104,17 @@ func (pm *CreateRentalPolicy) ToCreateRentalPolicyDB(id int64) database.CreateRe
 	}
 }
 
+type PreCreateRentalMedia struct {
+	Name string `json:"name" validate:"required"`
+	Size int64  `json:"size" validate:"required,gt=0"`
+	Type string `json:"type" validate:"required"`
+	Url  string `json:"url"`
+}
+
+type PreCreateRental struct {
+	Avatar PreCreateRentalMedia `json:"avatar" validate:"required"`
+}
+
 type CreateRental struct {
 	ApplicationID           *int64 `json:"applicationId" validate:"omitempty"`
 	CreatorID               uuid.UUID

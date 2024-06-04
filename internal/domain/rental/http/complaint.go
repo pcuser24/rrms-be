@@ -14,6 +14,52 @@ import (
 	"github.com/user2410/rrms-backend/internal/utils/validation"
 )
 
+func (a *adapter) getRentalComplaintsOfUser() fiber.Handler {
+	return func(ctx *fiber.Ctx) error {
+		tkPayload := ctx.Locals(auth_http.AuthorizationPayloadKey).(*token.Payload)
+
+		var query struct {
+			Limit  int32 `query:"limit"`
+			Offset int32 `query:"offset"`
+		}
+		if err := ctx.QueryParser(&query); err != nil {
+			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": err.Error()})
+		}
+
+		res, err := a.service.GetRentalComplaintsOfUser(tkPayload.UserID, query.Limit, query.Offset)
+		if err != nil {
+			if errors.Is(err, database.ErrRecordNotFound) {
+				return ctx.Status(fiber.StatusNotFound).JSON(fiber.Map{"message": "rental complaint not found"})
+			}
+
+			return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
+		}
+
+		return ctx.Status(fiber.StatusOK).JSON(res)
+	}
+}
+
+func (a *adapter) preCreateRentalComplaint() fiber.Handler {
+	return func(ctx *fiber.Ctx) error {
+		var payload dto.PreCreateRentalComplaint
+		if err := ctx.BodyParser(&payload); err != nil {
+			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": err.Error()})
+		}
+		if errs := validation.ValidateStruct(nil, payload); len(errs) > 0 {
+			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": validation.GetValidationError(errs)})
+		}
+
+		tkPayload := ctx.Locals(auth_http.AuthorizationPayloadKey).(*token.Payload)
+
+		err := a.service.PreCreateRentalComplaint(&payload, tkPayload.UserID)
+		if err != nil {
+			return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
+		}
+
+		return ctx.Status(fiber.StatusOK).JSON(payload)
+	}
+}
+
 func (a *adapter) createRentalComplaint() fiber.Handler {
 	return func(ctx *fiber.Ctx) error {
 		var payload dto.CreateRentalComplaint
@@ -74,6 +120,27 @@ func (a *adapter) getRentalComplaintsByRentalId() fiber.Handler {
 	}
 }
 
+func (a *adapter) preCreateRentalComplaintReply() fiber.Handler {
+	return func(ctx *fiber.Ctx) error {
+		var payload dto.PreCreateRentalComplaint
+		if err := ctx.BodyParser(&payload); err != nil {
+			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": err.Error()})
+		}
+		if errs := validation.ValidateStruct(nil, payload); len(errs) > 0 {
+			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": validation.GetValidationError(errs)})
+		}
+
+		tkPayload := ctx.Locals(auth_http.AuthorizationPayloadKey).(*token.Payload)
+
+		err := a.service.PreCreateRentalComplaintReply(&payload, tkPayload.UserID)
+		if err != nil {
+			return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
+		}
+
+		return ctx.Status(fiber.StatusOK).JSON(payload)
+	}
+}
+
 func (a *adapter) createRentalComplaintReply() fiber.Handler {
 	return func(ctx *fiber.Ctx) error {
 		var payload dto.CreateRentalComplaintReply
@@ -104,9 +171,19 @@ func (a *adapter) getRentalComplaintReplies() fiber.Handler {
 		if err != nil {
 			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": "invalid rental complaint id: " + err.Error()})
 		}
+		var query struct {
+			Limit  int32 `query:"limit"`
+			Offset int32 `query:"offset"`
+		}
+		if err := ctx.QueryParser(&query); err != nil {
+			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": err.Error()})
+		}
 
-		res, err := a.service.GetRentalComplaintReplies(rcId)
+		res, err := a.service.GetRentalComplaintReplies(rcId, query.Limit, query.Offset)
 		if err != nil {
+			if errors.Is(err, database.ErrRecordNotFound) {
+				return ctx.Status(fiber.StatusNotFound).JSON(fiber.Map{"message": "rental complaint not found"})
+			}
 			return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
 		}
 

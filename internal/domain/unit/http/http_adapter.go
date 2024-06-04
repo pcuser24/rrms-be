@@ -46,9 +46,31 @@ func (a *adapter) RegisterServer(router *fiber.Router, tokenMaker token.Maker) {
 
 	unitRoute.Use(auth_http.AuthorizedMiddleware(tokenMaker))
 
-	unitRoute.Post("/", a.createUnit())
+	unitRoute.Post("/create/_pre", a.preCreateUnit())
+	unitRoute.Post("/create", a.createUnit())
 	unitRoute.Patch("/unit/:id", CheckUnitManageability(a.uService), a.updateUnit())
 	unitRoute.Delete("/unit/:id", CheckUnitManageability(a.uService), a.deleteUnit())
+}
+
+func (a *adapter) preCreateUnit() fiber.Handler {
+	return func(ctx *fiber.Ctx) error {
+		var payload dto.PreCreateUnit
+		if err := ctx.BodyParser(&payload); err != nil {
+			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": err.Error()})
+		}
+		if errs := validation.ValidateStruct(nil, payload); len(errs) > 0 {
+			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": validation.GetValidationError(errs)})
+		}
+
+		tkPayload := ctx.Locals(auth_http.AuthorizationPayloadKey).(*token.Payload)
+
+		err := a.uService.PreCreateUnit(&payload, tkPayload.UserID)
+		if err != nil {
+			return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
+		}
+
+		return ctx.Status(fiber.StatusOK).JSON(payload)
+	}
 }
 
 func (a *adapter) createUnit() fiber.Handler {

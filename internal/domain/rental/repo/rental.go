@@ -294,6 +294,23 @@ func (r *repo) CheckRentalVisibility(ctx context.Context, id int64, userId uuid.
 	})
 }
 
-func (r *repo) GetManagedRentals(ctx context.Context, userId uuid.UUID) ([]int64, error) {
-	return r.dao.GetManagedRentals(ctx, userId)
+func (r *repo) GetManagedRentals(ctx context.Context, userId uuid.UUID, query *dto.GetRentalsQuery) ([]int64, error) {
+	return r.dao.GetManagedRentals(ctx, database.GetManagedRentalsParams{
+		UserID:  userId,
+		Expired: query.Expired,
+		Limit:   *query.Limit,
+		Offset:  *query.Offset,
+	})
+}
+
+func (r *repo) GetMyRentals(ctx context.Context, userId uuid.UUID, query *dto.GetRentalsQuery) ([]int64, error) {
+	return r.dao.GetMyRentals(ctx, database.GetMyRentalsParams{
+		UserID: pgtype.UUID{
+			Bytes: userId,
+			Valid: userId != uuid.Nil,
+		},
+		Expired: query.Expired,
+		Limit:   *query.Limit,
+		Offset:  *query.Offset,
+	})
 }

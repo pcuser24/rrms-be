@@ -36,7 +36,11 @@ func (a *adapter) RegisterServer(route *fiber.Router, tokenMaker token.Maker) {
 
 	// applicationRoute.Use(auth_http.AuthorizedMiddleware(tokenMaker))
 
-	applicationRoute.Post("/",
+	applicationRoute.Post("/create/_pre",
+		auth_http.GetAuthorizationMiddleware(tokenMaker),
+		a.preCreateApplications(),
+	)
+	applicationRoute.Post("/create",
 		auth_http.GetAuthorizationMiddleware(tokenMaker),
 		a.createApplications(),
 	)
@@ -84,6 +88,27 @@ func NewAdapter(lService listing_service.Service, aService application_service.S
 	return &adapter{
 		lService: lService,
 		aService: aService,
+	}
+}
+
+func (a *adapter) preCreateApplications() fiber.Handler {
+	return func(ctx *fiber.Ctx) error {
+		var payload dto.PreCreateApplication
+		if err := ctx.BodyParser(&payload); err != nil {
+			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": err.Error()})
+		}
+		if errs := validation.ValidateStruct(nil, payload); len(errs) > 0 {
+			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": validation.GetValidationError(errs)})
+		}
+
+		tkPayload := ctx.Locals(auth_http.AuthorizationPayloadKey).(*token.Payload)
+
+		err := a.aService.PreCreateApplication(&payload, tkPayload.UserID)
+		if err != nil {
+			return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
+		}
+
+		return ctx.Status(fiber.StatusOK).JSON(payload)
 	}
 }
 

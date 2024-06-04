@@ -5,12 +5,15 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"path/filepath"
+	"time"
 
 	application_dto "github.com/user2410/rrms-backend/internal/domain/application/dto"
 	application_model "github.com/user2410/rrms-backend/internal/domain/application/model"
 	application_repo "github.com/user2410/rrms-backend/internal/domain/application/repo"
 	auth_repo "github.com/user2410/rrms-backend/internal/domain/auth/repo"
 	property_repo "github.com/user2410/rrms-backend/internal/domain/property/repo"
+	"github.com/user2410/rrms-backend/internal/infrastructure/aws/s3"
 	"github.com/user2410/rrms-backend/internal/infrastructure/database"
 	"github.com/user2410/rrms-backend/pkg/ds/set"
 
@@ -29,7 +32,13 @@ import (
 	"github.com/user2410/rrms-backend/internal/utils/types"
 )
 
+const (
+	MAX_IMAGE_SIZE      = 10 * 1024 * 1024 // 10MB
+	UPLOAD_URL_LIFETIME = 5                // 5 minutes
+)
+
 type Service interface {
+	PreCreateProperty(data *property_dto.PreCreateProperty, creatorID uuid.UUID) error
 	CreateProperty(data *property_dto.CreateProperty, creatorID uuid.UUID) (*property_model.PropertyModel, error)
 	CheckVisibility(id uuid.UUID, uid uuid.UUID) (bool, error)
 	CheckManageability(id uuid.UUID, userId uuid.UUID) (bool, error)
@@ -41,6 +50,7 @@ type Service interface {
 	GetApplicationsOfProperty(id uuid.UUID, query *application_dto.GetApplicationsOfPropertyQuery) ([]application_model.ApplicationModel, error)
 	GetManagedProperties(userId uuid.UUID, query *property_dto.GetPropertiesQuery) (int, []GetManagedPropertiesItem, error)
 	SearchListingCombination(data *property_dto.SearchPropertyCombinationQuery) (*property_dto.SearchPropertyCombinationResponse, error)
+	PreUpdateProperty(data *property_dto.PreUpdateProperty, creatorID uuid.UUID) error
 	UpdateProperty(data *property_dto.UpdateProperty) error
 	DeleteProperty(id uuid.UUID) error
 
@@ -57,9 +67,15 @@ type service struct {
 	aRepo    application_repo.Repo
 	rRepo    rental_repo.Repo
 	authRepo auth_repo.Repo
+
+	s3Client        *s3.S3Client
+	imageBucketName string
 }
 
-func NewService(pRepo property_repo.Repo, uRepo unit_repo.Repo, lRepo listing_repo.Repo, aRepo application_repo.Repo, rRepo rental_repo.Repo, authRepo auth_repo.Repo) Service {
+func NewService(
+	pRepo property_repo.Repo, uRepo unit_repo.Repo, lRepo listing_repo.Repo, aRepo application_repo.Repo, rRepo rental_repo.Repo, authRepo auth_repo.Repo,
+	s3Client *s3.S3Client, imageBucketName string,
+) Service {
 	return &service{
 		pRepo:    pRepo,
 		uRepo:    uRepo,
@@ -67,7 +83,30 @@ func NewService(pRepo property_repo.Repo, uRepo unit_repo.Repo, lRepo listing_re
 		aRepo:    aRepo,
 		rRepo:    rRepo,
 		authRepo: authRepo,
+
+		s3Client:        s3Client,
+		imageBucketName: imageBucketName,
 	}
+}
+
+func (s *service) PreCreateProperty(data *property_dto.PreCreateProperty, creatorID uuid.UUID) error {
+	for i := range data.Media {
+		m := &data.Media[i]
+		// split file name and extension
+		ext := filepath.Ext(m.Name)
+		fname := m.Name[:len(m.Name)-len(ext)]
+		// key = creatorID + "/" + "/property" + filename
+		objKey := fmt.Sprintf("%s/properties/%s_%v%s", creatorID.String(), fname, time.Now().Unix(), ext)
+
+		url, err := s.s3Client.GetPutObjectPresignedURL(
+			s.imageBucketName, objKey, m.Type, m.Size, UPLOAD_URL_LIFETIME*time.Minute,
+		)
+		if err != nil {
+			return err
+		}
+		m.Url = url.URL
+	}
+	return nil
 }
 
 func (s *service) CreateProperty(data *property_dto.CreateProperty, creatorID uuid.UUID) (*property_model.PropertyModel, error) {
@@ -128,6 +167,26 @@ var (
 	ErrMissingPrimaryImage = fmt.Errorf("missing primary image")
 	ErrMissingImage        = fmt.Errorf("empty media")
 )
+
+func (s *service) PreUpdateProperty(data *property_dto.PreUpdateProperty, creatorID uuid.UUID) error {
+	for i := range data.Media {
+		m := &data.Media[i]
+		// split file name and extension
+		ext := filepath.Ext(m.Name)
+		fname := m.Name[:len(m.Name)-len(ext)]
+		// key = creatorID + "/" + "/property" + filename
+		objKey := fmt.Sprintf("%s/properties/%s_%v%s", creatorID.String(), fname, time.Now().Unix(), ext)
+
+		url, err := s.s3Client.GetPutObjectPresignedURL(
+			s.imageBucketName, objKey, m.Type, m.Size, UPLOAD_URL_LIFETIME*time.Minute,
+		)
+		if err != nil {
+			return err
+		}
+		m.Url = url.URL
+	}
+	return nil
+}
 
 func (s *service) UpdateProperty(data *property_dto.UpdateProperty) error {
 	if data.Media != nil {

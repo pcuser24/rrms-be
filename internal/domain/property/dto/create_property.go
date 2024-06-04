@@ -11,6 +11,18 @@ type CreatePropertyManager struct {
 	Role      string    `json:"role" validate:"required"`
 }
 
+type PreCreatePropertyMedia struct {
+	ID   int64  `json:"id" validate:"required,gt=0"`
+	Name string `json:"name" validate:"required"`
+	Size int64  `json:"size" validate:"required,gt=0"`
+	Type string `json:"type" validate:"required"`
+	Url  string `json:"url"`
+}
+
+type PreCreateProperty struct {
+	Media []PreCreatePropertyMedia `json:"media" validate:"dive"`
+}
+
 type CreatePropertyMedia struct {
 	Url         string             `json:"url" validate:"required,url"`
 	Type        database.MEDIATYPE `json:"type" validate:"required,oneof=IMAGE VIDEO"`

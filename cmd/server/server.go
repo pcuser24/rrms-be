@@ -25,7 +25,6 @@ import (
 	"github.com/user2410/rrms-backend/internal/domain/reminder"
 	rental_service "github.com/user2410/rrms-backend/internal/domain/rental/service"
 	statistic_service "github.com/user2410/rrms-backend/internal/domain/statistic/service"
-	"github.com/user2410/rrms-backend/internal/domain/storage"
 	"github.com/user2410/rrms-backend/internal/domain/unit"
 	"github.com/user2410/rrms-backend/internal/infrastructure/aws/s3"
 	"github.com/user2410/rrms-backend/internal/infrastructure/database"
@@ -52,9 +51,9 @@ type serverConfig struct {
 	AWSS3Endpoint    *string `mapstructure:"AWS_S3_ENDPOINT" validate:"omitempty"`
 	AWSS3ImageBucket string  `mapstructure:"AWS_S3_IMAGE_BUCKET" validate:"required"`
 
-	EmailSenderName     string `mapstructure:"EMAIL_SENDER_NAME" validate:"omitempty"`
-	EmailSenderAddress  string `mapstructure:"EMAIL_SENDER_ADDRESS" validate:"omitempty"`
-	EmailSenderPassword string `mapstructure:"EMAIL_SENDER_PASSWORD" validate:"omitempty"`
+	EmailSenderName     string `mapstructure:"GMAIL_SENDER_NAME" validate:"omitempty"`
+	EmailSenderAddress  string `mapstructure:"GMAIL_SENDER_ADDRESS" validate:"omitempty"`
+	EmailSenderPassword string `mapstructure:"GMAIL_SENDER_PASSWORD" validate:"omitempty"`
 
 	ResendAPIKey string `mapstructure:"RESEND_API_KEY" validate:"omitempty"`
 
@@ -80,7 +79,6 @@ type internalServices struct {
 	ListingService     listing_service.Service
 	RentalService      rental_service.Service
 	ApplicationService application_service.Service
-	StorageService     storage.Service
 	ReminderService    reminder.Service
 	PaymentService     payment_service.Service
 	ChatService        chat.Service

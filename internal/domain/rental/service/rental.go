@@ -2,12 +2,32 @@ package service
 
 import (
 	"context"
+	"fmt"
+	"math"
+	"path/filepath"
 	"time"
 
 	"github.com/google/uuid"
 	"github.com/user2410/rrms-backend/internal/domain/rental/dto"
 	"github.com/user2410/rrms-backend/internal/domain/rental/model"
+	"github.com/user2410/rrms-backend/internal/utils/types"
 )
+
+func (s *service) PreCreateRental(data *dto.PreCreateRental, creatorID uuid.UUID) error {
+	ext := filepath.Ext(data.Avatar.Name)
+	fname := data.Avatar.Name[:len(data.Avatar.Name)-len(ext)]
+	// key = creatorID + "/" + "/property" + filename
+	objKey := fmt.Sprintf("%s/rentals/%s_%v%s", creatorID.String(), fname, time.Now().Unix(), ext)
+
+	url, err := s.s3Client.GetPutObjectPresignedURL(
+		s.imageBucketName, objKey, data.Avatar.Type, data.Avatar.Size, UPLOAD_URL_LIFETIME*time.Minute,
+	)
+	if err != nil {
+		return err
+	}
+	data.Avatar.Url = url.URL
+	return nil
+}
 
 func (s *service) CreateRental(data *dto.CreateRental, userId uuid.UUID) (model.RentalModel, error) {
 	expiryDate := data.MoveinDate.AddDate(0, int(data.RentalPeriod), 0)
@@ -45,7 +65,28 @@ func (s *service) CheckRentalVisibility(id int64, userId uuid.UUID) (bool, error
 }
 
 func (s *service) GetManagedRentals(userId uuid.UUID, query *dto.GetRentalsQuery) ([]model.RentalModel, error) {
-	rs, err := s.rRepo.GetManagedRentals(context.Background(), userId)
+	if query.Limit == nil {
+		query.Limit = types.Ptr[int32](math.MaxInt32)
+	}
+	if query.Offset == nil {
+		query.Offset = types.Ptr[int32](0)
+	}
+	rs, err := s.rRepo.GetManagedRentals(context.Background(), userId, query)
+	if err != nil {
+		return nil, err
+	}
+
+	return s.rRepo.GetRentalsByIds(context.Background(), rs, query.Fields)
+}
+
+func (s *service) GetMyRentals(userId uuid.UUID, query *dto.GetRentalsQuery) ([]model.RentalModel, error) {
+	if query.Limit == nil {
+		query.Limit = types.Ptr[int32](math.MaxInt32)
+	}
+	if query.Offset == nil {
+		query.Offset = types.Ptr[int32](0)
+	}
+	rs, err := s.rRepo.GetMyRentals(context.Background(), userId, query)
 	if err != nil {
 		return nil, err
 	}

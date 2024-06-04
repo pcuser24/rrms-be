@@ -467,11 +467,78 @@ func (q *Queries) DeleteRental(ctx context.Context, id int64) error {
 }
 
 const getManagedRentals = `-- name: GetManagedRentals :many
-SELECT id FROM rentals WHERE property_id IN (SELECT property_id FROM property_managers WHERE manager_id = $1)
+SELECT id FROM rentals 
+WHERE 
+  property_id IN (SELECT property_id FROM property_managers WHERE manager_id = $3)
+  AND CASE
+    WHEN $4::BOOLEAN THEN start_date + INTERVAL '1 month' * rental_period < CURRENT_DATE OR status <> 'INPROGRESS'
+    WHEN NOT $4::BOOLEAN THEN start_date + INTERVAL '1 month' * rental_period >= CURRENT_DATE AND status = 'INPROGRESS'
+  END
+ORDER BY
+  created_at DESC
+LIMIT $1 OFFSET $2
 `
 
-func (q *Queries) GetManagedRentals(ctx context.Context, userID uuid.UUID) ([]int64, error) {
-	rows, err := q.db.Query(ctx, getManagedRentals, userID)
+type GetManagedRentalsParams struct {
+	Limit   int32     `json:"limit"`
+	Offset  int32     `json:"offset"`
+	UserID  uuid.UUID `json:"user_id"`
+	Expired bool      `json:"expired"`
+}
+
+func (q *Queries) GetManagedRentals(ctx context.Context, arg GetManagedRentalsParams) ([]int64, error) {
+	rows, err := q.db.Query(ctx, getManagedRentals,
+		arg.Limit,
+		arg.Offset,
+		arg.UserID,
+		arg.Expired,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []int64
+	for rows.Next() {
+		var id int64
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		items = append(items, id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getMyRentals = `-- name: GetMyRentals :many
+SELECT id 
+FROM rentals 
+WHERE 
+  tenant_id = $3
+  AND CASE
+    WHEN $4::BOOLEAN THEN start_date + INTERVAL '1 month' * rental_period < CURRENT_DATE OR status <> 'INPROGRESS'
+    WHEN NOT $4::BOOLEAN THEN start_date + INTERVAL '1 month' * rental_period >= CURRENT_DATE AND status = 'INPROGRESS'
+  END
+ORDER BY
+  created_at DESC
+LIMIT $1 OFFSET $2
+`
+
+type GetMyRentalsParams struct {
+	Limit   int32       `json:"limit"`
+	Offset  int32       `json:"offset"`
+	UserID  pgtype.UUID `json:"user_id"`
+	Expired bool        `json:"expired"`
+}
+
+func (q *Queries) GetMyRentals(ctx context.Context, arg GetMyRentalsParams) ([]int64, error) {
+	rows, err := q.db.Query(ctx, getMyRentals,
+		arg.Limit,
+		arg.Offset,
+		arg.UserID,
+		arg.Expired,
+	)
 	if err != nil {
 		return nil, err
 	}

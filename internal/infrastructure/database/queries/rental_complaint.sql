@@ -54,7 +54,25 @@ INSERT INTO rental_complaint_replies (
 ) RETURNING *;
 
 -- name: GetRentalComplaintReplies :many
-SELECT * FROM rental_complaint_replies WHERE complaint_id = $1;
+SELECT * 
+FROM rental_complaint_replies 
+WHERE complaint_id = $1
+ORDER BY created_at DESC
+LIMIT $2 OFFSET $3;
+
+-- name: GetRentalComplaintsOfUser :many
+SELECT * FROM rental_complaints 
+WHERE
+  EXISTS (
+    SELECT 1 FROM rentals WHERE 
+      rentals.id = rental_complaints.rental_id AND (
+        rentals.tenant_id = sqlc.arg(user_id)
+        OR EXISTS (
+          SELECT 1 FROM property_managers WHERE property_managers.property_id = rentals.property_id AND manager_id = sqlc.arg(user_id)
+        )
+      )
+  )
+LIMIT $1 OFFSET $2;
 
 -- SELECT 
 --   rental_complaint_replies.*, "User".first_name as replier_firstname, "User".last_name as replier_lastname 

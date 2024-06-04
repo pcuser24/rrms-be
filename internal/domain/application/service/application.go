@@ -3,7 +3,9 @@ package service
 import (
 	"context"
 	"fmt"
+	"path/filepath"
 	"slices"
+	"time"
 
 	property_model "github.com/user2410/rrms-backend/internal/domain/property/model"
 	"github.com/user2410/rrms-backend/pkg/ds/set"
@@ -14,11 +16,32 @@ import (
 	"github.com/user2410/rrms-backend/internal/infrastructure/database"
 )
 
+const (
+	MAX_IMAGE_SIZE      = 10 * 1024 * 1024 // 10MB
+	UPLOAD_URL_LIFETIME = 5                // 5 minutes
+)
+
 var (
 	ErrListingIsClosed  = fmt.Errorf("listing is not active")
 	ErrInvalidApplicant = fmt.Errorf("invalid applicant")
 	ErrAlreadyApplied   = fmt.Errorf("user has already applied to this property within 30 days")
 )
+
+func (s *service) PreCreateApplication(data *dto.PreCreateApplication, creatorID uuid.UUID) error {
+	ext := filepath.Ext(data.Avatar.Name)
+	fname := data.Avatar.Name[:len(data.Avatar.Name)-len(ext)]
+	// key = creatorID + "/" + "/property" + filename
+	objKey := fmt.Sprintf("%s/rentals/%s_%v%s", creatorID.String(), fname, time.Now().Unix(), ext)
+
+	url, err := s.s3Client.GetPutObjectPresignedURL(
+		s.imageBucketName, objKey, data.Avatar.Type, data.Avatar.Size, UPLOAD_URL_LIFETIME*time.Minute,
+	)
+	if err != nil {
+		return err
+	}
+	data.Avatar.Url = url.URL
+	return nil
+}
 
 func (s *service) CreateApplication(data *dto.CreateApplication) (*model.ApplicationModel, error) {
 	// Check eligibility of the user to apply for this listing

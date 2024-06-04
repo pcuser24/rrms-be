@@ -16,20 +16,21 @@ import (
 const RentalFieldsLocalKey = "rentalFields"
 
 var (
-	retrievableFields = []string{"creator_id", "property_id", "unit_id", "application_id", "tenant_id", "profile_image", "tenant_type", "tenant_name", "tenant_phone", "tenant_email", "organization_name", "organization_hq_address", "start_date", "movein_date", "rental_period", "payment_type", "rental_price", "rental_payment_basis", "rental_intention", "deposit", "deposit_paid", "electricity_setup_by", "electricity_payment_type", "electricity_customer_code", "electricity_provider", "electricity_price", "water_setup_by", "water_payment_type", "water_customer_code", "water_provider", "water_price", "note", "status", "created_at", "updated_at"}
-	sortbyFields      = append(retrievableFields, "remaining_time")
+	rentalRetrievableFields = []string{"creator_id", "property_id", "unit_id", "application_id", "tenant_id", "profile_image", "tenant_type", "tenant_name", "tenant_phone", "tenant_email", "organization_name", "organization_hq_address", "start_date", "movein_date", "rental_period", "payment_type", "rental_price", "rental_payment_basis", "rental_intention", "deposit", "deposit_paid", "electricity_setup_by", "electricity_payment_type", "electricity_customer_code", "electricity_provider", "electricity_price", "water_setup_by", "water_payment_type", "water_customer_code", "water_provider", "water_price", "note", "status", "created_at", "updated_at"}
+	sortbyFields            = append(rentalRetrievableFields, "remaining_time")
 )
 
 func GetRetrievableFields() []string {
-	rfs := make([]string, len(retrievableFields))
-	copy(rfs, retrievableFields)
+	rfs := make([]string, len(rentalRetrievableFields))
+	copy(rfs, rentalRetrievableFields)
 	return rfs
 }
 
 type GetRentalsQuery struct {
-	Fields []string `query:"fields" validate:"rentalFields"`
-	// Limit  *int32   `query:"limit" validate:"omitempty,gte=0"`
-	// Offset *int32   `query:"offset" validate:"omitempty,gte=0"`
+	Fields  []string `query:"fields" validate:"rentalFields"`
+	Limit   *int32   `query:"limit" validate:"omitempty,gte=0"`
+	Offset  *int32   `query:"offset" validate:"omitempty,gte=0"`
+	Expired bool     `query:"expired"`
 	// SortBy []string `query:"sortby" validate:"omitempty"`
 	// Order  []string `query:"order" validate:"omitempty,dive,oneof=asc desc"`
 }
@@ -69,7 +70,7 @@ func (q *GetRentalsQuery) ValidateQuery() error {
 func ValidateQuery(fl validator.FieldLevel) bool {
 	if fields, ok := fl.Field().Interface().([]string); ok {
 		for _, f := range fields {
-			if !slices.Contains(retrievableFields, f) {
+			if !slices.Contains(rentalRetrievableFields, f) {
 				return false
 			}
 		}

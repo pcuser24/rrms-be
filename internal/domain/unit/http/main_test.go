@@ -28,15 +28,15 @@ type server struct {
 	router     http.Server
 }
 
-func newTestServer(t *testing.T, pr property_repo.Repo, ur repo.Repo, lr listing_repo.Repo, ar application_repo.Repo, rr rental_repo.Repo, authRepo auth_repo.Repo) *server {
+func newTestServer(t *testing.T, propertyRepo property_repo.Repo, unitRepo repo.Repo, listingRepo listing_repo.Repo, applicationRepo application_repo.Repo, rentalRepo rental_repo.Repo, authRepo auth_repo.Repo) *server {
 
 	tokenMaker, err := token.NewJWTMaker(random.RandomAlphanumericStr(32))
 	require.NoError(t, err)
 	require.NotNil(t, tokenMaker)
 
 	// initialize uService
-	uService := unit.NewService(ur)
-	pService := property_service.NewService(pr, ur, lr, ar, rr, authRepo)
+	uService := unit.NewService(unitRepo, nil, "")
+	pService := property_service.NewService(propertyRepo, unitRepo, listingRepo, applicationRepo, rentalRepo, authRepo, nil, "")
 
 	// initialize http router
 	httpServer := http.NewServer(
@@ -52,8 +52,8 @@ func newTestServer(t *testing.T, pr property_repo.Repo, ur repo.Repo, lr listing
 	NewAdapter(uService, pService).RegisterServer(httpServer.GetApiRoute(), tokenMaker)
 
 	return &server{
-		ur:         ur,
-		pr:         pr,
+		ur:         unitRepo,
+		pr:         propertyRepo,
 		tokenMaker: tokenMaker,
 		router:     httpServer,
 	}

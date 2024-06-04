@@ -9,6 +9,18 @@ import (
 	"github.com/user2410/rrms-backend/internal/utils/types"
 )
 
+type PreCreateRentalComplaintMedia struct {
+	ID   int64  `json:"id" validate:"required"`
+	Name string `json:"name" validate:"required"`
+	Size int64  `json:"size" validate:"required,gt=0"`
+	Type string `json:"type" validate:"required"`
+	Url  string `json:"url"`
+}
+
+type PreCreateRentalComplaint struct {
+	Media []PreCreateRentalComplaintMedia `json:"media" validate:"dive"`
+}
+
 type CreateRentalComplaint struct {
 	RentalID   int64                        `json:"rentalId" validate:"required"`
 	CreatorID  uuid.UUID                    `json:"creatorId" validate:"required"`

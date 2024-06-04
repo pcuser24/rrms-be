@@ -7,6 +7,19 @@ import (
 	"github.com/user2410/rrms-backend/internal/utils/types"
 )
 
+type PreUpdatePropertyMedia struct {
+	ID          int64   `json:"id" validate:"required"`
+	Name        string  `json:"name" validate:"required"`
+	Size        int64   `json:"size" validate:"required,gt=0"`
+	Type        string  `json:"type" validate:"required"`
+	Description *string `json:"description"`
+	Url         string  `json:"url"`
+}
+
+type PreUpdateProperty struct {
+	Media []PreCreatePropertyMedia `json:"media" validate:"dive"`
+}
+
 type UpdateProperty struct {
 	ID              uuid.UUID
 	Name            *string                      `json:"name" validate:"omitempty"`

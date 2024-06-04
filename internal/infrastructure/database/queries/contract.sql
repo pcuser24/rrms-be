@@ -60,6 +60,20 @@ SELECT * FROM "contracts" WHERE "rental_id" = $1;
 -- name: PingContractByRentalID :one
 SELECT id, rental_id, status, updated_by, updated_at FROM "contracts" WHERE "rental_id" = $1;
 
+-- name: GetRentalContractsOfUser :many
+SELECT id FROM "contracts" 
+WHERE
+  EXISTS (
+    SELECT 1 FROM rentals WHERE 
+      rentals.id = contracts.rental_id AND (
+        rentals.tenant_id = sqlc.arg(user_id)
+        OR EXISTS (
+          SELECT 1 FROM property_managers WHERE property_managers.property_id = rentals.property_id AND manager_id = sqlc.arg(user_id)
+        )
+      )
+  )
+LIMIT $1 OFFSET $2;
+
 -- name: UpdateContract :exec
 UPDATE "contracts" SET
   a_fullname = coalesce(sqlc.narg(a_fullname), a_fullname),

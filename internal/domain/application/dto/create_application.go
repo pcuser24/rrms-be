@@ -83,6 +83,17 @@ func (m *CreateApplicationVehicle) ToCreateApplicationVehicleDB(aid int64) *data
 	}
 }
 
+type PreCreateApplicationMedia struct {
+	Name string `json:"name" validate:"required"`
+	Size int64  `json:"size" validate:"required,gt=0"`
+	Type string `json:"type" validate:"required"`
+	Url  string `json:"url"`
+}
+
+type PreCreateApplication struct {
+	Avatar PreCreateApplicationMedia `json:"avatar" validate:"required"`
+}
+
 type CreateApplication struct {
 	ListingID               uuid.UUID           `json:"listingId" validate:"omitempty,uuid4"`
 	PropertyID              uuid.UUID           `json:"propertyId" validate:"required,uuid4"`

@@ -58,7 +58,8 @@ func (a *adapter) RegisterServer(router *fiber.Router, tokenMaker token.Maker) {
 
 	propertyRoute.Use(auth_http.AuthorizedMiddleware(tokenMaker))
 
-	propertyRoute.Post("/", a.createProperty())
+	propertyRoute.Post("/create/_pre", a.preCreateProperty())
+	propertyRoute.Post("/create", a.createProperty())
 	propertyRoute.Get("/managed-properties", a.getManagedProperties())
 	propertyRoute.Group("/property/:id").Use(GetPropertyId())
 	propertyRoute.Post("/property/:id/new-manager-requests",
@@ -80,6 +81,10 @@ func (a *adapter) RegisterServer(router *fiber.Router, tokenMaker token.Maker) {
 		CheckPropertyManageability(a.service),
 		a.getRentalsOfProperty(),
 	)
+	propertyRoute.Patch("/property/:id/_pre",
+		CheckPropertyManageability(a.service),
+		a.preUpdateProperty(),
+	)
 	propertyRoute.Patch("/property/:id",
 		CheckPropertyManageability(a.service),
 		a.updateProperty(),
@@ -88,6 +93,27 @@ func (a *adapter) RegisterServer(router *fiber.Router, tokenMaker token.Maker) {
 		CheckPropertyManageability(a.service),
 		a.deleteProperty(),
 	)
+}
+
+func (a *adapter) preCreateProperty() fiber.Handler {
+	return func(ctx *fiber.Ctx) error {
+		var payload dto.PreCreateProperty
+		if err := ctx.BodyParser(&payload); err != nil {
+			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": err.Error()})
+		}
+		if errs := validation.ValidateStruct(nil, payload); len(errs) > 0 {
+			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": validation.GetValidationError(errs)})
+		}
+
+		tkPayload := ctx.Locals(auth_http.AuthorizationPayloadKey).(*token.Payload)
+
+		err := a.service.PreCreateProperty(&payload, tkPayload.UserID)
+		if err != nil {
+			return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
+		}
+
+		return ctx.Status(fiber.StatusOK).JSON(payload)
+	}
 }
 
 func (a *adapter) createProperty() fiber.Handler {
@@ -288,6 +314,27 @@ func (a *adapter) getManagedProperties() fiber.Handler {
 			"total": total,
 			"items": props,
 		})
+	}
+}
+
+func (a *adapter) preUpdateProperty() fiber.Handler {
+	return func(ctx *fiber.Ctx) error {
+		var payload dto.PreUpdateProperty
+		if err := ctx.BodyParser(&payload); err != nil {
+			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": err.Error()})
+		}
+		if errs := validation.ValidateStruct(nil, payload); len(errs) > 0 {
+			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": validation.GetValidationError(errs)})
+		}
+
+		tkPayload := ctx.Locals(auth_http.AuthorizationPayloadKey).(*token.Payload)
+
+		err := a.service.PreUpdateProperty(&payload, tkPayload.UserID)
+		if err != nil {
+			return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
+		}
+
+		return ctx.Status(fiber.StatusOK).JSON(payload)
 	}
 }
 

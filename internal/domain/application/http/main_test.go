@@ -33,7 +33,7 @@ type server struct {
 
 func newTestServer(
 	t *testing.T,
-	ar repo.Repo, pr property_repo.Repo, ur unit_repo.Repo, lr listing_repo.Repo, cr chat_repo.Repo, rRepo reminder_repo.Repo,
+	applicationRepo repo.Repo, propertyRepo property_repo.Repo, unitRepo unit_repo.Repo, listingRepo listing_repo.Repo, chatRepo chat_repo.Repo, reminderRepo reminder_repo.Repo,
 ) *server {
 
 	tokenMaker, err := token.NewJWTMaker(random.RandomAlphanumericStr(32))
@@ -41,9 +41,9 @@ func newTestServer(
 	require.NotNil(t, tokenMaker)
 
 	// initialize services
-	rService := reminder.NewService(rRepo)
-	aService := application.NewService(ar, cr, lr, pr, rService)
-	lService := listing_service.NewService(lr, pr, ur, nil, "") // NOTE: leave paymentRepo nil for now
+	rService := reminder.NewService(reminderRepo)
+	aService := application.NewService(applicationRepo, chatRepo, listingRepo, propertyRepo, rService, nil, "")
+	lService := listing_service.NewService(listingRepo, propertyRepo, unitRepo, nil, "") // NOTE: leave paymentRepo nil for now
 
 	// initialize http router
 	httpServer := http.NewServer(
@@ -59,9 +59,9 @@ func newTestServer(
 	NewAdapter(lService, aService).RegisterServer(httpServer.GetApiRoute(), tokenMaker)
 
 	return &server{
-		pr:         pr,
-		ur:         ur,
-		lr:         lr,
+		pr:         propertyRepo,
+		ur:         unitRepo,
+		lr:         listingRepo,
 		tokenMaker: tokenMaker,
 		router:     httpServer,
 	}

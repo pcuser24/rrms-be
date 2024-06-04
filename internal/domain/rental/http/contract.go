@@ -44,6 +44,31 @@ func (a *adapter) createRentalContract() fiber.Handler {
 	}
 }
 
+func (a *adapter) getRentalContractsOfUser() fiber.Handler {
+	return func(ctx *fiber.Ctx) error {
+		query := new(dto.GetRentalContracts)
+		if err := query.QueryParser(ctx); err != nil {
+			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": err.Error()})
+		}
+		if err := query.ValidateQuery(); err != nil {
+			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": err.Error()})
+		}
+
+		tkPayload := ctx.Locals(auth_http.AuthorizationPayloadKey).(*token.Payload)
+
+		res, err := a.service.GetRentalContractsOfUser(tkPayload.UserID, query)
+		if err != nil {
+			if errors.Is(err, database.ErrRecordNotFound) {
+				return ctx.Status(fiber.StatusNotFound).JSON(fiber.Map{"message": "contract not found"})
+			}
+
+			return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
+		}
+
+		return ctx.Status(fiber.StatusOK).JSON(res)
+	}
+}
+
 func (a *adapter) getContract() fiber.Handler {
 	return func(ctx *fiber.Ctx) error {
 		id := ctx.Locals(RentalContractIDLocalKey).(int64)

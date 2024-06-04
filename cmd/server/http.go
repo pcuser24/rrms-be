@@ -12,7 +12,6 @@ import (
 	reminder_http "github.com/user2410/rrms-backend/internal/domain/reminder/http"
 	rental_http "github.com/user2410/rrms-backend/internal/domain/rental/http"
 	statistic_http "github.com/user2410/rrms-backend/internal/domain/statistic/http"
-	"github.com/user2410/rrms-backend/internal/domain/storage"
 	unit_http "github.com/user2410/rrms-backend/internal/domain/unit/http"
 )
 
@@ -36,9 +35,6 @@ func (c *serverCommand) setupHttpServer() {
 		RegisterServer(apiRoute, c.tokenMaker)
 	application_http.
 		NewAdapter(c.internalServices.ListingService, c.internalServices.ApplicationService).
-		RegisterServer(apiRoute, c.tokenMaker)
-	storage.
-		NewAdapter(c.internalServices.StorageService).
 		RegisterServer(apiRoute, c.tokenMaker)
 	payment_http.
 		NewAdapter(c.internalServices.PaymentService).

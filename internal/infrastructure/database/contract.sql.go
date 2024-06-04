@@ -265,6 +265,47 @@ func (q *Queries) GetContractByRentalID(ctx context.Context, rentalID int64) (Co
 	return i, err
 }
 
+const getRentalContractsOfUser = `-- name: GetRentalContractsOfUser :many
+SELECT id FROM "contracts" 
+WHERE
+  EXISTS (
+    SELECT 1 FROM rentals WHERE 
+      rentals.id = contracts.rental_id AND (
+        rentals.tenant_id = $3
+        OR EXISTS (
+          SELECT 1 FROM property_managers WHERE property_managers.property_id = rentals.property_id AND manager_id = $3
+        )
+      )
+  )
+LIMIT $1 OFFSET $2
+`
+
+type GetRentalContractsOfUserParams struct {
+	Limit  int32       `json:"limit"`
+	Offset int32       `json:"offset"`
+	UserID pgtype.UUID `json:"user_id"`
+}
+
+func (q *Queries) GetRentalContractsOfUser(ctx context.Context, arg GetRentalContractsOfUserParams) ([]int64, error) {
+	rows, err := q.db.Query(ctx, getRentalContractsOfUser, arg.Limit, arg.Offset, arg.UserID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []int64
+	for rows.Next() {
+		var id int64
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		items = append(items, id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const pingContractByRentalID = `-- name: PingContractByRentalID :one
 SELECT id, rental_id, status, updated_by, updated_at FROM "contracts" WHERE "rental_id" = $1
 `

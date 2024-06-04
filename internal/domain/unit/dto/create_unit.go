@@ -17,11 +17,23 @@ type CreateUnitMedia struct {
 	Description *string            `json:"description" validate:"omitempty"`
 }
 
+type PreCreateUnitMedia struct {
+	ID   int64  `json:"id" validate:"required,gt=0"`
+	Name string `json:"name" validate:"required"`
+	Size int64  `json:"size" validate:"required,gt=0"`
+	Type string `json:"type" validate:"required"`
+	Url  string `json:"url"`
+}
+
+type PreCreateUnit struct {
+	Media []PreCreateUnitMedia `json:"media" validate:"dive"`
+}
+
 type CreateUnit struct {
 	PropertyID          uuid.UUID           `json:"propertyId" validate:"required,uuid4"`
 	Name                *string             `json:"name" validate:"omitempty"`
-	Area                float32             `json:"area" validate:"required,gt=0"`
-	Floor               *int32              `json:"floor" validate:"omitempty,gt=0"`
+	Area                float32             `json:"area" validate:"required,gte=0"`
+	Floor               *int32              `json:"floor" validate:"omitempty,gte=0"`
 	NumberOfLivingRooms *int32              `json:"numberOfLivingRooms" validate:"omitempty,gte=0"`
 	NumberOfBedrooms    *int32              `json:"numberOfBedrooms" validate:"omitempty,gte=0"`
 	NumberOfBathrooms   *int32              `json:"numberOfBathrooms" validate:"omitempty,gte=0"`

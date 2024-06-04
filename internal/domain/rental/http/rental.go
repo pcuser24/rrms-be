@@ -13,6 +13,27 @@ import (
 	"github.com/user2410/rrms-backend/internal/utils/validation"
 )
 
+func (a *adapter) preCreateRental() fiber.Handler {
+	return func(ctx *fiber.Ctx) error {
+		var payload dto.PreCreateRental
+		if err := ctx.BodyParser(&payload); err != nil {
+			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": err.Error()})
+		}
+		if errs := validation.ValidateStruct(nil, payload); len(errs) > 0 {
+			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": validation.GetValidationError(errs)})
+		}
+
+		tkPayload := ctx.Locals(auth_http.AuthorizationPayloadKey).(*token.Payload)
+
+		err := a.service.PreCreateRental(&payload, tkPayload.UserID)
+		if err != nil {
+			return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
+		}
+
+		return ctx.Status(fiber.StatusOK).JSON(payload)
+	}
+}
+
 func (a *adapter) createRental() fiber.Handler {
 	return func(ctx *fiber.Ctx) error {
 		tkPayload := ctx.Locals(auth_http.AuthorizationPayloadKey).(*token.Payload)
@@ -92,6 +113,31 @@ func (a *adapter) getManagedRentals() fiber.Handler {
 		}
 
 		res, err := a.service.GetManagedRentals(
+			ctx.Locals(auth_http.AuthorizationPayloadKey).(*token.Payload).UserID,
+			query,
+		)
+		if err != nil {
+			if errors.Is(err, database.ErrRecordNotFound) {
+				return ctx.Status(fiber.StatusNotFound).JSON(fiber.Map{"message": "rental profiles not found"})
+			}
+			return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
+		}
+
+		return ctx.Status(fiber.StatusOK).JSON(res)
+	}
+}
+
+func (a *adapter) getMyRentals() fiber.Handler {
+	return func(ctx *fiber.Ctx) error {
+		query := new(dto.GetRentalsQuery)
+		if err := query.QueryParser(ctx); err != nil {
+			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": err.Error()})
+		}
+		if err := query.ValidateQuery(); err != nil {
+			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": err.Error()})
+		}
+
+		res, err := a.service.GetMyRentals(
 			ctx.Locals(auth_http.AuthorizationPayloadKey).(*token.Payload).UserID,
 			query,
 		)

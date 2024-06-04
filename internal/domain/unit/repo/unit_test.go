@@ -35,7 +35,7 @@ func TestGetUnitByIds(t *testing.T) {
 
 	us, err := testUnitRepo.GetUnitsByIds(
 		context.Background(),
-		[]string{u1.ID.String(), u2.ID.String()},
+		[]uuid.UUID{u1.ID, u2.ID},
 		selectedFields,
 	)
 	require.NoError(t, err)

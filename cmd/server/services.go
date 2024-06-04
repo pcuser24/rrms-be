@@ -10,7 +10,6 @@ import (
 	"github.com/user2410/rrms-backend/internal/domain/reminder"
 	rental_service "github.com/user2410/rrms-backend/internal/domain/rental/service"
 	statistic_service "github.com/user2410/rrms-backend/internal/domain/statistic/service"
-	"github.com/user2410/rrms-backend/internal/domain/storage"
 	"github.com/user2410/rrms-backend/internal/domain/unit"
 
 	application_repo "github.com/user2410/rrms-backend/internal/domain/application/repo"
@@ -38,23 +37,16 @@ func (c *serverCommand) setupInternalServices() {
 	reminderRepo := reminder_repo.NewRepo(c.dao)
 	statisticRepo := statistic_repo.NewRepo(c.dao)
 
-	// Initialize storage services
-	s := storage.NewStorage(c.s3Client, c.config.AWSS3ImageBucket)
-
 	// Initialize internal services
 	c.internalServices.AuthService = auth.NewService(
 		authRepo,
 		c.tokenMaker, c.config.AccessTokenTTL, c.config.RefreshTokenTTL,
 	)
 	c.internalServices.PropertyService = property_service.NewService(
-		propertyRepo,
-		unitRepo,
-		listingRepo,
-		applicationRepo,
-		rentalRepo,
-		authRepo,
+		propertyRepo, unitRepo, listingRepo, applicationRepo, rentalRepo, authRepo,
+		c.s3Client, c.config.AWSS3ImageBucket,
 	)
-	c.internalServices.UnitService = unit.NewService(unitRepo)
+	c.internalServices.UnitService = unit.NewService(unitRepo, c.s3Client, c.config.AWSS3ImageBucket)
 	c.internalServices.ListingService = listing_service.NewService(
 		listingRepo,
 		propertyRepo,
@@ -63,25 +55,16 @@ func (c *serverCommand) setupInternalServices() {
 		c.config.TokenSecreteKey,
 	)
 	c.internalServices.RentalService = rental_service.NewService(
-		rentalRepo,
-		authRepo,
-		applicationRepo,
-		listingRepo,
-		propertyRepo,
-		unitRepo,
-		c.cronScheduler,
+		rentalRepo, authRepo, applicationRepo, listingRepo, propertyRepo, unitRepo, c.cronScheduler,
+		c.s3Client, c.config.AWSS3ImageBucket,
 	)
 	c.internalServices.ReminderService = reminder.NewService(
 		reminderRepo,
 	)
 	c.internalServices.ApplicationService = application_service.NewService(
-		applicationRepo,
-		chatRepo,
-		listingRepo,
-		propertyRepo,
-		c.internalServices.ReminderService,
+		applicationRepo, chatRepo, listingRepo, propertyRepo, c.internalServices.ReminderService,
+		c.s3Client, c.config.AWSS3ImageBucket,
 	)
-	c.internalServices.StorageService = storage.NewService(s)
 	c.internalServices.PaymentService = vnp_service.NewVnpayService(
 		paymentRepo,
 		c.internalServices.ListingService,

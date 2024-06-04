@@ -197,7 +197,29 @@ FROM rentals
 WHERE id = $1;
 
 -- name: GetManagedRentals :many
-SELECT id FROM rentals WHERE property_id IN (SELECT property_id FROM property_managers WHERE manager_id = sqlc.arg(user_id));
+SELECT id FROM rentals 
+WHERE 
+  property_id IN (SELECT property_id FROM property_managers WHERE manager_id = sqlc.arg(user_id))
+  AND CASE
+    WHEN sqlc.arg(expired)::BOOLEAN THEN start_date + INTERVAL '1 month' * rental_period < CURRENT_DATE OR status <> 'INPROGRESS'
+    WHEN NOT sqlc.arg(expired)::BOOLEAN THEN start_date + INTERVAL '1 month' * rental_period >= CURRENT_DATE AND status = 'INPROGRESS'
+  END
+ORDER BY
+  created_at DESC
+LIMIT $1 OFFSET $2;
+
+-- name: GetMyRentals :many
+SELECT id 
+FROM rentals 
+WHERE 
+  tenant_id = sqlc.arg(user_id)
+  AND CASE
+    WHEN sqlc.arg(expired)::BOOLEAN THEN start_date + INTERVAL '1 month' * rental_period < CURRENT_DATE OR status <> 'INPROGRESS'
+    WHEN NOT sqlc.arg(expired)::BOOLEAN THEN start_date + INTERVAL '1 month' * rental_period >= CURRENT_DATE AND status = 'INPROGRESS'
+  END
+ORDER BY
+  created_at DESC
+LIMIT $1 OFFSET $2;
 
 -- name: GetRentalsOfProperty :many
 SELECT id
