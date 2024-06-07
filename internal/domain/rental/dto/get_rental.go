@@ -16,7 +16,7 @@ import (
 const RentalFieldsLocalKey = "rentalFields"
 
 var (
-	rentalRetrievableFields = []string{"creator_id", "property_id", "unit_id", "application_id", "tenant_id", "profile_image", "tenant_type", "tenant_name", "tenant_phone", "tenant_email", "organization_name", "organization_hq_address", "start_date", "movein_date", "rental_period", "payment_type", "rental_price", "rental_payment_basis", "rental_intention", "deposit", "deposit_paid", "electricity_setup_by", "electricity_payment_type", "electricity_customer_code", "electricity_provider", "electricity_price", "water_setup_by", "water_payment_type", "water_customer_code", "water_provider", "water_price", "note", "status", "created_at", "updated_at"}
+	rentalRetrievableFields = []string{"creator_id", "property_id", "unit_id", "application_id", "tenant_id", "profile_image", "tenant_type", "tenant_name", "tenant_phone", "tenant_email", "organization_name", "organization_hq_address", "start_date", "movein_date", "rental_period", "payment_type", "rental_price", "rental_payment_basis", "rental_intention", "grace_period", "late_payment_penalty_scheme", "late_payment_penalty_amount", "electricity_setup_by", "electricity_payment_type", "electricity_customer_code", "electricity_provider", "electricity_price", "water_setup_by", "water_payment_type", "water_customer_code", "water_provider", "water_price", "note", "status", "created_at", "updated_at"}
 	sortbyFields            = append(rentalRetrievableFields, "remaining_time")
 )
 

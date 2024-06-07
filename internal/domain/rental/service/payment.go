@@ -100,9 +100,6 @@ func (s *service) UpdateRentalPayment(id int64, userId uuid.UUID, data dto.IUpda
 			PaymentDate: __data.PaymentDate,
 			Status:      database.RENTALPAYMENTSTATUSPAID,
 		}
-		if __data.RequirePenalty {
-			_data.Penalty = __data.Penalty
-		}
 	default:
 		return ErrInvalidPaymentTypeTransition
 	}

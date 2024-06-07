@@ -116,38 +116,39 @@ type PreCreateRental struct {
 }
 
 type CreateRental struct {
-	ApplicationID           *int64 `json:"applicationId" validate:"omitempty"`
-	CreatorID               uuid.UUID
-	TenantID                uuid.UUID                  `json:"tenantId" validate:"omitempty"`
-	PropertyID              uuid.UUID                  `json:"propertyId" validatet:"required"`
-	UnitID                  uuid.UUID                  `json:"unitId" validatet:"required"`
-	ProfileImage            string                     `json:"profileImage" validate:"omitempty"`
-	TenantType              database.TENANTTYPE        `json:"tenantType" validate:"required,oneof=INDIVIDUAL FAMILY ORGANIZATION"`
-	TenantName              string                     `json:"tenantName" validate:"required"`
-	TenantPhone             string                     `json:"tenantPhone" validate:"required"`
-	TenantEmail             string                     `json:"tenantEmail" validate:"required"`
-	OrganizationName        *string                    `json:"organizationName" validate:"omitempty"`
-	OrganizationHqAddress   *string                    `json:"organizationHqAddress" validate:"omitempty"`
-	StartDate               time.Time                  `json:"startDate" validate:"required"`
-	MoveinDate              time.Time                  `json:"moveinDate" validate:"required"`
-	RentalPeriod            int32                      `json:"rentalPeriod" validate:"required"`
-	PaymentType             database.RENTALPAYMENTTYPE `json:"paymentType" validate:"required,oneof=PREPAID POSTPAID"`
-	RentalPrice             float32                    `json:"rentalPrice" validate:"required"`
-	RentalPaymentBasis      int32                      `json:"rentalPaymentBasis" validate:"required"`
-	RentalIntention         string                     `json:"rentalIntention" validate:"required"`
-	Deposit                 float32                    `json:"deposit" validate:"omitempty,gte=0"`
-	DepositPaid             bool                       `json:"depositPaid"`
-	NoticePeriod            *int32                     `json:"noticePeriod" validate:"omitempty,gte=0"`
-	ElectricitySetupBy      string                     `json:"electricitySetupBy" validate:"required,oneof=LANDLORD TENANT"`
-	ElectricityPaymentType  *string                    `json:"electricityPaymentType" validate:"omitempty,oneof=RETAIL FIXED"`
-	ElectricityPrice        *float32                   `json:"electricityPrice" validate:"omitempty"`
-	ElectricityCustomerCode *string                    `json:"electricityCustomerCode" validate:"omitempty"`
-	ElectricityProvider     *string                    `json:"electricityProvider" validate:"omitempty"`
-	WaterSetupBy            string                     `json:"waterSetupBy" validate:"required,oneof=LANDLORD TENANT"`
-	WaterPaymentType        *string                    `json:"waterPaymentType" validate:"omitempty,oneof=RETAIL FIXED"`
-	WaterPrice              *float32                   `json:"waterPrice" validate:"omitempty"`
-	WaterCustomerCode       *string                    `json:"waterCustomerCode" validate:"omitempty"`
-	WaterProvider           *string                    `json:"waterProvider" validate:"omitempty"`
+	ApplicationID            *int64 `json:"applicationId" validate:"omitempty"`
+	CreatorID                uuid.UUID
+	TenantID                 uuid.UUID                         `json:"tenantId" validate:"omitempty"`
+	PropertyID               uuid.UUID                         `json:"propertyId" validatet:"required"`
+	UnitID                   uuid.UUID                         `json:"unitId" validatet:"required"`
+	ProfileImage             string                            `json:"profileImage" validate:"omitempty"`
+	TenantType               database.TENANTTYPE               `json:"tenantType" validate:"required,oneof=INDIVIDUAL FAMILY ORGANIZATION"`
+	TenantName               string                            `json:"tenantName" validate:"required"`
+	TenantPhone              string                            `json:"tenantPhone" validate:"required"`
+	TenantEmail              string                            `json:"tenantEmail" validate:"required"`
+	OrganizationName         *string                           `json:"organizationName" validate:"omitempty"`
+	OrganizationHqAddress    *string                           `json:"organizationHqAddress" validate:"omitempty"`
+	StartDate                time.Time                         `json:"startDate" validate:"required"`
+	MoveinDate               time.Time                         `json:"moveinDate" validate:"required"`
+	RentalPeriod             int32                             `json:"rentalPeriod" validate:"required"`
+	PaymentType              database.RENTALPAYMENTTYPE        `json:"paymentType" validate:"required,oneof=PREPAID POSTPAID"`
+	RentalPrice              float32                           `json:"rentalPrice" validate:"required"`
+	RentalPaymentBasis       int32                             `json:"rentalPaymentBasis" validate:"required"`
+	RentalIntention          string                            `json:"rentalIntention" validate:"required"`
+	NoticePeriod             *int32                            `json:"noticePeriod" validate:"omitempty,gte=0"`
+	GracePeriod              int32                             `json:"gracePeriod" validate:"required,gt=0"`
+	LatePaymentPenaltyScheme database.LATEPAYMENTPENALTYSCHEME `json:"latePaymentPenaltyScheme" validate:"required,oneof=FIXED PERCENT NONE"`
+	LatePaymentPenaltyAmount *float32                          `json:"latePaymentPenaltyAmount" validate:"omitempty,gte=0"`
+	ElectricitySetupBy       string                            `json:"electricitySetupBy" validate:"required,oneof=LANDLORD TENANT"`
+	ElectricityPaymentType   *string                           `json:"electricityPaymentType" validate:"omitempty,oneof=RETAIL FIXED"`
+	ElectricityPrice         *float32                          `json:"electricityPrice" validate:"omitempty"`
+	ElectricityCustomerCode  *string                           `json:"electricityCustomerCode" validate:"omitempty"`
+	ElectricityProvider      *string                           `json:"electricityProvider" validate:"omitempty"`
+	WaterSetupBy             string                            `json:"waterSetupBy" validate:"required,oneof=LANDLORD TENANT"`
+	WaterPaymentType         *string                           `json:"waterPaymentType" validate:"omitempty,oneof=RETAIL FIXED"`
+	WaterPrice               *float32                          `json:"waterPrice" validate:"omitempty"`
+	WaterCustomerCode        *string                           `json:"waterCustomerCode" validate:"omitempty"`
+	WaterProvider            *string                           `json:"waterProvider" validate:"omitempty"`
 
 	Note *string `json:"note"`
 
@@ -185,23 +186,30 @@ func (pm *CreateRental) ToCreateRentalDB() database.CreateRentalParams {
 			RENTALPAYMENTTYPE: pm.PaymentType,
 			Valid:             pm.PaymentType != "",
 		},
-		RentalPrice:             pm.RentalPrice,
-		RentalPaymentBasis:      pm.RentalPaymentBasis,
-		RentalIntention:         pm.RentalIntention,
-		Deposit:                 pm.Deposit,
-		DepositPaid:             pm.DepositPaid,
-		NoticePeriod:            types.Int32N(pm.NoticePeriod),
-		ElectricitySetupBy:      pm.ElectricitySetupBy,
-		ElectricityPaymentType:  types.StrN(pm.ElectricityPaymentType),
-		ElectricityPrice:        types.Float32N(pm.ElectricityPrice),
-		ElectricityCustomerCode: types.StrN(pm.ElectricityCustomerCode),
-		ElectricityProvider:     types.StrN(pm.ElectricityProvider),
-		WaterSetupBy:            pm.WaterSetupBy,
-		WaterPaymentType:        types.StrN(pm.WaterPaymentType),
-		WaterPrice:              types.Float32N(pm.WaterPrice),
-		WaterCustomerCode:       types.StrN(pm.WaterCustomerCode),
-		WaterProvider:           types.StrN(pm.WaterProvider),
-		Note:                    types.StrN(pm.Note),
+		RentalPrice:        pm.RentalPrice,
+		RentalPaymentBasis: pm.RentalPaymentBasis,
+		RentalIntention:    pm.RentalIntention,
+		NoticePeriod:       types.Int32N(pm.NoticePeriod),
+		GracePeriod: pgtype.Int4{
+			Int32: pm.GracePeriod,
+			Valid: pm.GracePeriod != 0,
+		},
+		LatePaymentPenaltyScheme: database.NullLATEPAYMENTPENALTYSCHEME{
+			LATEPAYMENTPENALTYSCHEME: pm.LatePaymentPenaltyScheme,
+			Valid:                    pm.LatePaymentPenaltyScheme != "",
+		},
+		LatePaymentPenaltyAmount: types.Float32N(pm.LatePaymentPenaltyAmount),
+		ElectricitySetupBy:       pm.ElectricitySetupBy,
+		ElectricityPaymentType:   types.StrN(pm.ElectricityPaymentType),
+		ElectricityPrice:         types.Float32N(pm.ElectricityPrice),
+		ElectricityCustomerCode:  types.StrN(pm.ElectricityCustomerCode),
+		ElectricityProvider:      types.StrN(pm.ElectricityProvider),
+		WaterSetupBy:             pm.WaterSetupBy,
+		WaterPaymentType:         types.StrN(pm.WaterPaymentType),
+		WaterPrice:               types.Float32N(pm.WaterPrice),
+		WaterCustomerCode:        types.StrN(pm.WaterCustomerCode),
+		WaterProvider:            types.StrN(pm.WaterProvider),
+		Note:                     types.StrN(pm.Note),
 	}
 }
 

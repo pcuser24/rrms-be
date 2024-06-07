@@ -12,3 +12,6 @@ db_data
 
 # log files
 *.log
+
+# tmp files
+tmp

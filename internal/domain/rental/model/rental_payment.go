@@ -24,7 +24,6 @@ type RentalPayment struct {
 	Status      database.RENTALPAYMENTSTATUS `json:"status"`
 	Amount      float32                      `json:"amount"`
 	Discount    *float32                     `json:"discount"`
-	Penalty     *float32                     `json:"penalty"`
 	Note        *string                      `json:"note"`
 }
 
@@ -43,7 +42,6 @@ func ToRentalPaymentModel(prdb *database.RentalPayment) RentalPayment {
 		Status:      prdb.Status,
 		Amount:      prdb.Amount,
 		Discount:    types.PNFloat32(prdb.Discount),
-		Penalty:     types.PNFloat32(prdb.Penalty),
 		Note:        types.PNStr(prdb.Note),
 	}
 }

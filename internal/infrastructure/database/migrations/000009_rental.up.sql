@@ -2,6 +2,7 @@ BEGIN;
 
 CREATE TYPE "RENTALPAYMENTTYPE" AS ENUM ('PREPAID', 'POSTPAID');
 CREATE TYPE "RENTALSTATUS" AS ENUM ('INPROGRESS', 'END');
+CREATE TYPE "LATEPAYMENTPENALTYSCHEME" AS ENUM ('FIXED', 'PERCENT', 'NONE');
 CREATE TABLE IF NOT EXISTS "rentals" (
   "id" BIGSERIAL PRIMARY KEY,
   "creator_id" UUID NOT NULL,
@@ -28,9 +29,10 @@ CREATE TABLE IF NOT EXISTS "rentals" (
   "rental_payment_basis" INTEGER NOT NULL CHECK(rental_payment_basis >= 1),
   CHECK(rental_payment_basis <= rental_period),
   "rental_intention" VARCHAR(20) NOT NULL,
-  "deposit" REAL NOT NULL CHECK (deposit >= 0),
-  "deposit_paid" BOOLEAN NOT NULL DEFAULT TRUE,
   "notice_period" INTEGER DEFAULT 30,
+  "grace_period" INTEGER DEFAULT 0 CHECK (grace_period >= 0),
+  "late_payment_penalty_scheme" "LATEPAYMENTPENALTYSCHEME" DEFAULT 'FIXED',
+  "late_payment_penalty_amount" REAL DEFAULT 0 CHECK (late_payment_penalty_amount >= 0),
   
   -- basic services
   "electricity_setup_by" VARCHAR(20) NOT NULL,

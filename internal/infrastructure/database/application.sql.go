@@ -609,27 +609,20 @@ SELECT
 FROM 
   applications 
 WHERE 
-  creator_id = $1 
-  AND created_at >= $2
+  creator_id = $3
 ORDER BY 
   created_at DESC 
-LIMIT $3 OFFSET $4
+LIMIT $1 OFFSET $2
 `
 
 type GetApplicationsByUserIdParams struct {
-	CreatorID pgtype.UUID `json:"creator_id"`
-	CreatedAt time.Time   `json:"created_at"`
-	Limit     int32       `json:"limit"`
-	Offset    int32       `json:"offset"`
+	Limit  int32       `json:"limit"`
+	Offset int32       `json:"offset"`
+	UserID pgtype.UUID `json:"user_id"`
 }
 
 func (q *Queries) GetApplicationsByUserId(ctx context.Context, arg GetApplicationsByUserIdParams) ([]int64, error) {
-	rows, err := q.db.Query(ctx, getApplicationsByUserId,
-		arg.CreatorID,
-		arg.CreatedAt,
-		arg.Limit,
-		arg.Offset,
-	)
+	rows, err := q.db.Query(ctx, getApplicationsByUserId, arg.Limit, arg.Offset, arg.UserID)
 	if err != nil {
 		return nil, err
 	}
@@ -678,28 +671,22 @@ SELECT
 FROM 
   applications 
 WHERE 
-  property_id IN (
-    SELECT property_id FROM property_managers WHERE manager_id = $1
-  ) AND created_at >= $2
+  EXISTS (
+    SELECT 1 FROM property_managers WHERE property_managers.property_id = applications.property_id AND property_managers.manager_id = $3
+  )
 ORDER BY
   created_at DESC
-LIMIT $3 OFFSET $4
+LIMIT $1 OFFSET $2
 `
 
 type GetApplicationsToUserParams struct {
-	ManagerID uuid.UUID `json:"manager_id"`
-	CreatedAt time.Time `json:"created_at"`
-	Limit     int32     `json:"limit"`
-	Offset    int32     `json:"offset"`
+	Limit  int32     `json:"limit"`
+	Offset int32     `json:"offset"`
+	UserID uuid.UUID `json:"user_id"`
 }
 
 func (q *Queries) GetApplicationsToUser(ctx context.Context, arg GetApplicationsToUserParams) ([]int64, error) {
-	rows, err := q.db.Query(ctx, getApplicationsToUser,
-		arg.ManagerID,
-		arg.CreatedAt,
-		arg.Limit,
-		arg.Offset,
-	)
+	rows, err := q.db.Query(ctx, getApplicationsToUser, arg.Limit, arg.Offset, arg.UserID)
 	if err != nil {
 		return nil, err
 	}

@@ -3,7 +3,6 @@ package dto
 import (
 	"slices"
 	"strings"
-	"time"
 
 	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
@@ -70,9 +69,8 @@ func (q *GetApplicationsByIdsQuery) QueryParser(ctx *fiber.Ctx) error {
 
 type GetApplicationsToMeQuery struct {
 	GetApplicationsQuery
-	CreatedBefore time.Time `query:"createdBefore"`
-	Limit         int32     `query:"limit" validate:"omitempty,gte=0"`
-	Offset        int32     `query:"offset" validate:"omitempty,gte=0"`
+	Limit  int32 `query:"limit" validate:"omitempty,gte=0"`
+	Offset int32 `query:"offset" validate:"omitempty,gte=0"`
 }
 
 func (q *GetApplicationsToMeQuery) QueryParser(ctx *fiber.Ctx) error {
@@ -81,9 +79,6 @@ func (q *GetApplicationsToMeQuery) QueryParser(ctx *fiber.Ctx) error {
 		return err
 	}
 	q.parseFields()
-	if q.CreatedBefore.IsZero() {
-		q.CreatedBefore = time.Now().AddDate(0, 0, -30)
-	}
 	if q.Limit == 0 {
 		q.Limit = 10
 	}

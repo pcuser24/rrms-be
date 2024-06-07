@@ -7,7 +7,6 @@ INSERT INTO "rental_payments" (
   "status",
   "amount",
   "discount",
-  "penalty",
   "note",
   "start_date",
   "end_date"
@@ -19,7 +18,6 @@ INSERT INTO "rental_payments" (
   sqlc.narg(status),
   sqlc.arg(amount),
   sqlc.narg(discount),
-  sqlc.narg(penalty),
   sqlc.narg(note),
   sqlc.narg(start_date),
   sqlc.narg(end_date)
@@ -45,7 +43,6 @@ UPDATE "rental_payments" SET
   expiry_date = coalesce(sqlc.narg(expiry_date), expiry_date),
   payment_date = coalesce(sqlc.narg(payment_date), payment_date),
   discount = coalesce(sqlc.narg(discount), discount),
-  penalty = coalesce(sqlc.narg(penalty), penalty),
   updated_by = sqlc.arg(user_id),
   updated_at = NOW()
 WHERE "id" = $1;

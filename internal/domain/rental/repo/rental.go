@@ -183,10 +183,12 @@ func (r *repo) GetRentalsByIds(ctx context.Context, ids []int64, fields []string
 			scanningFields = append(scanningFields, &i.RentalPaymentBasis)
 		case "rental_intention":
 			scanningFields = append(scanningFields, &i.RentalIntention)
-		case "deposit":
-			scanningFields = append(scanningFields, &i.Deposit)
-		case "deposit_paid":
-			scanningFields = append(scanningFields, &i.DepositPaid)
+		case "grace_period":
+			scanningFields = append(scanningFields, &i.GracePeriod)
+		case "late_payment_penalty_scheme":
+			scanningFields = append(scanningFields, &i.LatePaymentPenaltyScheme)
+		case "late_payment_penalty_amount":
+			scanningFields = append(scanningFields, &i.LatePaymentPenaltyAmount)
 		case "electricity_setup_by":
 			scanningFields = append(scanningFields, &i.ElectricitySetupBy)
 		case "electricity_payment_type":

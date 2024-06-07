@@ -130,7 +130,6 @@ func (s *service) GetApplicationsByUserId(uid uuid.UUID, q *dto.GetApplicationsT
 	ids, err := s.aRepo.GetApplicationsByUserId(
 		context.Background(),
 		uid,
-		q.CreatedBefore,
 		q.Limit,
 		q.Offset,
 	)
@@ -149,7 +148,6 @@ func (s *service) GetApplicationsToUser(uid uuid.UUID, q *dto.GetApplicationsToM
 	ids, err := s.aRepo.GetApplicationsToUser(
 		context.Background(),
 		uid,
-		q.CreatedBefore,
 		q.Limit,
 		q.Offset,
 	)

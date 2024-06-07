@@ -19,7 +19,6 @@ type CreateRentalPayment struct {
 	Status      database.RENTALPAYMENTSTATUS `json:"status" validate:"omitempty"`
 	Amount      float32                      `json:"amount" validate:"required"`
 	Discount    *float32                     `json:"discount" validate:"omitempty,gte=0"`
-	Penalty     *float32                     `json:"penalty" validate:"omitempty,gte=0"`
 	Note        *string                      `json:"note" validate:"omitempty"`
 	StartDate   time.Time                    `json:"startDate" validate:"required"`
 	EndDate     time.Time                    `json:"endDate" validate:"required"`
@@ -43,7 +42,6 @@ func (c *CreateRentalPayment) ToCreateRentalPaymentDB() database.CreateRentalPay
 		},
 		Amount:   c.Amount,
 		Discount: types.Float32N(c.Discount),
-		Penalty:  types.Float32N(c.Penalty),
 		Note:     types.StrN(c.Note),
 		StartDate: pgtype.Date{
 			Time:  c.StartDate,
@@ -66,7 +64,6 @@ type UpdateRentalPayment struct {
 	Note        *string                      `json:"note"`
 	Amount      *float32                     `json:"amount"`
 	Discount    *float32                     `json:"discount" validate:"omitempty,gte=0"`
-	Penalty     *float32                     `json:"penalty" validate:"omitempty,gte=0"`
 	ExpiryDate  time.Time                    `json:"expiryDate"`
 	PaymentDate time.Time                    `json:"paymentDate"`
 	UserID      uuid.UUID                    `json:"userId"`
@@ -84,7 +81,6 @@ func (u *UpdateRentalPayment) ToUpdateRentalPaymentDB() database.UpdateRentalPay
 		Note:     types.StrN(u.Note),
 		Amount:   types.Float32N(u.Amount),
 		Discount: types.Float32N(u.Discount),
-		Penalty:  types.Float32N(u.Penalty),
 		ExpiryDate: pgtype.Date{
 			Time:  u.ExpiryDate,
 			Valid: !u.ExpiryDate.IsZero(),
@@ -129,10 +125,8 @@ type UpdateIssuedRentalPayment struct {
 func (u *UpdateIssuedRentalPayment) d() {}
 
 type UpdatePendingRentalPayment struct {
-	PaymentDate    time.Time                    `json:"paymentDate" validate:"required"`
-	Status         database.RENTALPAYMENTSTATUS `json:"status" validate:"required,oneof=REQUEST2PAY PAID"`
-	RequirePenalty bool                         `json:"requirePenalty"`
-	Penalty        *float32                     `json:"penalty" validate:"omitempty,gte=0"`
+	PaymentDate time.Time                    `json:"paymentDate" validate:"required"`
+	Status      database.RENTALPAYMENTSTATUS `json:"status" validate:"required,oneof=REQUEST2PAY PAID"`
 }
 
 func (u *UpdatePendingRentalPayment) d() {}

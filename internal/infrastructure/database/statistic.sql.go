@@ -490,7 +490,7 @@ func (q *Queries) GetRentalComplaintStatistics(ctx context.Context, arg GetRenta
 }
 
 const getRentalPaymentArrears = `-- name: GetRentalPaymentArrears :many
-SELECT rental_payments.id, rental_payments.code, rental_payments.rental_id, rental_payments.created_at, rental_payments.updated_at, rental_payments.start_date, rental_payments.end_date, rental_payments.expiry_date, rental_payments.payment_date, rental_payments.updated_by, rental_payments.status, rental_payments.amount, rental_payments.discount, rental_payments.penalty, rental_payments.note, (rental_payments.expiry_date - CURRENT_DATE) AS expiry_duration, rentals.tenant_id, rentals.tenant_name, rentals.property_id, rentals.unit_id 
+SELECT rental_payments.id, rental_payments.code, rental_payments.rental_id, rental_payments.created_at, rental_payments.updated_at, rental_payments.start_date, rental_payments.end_date, rental_payments.expiry_date, rental_payments.payment_date, rental_payments.updated_by, rental_payments.status, rental_payments.amount, rental_payments.discount, rental_payments.note, (rental_payments.expiry_date - CURRENT_DATE) AS expiry_duration, rentals.tenant_id, rentals.tenant_name, rentals.property_id, rentals.unit_id 
 FROM rental_payments INNER JOIN rentals ON rentals.id = rental_payments.rental_id
 WHERE 
   rental_payments.status IN ('ISSUED', 'PENDING', 'REQUEST2PAY') AND 
@@ -531,7 +531,6 @@ type GetRentalPaymentArrearsRow struct {
 	Status         RENTALPAYMENTSTATUS `json:"status"`
 	Amount         float32             `json:"amount"`
 	Discount       pgtype.Float4       `json:"discount"`
-	Penalty        pgtype.Float4       `json:"penalty"`
 	Note           pgtype.Text         `json:"note"`
 	ExpiryDuration int32               `json:"expiry_duration"`
 	TenantID       pgtype.UUID         `json:"tenant_id"`
@@ -569,7 +568,6 @@ func (q *Queries) GetRentalPaymentArrears(ctx context.Context, arg GetRentalPaym
 			&i.Status,
 			&i.Amount,
 			&i.Discount,
-			&i.Penalty,
 			&i.Note,
 			&i.ExpiryDuration,
 			&i.TenantID,
@@ -668,7 +666,7 @@ func (q *Queries) GetTenantExpenditure(ctx context.Context, arg GetTenantExpendi
 }
 
 const getTenantPendingPayments = `-- name: GetTenantPendingPayments :many
-SELECT rental_payments.id, rental_payments.code, rental_payments.rental_id, rental_payments.created_at, rental_payments.updated_at, rental_payments.start_date, rental_payments.end_date, rental_payments.expiry_date, rental_payments.payment_date, rental_payments.updated_by, rental_payments.status, rental_payments.amount, rental_payments.discount, rental_payments.penalty, rental_payments.note, (rental_payments.expiry_date - CURRENT_DATE) AS expiry_duration, rentals.tenant_id, rentals.tenant_name, rentals.property_id, rentals.unit_id 
+SELECT rental_payments.id, rental_payments.code, rental_payments.rental_id, rental_payments.created_at, rental_payments.updated_at, rental_payments.start_date, rental_payments.end_date, rental_payments.expiry_date, rental_payments.payment_date, rental_payments.updated_by, rental_payments.status, rental_payments.amount, rental_payments.discount, rental_payments.note, (rental_payments.expiry_date - CURRENT_DATE) AS expiry_duration, rentals.tenant_id, rentals.tenant_name, rentals.property_id, rentals.unit_id 
 FROM rental_payments INNER JOIN rentals ON rentals.id = rental_payments.rental_id
 WHERE 
   rental_payments.status IN ('ISSUED', 'PENDING', 'REQUEST2PAY') AND 
@@ -702,7 +700,6 @@ type GetTenantPendingPaymentsRow struct {
 	Status         RENTALPAYMENTSTATUS `json:"status"`
 	Amount         float32             `json:"amount"`
 	Discount       pgtype.Float4       `json:"discount"`
-	Penalty        pgtype.Float4       `json:"penalty"`
 	Note           pgtype.Text         `json:"note"`
 	ExpiryDuration int32               `json:"expiry_duration"`
 	TenantID       pgtype.UUID         `json:"tenant_id"`
@@ -734,7 +731,6 @@ func (q *Queries) GetTenantPendingPayments(ctx context.Context, arg GetTenantPen
 			&i.Status,
 			&i.Amount,
 			&i.Discount,
-			&i.Penalty,
 			&i.Note,
 			&i.ExpiryDuration,
 			&i.TenantID,

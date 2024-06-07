@@ -23,9 +23,10 @@ INSERT INTO rentals (
   rental_price,
   rental_payment_basis,
   rental_intention,
-  deposit,
-  deposit_paid,
   notice_period,
+  grace_period,
+  late_payment_penalty_scheme,
+  late_payment_penalty_amount,
 
   electricity_setup_by,
   electricity_payment_type,
@@ -37,9 +38,6 @@ INSERT INTO rentals (
   water_price,
   water_customer_code,
   water_provider,
-
-  -- rental_payment_grace_period,
-  -- rental_payment_late_fee_percentage,
 
   note
 ) VALUES (
@@ -66,9 +64,10 @@ INSERT INTO rentals (
   sqlc.arg(rental_price),
   sqlc.arg(rental_payment_basis),
   sqlc.arg(rental_intention),
-  sqlc.arg(deposit),
-  sqlc.arg(deposit_paid),
   sqlc.narg(notice_period),
+  sqlc.arg(grace_period),
+  sqlc.arg(late_payment_penalty_scheme),
+  sqlc.narg(late_payment_penalty_amount),
 
   sqlc.arg(electricity_setup_by),
   sqlc.narg(electricity_payment_type),
@@ -265,8 +264,8 @@ UPDATE rentals SET
   rental_payment_basis = coalesce(sqlc.narg(rental_payment_basis), rental_payment_basis),
   rental_intention = coalesce(sqlc.narg(rental_intention), rental_intention),
   notice_period = coalesce(sqlc.narg(notice_period), notice_period),
-  deposit = coalesce(sqlc.narg(deposit), deposit),
-  deposit_paid = coalesce(sqlc.narg(deposit_paid), deposit_paid),
+  late_payment_penalty_scheme = coalesce(sqlc.narg(late_payment_penalty_scheme), late_payment_penalty_scheme),
+  late_payment_penalty_amount = coalesce(sqlc.narg(late_payment_penalty_amount), late_payment_penalty_amount),
   electricity_setup_by = coalesce(sqlc.narg(electricity_setup_by), electricity_setup_by),
   electricity_payment_type = coalesce(sqlc.narg(electricity_payment_type), electricity_payment_type),
   electricity_price = coalesce(sqlc.narg(electricity_price), electricity_price),

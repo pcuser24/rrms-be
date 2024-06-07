@@ -64,9 +64,10 @@ INSERT INTO rentals (
   rental_price,
   rental_payment_basis,
   rental_intention,
-  deposit,
-  deposit_paid,
   notice_period,
+  grace_period,
+  late_payment_penalty_scheme,
+  late_payment_penalty_amount,
 
   electricity_setup_by,
   electricity_payment_type,
@@ -78,9 +79,6 @@ INSERT INTO rentals (
   water_price,
   water_customer_code,
   water_provider,
-
-  -- rental_payment_grace_period,
-  -- rental_payment_late_fee_percentage,
 
   note
 ) VALUES (
@@ -110,8 +108,8 @@ INSERT INTO rentals (
   $20,
   $21,
   $22,
-
   $23,
+
   $24,
   $25,
   $26,
@@ -121,48 +119,50 @@ INSERT INTO rentals (
   $30,
   $31,
   $32,
+  $33,
 
   -- sqlc.arg(rental_payment_grace_period),
   -- sqlc.narg(rental_payment_late_fee_percentage),
   
-  $33
-) RETURNING id, creator_id, property_id, unit_id, application_id, tenant_id, profile_image, tenant_type, tenant_name, tenant_phone, tenant_email, organization_name, organization_hq_address, start_date, movein_date, rental_period, payment_type, rental_price, rental_payment_basis, rental_intention, deposit, deposit_paid, notice_period, electricity_setup_by, electricity_payment_type, electricity_customer_code, electricity_provider, electricity_price, water_setup_by, water_payment_type, water_customer_code, water_provider, water_price, note, status, created_at, updated_at
+  $34
+) RETURNING id, creator_id, property_id, unit_id, application_id, tenant_id, profile_image, tenant_type, tenant_name, tenant_phone, tenant_email, organization_name, organization_hq_address, start_date, movein_date, rental_period, payment_type, rental_price, rental_payment_basis, rental_intention, notice_period, grace_period, late_payment_penalty_scheme, late_payment_penalty_amount, electricity_setup_by, electricity_payment_type, electricity_customer_code, electricity_provider, electricity_price, water_setup_by, water_payment_type, water_customer_code, water_provider, water_price, note, status, created_at, updated_at
 `
 
 type CreateRentalParams struct {
-	ApplicationID           pgtype.Int8           `json:"application_id"`
-	CreatorID               uuid.UUID             `json:"creator_id"`
-	PropertyID              uuid.UUID             `json:"property_id"`
-	UnitID                  uuid.UUID             `json:"unit_id"`
-	ProfileImage            string                `json:"profile_image"`
-	TenantID                pgtype.UUID           `json:"tenant_id"`
-	TenantType              TENANTTYPE            `json:"tenant_type"`
-	TenantName              string                `json:"tenant_name"`
-	TenantPhone             string                `json:"tenant_phone"`
-	TenantEmail             string                `json:"tenant_email"`
-	OrganizationName        pgtype.Text           `json:"organization_name"`
-	OrganizationHqAddress   pgtype.Text           `json:"organization_hq_address"`
-	StartDate               pgtype.Date           `json:"start_date"`
-	MoveinDate              pgtype.Date           `json:"movein_date"`
-	RentalPeriod            int32                 `json:"rental_period"`
-	PaymentType             NullRENTALPAYMENTTYPE `json:"payment_type"`
-	RentalPrice             float32               `json:"rental_price"`
-	RentalPaymentBasis      int32                 `json:"rental_payment_basis"`
-	RentalIntention         string                `json:"rental_intention"`
-	Deposit                 float32               `json:"deposit"`
-	DepositPaid             bool                  `json:"deposit_paid"`
-	NoticePeriod            pgtype.Int4           `json:"notice_period"`
-	ElectricitySetupBy      string                `json:"electricity_setup_by"`
-	ElectricityPaymentType  pgtype.Text           `json:"electricity_payment_type"`
-	ElectricityPrice        pgtype.Float4         `json:"electricity_price"`
-	ElectricityCustomerCode pgtype.Text           `json:"electricity_customer_code"`
-	ElectricityProvider     pgtype.Text           `json:"electricity_provider"`
-	WaterSetupBy            string                `json:"water_setup_by"`
-	WaterPaymentType        pgtype.Text           `json:"water_payment_type"`
-	WaterPrice              pgtype.Float4         `json:"water_price"`
-	WaterCustomerCode       pgtype.Text           `json:"water_customer_code"`
-	WaterProvider           pgtype.Text           `json:"water_provider"`
-	Note                    pgtype.Text           `json:"note"`
+	ApplicationID            pgtype.Int8                  `json:"application_id"`
+	CreatorID                uuid.UUID                    `json:"creator_id"`
+	PropertyID               uuid.UUID                    `json:"property_id"`
+	UnitID                   uuid.UUID                    `json:"unit_id"`
+	ProfileImage             string                       `json:"profile_image"`
+	TenantID                 pgtype.UUID                  `json:"tenant_id"`
+	TenantType               TENANTTYPE                   `json:"tenant_type"`
+	TenantName               string                       `json:"tenant_name"`
+	TenantPhone              string                       `json:"tenant_phone"`
+	TenantEmail              string                       `json:"tenant_email"`
+	OrganizationName         pgtype.Text                  `json:"organization_name"`
+	OrganizationHqAddress    pgtype.Text                  `json:"organization_hq_address"`
+	StartDate                pgtype.Date                  `json:"start_date"`
+	MoveinDate               pgtype.Date                  `json:"movein_date"`
+	RentalPeriod             int32                        `json:"rental_period"`
+	PaymentType              NullRENTALPAYMENTTYPE        `json:"payment_type"`
+	RentalPrice              float32                      `json:"rental_price"`
+	RentalPaymentBasis       int32                        `json:"rental_payment_basis"`
+	RentalIntention          string                       `json:"rental_intention"`
+	NoticePeriod             pgtype.Int4                  `json:"notice_period"`
+	GracePeriod              pgtype.Int4                  `json:"grace_period"`
+	LatePaymentPenaltyScheme NullLATEPAYMENTPENALTYSCHEME `json:"late_payment_penalty_scheme"`
+	LatePaymentPenaltyAmount pgtype.Float4                `json:"late_payment_penalty_amount"`
+	ElectricitySetupBy       string                       `json:"electricity_setup_by"`
+	ElectricityPaymentType   pgtype.Text                  `json:"electricity_payment_type"`
+	ElectricityPrice         pgtype.Float4                `json:"electricity_price"`
+	ElectricityCustomerCode  pgtype.Text                  `json:"electricity_customer_code"`
+	ElectricityProvider      pgtype.Text                  `json:"electricity_provider"`
+	WaterSetupBy             string                       `json:"water_setup_by"`
+	WaterPaymentType         pgtype.Text                  `json:"water_payment_type"`
+	WaterPrice               pgtype.Float4                `json:"water_price"`
+	WaterCustomerCode        pgtype.Text                  `json:"water_customer_code"`
+	WaterProvider            pgtype.Text                  `json:"water_provider"`
+	Note                     pgtype.Text                  `json:"note"`
 }
 
 func (q *Queries) CreateRental(ctx context.Context, arg CreateRentalParams) (Rental, error) {
@@ -186,9 +186,10 @@ func (q *Queries) CreateRental(ctx context.Context, arg CreateRentalParams) (Ren
 		arg.RentalPrice,
 		arg.RentalPaymentBasis,
 		arg.RentalIntention,
-		arg.Deposit,
-		arg.DepositPaid,
 		arg.NoticePeriod,
+		arg.GracePeriod,
+		arg.LatePaymentPenaltyScheme,
+		arg.LatePaymentPenaltyAmount,
 		arg.ElectricitySetupBy,
 		arg.ElectricityPaymentType,
 		arg.ElectricityPrice,
@@ -223,9 +224,10 @@ func (q *Queries) CreateRental(ctx context.Context, arg CreateRentalParams) (Ren
 		&i.RentalPrice,
 		&i.RentalPaymentBasis,
 		&i.RentalIntention,
-		&i.Deposit,
-		&i.DepositPaid,
 		&i.NoticePeriod,
+		&i.GracePeriod,
+		&i.LatePaymentPenaltyScheme,
+		&i.LatePaymentPenaltyAmount,
 		&i.ElectricitySetupBy,
 		&i.ElectricityPaymentType,
 		&i.ElectricityCustomerCode,
@@ -558,7 +560,7 @@ func (q *Queries) GetMyRentals(ctx context.Context, arg GetMyRentalsParams) ([]i
 }
 
 const getRental = `-- name: GetRental :one
-SELECT id, creator_id, property_id, unit_id, application_id, tenant_id, profile_image, tenant_type, tenant_name, tenant_phone, tenant_email, organization_name, organization_hq_address, start_date, movein_date, rental_period, payment_type, rental_price, rental_payment_basis, rental_intention, deposit, deposit_paid, notice_period, electricity_setup_by, electricity_payment_type, electricity_customer_code, electricity_provider, electricity_price, water_setup_by, water_payment_type, water_customer_code, water_provider, water_price, note, status, created_at, updated_at FROM rentals WHERE id = $1 LIMIT 1
+SELECT id, creator_id, property_id, unit_id, application_id, tenant_id, profile_image, tenant_type, tenant_name, tenant_phone, tenant_email, organization_name, organization_hq_address, start_date, movein_date, rental_period, payment_type, rental_price, rental_payment_basis, rental_intention, notice_period, grace_period, late_payment_penalty_scheme, late_payment_penalty_amount, electricity_setup_by, electricity_payment_type, electricity_customer_code, electricity_provider, electricity_price, water_setup_by, water_payment_type, water_customer_code, water_provider, water_price, note, status, created_at, updated_at FROM rentals WHERE id = $1 LIMIT 1
 `
 
 func (q *Queries) GetRental(ctx context.Context, id int64) (Rental, error) {
@@ -585,9 +587,10 @@ func (q *Queries) GetRental(ctx context.Context, id int64) (Rental, error) {
 		&i.RentalPrice,
 		&i.RentalPaymentBasis,
 		&i.RentalIntention,
-		&i.Deposit,
-		&i.DepositPaid,
 		&i.NoticePeriod,
+		&i.GracePeriod,
+		&i.LatePaymentPenaltyScheme,
+		&i.LatePaymentPenaltyAmount,
 		&i.ElectricitySetupBy,
 		&i.ElectricityPaymentType,
 		&i.ElectricityCustomerCode,
@@ -607,7 +610,7 @@ func (q *Queries) GetRental(ctx context.Context, id int64) (Rental, error) {
 }
 
 const getRentalByApplicationId = `-- name: GetRentalByApplicationId :one
-SELECT id, creator_id, property_id, unit_id, application_id, tenant_id, profile_image, tenant_type, tenant_name, tenant_phone, tenant_email, organization_name, organization_hq_address, start_date, movein_date, rental_period, payment_type, rental_price, rental_payment_basis, rental_intention, deposit, deposit_paid, notice_period, electricity_setup_by, electricity_payment_type, electricity_customer_code, electricity_provider, electricity_price, water_setup_by, water_payment_type, water_customer_code, water_provider, water_price, note, status, created_at, updated_at FROM rentals WHERE application_id = $1 LIMIT 1
+SELECT id, creator_id, property_id, unit_id, application_id, tenant_id, profile_image, tenant_type, tenant_name, tenant_phone, tenant_email, organization_name, organization_hq_address, start_date, movein_date, rental_period, payment_type, rental_price, rental_payment_basis, rental_intention, notice_period, grace_period, late_payment_penalty_scheme, late_payment_penalty_amount, electricity_setup_by, electricity_payment_type, electricity_customer_code, electricity_provider, electricity_price, water_setup_by, water_payment_type, water_customer_code, water_provider, water_price, note, status, created_at, updated_at FROM rentals WHERE application_id = $1 LIMIT 1
 `
 
 func (q *Queries) GetRentalByApplicationId(ctx context.Context, applicationID pgtype.Int8) (Rental, error) {
@@ -634,9 +637,10 @@ func (q *Queries) GetRentalByApplicationId(ctx context.Context, applicationID pg
 		&i.RentalPrice,
 		&i.RentalPaymentBasis,
 		&i.RentalIntention,
-		&i.Deposit,
-		&i.DepositPaid,
 		&i.NoticePeriod,
+		&i.GracePeriod,
+		&i.LatePaymentPenaltyScheme,
+		&i.LatePaymentPenaltyAmount,
 		&i.ElectricitySetupBy,
 		&i.ElectricityPaymentType,
 		&i.ElectricityCustomerCode,
@@ -890,8 +894,8 @@ UPDATE rentals SET
   rental_payment_basis = coalesce($14, rental_payment_basis),
   rental_intention = coalesce($15, rental_intention),
   notice_period = coalesce($16, notice_period),
-  deposit = coalesce($17, deposit),
-  deposit_paid = coalesce($18, deposit_paid),
+  late_payment_penalty_scheme = coalesce($17, late_payment_penalty_scheme),
+  late_payment_penalty_amount = coalesce($18, late_payment_penalty_amount),
   electricity_setup_by = coalesce($19, electricity_setup_by),
   electricity_payment_type = coalesce($20, electricity_payment_type),
   electricity_price = coalesce($21, electricity_price),
@@ -910,35 +914,35 @@ WHERE id = $1
 `
 
 type UpdateRentalParams struct {
-	ID                      int64          `json:"id"`
-	TenantID                pgtype.UUID    `json:"tenant_id"`
-	ProfileImage            pgtype.Text    `json:"profile_image"`
-	TenantType              NullTENANTTYPE `json:"tenant_type"`
-	TenantName              pgtype.Text    `json:"tenant_name"`
-	TenantPhone             pgtype.Text    `json:"tenant_phone"`
-	TenantEmail             pgtype.Text    `json:"tenant_email"`
-	OrganizationName        pgtype.Text    `json:"organization_name"`
-	OrganizationHqAddress   pgtype.Text    `json:"organization_hq_address"`
-	StartDate               pgtype.Date    `json:"start_date"`
-	MoveinDate              pgtype.Date    `json:"movein_date"`
-	RentalPeriod            pgtype.Int4    `json:"rental_period"`
-	RentalPrice             pgtype.Float4  `json:"rental_price"`
-	RentalPaymentBasis      pgtype.Int4    `json:"rental_payment_basis"`
-	RentalIntention         pgtype.Text    `json:"rental_intention"`
-	NoticePeriod            pgtype.Int4    `json:"notice_period"`
-	Deposit                 pgtype.Float4  `json:"deposit"`
-	DepositPaid             pgtype.Bool    `json:"deposit_paid"`
-	ElectricitySetupBy      pgtype.Text    `json:"electricity_setup_by"`
-	ElectricityPaymentType  pgtype.Text    `json:"electricity_payment_type"`
-	ElectricityPrice        pgtype.Float4  `json:"electricity_price"`
-	ElectricityCustomerCode pgtype.Text    `json:"electricity_customer_code"`
-	ElectricityProvider     pgtype.Text    `json:"electricity_provider"`
-	WaterSetupBy            pgtype.Text    `json:"water_setup_by"`
-	WaterPaymentType        pgtype.Text    `json:"water_payment_type"`
-	WaterPrice              pgtype.Float4  `json:"water_price"`
-	WaterCustomerCode       pgtype.Text    `json:"water_customer_code"`
-	WaterProvider           pgtype.Text    `json:"water_provider"`
-	Note                    pgtype.Text    `json:"note"`
+	ID                       int64                        `json:"id"`
+	TenantID                 pgtype.UUID                  `json:"tenant_id"`
+	ProfileImage             pgtype.Text                  `json:"profile_image"`
+	TenantType               NullTENANTTYPE               `json:"tenant_type"`
+	TenantName               pgtype.Text                  `json:"tenant_name"`
+	TenantPhone              pgtype.Text                  `json:"tenant_phone"`
+	TenantEmail              pgtype.Text                  `json:"tenant_email"`
+	OrganizationName         pgtype.Text                  `json:"organization_name"`
+	OrganizationHqAddress    pgtype.Text                  `json:"organization_hq_address"`
+	StartDate                pgtype.Date                  `json:"start_date"`
+	MoveinDate               pgtype.Date                  `json:"movein_date"`
+	RentalPeriod             pgtype.Int4                  `json:"rental_period"`
+	RentalPrice              pgtype.Float4                `json:"rental_price"`
+	RentalPaymentBasis       pgtype.Int4                  `json:"rental_payment_basis"`
+	RentalIntention          pgtype.Text                  `json:"rental_intention"`
+	NoticePeriod             pgtype.Int4                  `json:"notice_period"`
+	LatePaymentPenaltyScheme NullLATEPAYMENTPENALTYSCHEME `json:"late_payment_penalty_scheme"`
+	LatePaymentPenaltyAmount pgtype.Float4                `json:"late_payment_penalty_amount"`
+	ElectricitySetupBy       pgtype.Text                  `json:"electricity_setup_by"`
+	ElectricityPaymentType   pgtype.Text                  `json:"electricity_payment_type"`
+	ElectricityPrice         pgtype.Float4                `json:"electricity_price"`
+	ElectricityCustomerCode  pgtype.Text                  `json:"electricity_customer_code"`
+	ElectricityProvider      pgtype.Text                  `json:"electricity_provider"`
+	WaterSetupBy             pgtype.Text                  `json:"water_setup_by"`
+	WaterPaymentType         pgtype.Text                  `json:"water_payment_type"`
+	WaterPrice               pgtype.Float4                `json:"water_price"`
+	WaterCustomerCode        pgtype.Text                  `json:"water_customer_code"`
+	WaterProvider            pgtype.Text                  `json:"water_provider"`
+	Note                     pgtype.Text                  `json:"note"`
 }
 
 func (q *Queries) UpdateRental(ctx context.Context, arg UpdateRentalParams) error {
@@ -959,8 +963,8 @@ func (q *Queries) UpdateRental(ctx context.Context, arg UpdateRentalParams) erro
 		arg.RentalPaymentBasis,
 		arg.RentalIntention,
 		arg.NoticePeriod,
-		arg.Deposit,
-		arg.DepositPaid,
+		arg.LatePaymentPenaltyScheme,
+		arg.LatePaymentPenaltyAmount,
 		arg.ElectricitySetupBy,
 		arg.ElectricityPaymentType,
 		arg.ElectricityPrice,

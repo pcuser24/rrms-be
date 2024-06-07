@@ -3,7 +3,6 @@ package repo
 import (
 	"context"
 	"slices"
-	"time"
 
 	"github.com/google/uuid"
 	"github.com/huandu/go-sqlbuilder"
@@ -12,15 +11,14 @@ import (
 	"github.com/user2410/rrms-backend/internal/domain/application/model"
 	rental_model "github.com/user2410/rrms-backend/internal/domain/rental/model"
 	"github.com/user2410/rrms-backend/internal/infrastructure/database"
-	"github.com/user2410/rrms-backend/internal/utils/types"
 )
 
 type Repo interface {
 	CreateApplication(ctx context.Context, data *dto.CreateApplication) (*model.ApplicationModel, error)
 	GetApplicationById(ctx context.Context, id int64) (*model.ApplicationModel, error)
 	GetApplicationsByIds(ctx context.Context, ids []int64, fields []string) ([]model.ApplicationModel, error) // Get applications with custom fields by ids
-	GetApplicationsByUserId(ctx context.Context, uid uuid.UUID, createdBefore time.Time, limit, offset int32) ([]int64, error)
-	GetApplicationsToUser(ctx context.Context, uid uuid.UUID, createdBefore time.Time, limit, offset int32) ([]int64, error)
+	GetApplicationsByUserId(ctx context.Context, uid uuid.UUID, limit, offset int32) ([]int64, error)
+	GetApplicationsToUser(ctx context.Context, uid uuid.UUID, limit, offset int32) ([]int64, error)
 	CheckVisibility(ctx context.Context, id int64, uid uuid.UUID) (bool, error)
 	CheckUpdatability(ctx context.Context, id int64, uid uuid.UUID) (bool, error)
 	UpdateApplicationStatus(ctx context.Context, aid int64, userId uuid.UUID, status database.APPLICATIONSTATUS) (int, error)
@@ -280,21 +278,22 @@ func (r *repo) GetApplicationsByIds(ctx context.Context, ids []int64, fields []s
 	return items, nil
 }
 
-func (r *repo) GetApplicationsByUserId(ctx context.Context, uid uuid.UUID, createdBefore time.Time, limit, offset int32) ([]int64, error) {
+func (r *repo) GetApplicationsByUserId(ctx context.Context, uid uuid.UUID, limit, offset int32) ([]int64, error) {
 	return r.dao.GetApplicationsByUserId(ctx, database.GetApplicationsByUserIdParams{
-		CreatorID: types.UUIDN(uid),
-		CreatedAt: createdBefore,
-		Limit:     limit,
-		Offset:    offset,
+		UserID: pgtype.UUID{
+			Bytes: uid,
+			Valid: uid != uuid.Nil,
+		},
+		Limit:  limit,
+		Offset: offset,
 	})
 }
 
-func (r *repo) GetApplicationsToUser(ctx context.Context, uid uuid.UUID, createdBefore time.Time, limit, offset int32) ([]int64, error) {
+func (r *repo) GetApplicationsToUser(ctx context.Context, uid uuid.UUID, limit, offset int32) ([]int64, error) {
 	return r.dao.GetApplicationsToUser(ctx, database.GetApplicationsToUserParams{
-		ManagerID: uid,
-		CreatedAt: createdBefore,
-		Limit:     limit,
-		Offset:    offset,
+		UserID: uid,
+		Limit:  limit,
+		Offset: offset,
 	})
 }
 

@@ -91,7 +91,7 @@ func (r *repo) GetManagedRentalPayments(ctx context.Context, uid uuid.UUID, quer
 		subSB.Exists(subSB1),
 	)
 	sb := sqlbuilder.PostgreSQL.NewSelectBuilder()
-	sb.Select("id", "code", "rental_id", "created_at", "updated_at", "start_date", "end_date", "expiry_date", "payment_date", "updated_by", "status", "amount", "discount", "penalty", "note")
+	sb.Select("id", "code", "rental_id", "created_at", "updated_at", "start_date", "end_date", "expiry_date", "payment_date", "updated_by", "status", "amount", "discount", "note")
 	sb.From("rental_payments")
 	sb.Where(
 		sb.In("rental_payments.status", sqlbuilder.List(query.Status)),
@@ -123,7 +123,6 @@ func (r *repo) GetManagedRentalPayments(ctx context.Context, uid uuid.UUID, quer
 			&i.Status,
 			&i.Amount,
 			&i.Discount,
-			&i.Penalty,
 			&i.Note,
 		); err != nil {
 			return nil, err

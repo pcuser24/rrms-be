@@ -162,11 +162,10 @@ SELECT
 FROM 
   applications 
 WHERE 
-  creator_id = $1 
-  AND created_at >= $2
+  creator_id = sqlc.arg(user_id)
 ORDER BY 
   created_at DESC 
-LIMIT $3 OFFSET $4;
+LIMIT $1 OFFSET $2;
 
 -- name: GetApplicationsToUser :many
 SELECT 
@@ -174,12 +173,12 @@ SELECT
 FROM 
   applications 
 WHERE 
-  property_id IN (
-    SELECT property_id FROM property_managers WHERE manager_id = $1
-  ) AND created_at >= $2
+  EXISTS (
+    SELECT 1 FROM property_managers WHERE property_managers.property_id = applications.property_id AND property_managers.manager_id = sqlc.arg(user_id)
+  )
 ORDER BY
   created_at DESC
-LIMIT $3 OFFSET $4;
+LIMIT $1 OFFSET $2;
 
 -- name: GetApplicationsOfListing :many
 SELECT id FROM applications WHERE listing_id = $1;
