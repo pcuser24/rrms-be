@@ -7,6 +7,7 @@ import (
 	auth_http "github.com/user2410/rrms-backend/internal/domain/auth/http"
 	"github.com/user2410/rrms-backend/internal/domain/chat"
 	listing_http "github.com/user2410/rrms-backend/internal/domain/listing/http"
+	"github.com/user2410/rrms-backend/internal/domain/misc"
 	payment_http "github.com/user2410/rrms-backend/internal/domain/payment/http"
 	property_http "github.com/user2410/rrms-backend/internal/domain/property/http"
 	reminder_http "github.com/user2410/rrms-backend/internal/domain/reminder/http"
@@ -51,11 +52,14 @@ func (c *serverCommand) setupHttpServer() {
 	statistic_http.
 		NewAdapter(c.internalServices.StatisticService).
 		RegisterServer(apiRoute, c.tokenMaker)
+	misc.
+		NewAdapter(c.internalServices.MiscService).
+		RegisterServer(apiRoute, c.tokenMaker)
 }
 
 func (c *serverCommand) runHttpServer(errChan chan error) {
 	log.Println("Starting HTTP server...")
-	var port uint16 = 8000
+	var port uint16 = 8080
 	if c.config.Port != nil {
 		port = *c.config.Port
 	}

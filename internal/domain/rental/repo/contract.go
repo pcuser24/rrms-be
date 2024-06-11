@@ -113,8 +113,6 @@ func (r *repo) GetContractsByIds(ctx context.Context, ids []int64, fields []stri
 			scanningFields = append(scanningFields, &i.BTaxCode)
 		case "payment_method":
 			scanningFields = append(scanningFields, &i.PaymentMethod)
-		case "payment_day":
-			scanningFields = append(scanningFields, &i.PaymentDay)
 		case "n_copies":
 			scanningFields = append(scanningFields, &i.NCopies)
 		case "created_at_place":

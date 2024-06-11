@@ -38,7 +38,6 @@ type UpdateContract struct {
 	BBank                     *string   `json:"bBank" validate:"omitempty"`
 	BTaxCode                  *string   `json:"bTaxCode" validate:"omitempty"`
 	PaymentMethod             *string   `json:"paymentMethod" validate:"omitempty"`
-	PaymentDay                *int32    `json:"paymentDay" validate:"omitempty"`
 	Content                   *string   `json:"content" validate:"omitempty"`
 	UserID                    uuid.UUID `json:"userId" validate:"required"`
 }
@@ -74,7 +73,6 @@ func (c *UpdateContract) ToUpdateContractDB() database.UpdateContractParams {
 		BBank:                     types.StrN(c.BBank),
 		BTaxCode:                  types.StrN(c.BTaxCode),
 		PaymentMethod:             types.StrN(c.PaymentMethod),
-		PaymentDay:                types.Int32N(c.PaymentDay),
 		Content:                   types.StrN(c.Content),
 		UserID:                    c.UserID,
 	}

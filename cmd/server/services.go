@@ -5,6 +5,7 @@ import (
 	"github.com/user2410/rrms-backend/internal/domain/auth"
 	"github.com/user2410/rrms-backend/internal/domain/chat"
 	listing_service "github.com/user2410/rrms-backend/internal/domain/listing/service"
+	"github.com/user2410/rrms-backend/internal/domain/misc"
 	vnp_service "github.com/user2410/rrms-backend/internal/domain/payment/service/vnpay"
 	property_service "github.com/user2410/rrms-backend/internal/domain/property/service"
 	"github.com/user2410/rrms-backend/internal/domain/reminder"
@@ -36,6 +37,7 @@ func (c *serverCommand) setupInternalServices() {
 	chatRepo := chat_repo.NewRepo(c.dao)
 	reminderRepo := reminder_repo.NewRepo(c.dao)
 	statisticRepo := statistic_repo.NewRepo(c.dao)
+	miscRepo := misc.NewRepo(c.dao)
 
 	// Initialize internal services
 	c.internalServices.AuthService = auth.NewService(
@@ -80,4 +82,5 @@ func (c *serverCommand) setupInternalServices() {
 		rentalRepo,
 		c.elasticsearch,
 	)
+	c.internalServices.MiscService = misc.NewService(miscRepo, c.cronScheduler)
 }

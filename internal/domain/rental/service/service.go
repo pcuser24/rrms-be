@@ -67,14 +67,14 @@ type service struct {
 
 	cronEntries []cron.EntryID
 
-	s3Client        *s3.S3Client
+	s3Client        s3.S3Client
 	imageBucketName string
 }
 
 func NewService(
 	rRepo repo.Repo, authRepo auth_repo.Repo, aRepo application_repo.Repo, lRepo listing_repo.Repo, pRepo property_repo.Repo, uRepo unit_repo.Repo,
 	c *cron.Cron,
-	s3Client *s3.S3Client, imageBucketName string,
+	s3Client s3.S3Client, imageBucketName string,
 ) Service {
 	res := &service{
 		authRepo:    authRepo,

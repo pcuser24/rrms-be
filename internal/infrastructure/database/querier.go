@@ -39,6 +39,8 @@ type Querier interface {
 	CreateMsgGroup(ctx context.Context, arg CreateMsgGroupParams) (MsgGroup, error)
 	CreateMsgGroupMember(ctx context.Context, arg CreateMsgGroupMemberParams) (MsgGroupMember, error)
 	CreateNewPropertyManagerRequest(ctx context.Context, arg CreateNewPropertyManagerRequestParams) (NewPropertyManagerRequest, error)
+	CreateNotification(ctx context.Context, arg CreateNotificationParams) (Notification, error)
+	CreateNotificationDevice(ctx context.Context, arg CreateNotificationDeviceParams) (UserNotificationDevice, error)
 	CreatePayment(ctx context.Context, arg CreatePaymentParams) (Payment, error)
 	CreatePaymentItem(ctx context.Context, arg CreatePaymentItemParams) (PaymentItem, error)
 	CreateProperty(ctx context.Context, arg CreatePropertyParams) (Property, error)
@@ -62,12 +64,14 @@ type Querier interface {
 	CreateUnitMedia(ctx context.Context, arg CreateUnitMediaParams) (UnitMedium, error)
 	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
 	DeleteApplication(ctx context.Context, id int64) error
+	DeleteExpiredTokens(ctx context.Context, interval int32) error
 	DeleteListing(ctx context.Context, id uuid.UUID) error
 	DeleteListingPolicies(ctx context.Context, listingID uuid.UUID) error
 	DeleteListingTags(ctx context.Context, listingID uuid.UUID) error
 	DeleteListingUnits(ctx context.Context, listingID uuid.UUID) error
 	DeleteMsgGroup(ctx context.Context, groupID int64) error
 	DeleteMsgGroupMember(ctx context.Context, arg DeleteMsgGroupMemberParams) error
+	DeleteNotificationDeviceToken(ctx context.Context, arg DeleteNotificationDeviceTokenParams) error
 	DeletePayment(ctx context.Context, id int64) error
 	DeleteProperty(ctx context.Context, id uuid.UUID) error
 	DeletePropertyFeature(ctx context.Context, arg DeletePropertyFeatureParams) error
@@ -115,6 +119,9 @@ type Querier interface {
 	GetNewApplications(ctx context.Context, arg GetNewApplicationsParams) ([]int64, error)
 	GetNewPropertyManagerRequest(ctx context.Context, id int64) (NewPropertyManagerRequest, error)
 	GetNewPropertyManagerRequestsToUser(ctx context.Context, arg GetNewPropertyManagerRequestsToUserParams) ([]NewPropertyManagerRequest, error)
+	GetNotification(ctx context.Context, id int64) (Notification, error)
+	GetNotificationDevice(ctx context.Context, arg GetNotificationDeviceParams) (UserNotificationDevice, error)
+	GetNotificationsOfUser(ctx context.Context, arg GetNotificationsOfUserParams) ([]Notification, error)
 	GetOccupiedProperties(ctx context.Context, managerID uuid.UUID) ([]uuid.UUID, error)
 	GetOccupiedUnits(ctx context.Context, managerID uuid.UUID) ([]uuid.UUID, error)
 	GetPaymentById(ctx context.Context, id int64) (Payment, error)
@@ -178,6 +185,7 @@ type Querier interface {
 	UpdateListingStatus(ctx context.Context, arg UpdateListingStatusParams) error
 	UpdateMessage(ctx context.Context, arg UpdateMessageParams) ([]int64, error)
 	UpdateNewPropertyManagerRequest(ctx context.Context, arg UpdateNewPropertyManagerRequestParams) error
+	UpdateNotificationDeviceTokenTimestamp(ctx context.Context, arg UpdateNotificationDeviceTokenTimestampParams) error
 	UpdatePayment(ctx context.Context, arg UpdatePaymentParams) error
 	UpdateProperty(ctx context.Context, arg UpdatePropertyParams) error
 	UpdateReminder(ctx context.Context, arg UpdateReminderParams) ([]Reminder, error)
@@ -187,6 +195,7 @@ type Querier interface {
 	UpdateSessionBlockingStatus(ctx context.Context, arg UpdateSessionBlockingStatusParams) error
 	UpdateUnit(ctx context.Context, arg UpdateUnitParams) error
 	UpdateUser(ctx context.Context, arg UpdateUserParams) error
+	UpdatedNotification(ctx context.Context, arg UpdatedNotificationParams) error
 }
 
 var _ Querier = (*Queries)(nil)

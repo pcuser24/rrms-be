@@ -317,6 +317,49 @@ func (ns NullPAYMENTSTATUS) Value() (driver.Value, error) {
 	return string(ns.PAYMENTSTATUS), nil
 }
 
+type PLATFORM string
+
+const (
+	PLATFORMWEB     PLATFORM = "WEB"
+	PLATFORMIOS     PLATFORM = "IOS"
+	PLATFORMANDROID PLATFORM = "ANDROID"
+)
+
+func (e *PLATFORM) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = PLATFORM(s)
+	case string:
+		*e = PLATFORM(s)
+	default:
+		return fmt.Errorf("unsupported scan type for PLATFORM: %T", src)
+	}
+	return nil
+}
+
+type NullPLATFORM struct {
+	PLATFORM PLATFORM `json:"PLATFORM"`
+	Valid    bool     `json:"valid"` // Valid is true if PLATFORM is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullPLATFORM) Scan(value interface{}) error {
+	if value == nil {
+		ns.PLATFORM, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.PLATFORM.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullPLATFORM) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.PLATFORM), nil
+}
+
 type PROPERTYTYPE string
 
 const (
@@ -871,7 +914,6 @@ type Contract struct {
 	BBank                     pgtype.Text    `json:"b_bank"`
 	BTaxCode                  pgtype.Text    `json:"b_tax_code"`
 	PaymentMethod             string         `json:"payment_method"`
-	PaymentDay                int32          `json:"payment_day"`
 	NCopies                   int32          `json:"n_copies"`
 	CreatedAtPlace            string         `json:"created_at_place"`
 	Content                   string         `json:"content"`
@@ -964,6 +1006,20 @@ type NewPropertyManagerRequest struct {
 	Approved   bool        `json:"approved"`
 	CreatedAt  time.Time   `json:"created_at"`
 	UpdatedAt  time.Time   `json:"updated_at"`
+}
+
+type Notification struct {
+	ID        int64       `json:"id"`
+	UserID    pgtype.UUID `json:"user_id"`
+	Title     string      `json:"title"`
+	Content   string      `json:"content"`
+	Data      []byte      `json:"data"`
+	Email     bool        `json:"email"`
+	Push      bool        `json:"push"`
+	Sms       bool        `json:"sms"`
+	Seen      bool        `json:"seen"`
+	CreatedAt time.Time   `json:"created_at"`
+	UpdatedAt time.Time   `json:"updated_at"`
 }
 
 // Security guard, Parking, Gym, ...
@@ -1259,6 +1315,16 @@ type User struct {
 	District  pgtype.Text `json:"district"`
 	Ward      pgtype.Text `json:"ward"`
 	Role      USERROLE    `json:"role"`
+}
+
+// This table stores the devices that the user uses to receive push notifications.
+type UserNotificationDevice struct {
+	UserID       uuid.UUID `json:"user_id"`
+	SessionID    uuid.UUID `json:"session_id"`
+	Token        string    `json:"token"`
+	Platform     PLATFORM  `json:"platform"`
+	LastAccessed time.Time `json:"last_accessed"`
+	CreatedAt    time.Time `json:"created_at"`
 }
 
 type VerificationToken struct {

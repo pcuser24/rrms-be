@@ -11,6 +11,7 @@ import (
 	"github.com/go-playground/validator/v10"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/require"
+	"github.com/user2410/rrms-backend/internal/infrastructure/aws"
 	"github.com/user2410/rrms-backend/internal/utils"
 	"github.com/user2410/rrms-backend/internal/utils/random"
 )
@@ -25,7 +26,7 @@ type TestS3Config struct {
 var (
 	basePath = utils.GetBasePath()
 	conf     TestS3Config
-	s3Client *S3Client
+	c        S3Client
 )
 
 func TestMain(m *testing.M) {
@@ -51,7 +52,11 @@ func TestMain(m *testing.M) {
 
 	log.Println("config loaded successfully", conf, conf.AWSS3Endpoint)
 
-	s3Client, err = NewS3Client(conf.AWSRegion, conf.AWSS3Endpoint)
+	awsConf, err := aws.LoadConfig(conf.AWSRegion, conf.AWSS3Endpoint)
+	if err != nil {
+		log.Fatal("Error while loading AWS config: ", err)
+	}
+	c = NewS3Client(awsConf)
 	if err != nil {
 		log.Fatalf("failed to create s3 client: %v", err)
 	}
@@ -60,27 +65,27 @@ func TestMain(m *testing.M) {
 }
 
 func createBucket(t *testing.T, bucketName string) {
-	_, err := s3Client.CreateBucket(bucketName, conf.AWSRegion)
+	_, err := c.CreateBucket(bucketName, conf.AWSRegion)
 	require.NoError(t, err)
 
-	exist, err := s3Client.BucketExists(bucketName)
+	exist, err := c.BucketExists(bucketName)
 	require.NoError(t, err)
 	require.True(t, exist)
 
 	t.Cleanup(func() {
 		// empty the bucket
-		objs, err := s3Client.ListObjects(bucketName)
+		objs, err := c.ListObjects(bucketName)
 		require.NoError(t, err)
 		objKeys := make([]string, 0, len(objs))
 		for _, obj := range objs {
 			objKeys = append(objKeys, *obj.Key)
 		}
-		err = s3Client.DeleteObjects(bucketName, objKeys)
+		err = c.DeleteObjects(bucketName, objKeys)
 		require.NoError(t, err)
 
-		_, err = s3Client.DeleteBucket(bucketName)
+		_, err = c.DeleteBucket(bucketName)
 		require.NoError(t, err)
-		exist, err := s3Client.BucketExists(bucketName)
+		exist, err := c.BucketExists(bucketName)
 		require.Error(t, err)
 		require.False(t, exist)
 	})
@@ -106,7 +111,7 @@ func TestGetPutObjectPresignedURL(t *testing.T) {
 	require.NoError(t, err)
 
 	// Get presigned URL for putting object to s3
-	presignedRequest, err := s3Client.GetPutObjectPresignedURL(
+	presignedRequest, err := c.GetPutObjectPresignedURL(
 		bucketName,
 		"s3.go", "go", fstat.Size(),
 		time.Minute,
@@ -130,7 +135,7 @@ func TestGetPutObjectPresignedURL(t *testing.T) {
 	require.Equal(t, http.StatusOK, resp.StatusCode)
 
 	// List objects in the bucket
-	objs, err := s3Client.ListObjects(bucketName)
+	objs, err := c.ListObjects(bucketName)
 	require.NoError(t, err)
 	require.NotEmpty(t, objs)
 	require.Equal(t, "s3.go", *objs[0].Key)

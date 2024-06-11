@@ -38,7 +38,7 @@ type service struct {
 	pRepo    property_repo.Repo
 	rService reminder_service.Service
 
-	s3Client        *s3.S3Client
+	s3Client        s3.S3Client
 	imageBucketName string
 }
 
@@ -49,7 +49,7 @@ func NewService(
 	pRepo property_repo.Repo,
 	rService reminder_service.Service,
 
-	s3Client *s3.S3Client,
+	s3Client s3.S3Client,
 	imageBucketName string,
 ) Service {
 	return &service{

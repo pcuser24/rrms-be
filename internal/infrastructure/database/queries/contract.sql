@@ -16,7 +16,6 @@ INSERT INTO "contracts" (
   b_fullname,
   b_phone,
   payment_method,
-  payment_day,
   n_copies,
   created_at_place,
   content,
@@ -41,7 +40,6 @@ INSERT INTO "contracts" (
   sqlc.arg(b_fullname),
   sqlc.arg(b_phone),
   sqlc.arg(payment_method),
-  sqlc.arg(payment_day),
   sqlc.arg(n_copies),
   sqlc.arg(created_at_place),
   sqlc.narg(content),
@@ -107,7 +105,6 @@ UPDATE "contracts" SET
   b_tax_code = coalesce(sqlc.narg(b_tax_code), b_tax_code),
   
   payment_method = coalesce(sqlc.narg(payment_method), payment_method),
-  payment_day = coalesce(sqlc.narg(payment_day), payment_day),
   n_copies = coalesce(sqlc.narg(n_copies), n_copies),
   created_at_place = coalesce(sqlc.narg(created_at_place), created_at_place),
   

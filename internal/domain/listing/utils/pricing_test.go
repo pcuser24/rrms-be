@@ -13,14 +13,14 @@ func TestCalculateListingPrice(t *testing.T) {
 		name         string
 		priority     int
 		postDuration int
-		checkResult  func(*testing.T, int64, error)
+		checkResult  func(*testing.T, float32, error)
 	}{
 		{
 			name:         "OK",
 			priority:     1,
 			postDuration: 7,
 			// expected:     14000,
-			checkResult: func(t *testing.T, result int64, err error) {
+			checkResult: func(t *testing.T, result float32, err error) {
 				require.NoError(t, err)
 				require.Equal(t, int64(14000), result)
 			},
@@ -30,7 +30,7 @@ func TestCalculateListingPrice(t *testing.T) {
 			priority:     2,
 			postDuration: 17,
 			// expected:     85000,
-			checkResult: func(t *testing.T, result int64, err error) {
+			checkResult: func(t *testing.T, result float32, err error) {
 				require.NoError(t, err)
 				require.Equal(t, int64(85000), result)
 			},
@@ -40,7 +40,7 @@ func TestCalculateListingPrice(t *testing.T) {
 			priority:     5,
 			postDuration: 7,
 			// expected:     60000,
-			checkResult: func(t *testing.T, result int64, err error) {
+			checkResult: func(t *testing.T, result float32, err error) {
 				require.ErrorIs(t, err, ErrInvalidPriority)
 				require.Equal(t, int64(0), result)
 			},
@@ -62,7 +62,7 @@ func TestCalculateUpgradeListingPrice(t *testing.T) {
 		name        string
 		listing     model.ListingModel
 		priority    int
-		checkResult func(*testing.T, int64, error)
+		checkResult func(*testing.T, float32, error)
 	}{
 		{
 			name: "OK",
@@ -71,7 +71,7 @@ func TestCalculateUpgradeListingPrice(t *testing.T) {
 				CreatedAt: time.Now().AddDate(0, 0, -10),
 			},
 			priority: 2,
-			checkResult: func(t *testing.T, result int64, err error) {
+			checkResult: func(t *testing.T, result float32, err error) {
 				require.NoError(t, err)
 				require.Equal(t, int64(30000), result)
 			},
@@ -83,7 +83,7 @@ func TestCalculateUpgradeListingPrice(t *testing.T) {
 				CreatedAt: time.Now().AddDate(0, 0, -10),
 			},
 			priority: 2,
-			checkResult: func(t *testing.T, result int64, err error) {
+			checkResult: func(t *testing.T, result float32, err error) {
 				require.ErrorIs(t, err, ErrInvalidPriority)
 				require.Equal(t, int64(0), result)
 			},
@@ -95,7 +95,7 @@ func TestCalculateUpgradeListingPrice(t *testing.T) {
 				CreatedAt: time.Now().AddDate(0, 0, -10),
 			},
 			priority: 0,
-			checkResult: func(t *testing.T, result int64, err error) {
+			checkResult: func(t *testing.T, result float32, err error) {
 				require.ErrorIs(t, err, ErrInvalidPriority)
 				require.Equal(t, int64(0), result)
 			},
@@ -116,7 +116,7 @@ func TestCalculateExtendListingPrice(t *testing.T) {
 		name        string
 		listing     model.ListingModel
 		duration    int
-		checkResult func(*testing.T, int64, error)
+		checkResult func(*testing.T, float32, error)
 	}{
 		{
 			name: "OK",
@@ -125,7 +125,7 @@ func TestCalculateExtendListingPrice(t *testing.T) {
 				CreatedAt: time.Now().AddDate(0, 0, -10),
 			},
 			duration: 7,
-			checkResult: func(t *testing.T, result int64, err error) {
+			checkResult: func(t *testing.T, result float32, err error) {
 				require.NoError(t, err)
 				require.Equal(t, int64(14000), result)
 			},
@@ -137,7 +137,7 @@ func TestCalculateExtendListingPrice(t *testing.T) {
 				CreatedAt: time.Now().AddDate(0, 0, -10),
 			},
 			duration: 0,
-			checkResult: func(t *testing.T, result int64, err error) {
+			checkResult: func(t *testing.T, result float32, err error) {
 				require.Error(t, err)
 				require.Equal(t, int64(0), result)
 			},

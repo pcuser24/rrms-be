@@ -68,13 +68,13 @@ type service struct {
 	rRepo    rental_repo.Repo
 	authRepo auth_repo.Repo
 
-	s3Client        *s3.S3Client
+	s3Client        s3.S3Client
 	imageBucketName string
 }
 
 func NewService(
 	pRepo property_repo.Repo, uRepo unit_repo.Repo, lRepo listing_repo.Repo, aRepo application_repo.Repo, rRepo rental_repo.Repo, authRepo auth_repo.Repo,
-	s3Client *s3.S3Client, imageBucketName string,
+	s3Client s3.S3Client, imageBucketName string,
 ) Service {
 	return &service{
 		pRepo:    pRepo,

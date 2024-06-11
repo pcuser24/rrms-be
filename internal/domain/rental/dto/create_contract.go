@@ -26,7 +26,6 @@ type CreateContract struct {
 	BFullname              string    `json:"bFullname" validate:"required"`
 	BPhone                 string    `json:"bPhone" validate:"required"`
 	PaymentMethod          string    `json:"paymentMethod" validate:"required"`
-	PaymentDay             int32     `json:"paymentDay" validate:"required"`
 	NCopies                int32     `json:"nCopies" validate:"required"`
 	CreatedAtPlace         string    `json:"createdAtPlace" validate:"required"`
 	Content                *string   `json:"content" validate:"omitempty"`
@@ -66,7 +65,6 @@ func (c *CreateContract) ToCreateContractDB() database.CreateContractParams {
 		BFullname:           c.BFullname,
 		BPhone:              c.BPhone,
 		PaymentMethod:       c.PaymentMethod,
-		PaymentDay:          c.PaymentDay,
 		NCopies:             c.NCopies,
 		CreatedAtPlace:      c.CreatedAtPlace,
 		Content:             content,

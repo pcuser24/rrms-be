@@ -42,7 +42,6 @@ type ContractModel struct {
 	BTaxCode                  *string   `json:"bTaxCode"`
 
 	PaymentMethod  string                  `json:"paymentMethod"`
-	PaymentDay     int32                   `json:"paymentDay"`
 	NCopies        int32                   `json:"nCopies"`
 	CreatedAtPlace string                  `json:"createdAtPlace"`
 	Content        string                  `json:"content"`
@@ -86,7 +85,6 @@ func ToContractModel(db *database.Contract) *ContractModel {
 		BBank:                     types.PNStr(db.BBank),
 		BTaxCode:                  types.PNStr(db.BTaxCode),
 		PaymentMethod:             db.PaymentMethod,
-		PaymentDay:                db.PaymentDay,
 		NCopies:                   db.NCopies,
 		CreatedAtPlace:            db.CreatedAtPlace,
 		Content:                   db.Content,

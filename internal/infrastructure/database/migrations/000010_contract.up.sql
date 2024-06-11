@@ -36,7 +36,6 @@ CREATE TABLE IF NOT EXISTS "contracts" (
   "b_tax_code" TEXT,
 
   "payment_method" TEXT NOT NULL,
-  "payment_day" INTEGER NOT NULL CHECK (payment_day >= 1 AND payment_day <= 28),
   "n_copies" INTEGER NOT NULL CHECK (n_copies >= 1),
   "created_at_place" TEXT NOT NULL,
 
@@ -46,9 +45,7 @@ CREATE TABLE IF NOT EXISTS "contracts" (
   "created_at" TIMESTAMPTZ DEFAULT NOW() NOT NULL,
   "updated_at" TIMESTAMPTZ DEFAULT NOW() NOT NULL,
   "created_by" UUID NOT NULL,
-  "updated_by" UUID NOT NULL,
-
-  UNIQUE ("rental_id")
+  "updated_by" UUID NOT NULL
 );
 ALTER TABLE "contracts" ADD CONSTRAINT "fk_contracts_rental_id" FOREIGN KEY ("rental_id") REFERENCES "rentals" ("id") ON DELETE CASCADE;
 ALTER TABLE "contracts" ADD CONSTRAINT "fk_contracts_created_by" FOREIGN KEY ("created_by") REFERENCES "User" ("id") ON DELETE CASCADE;

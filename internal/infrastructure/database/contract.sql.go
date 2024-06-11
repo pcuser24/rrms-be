@@ -31,7 +31,6 @@ INSERT INTO "contracts" (
   b_fullname,
   b_phone,
   payment_method,
-  payment_day,
   n_copies,
   created_at_place,
   content,
@@ -59,12 +58,11 @@ INSERT INTO "contracts" (
   $17,
   $18,
   $19,
+  NOW(),
+  NOW(),
   $20,
-  NOW(),
-  NOW(),
-  $21,
-  $21
-) RETURNING id, rental_id, a_fullname, a_dob, a_phone, a_address, a_household_registration, a_identity, a_identity_issued_by, a_identity_issued_at, a_documents, a_bank_account, a_bank, a_registration_number, b_fullname, b_organization_name, b_organization_hq_address, b_organization_code, b_organization_code_issued_at, b_organization_code_issued_by, b_dob, b_phone, b_address, b_household_registration, b_identity, b_identity_issued_by, b_identity_issued_at, b_bank_account, b_bank, b_tax_code, payment_method, payment_day, n_copies, created_at_place, content, status, created_at, updated_at, created_by, updated_by
+  $20
+) RETURNING id, rental_id, a_fullname, a_dob, a_phone, a_address, a_household_registration, a_identity, a_identity_issued_by, a_identity_issued_at, a_documents, a_bank_account, a_bank, a_registration_number, b_fullname, b_organization_name, b_organization_hq_address, b_organization_code, b_organization_code_issued_at, b_organization_code_issued_by, b_dob, b_phone, b_address, b_household_registration, b_identity, b_identity_issued_by, b_identity_issued_at, b_bank_account, b_bank, b_tax_code, payment_method, n_copies, created_at_place, content, status, created_at, updated_at, created_by, updated_by
 `
 
 type CreateContractParams struct {
@@ -84,7 +82,6 @@ type CreateContractParams struct {
 	BFullname              string      `json:"b_fullname"`
 	BPhone                 string      `json:"b_phone"`
 	PaymentMethod          string      `json:"payment_method"`
-	PaymentDay             int32       `json:"payment_day"`
 	NCopies                int32       `json:"n_copies"`
 	CreatedAtPlace         string      `json:"created_at_place"`
 	Content                pgtype.Text `json:"content"`
@@ -109,7 +106,6 @@ func (q *Queries) CreateContract(ctx context.Context, arg CreateContractParams) 
 		arg.BFullname,
 		arg.BPhone,
 		arg.PaymentMethod,
-		arg.PaymentDay,
 		arg.NCopies,
 		arg.CreatedAtPlace,
 		arg.Content,
@@ -148,7 +144,6 @@ func (q *Queries) CreateContract(ctx context.Context, arg CreateContractParams) 
 		&i.BBank,
 		&i.BTaxCode,
 		&i.PaymentMethod,
-		&i.PaymentDay,
 		&i.NCopies,
 		&i.CreatedAtPlace,
 		&i.Content,
@@ -162,7 +157,7 @@ func (q *Queries) CreateContract(ctx context.Context, arg CreateContractParams) 
 }
 
 const getContractByID = `-- name: GetContractByID :one
-SELECT id, rental_id, a_fullname, a_dob, a_phone, a_address, a_household_registration, a_identity, a_identity_issued_by, a_identity_issued_at, a_documents, a_bank_account, a_bank, a_registration_number, b_fullname, b_organization_name, b_organization_hq_address, b_organization_code, b_organization_code_issued_at, b_organization_code_issued_by, b_dob, b_phone, b_address, b_household_registration, b_identity, b_identity_issued_by, b_identity_issued_at, b_bank_account, b_bank, b_tax_code, payment_method, payment_day, n_copies, created_at_place, content, status, created_at, updated_at, created_by, updated_by FROM "contracts" WHERE "id" = $1
+SELECT id, rental_id, a_fullname, a_dob, a_phone, a_address, a_household_registration, a_identity, a_identity_issued_by, a_identity_issued_at, a_documents, a_bank_account, a_bank, a_registration_number, b_fullname, b_organization_name, b_organization_hq_address, b_organization_code, b_organization_code_issued_at, b_organization_code_issued_by, b_dob, b_phone, b_address, b_household_registration, b_identity, b_identity_issued_by, b_identity_issued_at, b_bank_account, b_bank, b_tax_code, payment_method, n_copies, created_at_place, content, status, created_at, updated_at, created_by, updated_by FROM "contracts" WHERE "id" = $1
 `
 
 func (q *Queries) GetContractByID(ctx context.Context, id int64) (Contract, error) {
@@ -200,7 +195,6 @@ func (q *Queries) GetContractByID(ctx context.Context, id int64) (Contract, erro
 		&i.BBank,
 		&i.BTaxCode,
 		&i.PaymentMethod,
-		&i.PaymentDay,
 		&i.NCopies,
 		&i.CreatedAtPlace,
 		&i.Content,
@@ -214,7 +208,7 @@ func (q *Queries) GetContractByID(ctx context.Context, id int64) (Contract, erro
 }
 
 const getContractByRentalID = `-- name: GetContractByRentalID :one
-SELECT id, rental_id, a_fullname, a_dob, a_phone, a_address, a_household_registration, a_identity, a_identity_issued_by, a_identity_issued_at, a_documents, a_bank_account, a_bank, a_registration_number, b_fullname, b_organization_name, b_organization_hq_address, b_organization_code, b_organization_code_issued_at, b_organization_code_issued_by, b_dob, b_phone, b_address, b_household_registration, b_identity, b_identity_issued_by, b_identity_issued_at, b_bank_account, b_bank, b_tax_code, payment_method, payment_day, n_copies, created_at_place, content, status, created_at, updated_at, created_by, updated_by FROM "contracts" WHERE "rental_id" = $1
+SELECT id, rental_id, a_fullname, a_dob, a_phone, a_address, a_household_registration, a_identity, a_identity_issued_by, a_identity_issued_at, a_documents, a_bank_account, a_bank, a_registration_number, b_fullname, b_organization_name, b_organization_hq_address, b_organization_code, b_organization_code_issued_at, b_organization_code_issued_by, b_dob, b_phone, b_address, b_household_registration, b_identity, b_identity_issued_by, b_identity_issued_at, b_bank_account, b_bank, b_tax_code, payment_method, n_copies, created_at_place, content, status, created_at, updated_at, created_by, updated_by FROM "contracts" WHERE "rental_id" = $1
 `
 
 func (q *Queries) GetContractByRentalID(ctx context.Context, rentalID int64) (Contract, error) {
@@ -252,7 +246,6 @@ func (q *Queries) GetContractByRentalID(ctx context.Context, rentalID int64) (Co
 		&i.BBank,
 		&i.BTaxCode,
 		&i.PaymentMethod,
-		&i.PaymentDay,
 		&i.NCopies,
 		&i.CreatedAtPlace,
 		&i.Content,
@@ -364,13 +357,12 @@ UPDATE "contracts" SET
   b_tax_code = coalesce($29, b_tax_code),
   
   payment_method = coalesce($30, payment_method),
-  payment_day = coalesce($31, payment_day),
-  n_copies = coalesce($32, n_copies),
-  created_at_place = coalesce($33, created_at_place),
+  n_copies = coalesce($31, n_copies),
+  created_at_place = coalesce($32, created_at_place),
   
-  content = coalesce($34, content),
+  content = coalesce($33, content),
   updated_at = NOW(),
-  updated_by = $35
+  updated_by = $34
 WHERE id = $1
 `
 
@@ -405,7 +397,6 @@ type UpdateContractParams struct {
 	BBank                     pgtype.Text `json:"b_bank"`
 	BTaxCode                  pgtype.Text `json:"b_tax_code"`
 	PaymentMethod             pgtype.Text `json:"payment_method"`
-	PaymentDay                pgtype.Int4 `json:"payment_day"`
 	NCopies                   pgtype.Int4 `json:"n_copies"`
 	CreatedAtPlace            pgtype.Text `json:"created_at_place"`
 	Content                   pgtype.Text `json:"content"`
@@ -444,7 +435,6 @@ func (q *Queries) UpdateContract(ctx context.Context, arg UpdateContractParams) 
 		arg.BBank,
 		arg.BTaxCode,
 		arg.PaymentMethod,
-		arg.PaymentDay,
 		arg.NCopies,
 		arg.CreatedAtPlace,
 		arg.Content,

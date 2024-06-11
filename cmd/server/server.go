@@ -20,13 +20,16 @@ import (
 	"github.com/user2410/rrms-backend/internal/domain/auth"
 	"github.com/user2410/rrms-backend/internal/domain/chat"
 	listing_service "github.com/user2410/rrms-backend/internal/domain/listing/service"
+	"github.com/user2410/rrms-backend/internal/domain/misc"
 	payment_service "github.com/user2410/rrms-backend/internal/domain/payment/service"
 	property_service "github.com/user2410/rrms-backend/internal/domain/property/service"
 	"github.com/user2410/rrms-backend/internal/domain/reminder"
 	rental_service "github.com/user2410/rrms-backend/internal/domain/rental/service"
 	statistic_service "github.com/user2410/rrms-backend/internal/domain/statistic/service"
 	"github.com/user2410/rrms-backend/internal/domain/unit"
+	"github.com/user2410/rrms-backend/internal/infrastructure/aws"
 	"github.com/user2410/rrms-backend/internal/infrastructure/aws/s3"
+	"github.com/user2410/rrms-backend/internal/infrastructure/aws/sns"
 	"github.com/user2410/rrms-backend/internal/infrastructure/database"
 	"github.com/user2410/rrms-backend/internal/infrastructure/es"
 	"github.com/user2410/rrms-backend/internal/infrastructure/http"
@@ -48,7 +51,7 @@ type serverConfig struct {
 	AWSRegion string `mapstructure:"AWS_REGION" validate:"required"`
 	// AWSAccessKeyID     string  `mapstructure:"AWS_ACCESS_KEY_ID" validate:"required"`
 	// AWSSecretAccessKey string  `mapstructure:"AWS_SECRET_ACCESS_KEY" validate:"required"`
-	AWSS3Endpoint    *string `mapstructure:"AWS_S3_ENDPOINT" validate:"omitempty"`
+	AWSEndpoint      *string `mapstructure:"AWS_ENDPOINT" validate:"omitempty"`
 	AWSS3ImageBucket string  `mapstructure:"AWS_S3_IMAGE_BUCKET" validate:"required"`
 
 	EmailSenderName     string `mapstructure:"GMAIL_SENDER_NAME" validate:"omitempty"`
@@ -83,6 +86,7 @@ type internalServices struct {
 	PaymentService     payment_service.Service
 	ChatService        chat.Service
 	StatisticService   statistic_service.Service
+	MiscService        misc.Service
 }
 
 type serverCommand struct {
@@ -91,7 +95,8 @@ type serverCommand struct {
 	cronScheduler *cron.Cron
 	tokenMaker    token.Maker
 	// emailSender      email.EmailSender
-	s3Client         *s3.S3Client
+	s3Client         s3.S3Client
+	snsClient        sns.SNSClient
 	dao              database.DAO
 	internalServices internalServices
 	httpServer       http.Server
@@ -202,10 +207,12 @@ func (c *serverCommand) setup() {
 	// c.emailSender = email.NewResendSender(c.config.ResendAPIKey)
 
 	// setup S3 client
-	c.s3Client, err = s3.NewS3Client(c.config.AWSRegion, c.config.AWSS3Endpoint)
+	awsConf, err := aws.LoadConfig(c.config.AWSRegion, c.config.AWSEndpoint)
 	if err != nil {
-		log.Fatal("Error while initializing AWS S3 client", err)
+		log.Fatal("Error while loading AWS config: ", err)
 	}
+	c.s3Client = s3.NewS3Client(awsConf)
+	c.snsClient = sns.NewSNSClient(awsConf)
 
 	// setup elasticsearch client
 	c.elasticsearch, err = es.NewElasticSearchClient(es.ElasticSearchClientParams{

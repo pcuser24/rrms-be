@@ -35,11 +35,11 @@ type Service interface {
 type service struct {
 	repo repo.Repo
 
-	s3Client        *s3.S3Client
+	s3Client        s3.S3Client
 	imageBucketName string
 }
 
-func NewService(repo repo.Repo, s3Client *s3.S3Client, imageBucketName string) Service {
+func NewService(repo repo.Repo, s3Client s3.S3Client, imageBucketName string) Service {
 	return &service{
 		repo: repo,
 

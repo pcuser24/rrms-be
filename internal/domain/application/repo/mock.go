@@ -12,7 +12,6 @@ package repo
 import (
 	context "context"
 	reflect "reflect"
-	time "time"
 
 	uuid "github.com/google/uuid"
 	dto "github.com/user2410/rrms-backend/internal/domain/application/dto"
@@ -135,33 +134,33 @@ func (mr *MockRepoMockRecorder) GetApplicationsByIds(arg0, arg1, arg2 any) *gomo
 }
 
 // GetApplicationsByUserId mocks base method.
-func (m *MockRepo) GetApplicationsByUserId(arg0 context.Context, arg1 uuid.UUID, arg2 time.Time, arg3, arg4 int32) ([]int64, error) {
+func (m *MockRepo) GetApplicationsByUserId(arg0 context.Context, arg1 uuid.UUID, arg2, arg3 int32) ([]int64, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetApplicationsByUserId", arg0, arg1, arg2, arg3, arg4)
+	ret := m.ctrl.Call(m, "GetApplicationsByUserId", arg0, arg1, arg2, arg3)
 	ret0, _ := ret[0].([]int64)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetApplicationsByUserId indicates an expected call of GetApplicationsByUserId.
-func (mr *MockRepoMockRecorder) GetApplicationsByUserId(arg0, arg1, arg2, arg3, arg4 any) *gomock.Call {
+func (mr *MockRepoMockRecorder) GetApplicationsByUserId(arg0, arg1, arg2, arg3 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetApplicationsByUserId", reflect.TypeOf((*MockRepo)(nil).GetApplicationsByUserId), arg0, arg1, arg2, arg3, arg4)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetApplicationsByUserId", reflect.TypeOf((*MockRepo)(nil).GetApplicationsByUserId), arg0, arg1, arg2, arg3)
 }
 
 // GetApplicationsToUser mocks base method.
-func (m *MockRepo) GetApplicationsToUser(arg0 context.Context, arg1 uuid.UUID, arg2 time.Time, arg3, arg4 int32) ([]int64, error) {
+func (m *MockRepo) GetApplicationsToUser(arg0 context.Context, arg1 uuid.UUID, arg2, arg3 int32) ([]int64, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetApplicationsToUser", arg0, arg1, arg2, arg3, arg4)
+	ret := m.ctrl.Call(m, "GetApplicationsToUser", arg0, arg1, arg2, arg3)
 	ret0, _ := ret[0].([]int64)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetApplicationsToUser indicates an expected call of GetApplicationsToUser.
-func (mr *MockRepoMockRecorder) GetApplicationsToUser(arg0, arg1, arg2, arg3, arg4 any) *gomock.Call {
+func (mr *MockRepoMockRecorder) GetApplicationsToUser(arg0, arg1, arg2, arg3 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetApplicationsToUser", reflect.TypeOf((*MockRepo)(nil).GetApplicationsToUser), arg0, arg1, arg2, arg3, arg4)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetApplicationsToUser", reflect.TypeOf((*MockRepo)(nil).GetApplicationsToUser), arg0, arg1, arg2, arg3)
 }
 
 // GetRentalByApplicationId mocks base method.

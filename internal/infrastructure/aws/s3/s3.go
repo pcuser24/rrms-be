@@ -11,54 +11,41 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	v4 "github.com/aws/aws-sdk-go-v2/aws/signer/v4"
-	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/feature/s3/manager"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/aws-sdk-go-v2/service/s3/types"
 	"github.com/aws/smithy-go"
 )
 
-type S3Client struct {
-	conf      aws.Config
+type S3Client interface {
+	CreateBucket(name string, region string) (*s3.CreateBucketOutput, error)
+	BucketExists(bucketName string) (bool, error)
+	DeleteBucket(bucketName string) (*s3.DeleteBucketOutput, error)
+	GetPutObjectPresignedURL(bucketName string, objectKey, contentType string, contentLength int64, lifetime time.Duration) (*v4.PresignedHTTPRequest, error)
+	ListObjects(bucketName string) ([]types.Object, error)
+	UploadLargeObject(bucketName string, objectKey string, largeObject []byte) error
+	DownloadFile(bucketName string, objectKey string, fileName string) error
+	DeleteObjects(bucketName string, objectKeys []string) error
+}
+
+type s3Client struct {
 	s3Client  *s3.Client
 	presigner *s3.PresignClient
 }
 
 // Set environment variables: AWS_REGION, AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY
-func NewS3Client(region string, endpoint *string) (*S3Client, error) {
-	customResolver := aws.EndpointResolverWithOptionsFunc(func(service, region string, options ...interface{}) (aws.Endpoint, error) {
-		if endpoint != nil {
-			return aws.Endpoint{
-				PartitionID:   "aws",
-				URL:           *endpoint,
-				SigningRegion: region,
-			}, nil
-		}
-
-		// returning EndpointNotFoundError will allow the service to fallback to its default resolution
-		return aws.Endpoint{}, &aws.EndpointNotFoundError{}
-	})
-
-	conf, err := config.LoadDefaultConfig(context.TODO(),
-		config.WithRegion(region),
-		config.WithEndpointResolverWithOptions(customResolver),
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	s3Client := s3.NewFromConfig(conf, func(o *s3.Options) {
+func NewS3Client(conf *aws.Config) S3Client {
+	c := s3.NewFromConfig(*conf, func(o *s3.Options) {
 		o.UsePathStyle = true
 	})
 
-	return &S3Client{
-		conf:      conf,
-		s3Client:  s3Client,
-		presigner: s3.NewPresignClient(s3Client),
-	}, nil
+	return &s3Client{
+		s3Client:  c,
+		presigner: s3.NewPresignClient(c),
+	}
 }
 
-func (c *S3Client) CreateBucket(name string, region string) (*s3.CreateBucketOutput, error) {
+func (c *s3Client) CreateBucket(name string, region string) (*s3.CreateBucketOutput, error) {
 	return c.s3Client.CreateBucket(context.TODO(), &s3.CreateBucketInput{
 		Bucket: aws.String(name),
 		CreateBucketConfiguration: &types.CreateBucketConfiguration{
@@ -67,7 +54,7 @@ func (c *S3Client) CreateBucket(name string, region string) (*s3.CreateBucketOut
 	})
 }
 
-func (c *S3Client) BucketExists(bucketName string) (bool, error) {
+func (c *s3Client) BucketExists(bucketName string) (bool, error) {
 	_, err := c.s3Client.HeadBucket(context.TODO(), &s3.HeadBucketInput{
 		Bucket: aws.String(bucketName),
 	})
@@ -92,7 +79,7 @@ func (c *S3Client) BucketExists(bucketName string) (bool, error) {
 }
 
 // DeleteBucket deletes a bucket. The bucket must be empty or an error is returned.
-func (c *S3Client) DeleteBucket(bucketName string) (*s3.DeleteBucketOutput, error) {
+func (c *s3Client) DeleteBucket(bucketName string) (*s3.DeleteBucketOutput, error) {
 	return c.s3Client.DeleteBucket(context.TODO(), &s3.DeleteBucketInput{
 		Bucket: aws.String(bucketName),
 	})
@@ -100,7 +87,7 @@ func (c *S3Client) DeleteBucket(bucketName string) (*s3.DeleteBucketOutput, erro
 
 // GetPutObjectPresignedURL makes a presigned URL that can be used to PUT an object in a bucket.
 // The presigned URL is valid for the specified duration.
-func (c *S3Client) GetPutObjectPresignedURL(
+func (c *s3Client) GetPutObjectPresignedURL(
 	bucketName string,
 	objectKey, contentType string, contentLength int64,
 	lifetime time.Duration,
@@ -116,7 +103,7 @@ func (c *S3Client) GetPutObjectPresignedURL(
 }
 
 // ListObjects lists the objects in a bucket.
-func (c *S3Client) ListObjects(bucketName string) ([]types.Object, error) {
+func (c *s3Client) ListObjects(bucketName string) ([]types.Object, error) {
 	result, err := c.s3Client.ListObjectsV2(context.TODO(), &s3.ListObjectsV2Input{
 		Bucket: aws.String(bucketName),
 	})
@@ -131,7 +118,7 @@ func (c *S3Client) ListObjects(bucketName string) ([]types.Object, error) {
 
 // UploadLargeObject uses an upload manager to upload data to an object in a bucket.
 // The upload manager breaks large data into parts and uploads the parts concurrently.
-func (c *S3Client) UploadLargeObject(bucketName string, objectKey string, largeObject []byte) error {
+func (c *s3Client) UploadLargeObject(bucketName string, objectKey string, largeObject []byte) error {
 	largeBuffer := bytes.NewReader(largeObject)
 	var partMiBs int64 = 10
 	uploader := manager.NewUploader(c.s3Client, func(u *manager.Uploader) {
@@ -151,7 +138,7 @@ func (c *S3Client) UploadLargeObject(bucketName string, objectKey string, largeO
 }
 
 // DownloadFile gets an object from a bucket and stores it in a local file.
-func (c *S3Client) DownloadFile(bucketName string, objectKey string, fileName string) error {
+func (c *s3Client) DownloadFile(bucketName string, objectKey string, fileName string) error {
 	result, err := c.s3Client.GetObject(context.TODO(), &s3.GetObjectInput{
 		Bucket: aws.String(bucketName),
 		Key:    aws.String(objectKey),
@@ -176,7 +163,7 @@ func (c *S3Client) DownloadFile(bucketName string, objectKey string, fileName st
 }
 
 // DeleteObjects deletes objects from a bucket.
-func (c *S3Client) DeleteObjects(bucketName string, objectKeys []string) error {
+func (c *s3Client) DeleteObjects(bucketName string, objectKeys []string) error {
 	var objectIds []types.ObjectIdentifier
 	for _, key := range objectKeys {
 		objectIds = append(objectIds, types.ObjectIdentifier{Key: aws.String(key)})
