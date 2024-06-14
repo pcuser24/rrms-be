@@ -274,6 +274,48 @@ func (ns NullMESSAGETYPE) Value() (driver.Value, error) {
 	return string(ns.MESSAGETYPE), nil
 }
 
+type NOTIFICATIONCHANNEL string
+
+const (
+	NOTIFICATIONCHANNELEMAIL NOTIFICATIONCHANNEL = "EMAIL"
+	NOTIFICATIONCHANNELPUSH  NOTIFICATIONCHANNEL = "PUSH"
+)
+
+func (e *NOTIFICATIONCHANNEL) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = NOTIFICATIONCHANNEL(s)
+	case string:
+		*e = NOTIFICATIONCHANNEL(s)
+	default:
+		return fmt.Errorf("unsupported scan type for NOTIFICATIONCHANNEL: %T", src)
+	}
+	return nil
+}
+
+type NullNOTIFICATIONCHANNEL struct {
+	NOTIFICATIONCHANNEL NOTIFICATIONCHANNEL `json:"NOTIFICATIONCHANNEL"`
+	Valid               bool                `json:"valid"` // Valid is true if NOTIFICATIONCHANNEL is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullNOTIFICATIONCHANNEL) Scan(value interface{}) error {
+	if value == nil {
+		ns.NOTIFICATIONCHANNEL, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.NOTIFICATIONCHANNEL.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullNOTIFICATIONCHANNEL) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.NOTIFICATIONCHANNEL), nil
+}
+
 type PAYMENTSTATUS string
 
 const (
@@ -1009,17 +1051,16 @@ type NewPropertyManagerRequest struct {
 }
 
 type Notification struct {
-	ID        int64       `json:"id"`
-	UserID    pgtype.UUID `json:"user_id"`
-	Title     string      `json:"title"`
-	Content   string      `json:"content"`
-	Data      []byte      `json:"data"`
-	Email     bool        `json:"email"`
-	Push      bool        `json:"push"`
-	Sms       bool        `json:"sms"`
-	Seen      bool        `json:"seen"`
-	CreatedAt time.Time   `json:"created_at"`
-	UpdatedAt time.Time   `json:"updated_at"`
+	ID        int64               `json:"id"`
+	UserID    pgtype.UUID         `json:"user_id"`
+	Title     string              `json:"title"`
+	Content   string              `json:"content"`
+	Data      []byte              `json:"data"`
+	Seen      bool                `json:"seen"`
+	Target    string              `json:"target"`
+	Channel   NOTIFICATIONCHANNEL `json:"channel"`
+	CreatedAt time.Time           `json:"created_at"`
+	UpdatedAt time.Time           `json:"updated_at"`
 }
 
 // Security guard, Parking, Gym, ...

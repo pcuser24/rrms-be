@@ -47,7 +47,7 @@ func (s *service) CreateApplication(data *dto.CreateApplication) (*model.Applica
 	// Check eligibility of the user to apply for this listing
 	// Check if the listing is still open
 	if data.ListingID != uuid.Nil {
-		expired, err := s.lRepo.CheckListingExpired(context.Background(), data.ListingID)
+		expired, err := s.listingRepo.CheckListingExpired(context.Background(), data.ListingID)
 		if err != nil {
 			return nil, err
 		}
@@ -56,7 +56,7 @@ func (s *service) CreateApplication(data *dto.CreateApplication) (*model.Applica
 		}
 	}
 	// Check if the current user is a manager of the property
-	pManagers, err := s.pRepo.GetPropertyManagers(context.Background(), data.PropertyID)
+	pManagers, err := s.propertyRepo.GetPropertyManagers(context.Background(), data.PropertyID)
 	if err != nil {
 		return nil, err
 	}
@@ -64,11 +64,19 @@ func (s *service) CreateApplication(data *dto.CreateApplication) (*model.Applica
 		return nil, ErrInvalidApplicant
 	}
 
-	return s.aRepo.CreateApplication(context.Background(), data)
+	am, err := s.applicationRepo.CreateApplication(context.Background(), data)
+	if err != nil {
+		return nil, err
+	}
+
+	// Send notifications
+	err = s.sendNotificationOnNewApplication(am)
+
+	return am, err
 }
 
 func (s *service) GetApplicationById(id int64) (*model.ApplicationModel, error) {
-	return s.aRepo.GetApplicationById(context.Background(), id)
+	return s.applicationRepo.GetApplicationById(context.Background(), id)
 }
 
 func (s *service) GetApplicationByIds(ids []int64, fields []string, userId uuid.UUID) ([]model.ApplicationModel, error) {
@@ -82,7 +90,7 @@ func (s *service) GetApplicationByIds(ids []int64, fields []string, userId uuid.
 			_ids.Add(id)
 		}
 	}
-	return s.aRepo.GetApplicationsByIds(context.Background(), _ids.ToSlice(), fields)
+	return s.applicationRepo.GetApplicationsByIds(context.Background(), _ids.ToSlice(), fields)
 }
 
 var (
@@ -91,7 +99,7 @@ var (
 )
 
 func (s *service) UpdateApplicationStatus(aid int64, userId uuid.UUID, data *dto.UpdateApplicationStatus) error {
-	a, err := s.aRepo.GetApplicationById(context.Background(), aid)
+	a, err := s.applicationRepo.GetApplicationById(context.Background(), aid)
 	if err != nil {
 		return err
 	}
@@ -115,7 +123,7 @@ func (s *service) UpdateApplicationStatus(aid int64, userId uuid.UUID, data *dto
 		}
 	}
 
-	rowsAffected, err := s.aRepo.UpdateApplicationStatus(context.Background(), aid, userId, data.Status)
+	rowsAffected, err := s.applicationRepo.UpdateApplicationStatus(context.Background(), aid, userId, data.Status)
 	if err != nil {
 		return err
 	}
@@ -123,11 +131,14 @@ func (s *service) UpdateApplicationStatus(aid int64, userId uuid.UUID, data *dto
 		return ErrUnauthorizedUpdate
 	}
 
-	return nil
+	// Send notifications
+	err = s.sendNotificationOnUpdateApplication(a, data.Status)
+
+	return err
 }
 
 func (s *service) GetApplicationsByUserId(uid uuid.UUID, q *dto.GetApplicationsToMeQuery) ([]model.ApplicationModel, error) {
-	ids, err := s.aRepo.GetApplicationsByUserId(
+	ids, err := s.applicationRepo.GetApplicationsByUserId(
 		context.Background(),
 		uid,
 		q.Limit,
@@ -137,7 +148,7 @@ func (s *service) GetApplicationsByUserId(uid uuid.UUID, q *dto.GetApplicationsT
 		return nil, err
 	}
 
-	return s.aRepo.GetApplicationsByIds(
+	return s.applicationRepo.GetApplicationsByIds(
 		context.Background(),
 		ids,
 		q.Fields,
@@ -145,7 +156,7 @@ func (s *service) GetApplicationsByUserId(uid uuid.UUID, q *dto.GetApplicationsT
 }
 
 func (s *service) GetApplicationsToUser(uid uuid.UUID, q *dto.GetApplicationsToMeQuery) ([]model.ApplicationModel, error) {
-	ids, err := s.aRepo.GetApplicationsToUser(
+	ids, err := s.applicationRepo.GetApplicationsToUser(
 		context.Background(),
 		uid,
 		q.Limit,
@@ -155,7 +166,7 @@ func (s *service) GetApplicationsToUser(uid uuid.UUID, q *dto.GetApplicationsToM
 		return nil, err
 	}
 
-	return s.aRepo.GetApplicationsByIds(
+	return s.applicationRepo.GetApplicationsByIds(
 		context.Background(),
 		ids,
 		q.Fields,
@@ -163,9 +174,9 @@ func (s *service) GetApplicationsToUser(uid uuid.UUID, q *dto.GetApplicationsToM
 }
 
 func (s *service) CheckApplicationVisibility(aid int64, uid uuid.UUID) (bool, error) {
-	return s.aRepo.CheckVisibility(context.Background(), aid, uid)
+	return s.applicationRepo.CheckVisibility(context.Background(), aid, uid)
 }
 
 func (s *service) CheckApplicationUpdatability(aid int64, uid uuid.UUID) (bool, error) {
-	return s.aRepo.CheckUpdatability(context.Background(), aid, uid)
+	return s.applicationRepo.CheckUpdatability(context.Background(), aid, uid)
 }

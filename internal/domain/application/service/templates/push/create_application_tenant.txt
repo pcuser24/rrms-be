@@ -1,0 +1,1 @@
+Đơn ứng tuyển vào phòng {{.Unit.Name}} nhà cho thuê {{.Property.Name}} của bạn đã được gửi thành công.

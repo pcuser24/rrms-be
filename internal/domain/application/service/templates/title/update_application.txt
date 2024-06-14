@@ -1,0 +1,1 @@
+{{if eq .Status "APPROVED"}}Đơn ứng tuyển đã đươc thông qua{{else if eq .Status "REJECTED"}}Đơn ứng tuyển đã bị từ chối.{{else if eq .Status "WITHDRAWN"}}Đã rút đơn ứng tuyển{{end}}

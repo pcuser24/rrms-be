@@ -20,7 +20,7 @@ import (
 	"github.com/user2410/rrms-backend/internal/domain/auth"
 	"github.com/user2410/rrms-backend/internal/domain/chat"
 	listing_service "github.com/user2410/rrms-backend/internal/domain/listing/service"
-	"github.com/user2410/rrms-backend/internal/domain/misc"
+	misc_service "github.com/user2410/rrms-backend/internal/domain/misc/service"
 	payment_service "github.com/user2410/rrms-backend/internal/domain/payment/service"
 	property_service "github.com/user2410/rrms-backend/internal/domain/property/service"
 	"github.com/user2410/rrms-backend/internal/domain/reminder"
@@ -33,6 +33,7 @@ import (
 	"github.com/user2410/rrms-backend/internal/infrastructure/database"
 	"github.com/user2410/rrms-backend/internal/infrastructure/es"
 	"github.com/user2410/rrms-backend/internal/infrastructure/http"
+	"github.com/user2410/rrms-backend/internal/infrastructure/notification"
 	"github.com/user2410/rrms-backend/internal/utils/token"
 )
 
@@ -51,14 +52,17 @@ type serverConfig struct {
 	AWSRegion string `mapstructure:"AWS_REGION" validate:"required"`
 	// AWSAccessKeyID     string  `mapstructure:"AWS_ACCESS_KEY_ID" validate:"required"`
 	// AWSSecretAccessKey string  `mapstructure:"AWS_SECRET_ACCESS_KEY" validate:"required"`
-	AWSEndpoint      *string `mapstructure:"AWS_ENDPOINT" validate:"omitempty"`
-	AWSS3ImageBucket string  `mapstructure:"AWS_S3_IMAGE_BUCKET" validate:"required"`
+	AWSEndpoint                     *string `mapstructure:"AWS_ENDPOINT" validate:"omitempty"`
+	AWSS3ImageBucket                string  `mapstructure:"AWS_S3_IMAGE_BUCKET" validate:"required"`
+	AWSSNSEmailNotificationTopicArn string  `mapstructure:"AWS_SNS_EMAIL_NOTIFICATION_TOPIC_ARN" validate:"required"`
+	AWSSNSPushNotificationTopicArn  string  `mapstructure:"AWS_SNS_PUSH_NOTIFICATION_TOPIC_ARN" validate:"required"`
 
-	EmailSenderName     string `mapstructure:"GMAIL_SENDER_NAME" validate:"omitempty"`
-	EmailSenderAddress  string `mapstructure:"GMAIL_SENDER_ADDRESS" validate:"omitempty"`
-	EmailSenderPassword string `mapstructure:"GMAIL_SENDER_PASSWORD" validate:"omitempty"`
+	// EmailSenderName     string `mapstructure:"GMAIL_SENDER_NAME" validate:"omitempty"`
+	// EmailSenderAddress  string `mapstructure:"GMAIL_SENDER_ADDRESS" validate:"omitempty"`
+	// EmailSenderPassword string `mapstructure:"GMAIL_SENDER_PASSWORD" validate:"omitempty"`
 
-	ResendAPIKey string `mapstructure:"RESEND_API_KEY" validate:"omitempty"`
+	// ResendAPIKey string `mapstructure:"RESEND_API_KEY" validate:"omitempty"`
+	FESite string `mapstructure:"FE_SITE" validate:"required"`
 
 	VnpTmnCode    string `mapstructure:"VNP_TMNCODE" validate:"required"`
 	VnpHashSecret string `mapstructure:"VNP_HASHSECRET" validate:"required"`
@@ -86,7 +90,7 @@ type internalServices struct {
 	PaymentService     payment_service.Service
 	ChatService        chat.Service
 	StatisticService   statistic_service.Service
-	MiscService        misc.Service
+	MiscService        misc_service.Service
 }
 
 type serverCommand struct {
@@ -95,12 +99,13 @@ type serverCommand struct {
 	cronScheduler *cron.Cron
 	tokenMaker    token.Maker
 	// emailSender      email.EmailSender
-	s3Client         s3.S3Client
-	snsClient        sns.SNSClient
-	dao              database.DAO
-	internalServices internalServices
-	httpServer       http.Server
-	elasticsearch    *es.ElasticSearchClient
+	s3Client             s3.S3Client
+	snsClient            sns.SNSClient
+	notificationEndpoint notification.NotificationEndpoint
+	dao                  database.DAO
+	internalServices     internalServices
+	httpServer           http.Server
+	elasticsearch        *es.ElasticSearchClient
 }
 
 func NewServerCommand() *serverCommand {
@@ -203,9 +208,6 @@ func (c *serverCommand) setup() {
 		}
 	}
 
-	// setup mailer
-	// c.emailSender = email.NewResendSender(c.config.ResendAPIKey)
-
 	// setup S3 client
 	awsConf, err := aws.LoadConfig(c.config.AWSRegion, c.config.AWSEndpoint)
 	if err != nil {
@@ -213,6 +215,13 @@ func (c *serverCommand) setup() {
 	}
 	c.s3Client = s3.NewS3Client(awsConf)
 	c.snsClient = sns.NewSNSClient(awsConf)
+
+	// setup notification endpoint
+	c.notificationEndpoint = notification.NewSNSNotificationEndpoint(
+		c.snsClient,
+		c.config.AWSSNSEmailNotificationTopicArn,
+		c.config.AWSSNSPushNotificationTopicArn,
+	)
 
 	// setup elasticsearch client
 	c.elasticsearch, err = es.NewElasticSearchClient(es.ElasticSearchClientParams{

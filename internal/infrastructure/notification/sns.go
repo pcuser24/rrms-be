@@ -46,7 +46,7 @@ func (s *snsNotificationEndpoint) SendNotification(ctx context.Context, notifica
 
 func (s *snsNotificationEndpoint) sendEmailNotification(ctx context.Context, notification *NotificationTransport) error {
 	msgAttributes := make(map[string]interface{})
-	maps.Copy(msgAttributes, notification.NM.Data)
+	maps.Copy(msgAttributes, notification.Data)
 	maps.Copy(msgAttributes, map[string]interface{}{
 		"to":      notification.EmailChannel.To,
 		"cc":      notification.EmailChannel.CC,
@@ -54,15 +54,15 @@ func (s *snsNotificationEndpoint) sendEmailNotification(ctx context.Context, not
 		"replyTo": notification.EmailChannel.ReplyTo,
 	})
 
-	return s.snsClient.Publish(ctx, notification.NM.Title, notification.NM.Content, s.emailNotificationTopicArn, msgAttributes)
+	return s.snsClient.Publish(ctx, notification.Title, notification.Content, s.emailNotificationTopicArn, msgAttributes)
 }
 
 func (s *snsNotificationEndpoint) sendPushNotification(ctx context.Context, notification *NotificationTransport) error {
 	msgAttributes := make(map[string]interface{})
-	maps.Copy(msgAttributes, notification.NM.Data)
+	maps.Copy(msgAttributes, notification.Data)
 	maps.Copy(msgAttributes, map[string]interface{}{
 		"tokens": notification.PushChannel.Tokens,
 	})
 
-	return s.snsClient.Publish(ctx, notification.NM.Title, notification.NM.Content, s.emailNotificationTopicArn, msgAttributes)
+	return s.snsClient.Publish(ctx, notification.Title, notification.Content, s.emailNotificationTopicArn, msgAttributes)
 }

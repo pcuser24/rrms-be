@@ -13,28 +13,28 @@ type CreateNotificationDevice struct {
 	Platform database.PLATFORM `json:"platform" validate:"required,oneof=WEB IOS ANDROID"`
 }
 
+type CreateNotificationTarget struct {
+	UserId uuid.UUID `json:"userId" validate:"omitempty,uuid4"`
+	Tokens []string  `json:"tokens" validate:"omitempty,dive,required"`
+	Emails []string  `json:"emails" validate:"omitempty,dive,email"`
+}
+
 type CreateNotification struct {
-	UserId  uuid.UUID              `json:"userId" validate:"omitempty,uuid4"`
 	Title   string                 `json:"title" validate:"required"`
 	Content string                 `json:"content" validate:"required"`
 	Data    map[string]interface{} `json:"data" validate:"omitempty"`
-	Email   bool                   `json:"email" validate:"required"`
-	Push    bool                   `json:"push" validate:"required"`
-	Sms     bool                   `json:"sms" validate:"required"`
+	Targets []CreateNotificationTarget
 }
 
-func (c *CreateNotification) ToCreateNotificationDB() database.CreateNotificationParams {
+func (c *CreateNotification) ToCreateNotificationDB(userId uuid.UUID) database.CreateNotificationParams {
 	dataBytes, _ := json.Marshal(c.Data)
 	return database.CreateNotificationParams{
 		UserID: pgtype.UUID{
-			Bytes: c.UserId,
-			Valid: c.UserId != uuid.Nil,
+			Bytes: userId,
+			Valid: userId != uuid.Nil,
 		},
 		Title:   c.Title,
 		Content: c.Content,
 		Data:    dataBytes,
-		Email:   c.Email,
-		Push:    c.Push,
-		Sms:     c.Sms,
 	}
 }

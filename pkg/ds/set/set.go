@@ -1,5 +1,7 @@
 package set
 
+import "maps"
+
 type Set[K comparable] map[K]struct{}
 
 func NewSet[K comparable]() Set[K] {
@@ -9,6 +11,12 @@ func NewSet[K comparable]() Set[K] {
 func (s Set[K]) Contains(k K) bool {
 	_, ok := s[k]
 	return ok
+}
+
+func (s Set[K]) Clone() Set[K] {
+	clone := make(Set[K], len(s))
+	maps.Copy(clone, s)
+	return clone
 }
 
 func (s Set[K]) Add(k K) Set[K] {

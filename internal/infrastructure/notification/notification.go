@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/user2410/rrms-backend/internal/domain/misc/model"
 )
 
 type UserNotificationDevice struct {
@@ -30,7 +29,9 @@ type NotificationPushChannel struct {
 }
 
 type NotificationTransport struct {
-	NM           model.Notification
+	Title        string                 `json:"title"`
+	Content      string                 `json:"content"`
+	Data         map[string]interface{} `json:"data"`
 	EmailChannel *NotificationEmailChannel
 	PushChannel  *NotificationPushChannel
 }

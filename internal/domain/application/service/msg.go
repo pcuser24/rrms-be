@@ -20,7 +20,7 @@ func GetResourceName(aid int64) string {
 }
 
 func (s *service) CreateApplicationMsgGroup(aid int64, userId uuid.UUID) (*chat_model.MsgGroup, error) {
-	a, err := s.aRepo.GetApplicationById(context.Background(), aid)
+	a, err := s.applicationRepo.GetApplicationById(context.Background(), aid)
 	if err != nil {
 		return nil, err
 	}
@@ -28,7 +28,7 @@ func (s *service) CreateApplicationMsgGroup(aid int64, userId uuid.UUID) (*chat_
 		return nil, ErrAnonymousApplicant
 	}
 
-	return s.cRepo.CreateMsgroup(context.Background(), userId, &chat_dto.CreateMsgGroup{
+	return s.chatRepo.CreateMsgroup(context.Background(), userId, &chat_dto.CreateMsgGroup{
 		Name: GetResourceName(aid),
 		Members: []chat_dto.CreateMsgGroupMember{
 			{UserId: userId},
@@ -38,5 +38,5 @@ func (s *service) CreateApplicationMsgGroup(aid int64, userId uuid.UUID) (*chat_
 }
 
 func (s *service) GetApplicationMsgGroup(aid int64, userId uuid.UUID) (*chat_model.MsgGroupExtended, error) {
-	return s.cRepo.GetMsgGroupByName(context.Background(), userId, GetResourceName(aid))
+	return s.chatRepo.GetMsgGroupByName(context.Background(), userId, GetResourceName(aid))
 }

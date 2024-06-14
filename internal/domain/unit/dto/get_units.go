@@ -20,6 +20,21 @@ func GetRetrievableFields() []string {
 
 const UnitFieldsLocalKey = "unitFields"
 
+type UnitFieldQuery struct {
+	Fields []string `query:"fields" validate:"unitFields"`
+}
+
+func (q *UnitFieldQuery) QueryParser(ctx *fiber.Ctx) error {
+	err := ctx.QueryParser(q)
+	if err != nil {
+		return err
+	}
+	if len(q.Fields) == 1 {
+		q.Fields = strings.Split(q.Fields[0], ",")
+	}
+	return nil
+}
+
 type GetUnitsByIdsQuery struct {
 	UnitFieldQuery
 	IDs []uuid.UUID `query:"unitIds" validate:"required,dive,uuid4"`
@@ -34,21 +49,6 @@ func (q *GetUnitsByIdsQuery) QueryParser(ctx *fiber.Ctx) error {
 		fieldSet := set.NewSet[string]()
 		fieldSet.AddAll(strings.Split(q.Fields[0], ",")...)
 		q.Fields = fieldSet.ToSlice()
-	}
-	return nil
-}
-
-type UnitFieldQuery struct {
-	Fields []string `query:"fields" validate:"unitFields"`
-}
-
-func (q *UnitFieldQuery) QueryParser(ctx *fiber.Ctx) error {
-	err := ctx.QueryParser(q)
-	if err != nil {
-		return err
-	}
-	if len(q.Fields) == 1 {
-		q.Fields = strings.Split(q.Fields[0], ",")
 	}
 	return nil
 }

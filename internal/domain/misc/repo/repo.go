@@ -1,4 +1,4 @@
-package misc
+package repo
 
 import (
 	"context"
@@ -13,11 +13,11 @@ import (
 
 type Repo interface {
 	CreateNotificationDevice(ctx context.Context, userId, sessionId uuid.UUID, payload *dto.CreateNotificationDevice) (model.NotificationDevice, error)
-	GetNotificationDevice(ctx context.Context, userId, sessionId uuid.UUID, token, platform string) (model.NotificationDevice, error)
+	GetNotificationDevice(ctx context.Context, userId, sessionId uuid.UUID, token, platform string) ([]model.NotificationDevice, error)
 	UpdateNotificationDeviceTokenTimestamp(ctx context.Context, userId, sessionId uuid.UUID) error
 	DeleteExpiredTokens(ctx context.Context, interval int32) error
 
-	CreateNotification(ctx context.Context, data *dto.CreateNotification) (model.Notification, error)
+	CreateNotification(ctx context.Context, data *dto.CreateNotification) ([]model.Notification, error)
 	GetNotificationsOfUser(ctx context.Context, userId uuid.UUID, limit, offset int32) ([]model.Notification, error)
 }
 
@@ -52,13 +52,15 @@ func (r *repo) CreateNotificationDevice(ctx context.Context, userId, sessionId u
 	}, nil
 }
 
-func (r *repo) GetNotificationDevice(ctx context.Context, userId, sessionId uuid.UUID, token, platform string) (model.NotificationDevice, error) {
+func (r *repo) GetNotificationDevice(ctx context.Context, userId, sessionId uuid.UUID, token, platform string) ([]model.NotificationDevice, error) {
 	sb := sqlbuilder.PostgreSQL.NewSelectBuilder()
 	sb.Select("user_id", "session_id", "token", "platform", "last_accessed", "created_at")
 	sb.From("user_notification_devices")
 	andExprs := []string{
 		sb.Equal("user_id", userId),
-		sb.Equal("session_id", sessionId),
+	}
+	if sessionId != uuid.Nil {
+		andExprs = append(andExprs, sb.Equal("session_id", sessionId))
 	}
 	if token != "" {
 		andExprs = append(andExprs, sb.Equal("token", token))
@@ -69,28 +71,38 @@ func (r *repo) GetNotificationDevice(ctx context.Context, userId, sessionId uuid
 	sb.Where(andExprs...)
 
 	query, args := sb.Build()
-	row := r.dao.QueryRow(ctx, query, args...)
-	var i database.UserNotificationDevice
-	err := row.Scan(
-		&i.UserID,
-		&i.SessionID,
-		&i.Token,
-		&i.Platform,
-		&i.LastAccessed,
-		&i.CreatedAt,
-	)
+	rows, err := r.dao.Query(ctx, query, args...)
 	if err != nil {
-		return model.NotificationDevice{}, err
+		return nil, err
+	}
+	defer rows.Close()
+	var items []model.NotificationDevice
+	for rows.Next() {
+		var i database.UserNotificationDevice
+		if err = rows.Scan(
+			&i.UserID,
+			&i.SessionID,
+			&i.Token,
+			&i.Platform,
+			&i.LastAccessed,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, model.NotificationDevice{
+			UserID:       i.UserID,
+			SessionID:    i.SessionID,
+			Token:        i.Token,
+			Platform:     i.Platform,
+			LastAccessed: i.LastAccessed,
+			CreatedAt:    i.CreatedAt,
+		})
+	}
+	if err = rows.Err(); err != nil {
+		return nil, err
 	}
 
-	return model.NotificationDevice{
-		UserID:       i.UserID,
-		SessionID:    i.SessionID,
-		Token:        i.Token,
-		Platform:     i.Platform,
-		LastAccessed: i.LastAccessed,
-		CreatedAt:    i.CreatedAt,
-	}, nil
+	return items, nil
 }
 
 func (r *repo) UpdateNotificationDeviceTokenTimestamp(ctx context.Context, userId, sessionId uuid.UUID) error {
@@ -104,13 +116,53 @@ func (r *repo) DeleteExpiredTokens(ctx context.Context, interval int32) error {
 	return r.dao.DeleteExpiredTokens(ctx, interval)
 }
 
-func (r *repo) CreateNotification(ctx context.Context, data *dto.CreateNotification) (model.Notification, error) {
-	res, err := r.dao.CreateNotification(ctx, data.ToCreateNotificationDB())
-	if err != nil {
-		return model.Notification{}, err
+func (r *repo) CreateNotification(ctx context.Context, data *dto.CreateNotification) ([]model.Notification, error) {
+	sb := sqlbuilder.PostgreSQL.NewInsertBuilder()
+	sb.InsertInto("notifications")
+	sb.Cols("user_id", "title", "content", "data", "target", "channel")
+	for _, t := range data.Targets {
+		if t.Emails != nil && len(t.Emails) > 0 {
+			for _, email := range t.Emails {
+				sb.Values(t.UserId, data.Title, data.Content, data.Data, email, database.NOTIFICATIONCHANNELEMAIL)
+			}
+		}
+		if t.Tokens != nil && len(t.Tokens) > 0 {
+			for _, token := range t.Tokens {
+				sb.Values(t.UserId, data.Title, data.Content, data.Data, token, database.NOTIFICATIONCHANNELPUSH)
+			}
+		}
 	}
 
-	return model.ToNotificationModel(res), nil
+	query, args := sb.Build()
+	rows, err := r.dao.Query(ctx, query+"  RETURNING id, user_id, title, content, data, seen, target, channel, created_at, updated_at", args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var notifications []model.Notification
+	for rows.Next() {
+		var n database.Notification
+		if err := rows.Scan(
+			&n.ID,
+			&n.UserID,
+			&n.Title,
+			&n.Content,
+			&n.Data,
+			&n.Seen,
+			&n.Target,
+			&n.Channel,
+			&n.CreatedAt,
+			&n.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		notifications = append(notifications, model.ToNotificationModel(n))
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return notifications, nil
 }
 
 func (r *repo) GetNotificationsOfUser(ctx context.Context, userId uuid.UUID, limit, offset int32) ([]model.Notification, error) {

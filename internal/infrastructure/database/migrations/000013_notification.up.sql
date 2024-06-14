@@ -21,16 +21,16 @@ CREATE TABLE IF NOT EXISTS "user_notification_devices" (
 ALTER TABLE "user_notification_devices" ADD CONSTRAINT "user_notification_tokens_fk" FOREIGN KEY ("user_id") REFERENCES "User" ("id") ON DELETE CASCADE;
 COMMENT ON TABLE "user_notification_devices" IS 'This table stores the devices that the user uses to receive push notifications.';
 
+CREATE TYPE "NOTIFICATIONCHANNEL" AS ENUM ('EMAIL', 'PUSH');
 CREATE TABLE IF NOT EXISTS "notifications" (
   "id" BIGSERIAL PRIMARY KEY,
   "user_id" UUID,
   "title" TEXT NOT NULL,
   "content" TEXT NOT NULL,
   "data" JSONB NOT NULL DEFAULT '{}'::JSONB,
-  "email" BOOLEAN DEFAULT FALSE NOT NULL,
-  "push" BOOLEAN DEFAULT TRUE NOT NULL,
-  "sms" BOOLEAN DEFAULT FALSE NOT NULL,
   "seen" BOOLEAN DEFAULT FALSE NOT NULL,
+  "target" TEXT NOT NULL,
+  "channel" "NOTIFICATIONCHANNEL" NOT NULL,
   "created_at" TIMESTAMPTZ DEFAULT NOW() NOT NULL,
   "updated_at" TIMESTAMPTZ DEFAULT NOW() NOT NULL
 );

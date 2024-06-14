@@ -18,17 +18,16 @@ type NotificationDevice struct {
 }
 
 type Notification struct {
-	ID        int64                  `json:"id"`
-	UserID    uuid.UUID              `json:"userId"`
-	Title     string                 `json:"title"`
-	Content   string                 `json:"content"`
-	Data      map[string]interface{} `json:"data"`
-	Email     bool                   `json:"email"`
-	Push      bool                   `json:"push"`
-	Sms       bool                   `json:"sms"`
-	Seen      bool                   `json:"seen"`
-	CreatedAt time.Time              `json:"createdAt"`
-	UpdatedAt time.Time              `json:"updatedAt"`
+	ID        int64                        `json:"id"`
+	UserID    uuid.UUID                    `json:"userId"`
+	Title     string                       `json:"title"`
+	Content   string                       `json:"content"`
+	Data      map[string]interface{}       `json:"data"`
+	Target    string                       `json:"target"`
+	Channel   database.NOTIFICATIONCHANNEL `json:"channel"`
+	Seen      bool                         `json:"seen"`
+	CreatedAt time.Time                    `json:"createdAt"`
+	UpdatedAt time.Time                    `json:"updatedAt"`
 }
 
 func ToNotificationModel(n database.Notification) Notification {
@@ -37,9 +36,6 @@ func ToNotificationModel(n database.Notification) Notification {
 		UserID:    n.UserID.Bytes,
 		Title:     n.Title,
 		Content:   n.Content,
-		Email:     n.Email,
-		Push:      n.Push,
-		Sms:       n.Sms,
 		Seen:      n.Seen,
 		CreatedAt: n.CreatedAt,
 		UpdatedAt: n.UpdatedAt,

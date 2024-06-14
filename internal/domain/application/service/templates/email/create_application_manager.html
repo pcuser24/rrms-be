@@ -1,0 +1,20 @@
+<div style="width: 60vw; padding: 2rem 1rem;">
+  <!-- Email Header and Logo -->
+  <a href="{{.FESite}}"
+    style="display: flex; flex-direction: row; align-items: center; gap: 1rem; text-decoration: none;">
+    <img src="https://iili.io/d9zGgat.png" alt="d9zGgat.png" style="width: 4rem; height: 4rem; display: inline;" />
+    <h1 style="font-weight: 600; margin-left: 1rem; text-decoration: none; color: black">RRMS</h1>
+  </a>
+  <!-- Email Body -->
+  <h2 style="font-size: 1.5rem; font-weight: 400;"><strong>{{.Application.FullName}}</strong> đã ứng tuyển vào nhà cho
+    thuê <strong>{{.Property.Name}}</strong></h2>
+  <p><strong>{{.Application.FullName}}</strong> đã ứng tuyển vào phòng <strong>{{.Unit.Name}}</strong> nhà cho thuê <a
+      href="{{.FESite}}/manage/propertíes/property"><strong>{{.Property.Name}}</strong></a> do bạn quản lý. Hãy xem xét
+    và phản hồi sớm nhất có thể.</p>
+  <a href="{{.FESite}}/manage/applications/application/{{.Application.ID}}">Xem đơn ứng tuyển</a>
+  <a href="{{.FESite}}"></a>
+  <!-- Email footer -->
+  <p style="font-size: small; color:grey;">Nếu có bất kì thắc mắc nào hãy <a href="{{.FESite}}">liên hệ</a> với chúng
+    tôi
+  </p>
+</div>

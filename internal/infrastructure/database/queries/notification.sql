@@ -52,17 +52,15 @@ INSERT INTO notifications (
   title,
   content,
   data,
-  email,
-  push,
-  sms
+  target,
+  channel
 ) VALUES (
   sqlc.narg(user_id),
   sqlc.arg(title),
   sqlc.arg(content),
   sqlc.narg(data),
-  sqlc.arg(email),
-  sqlc.arg(push),
-  sqlc.arg(sms)
+  sqlc.arg(target),
+  sqlc.arg(channel)
 ) RETURNING *;
 
 -- name: GetNotificationsOfUser :many
@@ -84,9 +82,6 @@ SET
   title = coalesce(sqlc.narg(title), title),
   content = coalesce(sqlc.narg(content), content),
   data = coalesce(sqlc.narg(data), data),
-  email = coalesce(sqlc.narg(email), email),
-  push = coalesce(sqlc.narg(push), push),
-  sms = coalesce(sqlc.narg(sms), sms),
   seen = coalesce(sqlc.narg(seen), seen),
   updated_at = NOW()
 WHERE id = sqlc.arg(id);

@@ -1,0 +1,24 @@
+<div style="width: 60vw; padding: 2rem 1rem;">
+  <!-- Email Header and Logo -->
+  <a href="{{.FESite}}"
+    style="display: flex; flex-direction: row; align-items: center; gap: 1rem; text-decoration: none;">
+    <img src="https://iili.io/d9zGgat.png" alt="d9zGgat.png" style="width: 4rem; height: 4rem; display: inline;" />
+    <h1 style="font-weight: 600; margin-left: 1rem; text-decoration: none; color: black">RRMS</h1>
+  </a>
+  <!-- Email Body -->
+  {{if eq .Status "APPROVED"}}
+  <h2 style="font-size: 1.5rem; font-weight: 400;">Đơn ứng tuyển của {{.Application.FullName}} vào phòng {{.Unit.Name}} nhà cho thuê {{.Property.FullName}} đã được thông qua</h2>
+  <p>Hãy tiến hành tạo profile thuê trọ cho khách thuê của bạn để bắt đầu quản lý quá trình cho thuê.</p>
+  <a href="{{.FESite}}/manage/rentals/new?applicationId={{.Application.ID}}&propertyID={{.Application.PropertyID}}&unitID={{.Application.UnitID}}">Tạo profile thuê nhà</a>
+  <a href="{{.FESite}}/manage/applications/application/{{.Application.ID}}">Xem đơn ứng tuyển</a>
+  {{else if eq .Status "REJECTED"}}
+  <h2 style="font-size: 1.5rem; font-weight: 400;">Đơn ứng tuyển của {{.Application.FullName}} vào phòng {{.Unit.Name}} nhà cho thuê {{.Property.FullName}} đã bị từ chối</h2>
+  <p>Thông báo sẽ được gửi tới <strong>{{.Application.FullName}}</strong></p>
+  {{else if eq .Status "WITHDRAWN"}}
+  <h2 style="font-size: 1.5rem; font-weight: 400;"><strong>{{.Application.FullName}}</strong> đã rút đơn ứng tuyển vào phòng {{.Unit.Name}} nhà cho thuê {{.Property.FullName}} </h2>
+  {{end}}
+  <!-- Email footer -->
+  <p style="font-size: small; color:grey;">Nếu có bất kì thắc mắc nào hãy <a href="{{.FESite}}">liên hệ</a> với chúng
+    tôi
+  </p>
+</div>

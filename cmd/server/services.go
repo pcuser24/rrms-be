@@ -5,7 +5,7 @@ import (
 	"github.com/user2410/rrms-backend/internal/domain/auth"
 	"github.com/user2410/rrms-backend/internal/domain/chat"
 	listing_service "github.com/user2410/rrms-backend/internal/domain/listing/service"
-	"github.com/user2410/rrms-backend/internal/domain/misc"
+	misc_service "github.com/user2410/rrms-backend/internal/domain/misc/service"
 	vnp_service "github.com/user2410/rrms-backend/internal/domain/payment/service/vnpay"
 	property_service "github.com/user2410/rrms-backend/internal/domain/property/service"
 	"github.com/user2410/rrms-backend/internal/domain/reminder"
@@ -17,6 +17,7 @@ import (
 	auth_repo "github.com/user2410/rrms-backend/internal/domain/auth/repo"
 	chat_repo "github.com/user2410/rrms-backend/internal/domain/chat/repo"
 	listing_repo "github.com/user2410/rrms-backend/internal/domain/listing/repo"
+	misc_repo "github.com/user2410/rrms-backend/internal/domain/misc/repo"
 	payment_repo "github.com/user2410/rrms-backend/internal/domain/payment/repo"
 	property_repo "github.com/user2410/rrms-backend/internal/domain/property/repo"
 	reminder_repo "github.com/user2410/rrms-backend/internal/domain/reminder/repo"
@@ -37,9 +38,10 @@ func (c *serverCommand) setupInternalServices() {
 	chatRepo := chat_repo.NewRepo(c.dao)
 	reminderRepo := reminder_repo.NewRepo(c.dao)
 	statisticRepo := statistic_repo.NewRepo(c.dao)
-	miscRepo := misc.NewRepo(c.dao)
+	miscRepo := misc_repo.NewRepo(c.dao)
 
 	// Initialize internal services
+	c.internalServices.MiscService = misc_service.NewService(miscRepo, c.notificationEndpoint, c.cronScheduler)
 	c.internalServices.AuthService = auth.NewService(
 		authRepo,
 		c.tokenMaker, c.config.AccessTokenTTL, c.config.RefreshTokenTTL,
@@ -57,15 +59,19 @@ func (c *serverCommand) setupInternalServices() {
 		c.config.TokenSecreteKey,
 	)
 	c.internalServices.RentalService = rental_service.NewService(
-		rentalRepo, authRepo, applicationRepo, listingRepo, propertyRepo, unitRepo, c.cronScheduler,
+		rentalRepo, authRepo, applicationRepo, listingRepo, propertyRepo, unitRepo,
+		c.internalServices.MiscService,
+		c.cronScheduler,
 		c.s3Client, c.config.AWSS3ImageBucket,
 	)
 	c.internalServices.ReminderService = reminder.NewService(
 		reminderRepo,
 	)
 	c.internalServices.ApplicationService = application_service.NewService(
-		applicationRepo, chatRepo, listingRepo, propertyRepo, c.internalServices.ReminderService,
+		applicationRepo, authRepo, chatRepo, listingRepo, propertyRepo, unitRepo,
+		c.internalServices.ReminderService, c.internalServices.MiscService,
 		c.s3Client, c.config.AWSS3ImageBucket,
+		c.config.FESite,
 	)
 	c.internalServices.PaymentService = vnp_service.NewVnpayService(
 		paymentRepo,
@@ -82,5 +88,4 @@ func (c *serverCommand) setupInternalServices() {
 		rentalRepo,
 		c.elasticsearch,
 	)
-	c.internalServices.MiscService = misc.NewService(miscRepo, c.cronScheduler)
 }

@@ -18,28 +18,25 @@ INSERT INTO notifications (
   title,
   content,
   data,
-  email,
-  push,
-  sms
+  target,
+  channel
 ) VALUES (
   $1,
   $2,
   $3,
   $4,
   $5,
-  $6,
-  $7
-) RETURNING id, user_id, title, content, data, email, push, sms, seen, created_at, updated_at
+  $6
+) RETURNING id, user_id, title, content, data, seen, target, channel, created_at, updated_at
 `
 
 type CreateNotificationParams struct {
-	UserID  pgtype.UUID `json:"user_id"`
-	Title   string      `json:"title"`
-	Content string      `json:"content"`
-	Data    []byte      `json:"data"`
-	Email   bool        `json:"email"`
-	Push    bool        `json:"push"`
-	Sms     bool        `json:"sms"`
+	UserID  pgtype.UUID         `json:"user_id"`
+	Title   string              `json:"title"`
+	Content string              `json:"content"`
+	Data    []byte              `json:"data"`
+	Target  string              `json:"target"`
+	Channel NOTIFICATIONCHANNEL `json:"channel"`
 }
 
 func (q *Queries) CreateNotification(ctx context.Context, arg CreateNotificationParams) (Notification, error) {
@@ -48,9 +45,8 @@ func (q *Queries) CreateNotification(ctx context.Context, arg CreateNotification
 		arg.Title,
 		arg.Content,
 		arg.Data,
-		arg.Email,
-		arg.Push,
-		arg.Sms,
+		arg.Target,
+		arg.Channel,
 	)
 	var i Notification
 	err := row.Scan(
@@ -59,10 +55,9 @@ func (q *Queries) CreateNotification(ctx context.Context, arg CreateNotification
 		&i.Title,
 		&i.Content,
 		&i.Data,
-		&i.Email,
-		&i.Push,
-		&i.Sms,
 		&i.Seen,
+		&i.Target,
+		&i.Channel,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -142,7 +137,7 @@ func (q *Queries) DeleteNotificationDeviceToken(ctx context.Context, arg DeleteN
 }
 
 const getNotification = `-- name: GetNotification :one
-SELECT id, user_id, title, content, data, email, push, sms, seen, created_at, updated_at
+SELECT id, user_id, title, content, data, seen, target, channel, created_at, updated_at
 FROM notifications
 WHERE id = $1
 LIMIT 1
@@ -157,10 +152,9 @@ func (q *Queries) GetNotification(ctx context.Context, id int64) (Notification, 
 		&i.Title,
 		&i.Content,
 		&i.Data,
-		&i.Email,
-		&i.Push,
-		&i.Sms,
 		&i.Seen,
+		&i.Target,
+		&i.Channel,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -208,7 +202,7 @@ func (q *Queries) GetNotificationDevice(ctx context.Context, arg GetNotification
 }
 
 const getNotificationsOfUser = `-- name: GetNotificationsOfUser :many
-SELECT id, user_id, title, content, data, email, push, sms, seen, created_at, updated_at
+SELECT id, user_id, title, content, data, seen, target, channel, created_at, updated_at
 FROM notifications
 WHERE user_id = $3
 ORDER BY created_at DESC
@@ -236,10 +230,9 @@ func (q *Queries) GetNotificationsOfUser(ctx context.Context, arg GetNotificatio
 			&i.Title,
 			&i.Content,
 			&i.Data,
-			&i.Email,
-			&i.Push,
-			&i.Sms,
 			&i.Seen,
+			&i.Target,
+			&i.Channel,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 		); err != nil {
@@ -277,21 +270,15 @@ SET
   title = coalesce($1, title),
   content = coalesce($2, content),
   data = coalesce($3, data),
-  email = coalesce($4, email),
-  push = coalesce($5, push),
-  sms = coalesce($6, sms),
-  seen = coalesce($7, seen),
+  seen = coalesce($4, seen),
   updated_at = NOW()
-WHERE id = $8
+WHERE id = $5
 `
 
 type UpdatedNotificationParams struct {
 	Title   pgtype.Text `json:"title"`
 	Content pgtype.Text `json:"content"`
 	Data    []byte      `json:"data"`
-	Email   pgtype.Bool `json:"email"`
-	Push    pgtype.Bool `json:"push"`
-	Sms     pgtype.Bool `json:"sms"`
 	Seen    pgtype.Bool `json:"seen"`
 	ID      int64       `json:"id"`
 }
@@ -301,9 +288,6 @@ func (q *Queries) UpdatedNotification(ctx context.Context, arg UpdatedNotificati
 		arg.Title,
 		arg.Content,
 		arg.Data,
-		arg.Email,
-		arg.Push,
-		arg.Sms,
 		arg.Seen,
 		arg.ID,
 	)

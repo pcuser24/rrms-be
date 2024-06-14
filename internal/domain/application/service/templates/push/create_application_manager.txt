@@ -1,0 +1,1 @@
+{{.Application.FullName}} đã ứng tuyển vào phòng {{.Unit.Name}}</> nhà cho thuê {{.Property.Name}} do bạn quản lý. Hãy xem xét và phản hồi sớm nhất có thể.

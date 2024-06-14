@@ -16,6 +16,7 @@ import (
 
 	uuid "github.com/google/uuid"
 	dto "github.com/user2410/rrms-backend/internal/domain/statistic/dto"
+	database "github.com/user2410/rrms-backend/internal/infrastructure/database"
 	gomock "go.uber.org/mock/gomock"
 )
 
@@ -222,6 +223,36 @@ func (mr *MockRepoMockRecorder) GetPropertiesWithActiveListing(arg0, arg1 any) *
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPropertiesWithActiveListing", reflect.TypeOf((*MockRepo)(nil).GetPropertiesWithActiveListing), arg0, arg1)
 }
 
+// GetRecentListings mocks base method.
+func (m *MockRepo) GetRecentListings(arg0 context.Context, arg1 int32) ([]uuid.UUID, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetRecentListings", arg0, arg1)
+	ret0, _ := ret[0].([]uuid.UUID)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetRecentListings indicates an expected call of GetRecentListings.
+func (mr *MockRepoMockRecorder) GetRecentListings(arg0, arg1 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRecentListings", reflect.TypeOf((*MockRepo)(nil).GetRecentListings), arg0, arg1)
+}
+
+// GetRentalComplaintStatistics mocks base method.
+func (m *MockRepo) GetRentalComplaintStatistics(arg0 context.Context, arg1 uuid.UUID, arg2 database.RENTALCOMPLAINTSTATUS) (int64, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetRentalComplaintStatistics", arg0, arg1, arg2)
+	ret0, _ := ret[0].(int64)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetRentalComplaintStatistics indicates an expected call of GetRentalComplaintStatistics.
+func (mr *MockRepoMockRecorder) GetRentalComplaintStatistics(arg0, arg1, arg2 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRentalComplaintStatistics", reflect.TypeOf((*MockRepo)(nil).GetRentalComplaintStatistics), arg0, arg1, arg2)
+}
+
 // GetRentalPaymentArrears mocks base method.
 func (m *MockRepo) GetRentalPaymentArrears(arg0 context.Context, arg1 uuid.UUID, arg2 dto.RentalPaymentStatisticQuery) ([]dto.RentalPayment, error) {
 	m.ctrl.T.Helper()
@@ -250,4 +281,49 @@ func (m *MockRepo) GetRentalPaymentIncomes(arg0 context.Context, arg1 uuid.UUID,
 func (mr *MockRepoMockRecorder) GetRentalPaymentIncomes(arg0, arg1, arg2 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRentalPaymentIncomes", reflect.TypeOf((*MockRepo)(nil).GetRentalPaymentIncomes), arg0, arg1, arg2)
+}
+
+// GetTenantExpenditure mocks base method.
+func (m *MockRepo) GetTenantExpenditure(arg0 context.Context, arg1 uuid.UUID, arg2 dto.RentalPaymentStatisticQuery) (float32, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetTenantExpenditure", arg0, arg1, arg2)
+	ret0, _ := ret[0].(float32)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetTenantExpenditure indicates an expected call of GetTenantExpenditure.
+func (mr *MockRepoMockRecorder) GetTenantExpenditure(arg0, arg1, arg2 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetTenantExpenditure", reflect.TypeOf((*MockRepo)(nil).GetTenantExpenditure), arg0, arg1, arg2)
+}
+
+// GetTenantPendingPayments mocks base method.
+func (m *MockRepo) GetTenantPendingPayments(arg0 context.Context, arg1 uuid.UUID, arg2 dto.RentalPaymentStatisticQuery) ([]dto.RentalPayment, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetTenantPendingPayments", arg0, arg1, arg2)
+	ret0, _ := ret[0].([]dto.RentalPayment)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetTenantPendingPayments indicates an expected call of GetTenantPendingPayments.
+func (mr *MockRepoMockRecorder) GetTenantPendingPayments(arg0, arg1, arg2 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetTenantPendingPayments", reflect.TypeOf((*MockRepo)(nil).GetTenantPendingPayments), arg0, arg1, arg2)
+}
+
+// GetTotalTenantPendingPayments mocks base method.
+func (m *MockRepo) GetTotalTenantPendingPayments(arg0 context.Context, arg1 uuid.UUID) (float32, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetTotalTenantPendingPayments", arg0, arg1)
+	ret0, _ := ret[0].(float32)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetTotalTenantPendingPayments indicates an expected call of GetTotalTenantPendingPayments.
+func (mr *MockRepoMockRecorder) GetTotalTenantPendingPayments(arg0, arg1 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetTotalTenantPendingPayments", reflect.TypeOf((*MockRepo)(nil).GetTotalTenantPendingPayments), arg0, arg1)
 }

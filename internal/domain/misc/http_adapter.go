@@ -8,6 +8,7 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 	auth_http "github.com/user2410/rrms-backend/internal/domain/auth/http"
 	"github.com/user2410/rrms-backend/internal/domain/misc/dto"
+	misc_service "github.com/user2410/rrms-backend/internal/domain/misc/service"
 	"github.com/user2410/rrms-backend/internal/infrastructure/database"
 	"github.com/user2410/rrms-backend/internal/interfaces/rest/responses"
 	"github.com/user2410/rrms-backend/internal/utils/token"
@@ -19,10 +20,10 @@ type Adapter interface {
 }
 
 type adapter struct {
-	service Service
+	service misc_service.Service
 }
 
-func NewAdapter(service Service) Adapter {
+func NewAdapter(service misc_service.Service) Adapter {
 	return &adapter{
 		service: service,
 	}
@@ -80,7 +81,7 @@ func (a *adapter) getNotificationDevice() fiber.Handler {
 		res, err := a.service.GetNotificationDevice(tkPayload.UserID, sessionId, ctx.Query("token"), ctx.Query("platform"))
 		if err != nil {
 			if res != nil {
-				return ctx.Status(fiber.StatusOK).JSON(res)
+				return ctx.Status(fiber.StatusOK).JSON(res[0])
 			}
 			if errors.Is(err, database.ErrRecordNotFound) {
 				return ctx.SendStatus(fiber.StatusNotFound)
@@ -88,7 +89,7 @@ func (a *adapter) getNotificationDevice() fiber.Handler {
 			return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
 		}
 
-		return ctx.Status(fiber.StatusCreated).JSON(res)
+		return ctx.Status(fiber.StatusCreated).JSON(res[0])
 	}
 }
 

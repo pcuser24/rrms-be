@@ -3,6 +3,8 @@ package sns
 import (
 	"context"
 	"encoding/json"
+	"regexp"
+	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/sns"
@@ -78,10 +80,28 @@ func (c *snsClient) Publish(ctx context.Context, subject, message, topicArn stri
 			return err
 		}
 		msgAttributes[k] = types.MessageAttributeValue{
-			DataType:    aws.String("String"),
+			DataType:    aws.String("String"), // String.Array values are not supported in Lambda subscription
 			StringValue: aws.String(string(b)),
 		}
 	}
+
+	// the subject must be UTF-8 text with no line breaks or control characters, no more than 100 characters
+	// https://docs.aws.amazon.com/sns/latest/api/API_Publish.html
+	if len(subject) > 100 {
+		subject = subject[:100]
+	}
+	// remove all control characters and line breaks
+	subject = func(input string) string {
+		// Remove line breaks
+		noLineBreaks := strings.ReplaceAll(input, "\n", "")
+		noLineBreaks = strings.ReplaceAll(noLineBreaks, "\r", "")
+
+		// Remove control characters using regexp
+		re := regexp.MustCompile(`[\x00-\x1F\x7F]`)
+		cleanedString := re.ReplaceAllString(noLineBreaks, "")
+
+		return cleanedString
+	}(subject)
 
 	input := sns.PublishInput{
 		Subject:           aws.String(subject),

@@ -8,8 +8,9 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/stretchr/testify/require"
-	"github.com/user2410/rrms-backend/internal/domain/application/repo"
+	application_repo "github.com/user2410/rrms-backend/internal/domain/application/repo"
 	application "github.com/user2410/rrms-backend/internal/domain/application/service"
+	auth_repo "github.com/user2410/rrms-backend/internal/domain/auth/repo"
 	chat_repo "github.com/user2410/rrms-backend/internal/domain/chat/repo"
 	listing_repo "github.com/user2410/rrms-backend/internal/domain/listing/repo"
 	listing_service "github.com/user2410/rrms-backend/internal/domain/listing/service"
@@ -17,7 +18,9 @@ import (
 	"github.com/user2410/rrms-backend/internal/domain/reminder"
 	reminder_repo "github.com/user2410/rrms-backend/internal/domain/reminder/repo"
 	unit_repo "github.com/user2410/rrms-backend/internal/domain/unit/repo"
+	"go.uber.org/mock/gomock"
 
+	"github.com/user2410/rrms-backend/internal/infrastructure/aws/s3"
 	"github.com/user2410/rrms-backend/internal/infrastructure/http"
 	"github.com/user2410/rrms-backend/internal/utils/random"
 	"github.com/user2410/rrms-backend/internal/utils/token"
@@ -33,7 +36,7 @@ type server struct {
 
 func newTestServer(
 	t *testing.T,
-	applicationRepo repo.Repo, propertyRepo property_repo.Repo, unitRepo unit_repo.Repo, listingRepo listing_repo.Repo, chatRepo chat_repo.Repo, reminderRepo reminder_repo.Repo,
+	mockCtrl *gomock.Controller,
 ) *server {
 
 	tokenMaker, err := token.NewJWTMaker(random.RandomAlphanumericStr(32))
@@ -41,8 +44,19 @@ func newTestServer(
 	require.NotNil(t, tokenMaker)
 
 	// initialize services
+	propertyRepo := property_repo.NewMockRepo(mockCtrl)
+	unitRepo := unit_repo.NewMockRepo(mockCtrl)
+	listingRepo := listing_repo.NewMockRepo(mockCtrl)
+	applicationRepo := application_repo.NewMockRepo(mockCtrl)
+	reminderRepo := reminder_repo.NewMockRepo(mockCtrl)
+	authRepo := auth_repo.NewMockRepo(mockCtrl)
+	chatRepo := chat_repo.NewMockRepo(mockCtrl)
+
+	s3Client := s3.NewMockS3Client(mockCtrl)
+
 	rService := reminder.NewService(reminderRepo)
-	aService := application.NewService(applicationRepo, chatRepo, listingRepo, propertyRepo, rService, nil, "")
+	// miscService := misc.NewService()
+	aService := application.NewService(applicationRepo, authRepo, chatRepo, listingRepo, propertyRepo, unitRepo, rService, nil, s3Client, "", "https://rrms.rental.vn/")
 	lService := listing_service.NewService(listingRepo, propertyRepo, unitRepo, nil, "") // NOTE: leave paymentRepo nil for now
 
 	// initialize http router
