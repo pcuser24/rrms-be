@@ -10,10 +10,12 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/spf13/viper"
-	"github.com/user2410/rrms-backend/internal/domain/payment/repo"
+	repos "github.com/user2410/rrms-backend/internal/domain/_repos"
+	listing_service "github.com/user2410/rrms-backend/internal/domain/listing/service"
 	"github.com/user2410/rrms-backend/internal/domain/payment/service/vnpay"
 	"github.com/user2410/rrms-backend/internal/infrastructure/http"
 	"github.com/user2410/rrms-backend/internal/utils"
+	"go.uber.org/mock/gomock"
 )
 
 type ServerConfig struct {
@@ -34,8 +36,11 @@ type server struct {
 	router http.Server
 }
 
-func newTestServer(t *testing.T, repo repo.Repo) *server {
-	vnpService := vnpay.NewVnpayService(repo, nil, conf.VnpTmnCode, conf.VnpHashSecret, conf.VnpUrl, conf.VnpApi)
+func newTestServer(t *testing.T, ctrl *gomock.Controller) *server {
+
+	domainRepo := repos.NewDomainRepoFromMockCtrl(ctrl)
+	listingService := listing_service.NewService(domainRepo, "")
+	vnpService := vnpay.NewVnpayService(domainRepo, listingService, conf.VnpTmnCode, conf.VnpHashSecret, conf.VnpUrl, conf.VnpApi)
 
 	httpServer := http.NewServer(
 		fiber.Config{

@@ -17,22 +17,22 @@ import (
 )
 
 func (s *service) GetRecentListings(limit int32, fields []string) ([]listing_model.ListingModel, error) {
-	ids, err := s.statisticRepo.GetRecentListings(context.Background(), limit)
+	ids, err := s.domainRepo.StatisticRepo.GetRecentListings(context.Background(), limit)
 	if err != nil {
 		return nil, err
 	}
 
-	return s.listingRepo.GetListingsByIds(context.Background(), ids, fields)
+	return s.domainRepo.ListingRepo.GetListingsByIds(context.Background(), ids, fields)
 }
 
 func (s *service) GetListingSuggestion(id uuid.UUID, limit int) (dto.ListingsSuggestionResult, error) {
 	var res dto.ListingsSuggestionResult
 
-	listing, err := s.listingRepo.GetListingByID(context.Background(), id)
+	listing, err := s.domainRepo.ListingRepo.GetListingByID(context.Background(), id)
 	if err != nil {
 		return dto.ListingsSuggestionResult{}, err
 	}
-	property, err := s.propertyRepo.GetPropertyById(context.Background(), listing.PropertyID)
+	property, err := s.domainRepo.PropertyRepo.GetPropertyById(context.Background(), listing.PropertyID)
 	if err != nil {
 		return dto.ListingsSuggestionResult{}, err
 	}
@@ -40,7 +40,7 @@ func (s *service) GetListingSuggestion(id uuid.UUID, limit int) (dto.ListingsSug
 	for _, unit := range listing.Units {
 		unitIds = append(unitIds, unit.UnitID)
 	}
-	units, err := s.unitRepo.GetUnitsByIds(context.Background(), unitIds, []string{"area", "floor", "number_of_living_rooms", "number_of_bedrooms", "number_of_bathrooms", "number_of_toilets", "number_of_balconies", "number_of_kitchens", "amenities"})
+	units, err := s.domainRepo.UnitRepo.GetUnitsByIds(context.Background(), unitIds, []string{"area", "floor", "number_of_living_rooms", "number_of_bedrooms", "number_of_bathrooms", "number_of_toilets", "number_of_balconies", "number_of_kitchens", "amenities"})
 	if err != nil {
 		return dto.ListingsSuggestionResult{}, err
 	}

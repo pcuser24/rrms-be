@@ -38,13 +38,13 @@ func (s *service) CreateRental(data *dto.CreateRental, userId uuid.UUID) (model.
 
 	// TODO: validate applicationId, propertyId, unitId
 	data.CreatorID = userId
-	rental, err := s.rRepo.CreateRental(context.Background(), data)
+	rental, err := s.domainRepo.RentalRepo.CreateRental(context.Background(), data)
 	if err != nil {
 		return model.RentalModel{}, err
 	}
 
 	// plan rental payments
-	_, err = s.rRepo.PlanRentalPayment(context.Background(), rental.ID)
+	_, err = s.domainRepo.RentalRepo.PlanRentalPayment(context.Background(), rental.ID)
 	if err != nil {
 		// TODO: log the error
 	}
@@ -53,15 +53,15 @@ func (s *service) CreateRental(data *dto.CreateRental, userId uuid.UUID) (model.
 }
 
 func (s *service) GetRental(id int64) (model.RentalModel, error) {
-	return s.rRepo.GetRental(context.Background(), id)
+	return s.domainRepo.RentalRepo.GetRental(context.Background(), id)
 }
 
 func (s *service) UpdateRental(data *dto.UpdateRental, id int64) error {
-	return s.rRepo.UpdateRental(context.Background(), data, id)
+	return s.domainRepo.RentalRepo.UpdateRental(context.Background(), data, id)
 }
 
 func (s *service) CheckRentalVisibility(id int64, userId uuid.UUID) (bool, error) {
-	return s.rRepo.CheckRentalVisibility(context.Background(), id, userId)
+	return s.domainRepo.RentalRepo.CheckRentalVisibility(context.Background(), id, userId)
 }
 
 func (s *service) GetManagedRentals(userId uuid.UUID, query *dto.GetRentalsQuery) ([]model.RentalModel, error) {
@@ -71,12 +71,12 @@ func (s *service) GetManagedRentals(userId uuid.UUID, query *dto.GetRentalsQuery
 	if query.Offset == nil {
 		query.Offset = types.Ptr[int32](0)
 	}
-	rs, err := s.rRepo.GetManagedRentals(context.Background(), userId, query)
+	rs, err := s.domainRepo.RentalRepo.GetManagedRentals(context.Background(), userId, query)
 	if err != nil {
 		return nil, err
 	}
 
-	return s.rRepo.GetRentalsByIds(context.Background(), rs, query.Fields)
+	return s.domainRepo.RentalRepo.GetRentalsByIds(context.Background(), rs, query.Fields)
 }
 
 func (s *service) GetMyRentals(userId uuid.UUID, query *dto.GetRentalsQuery) ([]model.RentalModel, error) {
@@ -86,10 +86,10 @@ func (s *service) GetMyRentals(userId uuid.UUID, query *dto.GetRentalsQuery) ([]
 	if query.Offset == nil {
 		query.Offset = types.Ptr[int32](0)
 	}
-	rs, err := s.rRepo.GetMyRentals(context.Background(), userId, query)
+	rs, err := s.domainRepo.RentalRepo.GetMyRentals(context.Background(), userId, query)
 	if err != nil {
 		return nil, err
 	}
 
-	return s.rRepo.GetRentalsByIds(context.Background(), rs, query.Fields)
+	return s.domainRepo.RentalRepo.GetRentalsByIds(context.Background(), rs, query.Fields)
 }

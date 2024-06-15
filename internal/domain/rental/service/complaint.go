@@ -32,15 +32,15 @@ func (s *service) PreCreateRentalComplaint(data *dto.PreCreateRentalComplaint, c
 }
 
 func (s *service) CreateRentalComplaint(data *dto.CreateRentalComplaint) (model.RentalComplaint, error) {
-	return s.rRepo.CreateRentalComplaint(context.Background(), data)
+	return s.domainRepo.RentalRepo.CreateRentalComplaint(context.Background(), data)
 }
 
 func (s *service) GetRentalComplaint(id int64) (model.RentalComplaint, error) {
-	return s.rRepo.GetRentalComplaint(context.Background(), id)
+	return s.domainRepo.RentalRepo.GetRentalComplaint(context.Background(), id)
 }
 
 func (s *service) GetRentalComplaintsByRentalId(rid int64) ([]model.RentalComplaint, error) {
-	return s.rRepo.GetRentalComplaintsByRentalId(context.Background(), rid)
+	return s.domainRepo.RentalRepo.GetRentalComplaintsByRentalId(context.Background(), rid)
 }
 
 func (s *service) PreCreateRentalComplaintReply(data *dto.PreCreateRentalComplaint, creatorID uuid.UUID) error {
@@ -64,11 +64,11 @@ func (s *service) PreCreateRentalComplaintReply(data *dto.PreCreateRentalComplai
 }
 
 func (a *service) CreateRentalComplaintReply(data *dto.CreateRentalComplaintReply) (model.RentalComplaintReply, error) {
-	res, err := a.rRepo.CreateRentalComplaintReply(context.Background(), data)
+	res, err := a.domainRepo.RentalRepo.CreateRentalComplaintReply(context.Background(), data)
 	if err != nil {
 		return model.RentalComplaintReply{}, err
 	}
-	err = a.rRepo.UpdateRentalComplaint(context.Background(), &dto.UpdateRentalComplaint{
+	err = a.domainRepo.RentalRepo.UpdateRentalComplaint(context.Background(), &dto.UpdateRentalComplaint{
 		ID:     data.ComplaintID,
 		UserID: data.ReplierID,
 	})
@@ -76,13 +76,13 @@ func (a *service) CreateRentalComplaintReply(data *dto.CreateRentalComplaintRepl
 }
 
 func (s *service) GetRentalComplaintReplies(rid int64, limit, offset int32) ([]model.RentalComplaintReply, error) {
-	return s.rRepo.GetRentalComplaintReplies(context.Background(), rid, limit, offset)
+	return s.domainRepo.RentalRepo.GetRentalComplaintReplies(context.Background(), rid, limit, offset)
 }
 
 func (s *service) GetRentalComplaintsOfUser(userId uuid.UUID, query dto.GetRentalComplaintsOfUserQuery) ([]model.RentalComplaint, error) {
-	return s.rRepo.GetRentalComplaintsOfUser(context.Background(), userId, query)
+	return s.domainRepo.RentalRepo.GetRentalComplaintsOfUser(context.Background(), userId, query)
 }
 
 func (s *service) UpdateRentalComplaint(data *dto.UpdateRentalComplaint) error {
-	return s.rRepo.UpdateRentalComplaint(context.Background(), data)
+	return s.domainRepo.RentalRepo.UpdateRentalComplaint(context.Background(), data)
 }

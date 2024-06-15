@@ -11,7 +11,7 @@ import (
 )
 
 func (s *service) UpdateListing(id uuid.UUID, data *dto.UpdateListing) error {
-	err := s.lRepo.UpdateListing(context.Background(), id, data)
+	err := s.domainRepo.ListingRepo.UpdateListing(context.Background(), id, data)
 	if err != nil {
 		return err
 	}
@@ -61,7 +61,7 @@ func (s *service) UpdateListing(id uuid.UUID, data *dto.UpdateListing) error {
 }
 
 func (s *service) UpdateListingStatus(id uuid.UUID, active bool) error {
-	err := s.lRepo.UpdateListingStatus(context.Background(), id, active)
+	err := s.domainRepo.ListingRepo.UpdateListingStatus(context.Background(), id, active)
 	if err != nil {
 		return err
 	}
@@ -85,7 +85,7 @@ func (s *service) UpdateListingStatus(id uuid.UUID, active bool) error {
 }
 
 func (s *service) UpdateListingExpiration(id uuid.UUID, duration int64) error {
-	expiredAt, err := s.lRepo.UpdateListingExpiration(context.Background(), id, duration)
+	expiredAt, err := s.domainRepo.ListingRepo.UpdateListingExpiration(context.Background(), id, duration)
 	if err != nil {
 		return err
 	}
@@ -109,7 +109,7 @@ func (s *service) UpdateListingExpiration(id uuid.UUID, duration int64) error {
 }
 
 func (s *service) UpdateListingPriority(id uuid.UUID, priority int) error {
-	err := s.lRepo.UpdateListingPriority(context.Background(), id, priority)
+	err := s.domainRepo.ListingRepo.UpdateListingPriority(context.Background(), id, priority)
 	if err != nil {
 		return err
 	}

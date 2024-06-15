@@ -28,7 +28,7 @@ var (
 
 func (s *VnPayService) CreatePaymentUrl(ipAddr string, userId uuid.UUID, paymentId int64, data *dto.VNPCreatePaymentUrl) (string, error) {
 	// Get payment by id
-	payment, err := s.repo.GetPaymentById(context.Background(), paymentId)
+	payment, err := s.domainRepo.PaymentRepo.GetPaymentById(context.Background(), paymentId)
 	if err != nil {
 		return "", err
 	}
@@ -137,7 +137,7 @@ func (s *VnPayService) Return(query map[string]string) error {
 		return err
 	}
 
-	return s.repo.UpdatePayment(context.Background(), &paymentUpdatePayload)
+	return s.domainRepo.PaymentRepo.UpdatePayment(context.Background(), &paymentUpdatePayload)
 }
 
 type IpnReturn struct {

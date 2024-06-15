@@ -5,15 +5,10 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/robfig/cron/v3"
-	application_repo "github.com/user2410/rrms-backend/internal/domain/application/repo"
-	auth_repo "github.com/user2410/rrms-backend/internal/domain/auth/repo"
-	listing_repo "github.com/user2410/rrms-backend/internal/domain/listing/repo"
+	repos "github.com/user2410/rrms-backend/internal/domain/_repos"
 	misc_service "github.com/user2410/rrms-backend/internal/domain/misc/service"
-	property_repo "github.com/user2410/rrms-backend/internal/domain/property/repo"
 	"github.com/user2410/rrms-backend/internal/domain/rental/dto"
 	"github.com/user2410/rrms-backend/internal/domain/rental/model"
-	"github.com/user2410/rrms-backend/internal/domain/rental/repo"
-	unit_repo "github.com/user2410/rrms-backend/internal/domain/unit/repo"
 	"github.com/user2410/rrms-backend/internal/infrastructure/aws/s3"
 	"github.com/user2410/rrms-backend/internal/infrastructure/database"
 )
@@ -59,12 +54,7 @@ type Service interface {
 }
 
 type service struct {
-	authRepo auth_repo.Repo
-	aRepo    application_repo.Repo
-	lRepo    listing_repo.Repo
-	pRepo    property_repo.Repo
-	rRepo    repo.Repo
-	uRepo    unit_repo.Repo
+	domainRepo repos.DomainRepo
 
 	mService misc_service.Service
 
@@ -75,18 +65,13 @@ type service struct {
 }
 
 func NewService(
-	rRepo repo.Repo, authRepo auth_repo.Repo, aRepo application_repo.Repo, lRepo listing_repo.Repo, pRepo property_repo.Repo, uRepo unit_repo.Repo,
+	domainRepo repos.DomainRepo,
 	mService misc_service.Service,
 	c *cron.Cron,
 	s3Client s3.S3Client, imageBucketName string,
 ) Service {
 	res := &service{
-		authRepo:        authRepo,
-		aRepo:           aRepo,
-		rRepo:           rRepo,
-		lRepo:           lRepo,
-		pRepo:           pRepo,
-		uRepo:           uRepo,
+		domainRepo:      domainRepo,
 		cronEntries:     []cron.EntryID{},
 		mService:        mService,
 		s3Client:        s3Client,
@@ -103,7 +88,7 @@ func (s *service) setupCronjob(c *cron.Cron) ([]cron.EntryID, error) {
 		err     error
 	)
 	entryID, err = c.AddFunc("@daily", func() {
-		s.rRepo.PlanRentalPayments(context.Background())
+		s.domainRepo.RentalRepo.PlanRentalPayments(context.Background())
 	})
 	if err != nil {
 		return nil, err

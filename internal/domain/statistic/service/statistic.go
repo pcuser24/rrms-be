@@ -14,7 +14,7 @@ import (
 )
 
 func (s *service) GetPropertiesStatistic(userId uuid.UUID, query dto.PropertiesStatisticQuery) (res dto.PropertiesStatisticResponse, err error) {
-	managedProperties, err := s.propertyRepo.GetManagedProperties(context.Background(), userId, &property_dto.GetPropertiesQuery{})
+	managedProperties, err := s.domainRepo.PropertyRepo.GetManagedProperties(context.Background(), userId, &property_dto.GetPropertiesQuery{})
 	if err != nil {
 		return
 	}
@@ -22,47 +22,47 @@ func (s *service) GetPropertiesStatistic(userId uuid.UUID, query dto.PropertiesS
 		res.Properties = append(res.Properties, p.PropertyID)
 	}
 
-	res.OwnedProperties, err = s.statisticRepo.GetManagedPropertiesByRole(context.Background(), userId, "OWNER")
+	res.OwnedProperties, err = s.domainRepo.StatisticRepo.GetManagedPropertiesByRole(context.Background(), userId, "OWNER")
 	if err != nil {
 		return
 	}
 
-	res.OccupiedProperties, err = s.statisticRepo.GetOccupiedProperties(context.Background(), userId)
+	res.OccupiedProperties, err = s.domainRepo.StatisticRepo.GetOccupiedProperties(context.Background(), userId)
 	if err != nil {
 		return
 	}
 
-	res.Units, err = s.statisticRepo.GetManagedUnits(context.Background(), userId)
+	res.Units, err = s.domainRepo.StatisticRepo.GetManagedUnits(context.Background(), userId)
 	if err != nil {
 		return
 	}
 
-	res.OccupiedUnits, err = s.statisticRepo.GetOccupiedUnits(context.Background(), userId)
+	res.OccupiedUnits, err = s.domainRepo.StatisticRepo.GetOccupiedUnits(context.Background(), userId)
 	if err != nil {
 		return
 	}
 
-	res.PropertiesWithActiveListing, err = s.statisticRepo.GetPropertiesWithActiveListing(context.Background(), userId)
+	res.PropertiesWithActiveListing, err = s.domainRepo.StatisticRepo.GetPropertiesWithActiveListing(context.Background(), userId)
 	if err != nil {
 		return
 	}
 
-	res.MostRentedProperties, err = s.statisticRepo.GetMostRentedProperties(context.Background(), userId, query.Limit, query.Offset)
+	res.MostRentedProperties, err = s.domainRepo.StatisticRepo.GetMostRentedProperties(context.Background(), userId, query.Limit, query.Offset)
 	if err != nil {
 		return
 	}
 
-	res.LeastRentedProperties, err = s.statisticRepo.GetLeastRentedProperties(context.Background(), userId, query.Limit, query.Offset)
+	res.LeastRentedProperties, err = s.domainRepo.StatisticRepo.GetLeastRentedProperties(context.Background(), userId, query.Limit, query.Offset)
 	if err != nil {
 		return
 	}
 
-	res.MostRentedUnits, err = s.statisticRepo.GetMostRentedUnits(context.Background(), userId, query.Limit, query.Offset)
+	res.MostRentedUnits, err = s.domainRepo.StatisticRepo.GetMostRentedUnits(context.Background(), userId, query.Limit, query.Offset)
 	if err != nil {
 		return
 	}
 
-	res.LeastRentedUnits, err = s.statisticRepo.GetLeastRentedUnits(context.Background(), userId, query.Limit, query.Offset)
+	res.LeastRentedUnits, err = s.domainRepo.StatisticRepo.GetLeastRentedUnits(context.Background(), userId, query.Limit, query.Offset)
 	if err != nil {
 		return
 	}
@@ -73,28 +73,28 @@ func (s *service) GetPropertiesStatistic(userId uuid.UUID, query dto.PropertiesS
 func (s *service) GetApplicationStatistic(userId uuid.UUID) (res dto.ApplicationStatisticResponse, err error) {
 	now := time.Now()
 
-	res.NewApplicationsThisMonth, err = s.statisticRepo.GetNewApplications(context.Background(), userId, now)
+	res.NewApplicationsThisMonth, err = s.domainRepo.StatisticRepo.GetNewApplications(context.Background(), userId, now)
 	if err != nil {
 		return
 	}
 
-	res.NewApplicationsLastMonth, err = s.statisticRepo.GetNewApplications(context.Background(), userId, now.AddDate(0, -1, 0))
+	res.NewApplicationsLastMonth, err = s.domainRepo.StatisticRepo.GetNewApplications(context.Background(), userId, now.AddDate(0, -1, 0))
 	return
 }
 
 func (s *service) GetRentalStatistic(userId uuid.UUID) (res dto.RentalStatisticResponse, err error) {
 	now := time.Now()
-	res.NewMaintenancesThisMonth, err = s.statisticRepo.GetMaintenanceRequests(context.Background(), userId, now)
+	res.NewMaintenancesThisMonth, err = s.domainRepo.StatisticRepo.GetMaintenanceRequests(context.Background(), userId, now)
 	if err != nil {
 		return
 	}
 
-	res.NewMaintenancesLastMonth, err = s.statisticRepo.GetMaintenanceRequests(context.Background(), userId, now.AddDate(0, -1, 0))
+	res.NewMaintenancesLastMonth, err = s.domainRepo.StatisticRepo.GetMaintenanceRequests(context.Background(), userId, now.AddDate(0, -1, 0))
 	return
 }
 
 func (s *service) GetRentalPaymentArrears(userId uuid.UUID, query *dto.RentalPaymentStatisticQuery) (res []dto.RentalPaymentArrearsItem, err error) {
-	user, err := s.authRepo.GetUserById(context.Background(), userId)
+	user, err := s.domainRepo.AuthRepo.GetUserById(context.Background(), userId)
 	if err != nil {
 		return
 	}
@@ -117,7 +117,7 @@ func (s *service) GetRentalPaymentArrears(userId uuid.UUID, query *dto.RentalPay
 			intervalEnd = query.EndTime
 		}
 
-		payments, err := s.statisticRepo.GetRentalPaymentArrears(context.Background(), userId, dto.RentalPaymentStatisticQuery{
+		payments, err := s.domainRepo.StatisticRepo.GetRentalPaymentArrears(context.Background(), userId, dto.RentalPaymentStatisticQuery{
 			StartTime: current,
 			EndTime:   intervalEnd,
 			Limit:     query.Limit,
@@ -140,7 +140,7 @@ func (s *service) GetRentalPaymentArrears(userId uuid.UUID, query *dto.RentalPay
 }
 
 func (s *service) GetRentalPaymentIncomes(userId uuid.UUID, query *dto.RentalPaymentStatisticQuery) (res []dto.RentalPaymentIncomeItem, err error) {
-	user, err := s.authRepo.GetUserById(context.Background(), userId)
+	user, err := s.domainRepo.AuthRepo.GetUserById(context.Background(), userId)
 	if err != nil {
 		return
 	}
@@ -163,7 +163,7 @@ func (s *service) GetRentalPaymentIncomes(userId uuid.UUID, query *dto.RentalPay
 			intervalEnd = query.EndTime
 		}
 
-		income, err := s.statisticRepo.GetRentalPaymentIncomes(context.Background(), userId, dto.RentalPaymentStatisticQuery{
+		income, err := s.domainRepo.StatisticRepo.GetRentalPaymentIncomes(context.Background(), userId, dto.RentalPaymentStatisticQuery{
 			StartTime: current,
 			EndTime:   intervalEnd,
 		})
@@ -184,7 +184,7 @@ func (s *service) GetRentalPaymentIncomes(userId uuid.UUID, query *dto.RentalPay
 }
 
 func (s *service) GetPaymentsStatistic(userId uuid.UUID, query dto.PaymentsStatisticQuery) (res []dto.PaymentsStatisticItem, err error) {
-	user, err := s.authRepo.GetUserById(context.Background(), userId)
+	user, err := s.domainRepo.AuthRepo.GetUserById(context.Background(), userId)
 	if err != nil {
 		return
 	}
@@ -205,7 +205,7 @@ func (s *service) GetPaymentsStatistic(userId uuid.UUID, query dto.PaymentsStati
 			intervalEnd = query.EndTime
 		}
 
-		payment, err := s.statisticRepo.GetPaymentsStatistic(context.Background(), userId, dto.PaymentsStatisticQuery{
+		payment, err := s.domainRepo.StatisticRepo.GetPaymentsStatistic(context.Background(), userId, dto.PaymentsStatisticQuery{
 			StartTime: current,
 			EndTime:   intervalEnd,
 		})
@@ -232,17 +232,17 @@ func (s *service) GetTenantRentalStatistic(userId uuid.UUID) (res dto.TenantRent
 		Fields:  []string{"property_id,unit_id", "start_date", "rental_period"},
 	}
 
-	currentRentalIds, err := s.rentalRepo.GetMyRentals(context.Background(), userId, &query)
+	currentRentalIds, err := s.domainRepo.RentalRepo.GetMyRentals(context.Background(), userId, &query)
 	if err != nil {
 		return
 	}
 	query.Expired = true
-	res.EndedRentalIds, err = s.rentalRepo.GetMyRentals(context.Background(), userId, &query)
+	res.EndedRentalIds, err = s.domainRepo.RentalRepo.GetMyRentals(context.Background(), userId, &query)
 	if err != nil {
 		return
 	}
 
-	res.CurrentRentals, err = s.rentalRepo.GetRentalsByIds(context.Background(), currentRentalIds, query.Fields)
+	res.CurrentRentals, err = s.domainRepo.RentalRepo.GetRentalsByIds(context.Background(), currentRentalIds, query.Fields)
 	if err != nil {
 		return
 	}
@@ -251,14 +251,14 @@ func (s *service) GetTenantRentalStatistic(userId uuid.UUID) (res dto.TenantRent
 }
 
 func (s *service) GetTenantMaintenanceStatistic(userId uuid.UUID) (res dto.TenantMaintenanceStatisticResponse, err error) {
-	res.Pending, err = s.statisticRepo.GetRentalComplaintStatistics(context.Background(), userId, database.RENTALCOMPLAINTSTATUSPENDING)
-	res.Resolved, err = s.statisticRepo.GetRentalComplaintStatistics(context.Background(), userId, database.RENTALCOMPLAINTSTATUSRESOLVED)
-	res.Closed, err = s.statisticRepo.GetRentalComplaintStatistics(context.Background(), userId, database.RENTALCOMPLAINTSTATUSCLOSED)
+	res.Pending, err = s.domainRepo.StatisticRepo.GetRentalComplaintStatistics(context.Background(), userId, database.RENTALCOMPLAINTSTATUSPENDING)
+	res.Resolved, err = s.domainRepo.StatisticRepo.GetRentalComplaintStatistics(context.Background(), userId, database.RENTALCOMPLAINTSTATUSRESOLVED)
+	res.Closed, err = s.domainRepo.StatisticRepo.GetRentalComplaintStatistics(context.Background(), userId, database.RENTALCOMPLAINTSTATUSCLOSED)
 	return
 }
 
 func (s *service) GetTenantExpenditureStatistic(userId uuid.UUID, query *dto.RentalPaymentStatisticQuery) ([]dto.TenantExpenditureStatisticItem, error) {
-	user, err := s.authRepo.GetUserById(context.Background(), userId)
+	user, err := s.domainRepo.AuthRepo.GetUserById(context.Background(), userId)
 	if err != nil {
 		return nil, err
 	}
@@ -281,7 +281,7 @@ func (s *service) GetTenantExpenditureStatistic(userId uuid.UUID, query *dto.Ren
 			intervalEnd = query.EndTime
 		}
 
-		expenditure, err := s.statisticRepo.GetTenantExpenditure(context.Background(), userId, dto.RentalPaymentStatisticQuery{
+		expenditure, err := s.domainRepo.StatisticRepo.GetTenantExpenditure(context.Background(), userId, dto.RentalPaymentStatisticQuery{
 			StartTime: current,
 			EndTime:   intervalEnd,
 		})
@@ -303,11 +303,11 @@ func (s *service) GetTenantExpenditureStatistic(userId uuid.UUID, query *dto.Ren
 }
 
 func (s *service) GetTenantArrearsStatistic(userId uuid.UUID, query *dto.RentalPaymentStatisticQuery) (res dto.TenantArrearsStatistic, err error) {
-	res.Payments, err = s.statisticRepo.GetTenantPendingPayments(context.Background(), userId, *query)
+	res.Payments, err = s.domainRepo.StatisticRepo.GetTenantPendingPayments(context.Background(), userId, *query)
 	if err != nil {
 		return
 	}
 
-	res.Total, err = s.statisticRepo.GetTotalTenantPendingPayments(context.Background(), userId)
+	res.Total, err = s.domainRepo.StatisticRepo.GetTotalTenantPendingPayments(context.Background(), userId)
 	return
 }

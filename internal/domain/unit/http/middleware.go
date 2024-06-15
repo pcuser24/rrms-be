@@ -5,12 +5,12 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/user2410/rrms-backend/internal/domain/auth/http"
-	"github.com/user2410/rrms-backend/internal/domain/unit"
+	unit_service "github.com/user2410/rrms-backend/internal/domain/unit/service"
 	"github.com/user2410/rrms-backend/internal/interfaces/rest/responses"
 	"github.com/user2410/rrms-backend/internal/utils/token"
 )
 
-func CheckUnitManageability(s unit.Service) fiber.Handler {
+func CheckUnitManageability(s unit_service.Service) fiber.Handler {
 	return func(ctx *fiber.Ctx) error {
 		puid, err := uuid.Parse(ctx.Params("id"))
 		if err != nil {
@@ -40,7 +40,7 @@ func CheckUnitManageability(s unit.Service) fiber.Handler {
 
 const UnitIDLocalKey = "unitId"
 
-func CheckUnitVisiblitiy(service unit.Service) fiber.Handler {
+func CheckUnitVisiblitiy(service unit_service.Service) fiber.Handler {
 	return func(ctx *fiber.Ctx) error {
 		unitId, err := uuid.Parse(ctx.Params("id"))
 		if err != nil {

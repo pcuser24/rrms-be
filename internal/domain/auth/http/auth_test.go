@@ -137,7 +137,7 @@ func TestRegister(t *testing.T) {
 			repo := repo.NewMockRepo(ctrl)
 			tc.buildStubs(repo)
 
-			srv := newTestServer(t, repo)
+			srv := newTestServer(t, ctrl)
 
 			data, err := json.Marshal(tc.body)
 			require.NoError(t, err)
@@ -389,7 +389,7 @@ func TestLogin(t *testing.T) {
 			repo := repo.NewMockRepo(ctrl)
 			tc.buildStubs(repo)
 
-			srv := newTestServer(t, repo)
+			srv := newTestServer(t, ctrl)
 
 			data, err := json.Marshal(tc.body)
 			require.NoError(t, err)
@@ -493,7 +493,7 @@ func TestRefreshAccessToken(t *testing.T) {
 			repo := repo.NewMockRepo(ctrl)
 			tc.buildStubs(repo)
 
-			srv := newTestServer(t, repo)
+			srv := newTestServer(t, ctrl)
 
 			data, err := json.Marshal(tc.body(t, srv.tokenMaker))
 			require.NoError(t, err)
@@ -634,7 +634,7 @@ func TestUpdateUser(t *testing.T) {
 			repo := repo.NewMockRepo(ctrl)
 			tc.buildStubs(repo)
 
-			srv := newTestServer(t, repo)
+			srv := newTestServer(t, ctrl)
 
 			data, err := json.Marshal(tc.body)
 			require.NoError(t, err)

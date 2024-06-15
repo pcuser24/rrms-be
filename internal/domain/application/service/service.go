@@ -1,18 +1,12 @@
 package service
 
 import (
-	application_repo "github.com/user2410/rrms-backend/internal/domain/application/repo"
-	auth_repo "github.com/user2410/rrms-backend/internal/domain/auth/repo"
+	repos "github.com/user2410/rrms-backend/internal/domain/_repos"
 	chat_model "github.com/user2410/rrms-backend/internal/domain/chat/model"
-	chat_repo "github.com/user2410/rrms-backend/internal/domain/chat/repo"
-	listing_repo "github.com/user2410/rrms-backend/internal/domain/listing/repo"
-	property_repo "github.com/user2410/rrms-backend/internal/domain/property/repo"
-	rental_model "github.com/user2410/rrms-backend/internal/domain/rental/model"
-	unit_repo "github.com/user2410/rrms-backend/internal/domain/unit/repo"
-	"github.com/user2410/rrms-backend/internal/infrastructure/aws/s3"
-
 	misc_service "github.com/user2410/rrms-backend/internal/domain/misc/service"
 	reminder_service "github.com/user2410/rrms-backend/internal/domain/reminder"
+	rental_model "github.com/user2410/rrms-backend/internal/domain/rental/model"
+	"github.com/user2410/rrms-backend/internal/infrastructure/aws/s3"
 
 	"github.com/google/uuid"
 	"github.com/user2410/rrms-backend/internal/domain/application/dto"
@@ -35,12 +29,7 @@ type Service interface {
 }
 
 type service struct {
-	applicationRepo application_repo.Repo
-	authRepo        auth_repo.Repo
-	chatRepo        chat_repo.Repo
-	listingRepo     listing_repo.Repo
-	propertyRepo    property_repo.Repo
-	unitRepo        unit_repo.Repo
+	domainRepo      repos.DomainRepo
 	reminderService reminder_service.Service
 	miscService     misc_service.Service
 
@@ -51,12 +40,7 @@ type service struct {
 }
 
 func NewService(
-	applicationRepo application_repo.Repo,
-	authRepo auth_repo.Repo,
-	chatRepo chat_repo.Repo,
-	listingRepo listing_repo.Repo,
-	propertyRepo property_repo.Repo,
-	unitRepo unit_repo.Repo,
+	domainRepo repos.DomainRepo,
 	reminderService reminder_service.Service,
 	miscService misc_service.Service,
 	s3Client s3.S3Client,
@@ -64,12 +48,7 @@ func NewService(
 	feSite string,
 ) Service {
 	return &service{
-		applicationRepo: applicationRepo,
-		authRepo:        authRepo,
-		chatRepo:        chatRepo,
-		listingRepo:     listingRepo,
-		propertyRepo:    propertyRepo,
-		unitRepo:        unitRepo,
+		domainRepo:      domainRepo,
 		reminderService: reminderService,
 		miscService:     miscService,
 		s3Client:        s3Client,

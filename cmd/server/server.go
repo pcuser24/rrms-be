@@ -16,17 +16,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/user2410/rrms-backend/cmd/version"
-	application_service "github.com/user2410/rrms-backend/internal/domain/application/service"
-	"github.com/user2410/rrms-backend/internal/domain/auth"
-	"github.com/user2410/rrms-backend/internal/domain/chat"
-	listing_service "github.com/user2410/rrms-backend/internal/domain/listing/service"
-	misc_service "github.com/user2410/rrms-backend/internal/domain/misc/service"
-	payment_service "github.com/user2410/rrms-backend/internal/domain/payment/service"
-	property_service "github.com/user2410/rrms-backend/internal/domain/property/service"
-	"github.com/user2410/rrms-backend/internal/domain/reminder"
-	rental_service "github.com/user2410/rrms-backend/internal/domain/rental/service"
-	statistic_service "github.com/user2410/rrms-backend/internal/domain/statistic/service"
-	"github.com/user2410/rrms-backend/internal/domain/unit"
+	services "github.com/user2410/rrms-backend/internal/domain/_services"
 	"github.com/user2410/rrms-backend/internal/infrastructure/aws"
 	"github.com/user2410/rrms-backend/internal/infrastructure/aws/s3"
 	"github.com/user2410/rrms-backend/internal/infrastructure/aws/sns"
@@ -79,20 +69,6 @@ type serverConfig struct {
 	ElasticsearchAPIKey     *string `mapstructure:"ELASTICSEARCH_API_KEY" validate:"omitempty"`
 }
 
-type internalServices struct {
-	AuthService        auth.Service
-	PropertyService    property_service.Service
-	UnitService        unit.Service
-	ListingService     listing_service.Service
-	RentalService      rental_service.Service
-	ApplicationService application_service.Service
-	ReminderService    reminder.Service
-	PaymentService     payment_service.Service
-	ChatService        chat.Service
-	StatisticService   statistic_service.Service
-	MiscService        misc_service.Service
-}
-
 type serverCommand struct {
 	*cobra.Command
 	config        *serverConfig
@@ -103,7 +79,7 @@ type serverCommand struct {
 	snsClient            sns.SNSClient
 	notificationEndpoint notification.NotificationEndpoint
 	dao                  database.DAO
-	internalServices     internalServices
+	internalServices     services.DomainServices
 	httpServer           http.Server
 	elasticsearch        *es.ElasticSearchClient
 }

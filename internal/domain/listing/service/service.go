@@ -7,7 +7,7 @@ import (
 	"math"
 	"net/url"
 
-	"github.com/user2410/rrms-backend/internal/domain/listing/repo"
+	repos "github.com/user2410/rrms-backend/internal/domain/_repos"
 	"github.com/user2410/rrms-backend/internal/infrastructure/database"
 	"github.com/user2410/rrms-backend/internal/infrastructure/es"
 	"github.com/user2410/rrms-backend/pkg/ds/set"
@@ -18,11 +18,8 @@ import (
 	listing_utils "github.com/user2410/rrms-backend/internal/domain/listing/utils"
 	payment_dto "github.com/user2410/rrms-backend/internal/domain/payment/dto"
 	payment_model "github.com/user2410/rrms-backend/internal/domain/payment/model"
-	payment_repo "github.com/user2410/rrms-backend/internal/domain/payment/repo"
 	payment_service "github.com/user2410/rrms-backend/internal/domain/payment/service"
 	property_dto "github.com/user2410/rrms-backend/internal/domain/property/dto"
-	property_repo "github.com/user2410/rrms-backend/internal/domain/property/repo"
-	unit_repo "github.com/user2410/rrms-backend/internal/domain/unit/repo"
 	"github.com/user2410/rrms-backend/internal/interfaces/rest/requests"
 	"github.com/user2410/rrms-backend/internal/utils"
 	"github.com/user2410/rrms-backend/internal/utils/types"
@@ -50,30 +47,24 @@ type Service interface {
 }
 
 type service struct {
-	hashSecret  string
-	lRepo       repo.Repo
-	pRepo       property_repo.Repo
-	uRepo       unit_repo.Repo
-	paymentRepo payment_repo.Repo
+	hashSecret string
+	domainRepo repos.DomainRepo
 
 	esClient *es.ElasticSearchClient
 }
 
 func NewService(
-	lRepo repo.Repo, pRepo property_repo.Repo, uRepo unit_repo.Repo, paymentRepo payment_repo.Repo,
+	domainRepo repos.DomainRepo,
 	hashSecret string,
 ) Service {
 	return &service{
-		hashSecret:  hashSecret,
-		lRepo:       lRepo,
-		pRepo:       pRepo,
-		uRepo:       uRepo,
-		paymentRepo: paymentRepo,
+		hashSecret: hashSecret,
+		domainRepo: domainRepo,
 	}
 }
 
 func (s *service) GetListingByID(id uuid.UUID) (*model.ListingModel, error) {
-	return s.lRepo.GetListingByID(context.Background(), id)
+	return s.domainRepo.ListingRepo.GetListingByID(context.Background(), id)
 }
 
 func (s *service) GetListingsByIds(uid uuid.UUID, ids []uuid.UUID, fields []string) ([]model.ListingModel, error) {
@@ -81,19 +72,19 @@ func (s *service) GetListingsByIds(uid uuid.UUID, ids []uuid.UUID, fields []stri
 	if err != nil {
 		return nil, err
 	}
-	return s.lRepo.GetListingsByIds(context.Background(), visibleIDS, fields)
+	return s.domainRepo.ListingRepo.GetListingsByIds(context.Background(), visibleIDS, fields)
 }
 
 func (s *service) DeleteListing(id uuid.UUID) error {
-	return s.lRepo.DeleteListing(context.Background(), id)
+	return s.domainRepo.ListingRepo.DeleteListing(context.Background(), id)
 }
 
 func (s *service) CheckListingOwnership(lid uuid.UUID, uid uuid.UUID) (bool, error) {
-	return s.lRepo.CheckListingOwnership(context.Background(), lid, uid)
+	return s.domainRepo.ListingRepo.CheckListingOwnership(context.Background(), lid, uid)
 }
 
 func (s *service) CheckValidUnitForListing(lid uuid.UUID, uid uuid.UUID) (bool, error) {
-	return s.lRepo.CheckValidUnitForListing(context.Background(), lid, uid)
+	return s.domainRepo.ListingRepo.CheckValidUnitForListing(context.Background(), lid, uid)
 }
 
 func (s *service) GetListingsOfUser(userId uuid.UUID, query *dto.GetListingsQuery) (int, []model.ListingModel, error) {
@@ -104,7 +95,7 @@ func (s *service) GetListingsOfUser(userId uuid.UUID, query *dto.GetListingsQuer
 		Order:  utils.Ternary(len(query.Order) == 0, []string{"DESC"}, query.Order),
 	}
 
-	myListings, err := s.lRepo.SearchListingCombination(context.Background(), &dto.SearchListingCombinationQuery{
+	myListings, err := s.domainRepo.ListingRepo.SearchListingCombination(context.Background(), &dto.SearchListingCombinationQuery{
 		SearchListingQuery: dto.SearchListingQuery{
 			LCreatorID: types.Ptr(userId.String()),
 		},
@@ -114,7 +105,7 @@ func (s *service) GetListingsOfUser(userId uuid.UUID, query *dto.GetListingsQuer
 		return 0, nil, err
 	}
 
-	managedListings, err := s.lRepo.SearchListingCombination(context.Background(), &dto.SearchListingCombinationQuery{
+	managedListings, err := s.domainRepo.ListingRepo.SearchListingCombination(context.Background(), &dto.SearchListingCombinationQuery{
 		SearchPropertyQuery: property_dto.SearchPropertyQuery{
 			PManagerIDS:  []string{userId.String()},
 			PManagerRole: types.Ptr("OWNER"),
@@ -143,13 +134,13 @@ func (s *service) GetListingsOfUser(userId uuid.UUID, query *dto.GetListingsQuer
 	} else {
 		actualLength = utils.Ternary(total > int(*query.Limit), int(*query.Limit), total)
 	}
-	items, err := s.lRepo.GetListingsByIds(context.Background(), lids[0:actualLength], query.Fields)
+	items, err := s.domainRepo.ListingRepo.GetListingsByIds(context.Background(), lids[0:actualLength], query.Fields)
 
 	return total, items, err
 }
 
 func (s *service) GetListingPayments(id uuid.UUID) ([]payment_model.PaymentModel, error) {
-	return s.lRepo.GetListingPayments(context.Background(), id)
+	return s.domainRepo.ListingRepo.GetListingPayments(context.Background(), id)
 }
 
 func (s *service) CreateApplicationLink(data *dto.CreateApplicationLink) (string, error) {
@@ -175,20 +166,20 @@ func (s *service) VerifyApplicationLink(query *dto.VerifyApplicationLink) (bool,
 func (s *service) FilterVisibleListings(lids []uuid.UUID, uid uuid.UUID) ([]uuid.UUID, error) {
 	lidSet := set.NewSet[uuid.UUID]()
 	lidSet.AddAll(lids...)
-	return s.lRepo.FilterVisibleListings(context.Background(), lidSet.ToSlice(), uid)
+	return s.domainRepo.ListingRepo.FilterVisibleListings(context.Background(), lidSet.ToSlice(), uid)
 }
 
 func (s *service) CheckListingVisibility(lid uuid.UUID, uid uuid.UUID) (bool, error) {
-	return s.lRepo.CheckListingVisibility(context.Background(), lid, uid)
+	return s.domainRepo.ListingRepo.CheckListingVisibility(context.Background(), lid, uid)
 }
 
 func (s *service) UpgradeListing(userId uuid.UUID, lid uuid.UUID, priority int) (*payment_model.PaymentModel, error) {
-	listing, err := s.lRepo.GetListingByID(context.Background(), lid)
+	listing, err := s.domainRepo.ListingRepo.GetListingByID(context.Background(), lid)
 	if err != nil {
 		return nil, err
 	}
 
-	payments, err := s.lRepo.GetListingPaymentsByType(context.Background(), lid, payment_service.PAYMENTTYPE_UPGRADELISTING)
+	payments, err := s.domainRepo.ListingRepo.GetListingPaymentsByType(context.Background(), lid, payment_service.PAYMENTTYPE_UPGRADELISTING)
 	if err != nil && errors.Is(err, database.ErrRecordNotFound) {
 		return nil, err
 	}
@@ -224,7 +215,7 @@ func (s *service) UpgradeListing(userId uuid.UUID, lid uuid.UUID, priority int) 
 		},
 	}
 
-	payment, err := s.paymentRepo.CreatePayment(context.Background(), &params)
+	payment, err := s.domainRepo.PaymentRepo.CreatePayment(context.Background(), &params)
 	if err != nil {
 		return nil, err
 	}
@@ -232,12 +223,12 @@ func (s *service) UpgradeListing(userId uuid.UUID, lid uuid.UUID, priority int) 
 }
 
 func (s *service) ExtendListing(userId uuid.UUID, lid uuid.UUID, duration int) (*payment_model.PaymentModel, error) {
-	listing, err := s.lRepo.GetListingByID(context.Background(), lid)
+	listing, err := s.domainRepo.ListingRepo.GetListingByID(context.Background(), lid)
 	if err != nil {
 		return nil, err
 	}
 
-	payments, err := s.lRepo.GetListingPaymentsByType(context.Background(), lid, payment_service.PAYMENTTYPE_EXTENDLISTING)
+	payments, err := s.domainRepo.ListingRepo.GetListingPaymentsByType(context.Background(), lid, payment_service.PAYMENTTYPE_EXTENDLISTING)
 	if err != nil && errors.Is(err, database.ErrRecordNotFound) {
 		return nil, err
 	}
@@ -273,7 +264,7 @@ func (s *service) ExtendListing(userId uuid.UUID, lid uuid.UUID, duration int) (
 		},
 	}
 
-	payment, err := s.paymentRepo.CreatePayment(context.Background(), &params)
+	payment, err := s.domainRepo.PaymentRepo.CreatePayment(context.Background(), &params)
 	if err != nil {
 		return nil, err
 	}

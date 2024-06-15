@@ -8,33 +8,33 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/stretchr/testify/require"
-	application_repo "github.com/user2410/rrms-backend/internal/domain/application/repo"
-	auth_repo "github.com/user2410/rrms-backend/internal/domain/auth/repo"
-	listing_repo "github.com/user2410/rrms-backend/internal/domain/listing/repo"
-	"github.com/user2410/rrms-backend/internal/domain/property/repo"
+	repos "github.com/user2410/rrms-backend/internal/domain/_repos"
 	property_service "github.com/user2410/rrms-backend/internal/domain/property/service"
-	rental_repo "github.com/user2410/rrms-backend/internal/domain/rental/repo"
-	unit_repo "github.com/user2410/rrms-backend/internal/domain/unit/repo"
+	"github.com/user2410/rrms-backend/internal/infrastructure/aws/s3"
 	"github.com/user2410/rrms-backend/internal/infrastructure/http"
 	"github.com/user2410/rrms-backend/internal/utils/random"
 	"github.com/user2410/rrms-backend/internal/utils/token"
+	"go.uber.org/mock/gomock"
 )
 
 type server struct {
-	pr         repo.Repo
-	ur         unit_repo.Repo
+	domainRepo repos.DomainRepo
 	tokenMaker token.Maker
 	router     http.Server
 }
 
-func newTestServer(t *testing.T, propertyRepo repo.Repo, unitRepo unit_repo.Repo, listingRepo listing_repo.Repo, applicationRepo application_repo.Repo, rentalRepo rental_repo.Repo, authRepo auth_repo.Repo) *server {
+func newTestServer(t *testing.T, ctrl *gomock.Controller) *server {
 
 	tokenMaker, err := token.NewJWTMaker(random.RandomAlphanumericStr(32))
 	require.NoError(t, err)
 	require.NotNil(t, tokenMaker)
 
+	domainRepo := repos.NewDomainRepoFromMockCtrl(ctrl)
+
+	s3Client := s3.NewMockS3Client(ctrl)
+
 	// initialize service
-	service := property_service.NewService(propertyRepo, unitRepo, listingRepo, applicationRepo, rentalRepo, authRepo, nil, "")
+	service := property_service.NewService(domainRepo, s3Client, "")
 
 	// initialize http router
 	httpServer := http.NewServer(
@@ -50,8 +50,7 @@ func newTestServer(t *testing.T, propertyRepo repo.Repo, unitRepo unit_repo.Repo
 	NewAdapter(service).RegisterServer(httpServer.GetApiRoute(), tokenMaker)
 
 	return &server{
-		pr:         propertyRepo,
-		ur:         unitRepo,
+		domainRepo: domainRepo,
 		tokenMaker: tokenMaker,
 		router:     httpServer,
 	}

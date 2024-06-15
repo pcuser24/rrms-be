@@ -20,5 +20,5 @@ func (s *service) SearchListingCombination(q *dto.SearchListingCombinationQuery,
 	q.LActive = types.Ptr(true)
 	q.PIsPublic = types.Ptr(true)
 	q.LMinExpiredAt = types.Ptr(time.Now())
-	return s.lRepo.SearchListingCombination(context.Background(), q)
+	return s.domainRepo.ListingRepo.SearchListingCombination(context.Background(), q)
 }

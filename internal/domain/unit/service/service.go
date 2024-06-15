@@ -1,4 +1,4 @@
-package unit
+package service
 
 import (
 	"context"
@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/user2410/rrms-backend/internal/domain/unit/repo"
+	repos "github.com/user2410/rrms-backend/internal/domain/_repos"
 	"github.com/user2410/rrms-backend/internal/infrastructure/aws/s3"
 
 	"github.com/google/uuid"
@@ -33,15 +33,15 @@ type Service interface {
 }
 
 type service struct {
-	repo repo.Repo
+	domainRepo repos.DomainRepo
 
 	s3Client        s3.S3Client
 	imageBucketName string
 }
 
-func NewService(repo repo.Repo, s3Client s3.S3Client, imageBucketName string) Service {
+func NewService(domainRepo repos.DomainRepo, s3Client s3.S3Client, imageBucketName string) Service {
 	return &service{
-		repo: repo,
+		domainRepo: domainRepo,
 
 		s3Client:        s3Client,
 		imageBucketName: imageBucketName,
@@ -69,11 +69,11 @@ func (s *service) PreCreateUnit(data *dto.PreCreateUnit, creatorID uuid.UUID) er
 }
 
 func (s *service) CreateUnit(data *dto.CreateUnit) (*model.UnitModel, error) {
-	return s.repo.CreateUnit(context.Background(), data)
+	return s.domainRepo.UnitRepo.CreateUnit(context.Background(), data)
 }
 
 func (s *service) GetUnitById(id uuid.UUID) (*model.UnitModel, error) {
-	return s.repo.GetUnitById(context.Background(), id)
+	return s.domainRepo.UnitRepo.GetUnitById(context.Background(), id)
 }
 
 func (s *service) GetUnitsByIds(ids []uuid.UUID, fields []string, userId uuid.UUID) ([]model.UnitModel, error) {
@@ -88,23 +88,23 @@ func (s *service) GetUnitsByIds(ids []uuid.UUID, fields []string, userId uuid.UU
 		}
 	}
 
-	return s.repo.GetUnitsByIds(context.Background(), _ids, fields)
+	return s.domainRepo.UnitRepo.GetUnitsByIds(context.Background(), _ids, fields)
 }
 
 func (s *service) UpdateUnit(data *dto.UpdateUnit) error {
-	return s.repo.UpdateUnit(context.Background(), data)
+	return s.domainRepo.UnitRepo.UpdateUnit(context.Background(), data)
 }
 
 func (s *service) DeleteUnit(id uuid.UUID) error {
-	return s.repo.DeleteUnit(context.Background(), id)
+	return s.domainRepo.UnitRepo.DeleteUnit(context.Background(), id)
 }
 
 func (s *service) CheckUnitManageability(id uuid.UUID, userId uuid.UUID) (bool, error) {
-	return s.repo.CheckUnitManageability(context.Background(), id, userId)
+	return s.domainRepo.UnitRepo.CheckUnitManageability(context.Background(), id, userId)
 }
 
 func (s *service) CheckVisibility(id uuid.UUID, uid uuid.UUID) (bool, error) {
-	isPublic, err := s.repo.IsPublic(context.Background(), id)
+	isPublic, err := s.domainRepo.UnitRepo.IsPublic(context.Background(), id)
 	if err != nil {
 		return false, err
 	}
@@ -115,9 +115,9 @@ func (s *service) CheckVisibility(id uuid.UUID, uid uuid.UUID) (bool, error) {
 }
 
 func (s *service) CheckUnitOfProperty(pid, uid uuid.UUID) (bool, error) {
-	return s.repo.CheckUnitOfProperty(context.Background(), pid, uid)
+	return s.domainRepo.UnitRepo.CheckUnitOfProperty(context.Background(), pid, uid)
 }
 
 func (s *service) SearchUnit(query *dto.SearchUnitCombinationQuery) (*dto.SearchUnitCombinationResponse, error) {
-	return s.repo.SearchUnitCombination(context.Background(), query)
+	return s.domainRepo.UnitRepo.SearchUnitCombination(context.Background(), query)
 }

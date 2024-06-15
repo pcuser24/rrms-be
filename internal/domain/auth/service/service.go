@@ -1,4 +1,4 @@
-package auth
+package service
 
 import (
 	"context"
@@ -8,7 +8,7 @@ import (
 
 	"github.com/user2410/rrms-backend/pkg/ds/set"
 
-	"github.com/user2410/rrms-backend/internal/domain/auth/repo"
+	repos "github.com/user2410/rrms-backend/internal/domain/_repos"
 
 	"github.com/google/uuid"
 	"github.com/user2410/rrms-backend/internal/domain/auth/dto"
@@ -30,19 +30,19 @@ type Service interface {
 }
 
 type service struct {
-	repo            repo.Repo
+	domainRepo      repos.DomainRepo
 	tokenMaker      token.Maker
 	accessTokenTTL  time.Duration
 	refreshTokenTTL time.Duration
 }
 
 func NewService(
-	repo repo.Repo,
+	domainRepo repos.DomainRepo,
 	tokenMaker token.Maker,
 	accessTokenTTL, refreshToken time.Duration,
 ) Service {
 	return &service{
-		repo:            repo,
+		domainRepo:      domainRepo,
 		tokenMaker:      tokenMaker,
 		accessTokenTTL:  accessTokenTTL,
 		refreshTokenTTL: refreshToken,
@@ -57,7 +57,7 @@ func (u *service) Register(data *dto.RegisterUser) (*model.UserModel, error) {
 	data.Password = hash
 
 	// Create a new entry in User table
-	user, err := u.repo.CreateUser(context.Background(), data)
+	user, err := u.domainRepo.AuthRepo.CreateUser(context.Background(), data)
 	if err != nil {
 		return nil, err
 	}
@@ -69,7 +69,7 @@ func (u *service) Register(data *dto.RegisterUser) (*model.UserModel, error) {
 var ErrInvalidCredential = fmt.Errorf("invalid password")
 
 func (u *service) Login(data *dto.LoginUser, sessionData *dto.CreateSession) (*dto.LoginUserRes, error) {
-	user, err := u.repo.GetUserByEmail(context.Background(), data.Email)
+	user, err := u.domainRepo.AuthRepo.GetUserByEmail(context.Background(), data.Email)
 	if err != nil {
 		return nil, err
 	}
@@ -82,7 +82,7 @@ func (u *service) Login(data *dto.LoginUser, sessionData *dto.CreateSession) (*d
 	// Check for session existence
 	var currentSession *model.SessionModel = nil
 	if sessionData.ID != uuid.Nil {
-		currentSession, err = u.repo.GetSessionById(context.Background(), sessionData.ID)
+		currentSession, err = u.domainRepo.AuthRepo.GetSessionById(context.Background(), sessionData.ID)
 		if err != nil && err != database.ErrRecordNotFound {
 			return nil, err
 		}
@@ -135,7 +135,7 @@ func (u *service) Login(data *dto.LoginUser, sessionData *dto.CreateSession) (*d
 	sessionData.Expires = refreshPayload.ExpiredAt
 	sessionData.CreatedAt = refreshPayload.IssuedAt
 	// 3. Create a new session
-	session, err := u.repo.CreateSession(context.Background(), sessionData)
+	session, err := u.domainRepo.AuthRepo.CreateSession(context.Background(), sessionData)
 	if err != nil {
 		return nil, err
 	}
@@ -151,11 +151,11 @@ func (u *service) Login(data *dto.LoginUser, sessionData *dto.CreateSession) (*d
 }
 
 func (u *service) GetUserByEmail(email string) (*model.UserModel, error) {
-	return u.repo.GetUserByEmail(context.Background(), email)
+	return u.domainRepo.AuthRepo.GetUserByEmail(context.Background(), email)
 }
 
 func (u *service) GetUserById(id uuid.UUID) (*dto.UserResponse, error) {
-	res, err := u.repo.GetUserById(context.Background(), id)
+	res, err := u.domainRepo.AuthRepo.GetUserById(context.Background(), id)
 	if err != nil {
 		return nil, err
 	}
@@ -199,7 +199,7 @@ func (u *service) RefreshAccessToken(accessToken, refreshToken string) (*dto.Log
 		}, nil
 	}
 
-	session, err := u.repo.GetSessionById(context.Background(), accessPayload.ID)
+	session, err := u.domainRepo.AuthRepo.GetSessionById(context.Background(), accessPayload.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -239,7 +239,7 @@ func (u *service) RefreshAccessToken(accessToken, refreshToken string) (*dto.Log
 }
 
 func (u *service) Logout(id uuid.UUID) error {
-	return u.repo.UpdateSessionStatus(context.Background(), id, true)
+	return u.domainRepo.AuthRepo.UpdateSessionStatus(context.Background(), id, true)
 }
 
 func (u *service) UpdateUser(currentUserId, targetUserId uuid.UUID, data *dto.UpdateUser) error {
@@ -261,5 +261,5 @@ func (u *service) UpdateUser(currentUserId, targetUserId uuid.UUID, data *dto.Up
 	}
 
 	// Update user
-	return u.repo.UpdateUser(context.Background(), targetUserId, data)
+	return u.domainRepo.AuthRepo.UpdateUser(context.Background(), targetUserId, data)
 }

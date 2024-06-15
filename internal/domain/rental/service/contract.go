@@ -11,7 +11,7 @@ import (
 )
 
 func (s *service) CreateContract(data *dto.CreateContract) (*model.ContractModel, error) {
-	return s.rRepo.CreateContract(context.Background(), data)
+	return s.domainRepo.RentalRepo.CreateContract(context.Background(), data)
 }
 
 func (s *service) GetRentalContractsOfUser(userId uuid.UUID, query *dto.GetRentalContracts) ([]model.ContractModel, error) {
@@ -21,30 +21,30 @@ func (s *service) GetRentalContractsOfUser(userId uuid.UUID, query *dto.GetRenta
 	if query.Offset == nil {
 		query.Offset = types.Ptr[int32](0)
 	}
-	rs, err := s.rRepo.GetRentalContractsOfUser(context.Background(), userId, query)
+	rs, err := s.domainRepo.RentalRepo.GetRentalContractsOfUser(context.Background(), userId, query)
 	if err != nil {
 		return nil, err
 	}
 
-	return s.rRepo.GetContractsByIds(context.Background(), rs, query.Fields)
+	return s.domainRepo.RentalRepo.GetContractsByIds(context.Background(), rs, query.Fields)
 }
 
 func (s *service) GetRentalContract(id int64) (*model.ContractModel, error) {
-	return s.rRepo.GetContractByRentalID(context.Background(), id)
+	return s.domainRepo.RentalRepo.GetContractByRentalID(context.Background(), id)
 }
 
 func (s *service) PingRentalContract(id int64) (any, error) {
-	return s.rRepo.PingRentalContract(context.Background(), id)
+	return s.domainRepo.RentalRepo.PingRentalContract(context.Background(), id)
 }
 
 func (s *service) GetContract(id int64) (*model.ContractModel, error) {
-	return s.rRepo.GetContractByID(context.Background(), id)
+	return s.domainRepo.RentalRepo.GetContractByID(context.Background(), id)
 }
 
 func (s *service) UpdateContract(data *dto.UpdateContract) error {
-	return s.rRepo.UpdateContract(context.Background(), data)
+	return s.domainRepo.RentalRepo.UpdateContract(context.Background(), data)
 }
 
 func (s *service) UpdateContractContent(data *dto.UpdateContractContent) error {
-	return s.rRepo.UpdateContractContent(context.Background(), data)
+	return s.domainRepo.RentalRepo.UpdateContractContent(context.Background(), data)
 }

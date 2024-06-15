@@ -59,15 +59,13 @@ func TestCreatePaymentUrl(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			repo := repo.NewMockRepo(ctrl)
-
 			data, err := json.Marshal(tc.body)
 			require.NoError(t, err)
 
 			req := httptest.NewRequest(http.MethodPost, "/api/payment/vnpay/create_payment_url", bytes.NewReader(data))
 			req.Header.Set("Content-Type", "application/json")
 
-			srv := newTestServer(t, repo)
+			srv := newTestServer(t, ctrl)
 			res, err := srv.router.GetFibApp().Test(req)
 			require.NoError(t, err)
 

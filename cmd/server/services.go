@@ -1,8 +1,9 @@
 package server
 
 import (
+	repos "github.com/user2410/rrms-backend/internal/domain/_repos"
 	application_service "github.com/user2410/rrms-backend/internal/domain/application/service"
-	"github.com/user2410/rrms-backend/internal/domain/auth"
+	auth_service "github.com/user2410/rrms-backend/internal/domain/auth/service"
 	"github.com/user2410/rrms-backend/internal/domain/chat"
 	listing_service "github.com/user2410/rrms-backend/internal/domain/listing/service"
 	misc_service "github.com/user2410/rrms-backend/internal/domain/misc/service"
@@ -11,7 +12,7 @@ import (
 	"github.com/user2410/rrms-backend/internal/domain/reminder"
 	rental_service "github.com/user2410/rrms-backend/internal/domain/rental/service"
 	statistic_service "github.com/user2410/rrms-backend/internal/domain/statistic/service"
-	"github.com/user2410/rrms-backend/internal/domain/unit"
+	unit_service "github.com/user2410/rrms-backend/internal/domain/unit/service"
 
 	application_repo "github.com/user2410/rrms-backend/internal/domain/application/repo"
 	auth_repo "github.com/user2410/rrms-backend/internal/domain/auth/repo"
@@ -27,65 +28,58 @@ import (
 )
 
 func (c *serverCommand) setupInternalServices() {
+	var domainRepo repos.DomainRepo
 	// Initialize repositories
-	authRepo := auth_repo.NewRepo(c.dao)
-	propertyRepo := property_repo.NewRepo(c.dao)
-	unitRepo := unit_repo.NewRepo(c.dao)
-	listingRepo := listing_repo.NewRepo(c.dao)
-	rentalRepo := rental_repo.NewRepo(c.dao)
-	applicationRepo := application_repo.NewRepo(c.dao)
-	paymentRepo := payment_repo.NewRepo(c.dao)
-	chatRepo := chat_repo.NewRepo(c.dao)
-	reminderRepo := reminder_repo.NewRepo(c.dao)
-	statisticRepo := statistic_repo.NewRepo(c.dao)
-	miscRepo := misc_repo.NewRepo(c.dao)
+	domainRepo.AuthRepo = auth_repo.NewRepo(c.dao)
+	domainRepo.PropertyRepo = property_repo.NewRepo(c.dao)
+	domainRepo.UnitRepo = unit_repo.NewRepo(c.dao)
+	domainRepo.ListingRepo = listing_repo.NewRepo(c.dao)
+	domainRepo.RentalRepo = rental_repo.NewRepo(c.dao)
+	domainRepo.ApplicationRepo = application_repo.NewRepo(c.dao)
+	domainRepo.PaymentRepo = payment_repo.NewRepo(c.dao)
+	domainRepo.ChatRepo = chat_repo.NewRepo(c.dao)
+	domainRepo.ReminderRepo = reminder_repo.NewRepo(c.dao)
+	domainRepo.StatisticRepo = statistic_repo.NewRepo(c.dao)
+	domainRepo.MiscRepo = misc_repo.NewRepo(c.dao)
 
 	// Initialize internal services
-	c.internalServices.MiscService = misc_service.NewService(miscRepo, c.notificationEndpoint, c.cronScheduler)
-	c.internalServices.AuthService = auth.NewService(
-		authRepo,
+	c.internalServices.MiscService = misc_service.NewService(domainRepo, c.notificationEndpoint, c.cronScheduler)
+	c.internalServices.AuthService = auth_service.NewService(
+		domainRepo,
 		c.tokenMaker, c.config.AccessTokenTTL, c.config.RefreshTokenTTL,
 	)
 	c.internalServices.PropertyService = property_service.NewService(
-		propertyRepo, unitRepo, listingRepo, applicationRepo, rentalRepo, authRepo,
+		domainRepo,
 		c.s3Client, c.config.AWSS3ImageBucket,
 	)
-	c.internalServices.UnitService = unit.NewService(unitRepo, c.s3Client, c.config.AWSS3ImageBucket)
+	c.internalServices.UnitService = unit_service.NewService(domainRepo, c.s3Client, c.config.AWSS3ImageBucket)
 	c.internalServices.ListingService = listing_service.NewService(
-		listingRepo,
-		propertyRepo,
-		unitRepo,
-		paymentRepo,
+		domainRepo,
 		c.config.TokenSecreteKey,
 	)
 	c.internalServices.RentalService = rental_service.NewService(
-		rentalRepo, authRepo, applicationRepo, listingRepo, propertyRepo, unitRepo,
+		domainRepo,
 		c.internalServices.MiscService,
 		c.cronScheduler,
 		c.s3Client, c.config.AWSS3ImageBucket,
 	)
 	c.internalServices.ReminderService = reminder.NewService(
-		reminderRepo,
+		domainRepo,
 	)
 	c.internalServices.ApplicationService = application_service.NewService(
-		applicationRepo, authRepo, chatRepo, listingRepo, propertyRepo, unitRepo,
+		domainRepo,
 		c.internalServices.ReminderService, c.internalServices.MiscService,
 		c.s3Client, c.config.AWSS3ImageBucket,
 		c.config.FESite,
 	)
 	c.internalServices.PaymentService = vnp_service.NewVnpayService(
-		paymentRepo,
+		domainRepo,
 		c.internalServices.ListingService,
 		c.config.VnpTmnCode, c.config.VnpHashSecret, c.config.VnpUrl, c.config.VnpApi,
 	)
-	c.internalServices.ChatService = chat.NewService(chatRepo)
+	c.internalServices.ChatService = chat.NewService(domainRepo.ChatRepo)
 	c.internalServices.StatisticService = statistic_service.NewService(
-		authRepo,
-		listingRepo,
-		statisticRepo,
-		propertyRepo,
-		unitRepo,
-		rentalRepo,
+		domainRepo,
 		c.elasticsearch,
 	)
 }

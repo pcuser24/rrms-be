@@ -13,7 +13,7 @@ import (
 	listing_service "github.com/user2410/rrms-backend/internal/domain/listing/service"
 	"github.com/user2410/rrms-backend/internal/domain/listing/utils"
 	property_service "github.com/user2410/rrms-backend/internal/domain/property/service"
-	"github.com/user2410/rrms-backend/internal/domain/unit"
+	unit_service "github.com/user2410/rrms-backend/internal/domain/unit/service"
 	"github.com/user2410/rrms-backend/internal/infrastructure/database"
 	"github.com/user2410/rrms-backend/internal/interfaces/rest/responses"
 	"github.com/user2410/rrms-backend/internal/utils/token"
@@ -26,11 +26,11 @@ type Adapter interface {
 
 type adapter struct {
 	pService property_service.Service
-	uService unit.Service
+	uService unit_service.Service
 	lService listing_service.Service
 }
 
-func NewAdapter(lService listing_service.Service, pService property_service.Service, uService unit.Service) Adapter {
+func NewAdapter(lService listing_service.Service, pService property_service.Service, uService unit_service.Service) Adapter {
 	return &adapter{
 		lService: lService,
 		pService: pService,

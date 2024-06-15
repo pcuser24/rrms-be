@@ -1,14 +1,14 @@
 package vnpay
 
 import (
+	repos "github.com/user2410/rrms-backend/internal/domain/_repos"
 	listing_service "github.com/user2410/rrms-backend/internal/domain/listing/service"
-	"github.com/user2410/rrms-backend/internal/domain/payment/repo"
 	"github.com/user2410/rrms-backend/internal/domain/payment/service"
 )
 
 type VnPayService struct {
 	service.PaymentService
-	repo          repo.Repo
+	domainRepo    repos.DomainRepo
 	lService      listing_service.Service
 	vnpTmnCode    string
 	vnpHashSecret string
@@ -17,12 +17,12 @@ type VnPayService struct {
 }
 
 func NewVnpayService(
-	repo repo.Repo, lService listing_service.Service,
+	domainRepo repos.DomainRepo, lService listing_service.Service,
 	vnpTmnCode string, vnpHashSecret string, vnpUrl string, vnpApi string,
 ) service.Service {
 	return &VnPayService{
-		PaymentService: service.NewPaymentService(repo),
-		repo:           repo,
+		PaymentService: service.NewPaymentService(domainRepo.PaymentRepo),
+		domainRepo:     domainRepo,
 		lService:       lService,
 		vnpTmnCode:     vnpTmnCode,
 		vnpHashSecret:  vnpHashSecret,

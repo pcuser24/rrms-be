@@ -163,7 +163,7 @@ func (s *service) CreateListing(data *dto.CreateListing) (*dto.CreateListingResp
 		err error
 	)
 	// create listing
-	res.Listing, err = s.lRepo.CreateListing(context.Background(), data)
+	res.Listing, err = s.domainRepo.ListingRepo.CreateListing(context.Background(), data)
 	if err != nil {
 		return nil, err
 	}
@@ -185,7 +185,7 @@ func (s *service) CreateListing(data *dto.CreateListing) (*dto.CreateListingResp
 		},
 	}
 
-	res.Payment, err = s.paymentRepo.CreatePayment(context.Background(), &params)
+	res.Payment, err = s.domainRepo.PaymentRepo.CreatePayment(context.Background(), &params)
 	if err != nil {
 		return nil, err
 	}
@@ -193,13 +193,13 @@ func (s *service) CreateListing(data *dto.CreateListing) (*dto.CreateListingResp
 	// index new listing
 	esClient := s.esClient.GetTypedClient()
 
-	property, err := s.pRepo.GetPropertyById(context.Background(), res.Listing.PropertyID)
+	property, err := s.domainRepo.PropertyRepo.GetPropertyById(context.Background(), res.Listing.PropertyID)
 	if err != nil {
 		return res, err
 	}
 	units := make([]unit_model.UnitModel, 0, len(res.Listing.Units))
 	for _, u := range res.Listing.Units {
-		unit, err := s.uRepo.GetUnitById(context.Background(), u.UnitID)
+		unit, err := s.domainRepo.UnitRepo.GetUnitById(context.Background(), u.UnitID)
 		if err != nil {
 			return res, err
 		}

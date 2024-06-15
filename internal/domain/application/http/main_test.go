@@ -7,17 +7,13 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
+	"github.com/robfig/cron/v3"
 	"github.com/stretchr/testify/require"
-	application_repo "github.com/user2410/rrms-backend/internal/domain/application/repo"
+	repos "github.com/user2410/rrms-backend/internal/domain/_repos"
 	application "github.com/user2410/rrms-backend/internal/domain/application/service"
-	auth_repo "github.com/user2410/rrms-backend/internal/domain/auth/repo"
-	chat_repo "github.com/user2410/rrms-backend/internal/domain/chat/repo"
-	listing_repo "github.com/user2410/rrms-backend/internal/domain/listing/repo"
 	listing_service "github.com/user2410/rrms-backend/internal/domain/listing/service"
-	property_repo "github.com/user2410/rrms-backend/internal/domain/property/repo"
+	misc_service "github.com/user2410/rrms-backend/internal/domain/misc/service"
 	"github.com/user2410/rrms-backend/internal/domain/reminder"
-	reminder_repo "github.com/user2410/rrms-backend/internal/domain/reminder/repo"
-	unit_repo "github.com/user2410/rrms-backend/internal/domain/unit/repo"
 	"go.uber.org/mock/gomock"
 
 	"github.com/user2410/rrms-backend/internal/infrastructure/aws/s3"
@@ -27,9 +23,7 @@ import (
 )
 
 type server struct {
-	ur         unit_repo.Repo
-	pr         property_repo.Repo
-	lr         listing_repo.Repo
+	domainRepo repos.DomainRepo
 	tokenMaker token.Maker
 	router     http.Server
 }
@@ -44,20 +38,15 @@ func newTestServer(
 	require.NotNil(t, tokenMaker)
 
 	// initialize services
-	propertyRepo := property_repo.NewMockRepo(mockCtrl)
-	unitRepo := unit_repo.NewMockRepo(mockCtrl)
-	listingRepo := listing_repo.NewMockRepo(mockCtrl)
-	applicationRepo := application_repo.NewMockRepo(mockCtrl)
-	reminderRepo := reminder_repo.NewMockRepo(mockCtrl)
-	authRepo := auth_repo.NewMockRepo(mockCtrl)
-	chatRepo := chat_repo.NewMockRepo(mockCtrl)
+	domainRepo := repos.NewDomainRepoFromMockCtrl(mockCtrl)
 
+	reminderService := reminder.NewService(domainRepo)
+	// TODO: mock notification endpoint
+	miscService := misc_service.NewService(domainRepo, nil, cron.New())
+	// TODO: mock s3 client
 	s3Client := s3.NewMockS3Client(mockCtrl)
-
-	rService := reminder.NewService(reminderRepo)
-	// miscService := misc.NewService()
-	aService := application.NewService(applicationRepo, authRepo, chatRepo, listingRepo, propertyRepo, unitRepo, rService, nil, s3Client, "", "https://rrms.rental.vn/")
-	lService := listing_service.NewService(listingRepo, propertyRepo, unitRepo, nil, "") // NOTE: leave paymentRepo nil for now
+	applicationService := application.NewService(domainRepo, reminderService, miscService, s3Client, "", "https://rrms.rental.vn/")
+	lService := listing_service.NewService(domainRepo, "") // NOTE: leave paymentRepo nil for now
 
 	// initialize http router
 	httpServer := http.NewServer(
@@ -70,12 +59,10 @@ func newTestServer(
 			AllowHeaders: "Origin, Content-Type, Accept, Authorization",
 		},
 	)
-	NewAdapter(lService, aService).RegisterServer(httpServer.GetApiRoute(), tokenMaker)
+	NewAdapter(lService, applicationService).RegisterServer(httpServer.GetApiRoute(), tokenMaker)
 
 	return &server{
-		pr:         propertyRepo,
-		ur:         unitRepo,
-		lr:         listingRepo,
+		domainRepo: domainRepo,
 		tokenMaker: tokenMaker,
 		router:     httpServer,
 	}

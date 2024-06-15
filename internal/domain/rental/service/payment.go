@@ -14,15 +14,15 @@ import (
 
 func (s *service) CreateRentalPayment(data *dto.CreateRentalPayment) (model.RentalPayment, error) {
 	// TODO: validate rental payment (code)
-	return s.rRepo.CreateRentalPayment(context.Background(), data)
+	return s.domainRepo.RentalRepo.CreateRentalPayment(context.Background(), data)
 }
 
 func (s *service) GetRentalPayment(id int64) (model.RentalPayment, error) {
-	return s.rRepo.GetRentalPayment(context.Background(), id)
+	return s.domainRepo.RentalRepo.GetRentalPayment(context.Background(), id)
 }
 
 func (s *service) GetPaymentsOfRental(rentalID int64) ([]model.RentalPayment, error) {
-	return s.rRepo.GetPaymentsOfRental(context.Background(), rentalID)
+	return s.domainRepo.RentalRepo.GetPaymentsOfRental(context.Background(), rentalID)
 }
 
 func (s *service) GetManagedRentalPayments(uid uuid.UUID, query *dto.GetManagedRentalPaymentsQuery) ([]dto.GetManagedRentalPaymentsItem, error) {
@@ -35,15 +35,15 @@ func (s *service) GetManagedRentalPayments(uid uuid.UUID, query *dto.GetManagedR
 	statusSet := set.NewSet[database.RENTALPAYMENTSTATUS]()
 	statusSet.AddAll(query.Status...)
 	query.Status = statusSet.ToSlice()
-	return s.rRepo.GetManagedRentalPayments(context.Background(), uid, query)
+	return s.domainRepo.RentalRepo.GetManagedRentalPayments(context.Background(), uid, query)
 }
 
 func (s *service) UpdateRentalPayment(id int64, userId uuid.UUID, data dto.IUpdateRentalPayment, status database.RENTALPAYMENTSTATUS) error {
-	rp, err := s.rRepo.GetRentalPayment(context.Background(), id)
+	rp, err := s.domainRepo.RentalRepo.GetRentalPayment(context.Background(), id)
 	if err != nil {
 		return err
 	}
-	side, err := s.rRepo.GetRentalSide(context.Background(), rp.RentalID, userId)
+	side, err := s.domainRepo.RentalRepo.GetRentalSide(context.Background(), rp.RentalID, userId)
 	if err != nil {
 		return err
 	}
@@ -103,6 +103,6 @@ func (s *service) UpdateRentalPayment(id int64, userId uuid.UUID, data dto.IUpda
 	default:
 		return ErrInvalidPaymentTypeTransition
 	}
-	return s.rRepo.UpdateRentalPayment(context.Background(), &_data)
+	return s.domainRepo.RentalRepo.UpdateRentalPayment(context.Background(), &_data)
 
 }

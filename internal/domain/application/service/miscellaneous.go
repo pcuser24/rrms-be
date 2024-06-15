@@ -18,7 +18,7 @@ import (
 )
 
 func (s *service) GetRentalByApplicationId(aid int64) (rental_model.RentalModel, error) {
-	return s.applicationRepo.GetRentalByApplicationId(context.Background(), aid)
+	return s.domainRepo.ApplicationRepo.GetRentalByApplicationId(context.Background(), aid)
 }
 
 func (s *service) _sendNotification(
@@ -29,7 +29,7 @@ func (s *service) _sendNotification(
 	tenantEmailContent, tenantPushContent string,
 ) error {
 	// get all managers
-	managers, err := s.propertyRepo.GetPropertyManagers(context.Background(), am.PropertyID)
+	managers, err := s.domainRepo.PropertyRepo.GetPropertyManagers(context.Background(), am.PropertyID)
 	if err != nil {
 		return err
 	}
@@ -45,12 +45,12 @@ func (s *service) _sendNotification(
 		userIds.AddAll(managerIds.ToSlice()...)
 		userIds.Add(am.CreatorID)
 
-		users, err = s.authRepo.GetUsersByIds(context.Background(), userIds.ToSlice(), []string{"first_name", "last_name", "email", "phone"})
+		users, err = s.domainRepo.AuthRepo.GetUsersByIds(context.Background(), userIds.ToSlice(), []string{"first_name", "last_name", "email", "phone"})
 		if err != nil {
 			return err
 		}
 	} else {
-		users, err = s.authRepo.GetUsersByIds(context.Background(), managerIds.ToSlice(), []string{"first_name", "last_name", "email", "phone"})
+		users, err = s.domainRepo.AuthRepo.GetUsersByIds(context.Background(), managerIds.ToSlice(), []string{"first_name", "last_name", "email", "phone"})
 		if err != nil {
 			return err
 		}
@@ -184,11 +184,11 @@ func (s *service) sendNotificationOnNewApplication(am *application_model.Applica
 		}
 		err error
 	)
-	data.Property, err = s.propertyRepo.GetPropertyById(context.Background(), am.PropertyID)
+	data.Property, err = s.domainRepo.PropertyRepo.GetPropertyById(context.Background(), am.PropertyID)
 	if err != nil {
 		return err
 	}
-	data.Unit, err = s.unitRepo.GetUnitById(context.Background(), am.UnitID)
+	data.Unit, err = s.domainRepo.UnitRepo.GetUnitById(context.Background(), am.UnitID)
 	if err != nil {
 		return err
 	}
@@ -245,11 +245,11 @@ func (s *service) sendNotificationOnUpdateApplication(am *application_model.Appl
 		}
 		err error
 	)
-	data.Property, err = s.propertyRepo.GetPropertyById(context.Background(), am.PropertyID)
+	data.Property, err = s.domainRepo.PropertyRepo.GetPropertyById(context.Background(), am.PropertyID)
 	if err != nil {
 		return err
 	}
-	data.Unit, err = s.unitRepo.GetUnitById(context.Background(), am.UnitID)
+	data.Unit, err = s.domainRepo.UnitRepo.GetUnitById(context.Background(), am.UnitID)
 	if err != nil {
 		return err
 	}

@@ -1,7 +1,7 @@
 package http
 
 import (
-	"github.com/user2410/rrms-backend/internal/domain/auth"
+	auth_service "github.com/user2410/rrms-backend/internal/domain/auth/service"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/user2410/rrms-backend/internal/utils/token"
@@ -12,10 +12,10 @@ type Adapter interface {
 }
 
 type adapter struct {
-	service auth.Service
+	service auth_service.Service
 }
 
-func NewAdapter(service auth.Service) Adapter {
+func NewAdapter(service auth_service.Service) Adapter {
 	return &adapter{
 		service: service,
 	}

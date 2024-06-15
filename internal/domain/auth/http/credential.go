@@ -5,7 +5,7 @@ import (
 	"net/http"
 
 	"github.com/jackc/pgx/v5/pgconn"
-	"github.com/user2410/rrms-backend/internal/domain/auth"
+	auth_service "github.com/user2410/rrms-backend/internal/domain/auth/service"
 	"github.com/user2410/rrms-backend/internal/interfaces/rest/responses"
 
 	"github.com/user2410/rrms-backend/internal/utils/validation"
@@ -67,7 +67,7 @@ func (a *adapter) credentialLogin() fiber.Handler {
 				return ctx.Status(http.StatusNotFound).JSON(fiber.Map{"message": "no user with such email"})
 			}
 
-			if errors.Is(err, auth.ErrInvalidCredential) {
+			if errors.Is(err, auth_service.ErrInvalidCredential) {
 				return ctx.Status(http.StatusUnauthorized).JSON(fiber.Map{"message": err.Error()})
 			}
 
@@ -126,7 +126,7 @@ func (a *adapter) credentialRefresh() fiber.Handler {
 		res, err := a.service.RefreshAccessToken(payload.AccessToken, payload.RefreshToken)
 		if err != nil {
 			switch err {
-			case auth.ErrInvalidCredential, auth.ErrInvalidSession:
+			case auth_service.ErrInvalidCredential, auth_service.ErrInvalidSession:
 				return ctx.Status(http.StatusForbidden).JSON(fiber.Map{"message": err.Error()})
 			case token.ErrInvalidToken:
 				return ctx.Status(http.StatusUnauthorized).JSON(fiber.Map{"message": err.Error()})
