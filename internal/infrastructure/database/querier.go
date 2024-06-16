@@ -180,6 +180,8 @@ type Querier interface {
 	UpdateApplicationStatus(ctx context.Context, arg UpdateApplicationStatusParams) ([]int64, error)
 	UpdateContract(ctx context.Context, arg UpdateContractParams) error
 	UpdateContractContent(ctx context.Context, arg UpdateContractContentParams) error
+	UpdateFinePayments(ctx context.Context) error
+	UpdateFinePaymentsOfRental(ctx context.Context, rentalID int64) error
 	UpdateListing(ctx context.Context, arg UpdateListingParams) error
 	UpdateListingPriority(ctx context.Context, arg UpdateListingPriorityParams) error
 	UpdateListingStatus(ctx context.Context, arg UpdateListingStatusParams) error

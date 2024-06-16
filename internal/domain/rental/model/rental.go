@@ -117,6 +117,7 @@ type RentalModel struct {
 	RentalPaymentBasis       int32                             `json:"rentalPaymentBasis"`
 	RentalIntention          string                            `json:"rentalIntention"`
 	NoticePeriod             int32                             `json:"noticePeriod"`
+	GracePeriod              int32                             `json:"gracePeriod" validate:"required,gt=0"`
 	LatePaymentPenaltyScheme database.LATEPAYMENTPENALTYSCHEME `json:"latePaymentPenaltyScheme"`
 	LatePaymentPenaltyAmount *float32                          `json:"latePaymentPenaltyAmount"`
 	ElectricitySetupBy       string                            `json:"electricitySetupBy"`
@@ -163,6 +164,7 @@ func ToRentalModel(pr *database.Rental) RentalModel {
 		RentalPaymentBasis:       pr.RentalPaymentBasis,
 		RentalIntention:          pr.RentalIntention,
 		NoticePeriod:             pr.NoticePeriod.Int32,
+		GracePeriod:              pr.NoticePeriod.Int32,
 		LatePaymentPenaltyScheme: pr.LatePaymentPenaltyScheme.LATEPAYMENTPENALTYSCHEME,
 		LatePaymentPenaltyAmount: types.PNFloat32(pr.LatePaymentPenaltyAmount),
 		ElectricitySetupBy:       pr.ElectricitySetupBy,

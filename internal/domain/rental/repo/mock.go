@@ -445,6 +445,34 @@ func (mr *MockRepoMockRecorder) UpdateContractContent(arg0, arg1 any) *gomock.Ca
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateContractContent", reflect.TypeOf((*MockRepo)(nil).UpdateContractContent), arg0, arg1)
 }
 
+// UpdateFinePayments mocks base method.
+func (m *MockRepo) UpdateFinePayments(arg0 context.Context) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateFinePayments", arg0)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpdateFinePayments indicates an expected call of UpdateFinePayments.
+func (mr *MockRepoMockRecorder) UpdateFinePayments(arg0 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateFinePayments", reflect.TypeOf((*MockRepo)(nil).UpdateFinePayments), arg0)
+}
+
+// UpdateFinePaymentsOfRental mocks base method.
+func (m *MockRepo) UpdateFinePaymentsOfRental(arg0 context.Context, arg1 int64) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateFinePaymentsOfRental", arg0, arg1)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpdateFinePaymentsOfRental indicates an expected call of UpdateFinePaymentsOfRental.
+func (mr *MockRepoMockRecorder) UpdateFinePaymentsOfRental(arg0, arg1 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateFinePaymentsOfRental", reflect.TypeOf((*MockRepo)(nil).UpdateFinePaymentsOfRental), arg0, arg1)
+}
+
 // UpdateRental mocks base method.
 func (m *MockRepo) UpdateRental(arg0 context.Context, arg1 *dto.UpdateRental, arg2 int64) error {
 	m.ctrl.T.Helper()

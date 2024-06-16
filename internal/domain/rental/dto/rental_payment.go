@@ -63,6 +63,9 @@ type UpdateRentalPayment struct {
 	Status      database.RENTALPAYMENTSTATUS `json:"status"`
 	Note        *string                      `json:"note"`
 	Amount      *float32                     `json:"amount"`
+	Paid        *float32                     `json:"paid"`
+	Payamount   *float32                     `json:"payamount"`
+	Fine        *float32                     `json:"fine"`
 	Discount    *float32                     `json:"discount" validate:"omitempty,gte=0"`
 	ExpiryDate  time.Time                    `json:"expiryDate"`
 	PaymentDate time.Time                    `json:"paymentDate"`
@@ -78,9 +81,12 @@ func (u *UpdateRentalPayment) ToUpdateRentalPaymentDB() database.UpdateRentalPay
 			RENTALPAYMENTSTATUS: u.Status,
 			Valid:               u.Status != "",
 		},
-		Note:     types.StrN(u.Note),
-		Amount:   types.Float32N(u.Amount),
-		Discount: types.Float32N(u.Discount),
+		Note:      types.StrN(u.Note),
+		Amount:    types.Float32N(u.Amount),
+		Paid:      types.Float32N(u.Paid),
+		Payamount: types.Float32N(u.Payamount),
+		Fine:      types.Float32N(u.Fine),
+		Discount:  types.Float32N(u.Discount),
 		ExpiryDate: pgtype.Date{
 			Time:  u.ExpiryDate,
 			Valid: !u.ExpiryDate.IsZero(),
@@ -126,7 +132,15 @@ func (u *UpdateIssuedRentalPayment) d() {}
 
 type UpdatePendingRentalPayment struct {
 	PaymentDate time.Time                    `json:"paymentDate" validate:"required"`
-	Status      database.RENTALPAYMENTSTATUS `json:"status" validate:"required,oneof=REQUEST2PAY PAID"`
+	PayAmount   float32                      `json:"payAmount" validate:"required"`
+	Status      database.RENTALPAYMENTSTATUS `json:"status" validate:"required,oneof=REQUEST2PAY PARTIALLYPAID PAID"`
 }
 
 func (u *UpdatePendingRentalPayment) d() {}
+
+type UpdatePartiallyPaidRentalPayment struct {
+	PayAmount   float32   `json:"payAmount" validate:"required"`
+	PaymentDate time.Time `json:"paymentDate" validate:"required"`
+}
+
+func (u *UpdatePartiallyPaidRentalPayment) d() {}

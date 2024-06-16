@@ -35,5 +35,6 @@ CREATE TABLE IF NOT EXISTS "notifications" (
   "updated_at" TIMESTAMPTZ DEFAULT NOW() NOT NULL
 );
 ALTER TABLE "notifications" ADD CONSTRAINT "notifications_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "User" ("id") ON DELETE CASCADE;
+COMMENT ON COLUMN "notifications"."target" IS 'The target of the notification. It can be an email, notification token, phone number.';
 
 END;

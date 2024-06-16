@@ -58,6 +58,8 @@ func (a *adapter) RegisterServer(route *fiber.Router, tokenMaker token.Maker) {
 	rentalPaymentRoute.Patch("/rental-payment/:id/plan", a.updatePlanRentalPayment())
 	rentalPaymentRoute.Patch("/rental-payment/:id/issued", a.updateIssuedRentalPayment())
 	rentalPaymentRoute.Patch("/rental-payment/:id/pending", a.updatePendingRentalPayment())
+	rentalPaymentRoute.Patch("/rental-payment/:id/partiallypaid", a.updatePartiallyPaidRentalPayment())
+	rentalPaymentRoute.Patch("/rental-payment/:id/payfine", a.updatePayfineRentalPayment())
 
 	rentalComplaintRoute := (*route).Group("/rental-complaints")
 	rentalComplaintRoute.Use(auth_http.AuthorizedMiddleware(tokenMaker))

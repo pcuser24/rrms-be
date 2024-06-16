@@ -34,7 +34,7 @@ INSERT INTO "rental_payments" (
   $8,
   $9,
   $10
-) RETURNING id, code, rental_id, created_at, updated_at, start_date, end_date, expiry_date, payment_date, updated_by, status, amount, discount, note
+) RETURNING id, code, rental_id, created_at, updated_at, start_date, end_date, expiry_date, payment_date, updated_by, status, amount, discount, paid, payamount, fine, note
 `
 
 type CreateRentalPaymentParams struct {
@@ -78,13 +78,16 @@ func (q *Queries) CreateRentalPayment(ctx context.Context, arg CreateRentalPayme
 		&i.Status,
 		&i.Amount,
 		&i.Discount,
+		&i.Paid,
+		&i.Payamount,
+		&i.Fine,
 		&i.Note,
 	)
 	return i, err
 }
 
 const getPaymentsOfRental = `-- name: GetPaymentsOfRental :many
-SELECT id, code, rental_id, created_at, updated_at, start_date, end_date, expiry_date, payment_date, updated_by, status, amount, discount, note FROM "rental_payments" WHERE "rental_id" = $1
+SELECT id, code, rental_id, created_at, updated_at, start_date, end_date, expiry_date, payment_date, updated_by, status, amount, discount, paid, payamount, fine, note FROM "rental_payments" WHERE "rental_id" = $1
 `
 
 func (q *Queries) GetPaymentsOfRental(ctx context.Context, rentalID int64) ([]RentalPayment, error) {
@@ -110,6 +113,9 @@ func (q *Queries) GetPaymentsOfRental(ctx context.Context, rentalID int64) ([]Re
 			&i.Status,
 			&i.Amount,
 			&i.Discount,
+			&i.Paid,
+			&i.Payamount,
+			&i.Fine,
 			&i.Note,
 		); err != nil {
 			return nil, err
@@ -123,7 +129,7 @@ func (q *Queries) GetPaymentsOfRental(ctx context.Context, rentalID int64) ([]Re
 }
 
 const getRentalPayment = `-- name: GetRentalPayment :one
-SELECT id, code, rental_id, created_at, updated_at, start_date, end_date, expiry_date, payment_date, updated_by, status, amount, discount, note FROM "rental_payments" WHERE "id" = $1 LIMIT 1
+SELECT id, code, rental_id, created_at, updated_at, start_date, end_date, expiry_date, payment_date, updated_by, status, amount, discount, paid, payamount, fine, note FROM "rental_payments" WHERE "id" = $1 LIMIT 1
 `
 
 func (q *Queries) GetRentalPayment(ctx context.Context, id int64) (RentalPayment, error) {
@@ -143,6 +149,9 @@ func (q *Queries) GetRentalPayment(ctx context.Context, id int64) (RentalPayment
 		&i.Status,
 		&i.Amount,
 		&i.Discount,
+		&i.Paid,
+		&i.Payamount,
+		&i.Fine,
 		&i.Note,
 	)
 	return i, err
@@ -196,15 +205,93 @@ func (q *Queries) PlanRentalPayments(ctx context.Context) ([]int64, error) {
 	return items, nil
 }
 
+const updateFinePayments = `-- name: UpdateFinePayments :exec
+WITH updated_payments AS (
+    SELECT 
+        rp.id,
+        rp.amount,
+        rp.discount,
+        rp.paid,
+        r.grace_period,
+        r.late_payment_penalty_scheme,
+        r.late_payment_penalty_amount,
+        CASE 
+            WHEN r.late_payment_penalty_scheme = 'FIXED' THEN (rp.amount - coalesce(rp.discount, 0) - rp.paid) + r.late_payment_penalty_amount
+            WHEN r.late_payment_penalty_scheme = 'PERCENT' THEN (rp.amount - coalesce(rp.discount, 0) - rp.paid) * (1 + r.late_payment_penalty_amount / 100)
+            WHEN r.late_payment_penalty_scheme = 'NONE' THEN (rp.amount - coalesce(rp.discount, 0) - rp.paid)
+        END AS calculated_fine
+    FROM rental_payments rp
+    INNER JOIN rentals r ON rp.rental_id = r.id
+    WHERE 
+    	  rp.code LIKE '%_RENTAL_%' AND
+        rp.status IN ('PENDING', 'REQUEST2PAY', 'PARTIALLYPAID') AND
+        (rp.amount - coalesce(rp.discount, 0) - rp.paid) > 0 AND
+        (rp.expiry_date + r.grace_period * INTERVAL '1 day') < CURRENT_DATE
+)
+UPDATE rental_payments rp
+SET 
+    status = 'PAYFINE',
+    fine = up.calculated_fine,
+    updated_at = NOW()
+FROM updated_payments up
+WHERE rp.id = up.id
+`
+
+func (q *Queries) UpdateFinePayments(ctx context.Context) error {
+	_, err := q.db.Exec(ctx, updateFinePayments)
+	return err
+}
+
+const updateFinePaymentsOfRental = `-- name: UpdateFinePaymentsOfRental :exec
+WITH updated_payments AS (
+    SELECT 
+        rp.id,
+        rp.amount,
+        rp.discount,
+        rp.paid,
+        r.grace_period,
+        r.late_payment_penalty_scheme,
+        r.late_payment_penalty_amount,
+        CASE 
+            WHEN r.late_payment_penalty_scheme = 'FIXED' THEN (rp.amount - coalesce(rp.discount, 0) - rp.paid) + r.late_payment_penalty_amount
+            WHEN r.late_payment_penalty_scheme = 'PERCENT' THEN (rp.amount - coalesce(rp.discount, 0) - rp.paid) * (1 + r.late_payment_penalty_amount / 100)
+            WHEN r.late_payment_penalty_scheme = 'NONE' THEN (rp.amount - coalesce(rp.discount, 0) - rp.paid)
+        END AS calculated_fine
+    FROM rental_payments rp
+    INNER JOIN rentals r ON rp.rental_id = r.id
+    WHERE 
+    	  rp.code LIKE '%_RENTAL_%' AND
+        r.id = $1  AND
+        rp.status IN ('PENDING', 'REQUEST2PAY', 'PARTIALLYPAID') AND
+        (rp.amount - coalesce(rp.discount, 0) - rp.paid) > 0 AND
+        (rp.expiry_date + r.grace_period * INTERVAL '1 day') < CURRENT_DATE
+)
+UPDATE rental_payments rp
+SET 
+    status = 'PAYFINE',
+    fine = up.calculated_fine,
+    updated_at = NOW()
+FROM updated_payments up
+WHERE rp.id = up.id
+`
+
+func (q *Queries) UpdateFinePaymentsOfRental(ctx context.Context, rentalID int64) error {
+	_, err := q.db.Exec(ctx, updateFinePaymentsOfRental, rentalID)
+	return err
+}
+
 const updateRentalPayment = `-- name: UpdateRentalPayment :exec
 UPDATE "rental_payments" SET
   status = coalesce($2, status),
   note = coalesce($3, note),
   amount = coalesce($4, amount),
-  expiry_date = coalesce($5, expiry_date),
-  payment_date = coalesce($6, payment_date),
-  discount = coalesce($7, discount),
-  updated_by = $8,
+  paid = coalesce($5, paid),
+  payamount = coalesce($6, payamount),
+  fine = coalesce($7, fine),
+  expiry_date = coalesce($8, expiry_date),
+  payment_date = coalesce($9, payment_date),
+  discount = coalesce($10, discount),
+  updated_by = $11,
   updated_at = NOW()
 WHERE "id" = $1
 `
@@ -214,6 +301,9 @@ type UpdateRentalPaymentParams struct {
 	Status      NullRENTALPAYMENTSTATUS `json:"status"`
 	Note        pgtype.Text             `json:"note"`
 	Amount      pgtype.Float4           `json:"amount"`
+	Paid        pgtype.Float4           `json:"paid"`
+	Payamount   pgtype.Float4           `json:"payamount"`
+	Fine        pgtype.Float4           `json:"fine"`
 	ExpiryDate  pgtype.Date             `json:"expiry_date"`
 	PaymentDate pgtype.Date             `json:"payment_date"`
 	Discount    pgtype.Float4           `json:"discount"`
@@ -226,6 +316,9 @@ func (q *Queries) UpdateRentalPayment(ctx context.Context, arg UpdateRentalPayme
 		arg.Status,
 		arg.Note,
 		arg.Amount,
+		arg.Paid,
+		arg.Payamount,
+		arg.Fine,
 		arg.ExpiryDate,
 		arg.PaymentDate,
 		arg.Discount,

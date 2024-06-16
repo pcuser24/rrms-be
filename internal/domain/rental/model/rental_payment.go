@@ -23,12 +23,18 @@ type RentalPayment struct {
 	UpdatedBy   uuid.UUID                    `json:"updatedBy"`
 	Status      database.RENTALPAYMENTSTATUS `json:"status"`
 	Amount      float32                      `json:"amount"`
+	Paid        float32                      `json:"paid"`
+	Payamount   *float32                     `json:"payamount"`
+	Fine        *float32                     `json:"fine"`
 	Discount    *float32                     `json:"discount"`
 	Note        *string                      `json:"note"`
+
+	// calculated fields
+	MustPay float32 `json:"mustPay"`
 }
 
 func ToRentalPaymentModel(prdb *database.RentalPayment) RentalPayment {
-	return RentalPayment{
+	prm := RentalPayment{
 		ID:          prdb.ID,
 		Code:        prdb.Code,
 		RentalID:    prdb.RentalID,
@@ -41,7 +47,18 @@ func ToRentalPaymentModel(prdb *database.RentalPayment) RentalPayment {
 		UpdatedBy:   prdb.UpdatedBy.Bytes,
 		Status:      prdb.Status,
 		Amount:      prdb.Amount,
+		Paid:        prdb.Paid,
+		Payamount:   types.PNFloat32(prdb.Payamount),
+		Fine:        types.PNFloat32(prdb.Fine),
 		Discount:    types.PNFloat32(prdb.Discount),
 		Note:        types.PNStr(prdb.Note),
 	}
+
+	if prm.Discount != nil {
+		prm.MustPay = prm.Amount - prm.Paid - *prm.Discount
+	} else {
+		prm.MustPay = prm.Amount - prm.Paid
+	}
+
+	return prm
 }

@@ -202,3 +202,61 @@ func (a *adapter) updatePendingRentalPayment() fiber.Handler {
 		return nil
 	}
 }
+
+func (a *adapter) updatePartiallyPaidRentalPayment() fiber.Handler {
+	return func(ctx *fiber.Ctx) error {
+		id := ctx.Locals(RentalPaymentIDLocalKey).(int64)
+
+		var payload dto.UpdatePartiallyPaidRentalPayment
+		if err := ctx.BodyParser(&payload); err != nil {
+			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": err.Error()})
+		}
+		if errs := validation.ValidateStruct(nil, payload); len(errs) > 0 {
+			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": validation.GetValidationError(errs)})
+		}
+
+		tkPayload := ctx.Locals(auth_http.AuthorizationPayloadKey).(*token.Payload)
+
+		err := a.service.UpdateRentalPayment(
+			id, tkPayload.UserID, &payload,
+			database.RENTALPAYMENTSTATUSPARTIALLYPAID,
+		)
+		if err != nil {
+			if dbErr, ok := err.(*pgconn.PgError); ok {
+				return responses.DBErrorResponse(ctx, dbErr)
+			}
+
+			if errors.Is(err, service.ErrInvalidPaymentTypeTransition) {
+				return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": err.Error()})
+			}
+
+			return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
+		}
+		return nil
+	}
+}
+
+func (a *adapter) updatePayfineRentalPayment() fiber.Handler {
+	return func(ctx *fiber.Ctx) error {
+		id := ctx.Locals(RentalPaymentIDLocalKey).(int64)
+
+		tkPayload := ctx.Locals(auth_http.AuthorizationPayloadKey).(*token.Payload)
+
+		err := a.service.UpdateRentalPayment(
+			id, tkPayload.UserID, nil,
+			database.RENTALPAYMENTSTATUSPAYFINE,
+		)
+		if err != nil {
+			if dbErr, ok := err.(*pgconn.PgError); ok {
+				return responses.DBErrorResponse(ctx, dbErr)
+			}
+
+			if errors.Is(err, service.ErrInvalidPaymentTypeTransition) {
+				return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": err.Error()})
+			}
+
+			return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
+		}
+		return nil
+	}
+}

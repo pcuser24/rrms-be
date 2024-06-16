@@ -30,7 +30,7 @@ func (r *repo) GetRentalPayment(ctx context.Context, id int64) (rental_model.Ren
 
 func (r *repo) GetRentalPayments(ctx context.Context, ids []int64) ([]rental_model.RentalPayment, error) {
 	ib := sqlbuilder.PostgreSQL.NewSelectBuilder()
-	ib.Select("id", "code", "rental_id", "created_at", "updated_at", "start_date", "end_date", "expiry_date", "payment_date", "updated_by", "status", "amount", "discount", "penalty", "note")
+	ib.Select("id", "code", "rental_id", "created_at", "updated_at", "start_date", "end_date", "expiry_date", "payment_date", "updated_by", "status", "amount", "discount", "note")
 	ib.From("rental_payments")
 	ib.Where(ib.In("id", sqlbuilder.List(ids)))
 	query, args := ib.Build()
@@ -171,4 +171,12 @@ func (r *repo) PlanRentalPayments(ctx context.Context) ([]int64, error) {
 
 func (r *repo) PlanRentalPayment(ctx context.Context, rentalId int64) ([]int64, error) {
 	return r.dao.PlanRentalPayment(ctx, rentalId)
+}
+
+func (r *repo) UpdateFinePayments(ctx context.Context) error {
+	return r.dao.UpdateFinePayments(ctx)
+}
+
+func (r *repo) UpdateFinePaymentsOfRental(ctx context.Context, rentalId int64) error {
+	return r.dao.UpdateFinePaymentsOfRental(ctx, rentalId)
 }

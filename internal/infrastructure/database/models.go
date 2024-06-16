@@ -587,6 +587,7 @@ const (
 	RENTALPAYMENTSTATUSPARTIALLYPAID RENTALPAYMENTSTATUS = "PARTIALLYPAID"
 	RENTALPAYMENTSTATUSPAID          RENTALPAYMENTSTATUS = "PAID"
 	RENTALPAYMENTSTATUSCANCELLED     RENTALPAYMENTSTATUS = "CANCELLED"
+	RENTALPAYMENTSTATUSPAYFINE       RENTALPAYMENTSTATUS = "PAYFINE"
 )
 
 func (e *RENTALPAYMENTSTATUS) Scan(src interface{}) error {
@@ -1051,12 +1052,13 @@ type NewPropertyManagerRequest struct {
 }
 
 type Notification struct {
-	ID        int64               `json:"id"`
-	UserID    pgtype.UUID         `json:"user_id"`
-	Title     string              `json:"title"`
-	Content   string              `json:"content"`
-	Data      []byte              `json:"data"`
-	Seen      bool                `json:"seen"`
+	ID      int64       `json:"id"`
+	UserID  pgtype.UUID `json:"user_id"`
+	Title   string      `json:"title"`
+	Content string      `json:"content"`
+	Data    []byte      `json:"data"`
+	Seen    bool        `json:"seen"`
+	// The target of the notification. It can be an email, notification token, phone number.
 	Target    string              `json:"target"`
 	Channel   NOTIFICATIONCHANNEL `json:"channel"`
 	CreatedAt time.Time           `json:"created_at"`
@@ -1261,6 +1263,9 @@ type RentalPayment struct {
 	Status      RENTALPAYMENTSTATUS `json:"status"`
 	Amount      float32             `json:"amount"`
 	Discount    pgtype.Float4       `json:"discount"`
+	Paid        float32             `json:"paid"`
+	Payamount   pgtype.Float4       `json:"payamount"`
+	Fine        pgtype.Float4       `json:"fine"`
 	Note        pgtype.Text         `json:"note"`
 }
 

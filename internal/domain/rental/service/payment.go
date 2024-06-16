@@ -2,12 +2,15 @@ package service
 
 import (
 	"context"
+	"log"
 	"math"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/user2410/rrms-backend/internal/domain/rental/dto"
 	"github.com/user2410/rrms-backend/internal/domain/rental/model"
 	"github.com/user2410/rrms-backend/internal/infrastructure/database"
+	"github.com/user2410/rrms-backend/internal/utils"
 	"github.com/user2410/rrms-backend/internal/utils/types"
 	"github.com/user2410/rrms-backend/pkg/ds/set"
 )
@@ -22,6 +25,10 @@ func (s *service) GetRentalPayment(id int64) (model.RentalPayment, error) {
 }
 
 func (s *service) GetPaymentsOfRental(rentalID int64) ([]model.RentalPayment, error) {
+	err := s.domainRepo.RentalRepo.UpdateFinePaymentsOfRental(context.Background(), rentalID)
+	if err != nil {
+		return nil, err
+	}
 	return s.domainRepo.RentalRepo.GetPaymentsOfRental(context.Background(), rentalID)
 }
 
@@ -38,17 +45,40 @@ func (s *service) GetManagedRentalPayments(uid uuid.UUID, query *dto.GetManagedR
 	return s.domainRepo.RentalRepo.GetManagedRentalPayments(context.Background(), uid, query)
 }
 
+// UpdateRentalPayment updates the rental payment with the given id, where status is the assumed current status of the rental payment and data.Status, if present, is the new status of the rental payment.
 func (s *service) UpdateRentalPayment(id int64, userId uuid.UUID, data dto.IUpdateRentalPayment, status database.RENTALPAYMENTSTATUS) error {
 	rp, err := s.domainRepo.RentalRepo.GetRentalPayment(context.Background(), id)
 	if err != nil {
 		return err
 	}
+	r, err := s.domainRepo.RentalRepo.GetRental(context.Background(), rp.RentalID)
+	if err != nil {
+		return err
+	}
+
 	side, err := s.domainRepo.RentalRepo.GetRentalSide(context.Background(), rp.RentalID, userId)
 	if err != nil {
 		return err
 	}
 
 	var _data dto.UpdateRentalPayment
+
+	payFine := func(r *model.RentalModel, rp *model.RentalPayment) dto.UpdateRentalPayment {
+		var amount float32 = 0
+		switch r.LatePaymentPenaltyScheme {
+		case database.LATEPAYMENTPENALTYSCHEMEPERCENT:
+			amount = rp.MustPay * (1 + *r.LatePaymentPenaltyAmount/100)
+		case database.LATEPAYMENTPENALTYSCHEMEFIXED:
+			amount = rp.MustPay + *r.LatePaymentPenaltyAmount
+		default:
+			amount = rp.MustPay
+		}
+
+		return dto.UpdateRentalPayment{
+			Fine:   &amount,
+			Status: database.RENTALPAYMENTSTATUSPAYFINE,
+		}
+	}
 
 	if rp.Status != status {
 		return ErrInvalidPaymentTypeTransition
@@ -67,6 +97,7 @@ func (s *service) UpdateRentalPayment(id int64, userId uuid.UUID, data dto.IUpda
 			Discount:   __data.Discount,
 			ExpiryDate: __data.ExpiryDate,
 		}
+		log.Println("Send notification to tenant: Issue new rental payment")
 	case database.RENTALPAYMENTSTATUSISSUED:
 		__data := data.(*dto.UpdateIssuedRentalPayment)
 		if side != "B" {
@@ -78,31 +109,87 @@ func (s *service) UpdateRentalPayment(id int64, userId uuid.UUID, data dto.IUpda
 			Status: __data.Status,
 			Note:   __data.Note,
 		}
+		log.Println("Send notification to managers:", utils.Ternary(__data.Status == database.RENTALPAYMENTSTATUSPENDING, "Tenant agree with the issued payment", "Tenant request a payment review"))
 	case database.RENTALPAYMENTSTATUSPENDING:
 		__data := data.(*dto.UpdatePendingRentalPayment)
 		if side != "B" {
 			return ErrInvalidPaymentTypeTransition
 		}
-		_data = dto.UpdateRentalPayment{
-			ID:          id,
-			UserID:      userId,
-			PaymentDate: __data.PaymentDate,
-			Status:      database.RENTALPAYMENTSTATUSREQUEST2PAY,
+		// update status to PAYFINE if rp.expiryDate + r.gracePeriod day < today
+		if time.Now().After(rp.ExpiryDate.AddDate(0, 0, int(r.GracePeriod))) && rp.MustPay > 0 {
+			_data = payFine(&r, &rp)
+			log.Println("Send notification to tenant: Pay fine")
+			log.Println("Send notification to managers: Tenant is late for a payment")
+		} else {
+			_data = dto.UpdateRentalPayment{
+				ID:          id,
+				UserID:      userId,
+				PaymentDate: __data.PaymentDate,
+				Payamount:   types.Ptr(__data.PayAmount),
+				Status:      database.RENTALPAYMENTSTATUSREQUEST2PAY,
+			}
+			log.Println("Send notification to managers: Tenant has update his payment status, review now")
 		}
 	case database.RENTALPAYMENTSTATUSREQUEST2PAY:
 		__data := data.(*dto.UpdatePendingRentalPayment)
 		if side != "A" {
 			return ErrInvalidPaymentTypeTransition
 		}
-		_data = dto.UpdateRentalPayment{
-			ID:          id,
-			UserID:      userId,
-			PaymentDate: __data.PaymentDate,
-			Status:      database.RENTALPAYMENTSTATUSPAID,
+		// update status to PAYFINE if rp.expiryDate + r.gracePeriod day < today
+		if time.Now().After(rp.ExpiryDate.AddDate(0, 0, int(r.GracePeriod))) && rp.MustPay > 0 {
+			_data = payFine(&r, &rp)
+			log.Println("Send notification to tenant: Pay fine")
+			log.Println("Send notification to managers: Tenant is late for a payment")
+		} else {
+			_data = dto.UpdateRentalPayment{
+				ID:          id,
+				UserID:      userId,
+				PaymentDate: __data.PaymentDate,
+				Payamount:   types.Ptr(__data.PayAmount),
+				Paid:        types.Ptr(rp.Paid + __data.PayAmount),
+				Status: utils.Ternary(
+					rp.Paid+__data.PayAmount < rp.MustPay,
+					database.RENTALPAYMENTSTATUSPARTIALLYPAID,
+					database.RENTALPAYMENTSTATUSPAID,
+				),
+			}
+			log.Println("Send notification to tenant: your payment is recorded")
 		}
+	case database.RENTALPAYMENTSTATUSPARTIALLYPAID:
+		__data := data.(*dto.UpdatePartiallyPaidRentalPayment)
+		if side != "B" {
+			return ErrInvalidPaymentTypeTransition
+		}
+		// update status to PAYFINE if rp.expiryDate + r.gracePeriod day < today
+		if time.Now().After(rp.ExpiryDate.AddDate(0, 0, int(r.GracePeriod))) && rp.MustPay > 0 {
+			_data = payFine(&r, &rp)
+			log.Println("Send notification to tenant: Pay fine")
+			log.Println("Send notification to managers: Tenant is late for a payment")
+		} else {
+			_data = dto.UpdateRentalPayment{
+				ID:          id,
+				UserID:      userId,
+				Payamount:   types.Ptr(__data.PayAmount),
+				PaymentDate: __data.PaymentDate,
+				Status:      database.RENTALPAYMENTSTATUSREQUEST2PAY,
+			}
+			log.Println("Send notification to managers: Tenant has update his payment status, review now")
+		}
+	case database.RENTALPAYMENTSTATUSPAYFINE:
+		if side != "A" {
+			return ErrInvalidPaymentTypeTransition
+		}
+		_data = dto.UpdateRentalPayment{
+			ID:        id,
+			UserID:    userId,
+			Payamount: rp.Fine,
+			Paid:      rp.Fine,
+			Status:    database.RENTALPAYMENTSTATUSPAID,
+		}
+		log.Println("Send notification to tenant: your fine payment is done, good job")
 	default:
 		return ErrInvalidPaymentTypeTransition
 	}
-	return s.domainRepo.RentalRepo.UpdateRentalPayment(context.Background(), &_data)
 
+	return s.domainRepo.RentalRepo.UpdateRentalPayment(context.Background(), &_data)
 }

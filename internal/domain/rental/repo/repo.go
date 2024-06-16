@@ -36,6 +36,8 @@ type Repo interface {
 	UpdateRentalPayment(ctx context.Context, data *dto.UpdateRentalPayment) error
 	PlanRentalPayments(ctx context.Context) ([]int64, error)
 	PlanRentalPayment(ctx context.Context, rentalId int64) ([]int64, error)
+	UpdateFinePayments(ctx context.Context) error
+	UpdateFinePaymentsOfRental(ctx context.Context, rentalId int64) error
 
 	CreateRentalComplaint(ctx context.Context, data *dto.CreateRentalComplaint) (model.RentalComplaint, error)
 	GetRentalComplaint(ctx context.Context, id int64) (model.RentalComplaint, error)

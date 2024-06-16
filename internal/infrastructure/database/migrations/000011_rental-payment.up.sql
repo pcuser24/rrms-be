@@ -1,6 +1,6 @@
 BEGIN;
 
-CREATE TYPE "RENTALPAYMENTSTATUS" AS ENUM ('PLAN', 'ISSUED', 'PENDING', 'REQUEST2PAY', 'PARTIALLYPAID', 'PAID', 'CANCELLED');
+CREATE TYPE "RENTALPAYMENTSTATUS" AS ENUM ('PLAN', 'ISSUED', 'PENDING', 'REQUEST2PAY', 'PARTIALLYPAID', 'PAID', 'CANCELLED', 'PAYFINE');
 
 CREATE TABLE IF NOT EXISTS "rental_payments" (
   "id" BIGSERIAL PRIMARY KEY,
@@ -16,6 +16,9 @@ CREATE TABLE IF NOT EXISTS "rental_payments" (
   "status" "RENTALPAYMENTSTATUS" NOT NULL DEFAULT 'PLAN',
   "amount" REAL NOT NULL CHECK (amount >= 0),
   "discount" REAL CHECK (discount >= 0),
+  "paid" REAL NOT NULL DEFAULT 0 CHECK (amount >= 0),
+  "payamount" REAL CHECK (payamount >= 0),
+  "fine" REAL CHECK (fine >= 0),
   CHECK (amount >= discount),
   "note" TEXT,
 

@@ -40,7 +40,7 @@ func (a *adapter) RegisterServer(router *fiber.Router, tokenMaker token.Maker) {
 
 	deviceRoute := notificationRoute.Group("/devices")
 	deviceRoute.Post("/", a.createNotificationDevice())
-	deviceRoute.Get("/", a.getNotificationDevice())
+	deviceRoute.Get("/", a.getNotificationDevices())
 
 }
 
@@ -69,7 +69,7 @@ func (a *adapter) createNotificationDevice() fiber.Handler {
 	}
 }
 
-func (a *adapter) getNotificationDevice() fiber.Handler {
+func (a *adapter) getNotificationDevices() fiber.Handler {
 	return func(ctx *fiber.Ctx) error {
 		sessionId, err := uuid.Parse(ctx.Query("sessionId"))
 		if err != nil {
@@ -80,16 +80,13 @@ func (a *adapter) getNotificationDevice() fiber.Handler {
 
 		res, err := a.service.GetNotificationDevice(tkPayload.UserID, sessionId, ctx.Query("token"), ctx.Query("platform"))
 		if err != nil {
-			if res != nil {
-				return ctx.Status(fiber.StatusOK).JSON(res[0])
-			}
 			if errors.Is(err, database.ErrRecordNotFound) {
 				return ctx.SendStatus(fiber.StatusNotFound)
 			}
 			return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
 		}
 
-		return ctx.Status(fiber.StatusCreated).JSON(res[0])
+		return ctx.Status(fiber.StatusOK).JSON(res)
 	}
 }
 

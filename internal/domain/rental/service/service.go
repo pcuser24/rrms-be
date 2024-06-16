@@ -88,7 +88,11 @@ func (s *service) setupCronjob(c *cron.Cron) ([]cron.EntryID, error) {
 		err     error
 	)
 	entryID, err = c.AddFunc("@daily", func() {
+		// TODO: log any error
+		// plan rental payments
 		s.domainRepo.RentalRepo.PlanRentalPayments(context.Background())
+		// update fine payments
+		s.domainRepo.RentalRepo.UpdateFinePayments(context.Background())
 	})
 	if err != nil {
 		return nil, err
