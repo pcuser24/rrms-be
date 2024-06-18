@@ -22,7 +22,7 @@ func TestCalculateListingPrice(t *testing.T) {
 			// expected:     14000,
 			checkResult: func(t *testing.T, result float32, err error) {
 				require.NoError(t, err)
-				require.Equal(t, int64(14000), result)
+				require.Equal(t, float32(14000), result)
 			},
 		},
 		{
@@ -32,7 +32,7 @@ func TestCalculateListingPrice(t *testing.T) {
 			// expected:     85000,
 			checkResult: func(t *testing.T, result float32, err error) {
 				require.NoError(t, err)
-				require.Equal(t, int64(85000), result)
+				require.Equal(t, float32(170000), result)
 			},
 		},
 		{
@@ -42,7 +42,7 @@ func TestCalculateListingPrice(t *testing.T) {
 			// expected:     60000,
 			checkResult: func(t *testing.T, result float32, err error) {
 				require.ErrorIs(t, err, ErrInvalidPriority)
-				require.Equal(t, int64(0), result)
+				require.Equal(t, float32(0), result)
 			},
 		},
 	}
@@ -73,7 +73,7 @@ func TestCalculateUpgradeListingPrice(t *testing.T) {
 			priority: 2,
 			checkResult: func(t *testing.T, result float32, err error) {
 				require.NoError(t, err)
-				require.Equal(t, int64(30000), result)
+				require.Equal(t, float32(80000), result)
 			},
 		},
 		{
@@ -85,7 +85,7 @@ func TestCalculateUpgradeListingPrice(t *testing.T) {
 			priority: 2,
 			checkResult: func(t *testing.T, result float32, err error) {
 				require.ErrorIs(t, err, ErrInvalidPriority)
-				require.Equal(t, int64(0), result)
+				require.Equal(t, float32(0), result)
 			},
 		},
 		{
@@ -97,7 +97,7 @@ func TestCalculateUpgradeListingPrice(t *testing.T) {
 			priority: 0,
 			checkResult: func(t *testing.T, result float32, err error) {
 				require.ErrorIs(t, err, ErrInvalidPriority)
-				require.Equal(t, int64(0), result)
+				require.Equal(t, float32(0), result)
 			},
 		},
 	}
@@ -127,7 +127,7 @@ func TestCalculateExtendListingPrice(t *testing.T) {
 			duration: 7,
 			checkResult: func(t *testing.T, result float32, err error) {
 				require.NoError(t, err)
-				require.Equal(t, int64(14000), result)
+				require.Equal(t, float32(14000), result)
 			},
 		},
 		{
@@ -139,7 +139,7 @@ func TestCalculateExtendListingPrice(t *testing.T) {
 			duration: 0,
 			checkResult: func(t *testing.T, result float32, err error) {
 				require.Error(t, err)
-				require.Equal(t, int64(0), result)
+				require.Equal(t, float32(0), result)
 			},
 		},
 	}

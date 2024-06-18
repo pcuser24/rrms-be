@@ -1,0 +1,4 @@
+{{if eq .UpdateData.Status "PLAN"}} Đã thanh toán 1 phần khoản thu tại phòng {{.Unit.Name}} nhà cho thuê {{.Property.Name}}
+{{else}}
+Đã hoàn thành thanh toán khoản thu tại phòng {{.Unit.Name}} nhà cho thuê {{.Property.Name}}
+{{end}}

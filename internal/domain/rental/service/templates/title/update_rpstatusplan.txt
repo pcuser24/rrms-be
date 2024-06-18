@@ -1,0 +1,1 @@
+Khoản thu mới tại phòng {{.Unit.Name}} nhà cho thuê {{.Property.Name}} vừa được duyệt

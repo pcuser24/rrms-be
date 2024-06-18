@@ -6,9 +6,9 @@ tmp_dir = "tmp"
   # Add additional arguments when running binary
   args_bin = []
   # Binary file yields from `cmd`.
-  bin = "./tmp/main"
+  bin = "./main"
   # Just plain old shell command. You could use `make` as well.
-  cmd = "go build -o ./tmp/main ."
+  cmd = "go build -o ./main ."
   # It's not necessary to trigger build each time file changes if it's too frequent.
   delay = 500 # ms
   # Watch these directories if you specified.
@@ -25,7 +25,7 @@ tmp_dir = "tmp"
   # Watch these directories if you specified.
   include_dir = []
   # Watch these filename extensions.
-  include_ext = ["go", "tpl", "tmpl", "html"]
+  include_ext = ["go", "tpl", "tmpl"]
   # Watch these files.
   include_file = []
   # Delay after sending Interrupt signal

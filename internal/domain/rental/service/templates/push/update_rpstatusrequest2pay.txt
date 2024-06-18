@@ -1,0 +1,1 @@
+Dịch vụ: {{.Payment.PaymentService}}, {{.Payment.StartDate.Format "02/01/2006"}} - {{.Payment.EndDate.Format "02/01/2006"}}, Phải nộp: {{.Payment.MustPay}} VNĐ, Đã thanh toán: {{.Payment.Paid}} VNĐ, Đã nộp {{.UpdateData.Payamount}}

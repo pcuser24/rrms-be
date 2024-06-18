@@ -1,0 +1,7 @@
+{{if eq .Status "RESOLVED"}}
+Báo cáo "{{.Complaint.Title}}" đã được giải quyết
+{{else if eq .Status "CLOSED"}}
+Báo cáo "{{.Complaint.Title}}" đã kết thúc
+{{else}}
+Báo cáo "{{.Complaint.Title}}" đã được tiếp nhận
+{{end}}

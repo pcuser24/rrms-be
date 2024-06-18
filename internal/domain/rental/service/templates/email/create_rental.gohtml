@@ -1,0 +1,16 @@
+<div style="width: 60vw; padding: 2rem 1rem;">
+  <!-- Email Header and Logo -->
+  <a href="{{.FESite}}"
+    style="display: flex; flex-direction: row; align-items: center; gap: 1rem; text-decoration: none;">
+    <img src="https://iili.io/d9zGgat.png" alt="d9zGgat.png" style="width: 4rem; height: 4rem; display: inline;" />
+    <h1 style="font-weight: 600; margin-left: 1rem; text-decoration: none; color: black">RRMS</h1>
+  </a>
+  <!-- Email Body -->
+  <h2 style="font-size: 1.5rem; font-weight: 400;">Profile thuê nhà mới đã được tạo thành công</h2>
+  <p>Quá trình thuê nhà của bạn tại phòng <strong>{{.Unit.Name}}</strong> nhà cho thuê <a href="{{.FESite}}/manage/propertíes/property/{{.Property.ID}}"><strong>{{.Property.Name}}</strong></a> bắt đầu. Hãy kiểm tra thông tin và xác nhận thông tin thuê nhà của mình nhanh với chủ nhà sớm nhất có thể.</p>
+  <a href="{{.FESite}}/manage/rentals/rental/{{.Rental.ID}}">Xem chi tiết profile thuê nhà</a>
+  <a href="{{.FESite}}"></a>
+  <!-- Email footer -->
+  <p style="font-size: small; color:grey;">Nếu có bất kì thắc mắc nào hãy <a href="{{.FESite}}">liên hệ</a> với chúng tôi
+  </p>
+</div>

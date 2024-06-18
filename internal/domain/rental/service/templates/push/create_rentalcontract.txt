@@ -1,0 +1,1 @@
+{{.Creator.FirstName}} {{.Creator.LastName}} đã tạo hợp đồng thuê nhà mới cho khách thuê {{.Rental.TenantName}} tại phòng {{.Unit.Name}} nhà cho thuê {{.Property.Name}}. Hãy bổ sung thông tin để hoàn thiện hợp đồng

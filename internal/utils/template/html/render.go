@@ -30,14 +30,14 @@ func NewHTMLTime(t time.Time) HTMLTime {
 // data is a struct holding data for replacing placeholders
 // in the target template.
 // htmlTemplateFile is the relative path to the template file.
-func RenderHtml(data any, htmlTemplateFile string) ([]byte, error) {
+func RenderHtml(data any, htmlTemplateFile string, fnMap map[string]any) ([]byte, error) {
 	htmlTemplateFile, err := filepath.Abs(htmlTemplateFile)
 	if err != nil {
 		return nil, err
 	}
 
 	fileName := path.Base(htmlTemplateFile)
-	tmpl, err := template.New(fileName).ParseFiles(htmlTemplateFile)
+	tmpl, err := template.New(fileName).Funcs(fnMap).ParseFiles(htmlTemplateFile)
 	if err != nil {
 		return nil, err
 	}

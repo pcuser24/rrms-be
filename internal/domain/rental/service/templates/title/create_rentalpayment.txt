@@ -1,0 +1,1 @@
+Chủ nhà / quản lý nhà cho thuê {{.Property.Name}} phòng {{.Unit.Name}} đã tạo khoản thu mới

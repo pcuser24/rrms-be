@@ -48,7 +48,12 @@ func (s *service) CreateRental(data *dto.CreateRental, userId uuid.UUID) (model.
 	if err != nil {
 		// TODO: log the error
 	}
-	// TODO: send notification to user
+
+	err = s.notifyCreateRental(&rental)
+	if err != nil {
+		// TODO: log the error
+	}
+
 	return rental, nil
 }
 

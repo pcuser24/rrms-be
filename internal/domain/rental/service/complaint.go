@@ -31,8 +31,44 @@ func (s *service) PreCreateRentalComplaint(data *dto.PreCreateRentalComplaint, c
 	return nil
 }
 
+var ErrUnauthorizedToCreateComplaint = fmt.Errorf("unauthorized to create complaint")
+
 func (s *service) CreateRentalComplaint(data *dto.CreateRentalComplaint) (model.RentalComplaint, error) {
-	return s.domainRepo.RentalRepo.CreateRentalComplaint(context.Background(), data)
+	rental, err := s.domainRepo.RentalRepo.GetRental(context.Background(), data.RentalID)
+	if err != nil {
+		return model.RentalComplaint{}, err
+	}
+
+	canCreate := false
+	if rental.CreatorID == data.CreatorID {
+		canCreate = true
+	} else {
+		managers, err := s.domainRepo.PropertyRepo.GetPropertyManagers(context.Background(), rental.PropertyID)
+		if err != nil {
+			return model.RentalComplaint{}, err
+		}
+		for _, m := range managers {
+			if m.ManagerID == data.CreatorID {
+				canCreate = true
+				break
+			}
+		}
+	}
+	if !canCreate {
+		return model.RentalComplaint{}, ErrUnauthorizedToCreateComplaint
+	}
+
+	res, err := s.domainRepo.RentalRepo.CreateRentalComplaint(context.Background(), data)
+	if err != nil {
+		return model.RentalComplaint{}, err
+	}
+
+	err = s.notifyCreateRentalComplaint(&res, &rental)
+	if err != nil {
+		// TODO: log the error
+	}
+
+	return res, nil
 }
 
 func (s *service) GetRentalComplaint(id int64) (model.RentalComplaint, error) {
@@ -63,16 +99,34 @@ func (s *service) PreCreateRentalComplaintReply(data *dto.PreCreateRentalComplai
 	return nil
 }
 
-func (a *service) CreateRentalComplaintReply(data *dto.CreateRentalComplaintReply) (model.RentalComplaintReply, error) {
-	res, err := a.domainRepo.RentalRepo.CreateRentalComplaintReply(context.Background(), data)
+func (s *service) CreateRentalComplaintReply(data *dto.CreateRentalComplaintReply) (model.RentalComplaintReply, error) {
+	complaint, err := s.domainRepo.RentalRepo.GetRentalComplaint(context.Background(), data.ComplaintID)
 	if err != nil {
 		return model.RentalComplaintReply{}, err
 	}
-	err = a.domainRepo.RentalRepo.UpdateRentalComplaint(context.Background(), &dto.UpdateRentalComplaint{
+	rental, err := s.domainRepo.RentalRepo.GetRental(context.Background(), complaint.RentalID)
+	if err != nil {
+		return model.RentalComplaintReply{}, err
+	}
+
+	res, err := s.domainRepo.RentalRepo.CreateRentalComplaintReply(context.Background(), data)
+	if err != nil {
+		return model.RentalComplaintReply{}, err
+	}
+	err = s.domainRepo.RentalRepo.UpdateRentalComplaint(context.Background(), &dto.UpdateRentalComplaint{
 		ID:     data.ComplaintID,
 		UserID: data.ReplierID,
 	})
-	return res, err
+	if err != nil {
+		return res, err
+	}
+
+	err = s.notifyCreateComplaintReply(&complaint, &res, &rental)
+	if err != nil {
+		// TODO: log the error
+	}
+
+	return res, nil
 }
 
 func (s *service) GetRentalComplaintReplies(rid int64, limit, offset int32) ([]model.RentalComplaintReply, error) {
@@ -83,6 +137,29 @@ func (s *service) GetRentalComplaintsOfUser(userId uuid.UUID, query dto.GetRenta
 	return s.domainRepo.RentalRepo.GetRentalComplaintsOfUser(context.Background(), userId, query)
 }
 
-func (s *service) UpdateRentalComplaint(data *dto.UpdateRentalComplaint) error {
-	return s.domainRepo.RentalRepo.UpdateRentalComplaint(context.Background(), data)
+func (s *service) UpdateRentalComplaintStatus(data *dto.UpdateRentalComplaintStatus) error {
+	complaint, err := s.domainRepo.RentalRepo.GetRentalComplaint(context.Background(), data.ID)
+	if err != nil {
+		return err
+	}
+	rental, err := s.domainRepo.RentalRepo.GetRental(context.Background(), complaint.RentalID)
+	if err != nil {
+		return err
+	}
+
+	err = s.domainRepo.RentalRepo.UpdateRentalComplaint(context.Background(), &dto.UpdateRentalComplaint{
+		ID:     data.ID,
+		Status: data.Status,
+		UserID: data.UserID,
+	})
+	if err != nil {
+		return err
+	}
+
+	err = s.notifyUpdateComplaintStatus(&complaint, &rental, data.Status, data.UserID)
+	if err != nil {
+		// TODO: log the error
+	}
+
+	return nil
 }

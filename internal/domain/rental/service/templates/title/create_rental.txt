@@ -1,0 +1,1 @@
+Profile thuê nhà mới tại phòng {{.Unit.Name}} nhà cho thuê {{.Property.Name}}

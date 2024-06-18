@@ -1,0 +1,1 @@
+Khách thuê {{.Rental.TenantName}} tại phòng {{.Unit.Name}} nhà cho thuê {{.Property.Name}} đã cập nhật trạng thái thanh toán của khoản thu

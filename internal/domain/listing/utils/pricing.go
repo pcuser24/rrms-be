@@ -1,10 +1,16 @@
 package utils
 
 import (
+	"encoding/json"
 	"errors"
+	"fmt"
+	"log"
+	"os"
+	"strconv"
 	"time"
 
 	"github.com/user2410/rrms-backend/internal/domain/listing/model"
+	"github.com/user2410/rrms-backend/internal/utils"
 )
 
 var (
@@ -23,6 +29,48 @@ var (
 	}
 )
 
+func init() {
+	// read service name from json config file "./services.json"
+	basepath := utils.GetBasePath()
+	file, err := os.Open(fmt.Sprintf("%s/internal/config/listing.json", basepath))
+	if err != nil {
+		panic(err)
+	}
+
+	type Data struct {
+		PrioritiesToPrice map[string]int `json:"prioritiesToPrice"`
+		DurationDiscounts map[string]int `json:"durationDiscounts"`
+	}
+	var data Data
+	decoder := json.NewDecoder(file)
+	err = decoder.Decode(&data)
+	if err != nil {
+		fmt.Println("Error decoding JSON:", err)
+		return
+	}
+
+	for key, value := range data.PrioritiesToPrice {
+		intKey, err := strconv.Atoi(key)
+		if err != nil {
+			fmt.Printf("Error converting key %s to int: %v\n", key, err)
+			continue
+		}
+		listingPriorities[intKey] = value
+	}
+
+	for key, value := range data.DurationDiscounts {
+		intKey, err := strconv.Atoi(key)
+		if err != nil {
+			fmt.Printf("Error converting key %s to int: %v\n", key, err)
+			continue
+		}
+		listingDiscounts[intKey] = value
+	}
+
+	log.Println("Listing priorities loaded successfully", listingPriorities)
+	log.Println("Listing discounts loaded successfully", listingDiscounts)
+}
+
 var (
 	ErrInvalidPriority = errors.New("invalid priority")
 	ErrInvalidDuration = errors.New("invalid duration")
@@ -35,7 +83,7 @@ func CalculateListingPrice(priority int, postDuration int) (float32, int, error)
 	}
 	discount := listingDiscounts[postDuration]
 
-	return float32(p - (p*discount)/100), discount, nil
+	return float32((p - (p*discount)/100) * postDuration), discount, nil
 }
 
 func CalculateUpgradeListingPrice(l *model.ListingModel, p int) (float32, int, error) {

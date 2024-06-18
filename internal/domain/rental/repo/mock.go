@@ -488,7 +488,7 @@ func (mr *MockRepoMockRecorder) UpdateRental(arg0, arg1, arg2 any) *gomock.Call 
 }
 
 // UpdateRentalComplaint mocks base method.
-func (m *MockRepo) UpdateRentalComplaint(arg0 context.Context, arg1 *dto.UpdateRentalComplaint) error {
+func (m *MockRepo) UpdateRentalComplaint(arg0 context.Context, arg1 *dto.UpdateRentalComplaintStatus) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "UpdateRentalComplaint", arg0, arg1)
 	ret0, _ := ret[0].(error)

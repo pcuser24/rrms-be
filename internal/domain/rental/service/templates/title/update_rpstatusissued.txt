@@ -1,0 +1,7 @@
+{{if .UpdateData.Status "PLAN"}}
+Khách thuê {{.Rental.TenantName}} tại phòng {{.Unit.Name}} nhà cho
+thuê {{.Property.Name}} yêu cầu xem xét khoản thu
+{{else}}
+Khách thuê {{.Rental.TenantName}} tại phòng {{.Unit.Name}} nhà cho
+thuê {{.Property.Name}} đã đồng ý với khoản thu
+{{end}}

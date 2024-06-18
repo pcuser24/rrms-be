@@ -1,0 +1,20 @@
+<div style="width: 60vw; padding: 2rem 1rem;">
+  <!-- Email Header and Logo -->
+  <a href="{{.FESite}}"
+    style="display: flex; flex-direction: row; align-items: center; gap: 1rem; text-decoration: none;">
+    <img src="https://iili.io/d9zGgat.png" alt="d9zGgat.png" style="width: 4rem; height: 4rem; display: inline;" />
+    <h1 style="font-weight: 600; margin-left: 1rem; text-decoration: none; color: black">RRMS</h1>
+  </a>
+  <!-- Email Body -->
+  {{if eq .Status "RESOLVED"}}
+  <h2 style="font-size: 1.5rem; font-weight: 400;">Báo cáo "{{.Complaint.Title}}" đã được giải quyết</h2>
+  {{else if eq .Status "CLOSED"}}
+  <h2 style="font-size: 1.5rem; font-weight: 400;">Báo cáo "{{.Complaint.Title}}" đã kết thúc</h2>
+  {{else}}
+  <h2 style="font-size: 1.5rem; font-weight: 400;">Báo cáo "{{.Complaint.Title}}" đã được tiếp nhận</h2>
+  {{end}}
+  <a href="{{.FESite}}/manage/rentals/rental/{{.Complaint.RentalID}}">Xem chi tiết</a>
+  <!-- Email footer -->
+  <p style="font-size: small; color:grey;">Nếu có bất kì thắc mắc nào hãy <a href="{{.FESite}}">liên hệ</a> với chúng tôi
+  </p>
+</div>

@@ -7,14 +7,14 @@ import (
 	"text/template"
 )
 
-func RenderText(data any, textTemplateFile string) ([]byte, error) {
+func RenderText(data any, textTemplateFile string, fnMap map[string]any) ([]byte, error) {
 	textTemplateFile, err := filepath.Abs(textTemplateFile)
 	if err != nil {
 		return nil, err
 	}
 
 	fileName := path.Base(textTemplateFile)
-	tmpl, err := template.New(fileName).ParseFiles(textTemplateFile)
+	tmpl, err := template.New(fileName).Funcs(fnMap).ParseFiles(textTemplateFile)
 	if err != nil {
 		return nil, err
 	}

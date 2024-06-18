@@ -1,0 +1,9 @@
+{{if eq .Contract.Status "SIGNED"}}
+{{.Updater.FirstName}} {{.Updater.LastName}} đã chấp thuận hợp đồng
+{{else if eq .Contract.Status "REJECTED"}}
+{{.Updater.FirstName}} {{.Updater.LastName}} đã từ chối hợp đồng
+{{else if eq .Contract.Status "CANCELLED"}}
+{{.Updater.FirstName}} {{.Updater.LastName}} đã hủy hợp đồng
+{{else}}
+{{.Updater.FirstName}} {{.Updater.LastName}} đã cập nhật hợp đồng
+{{end}}

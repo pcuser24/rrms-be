@@ -7,7 +7,6 @@ import (
 	application_model "github.com/user2410/rrms-backend/internal/domain/application/model"
 	auth_model "github.com/user2410/rrms-backend/internal/domain/auth/model"
 	misc_dto "github.com/user2410/rrms-backend/internal/domain/misc/dto"
-	misc_service "github.com/user2410/rrms-backend/internal/domain/misc/service"
 	property_model "github.com/user2410/rrms-backend/internal/domain/property/model"
 	rental_model "github.com/user2410/rrms-backend/internal/domain/rental/model"
 	unit_model "github.com/user2410/rrms-backend/internal/domain/unit/model"
@@ -23,7 +22,6 @@ func (s *service) GetRentalByApplicationId(aid int64) (rental_model.RentalModel,
 
 func (s *service) _sendNotification(
 	am *application_model.ApplicationModel,
-	ntype misc_service.NOTIFICATIONTYPE,
 	title string,
 	ownerEmailContent, ownerPushContent string,
 	tenantEmailContent, tenantPushContent string,
@@ -61,7 +59,10 @@ func (s *service) _sendNotification(
 	emailcn := misc_dto.CreateNotification{
 		Title:   string(title),
 		Content: string(ownerEmailContent),
-		Data:    map[string]interface{}{},
+		Data: map[string]interface{}{
+			"notificationType": "CREATE_APPLICATION",
+			"applicationId":    am.ID,
+		},
 	}
 	// send email notification
 	for mid := range managerIds {
@@ -79,7 +80,7 @@ func (s *service) _sendNotification(
 			Tokens: nil,
 		})
 	}
-	err = s.miscService.SendNotification(&emailcn, ntype)
+	err = s.miscService.SendNotification(&emailcn)
 	if err != nil {
 		return err
 	}
@@ -88,7 +89,8 @@ func (s *service) _sendNotification(
 		Title:   string(title),
 		Content: string(ownerPushContent),
 		Data: map[string]interface{}{
-			"applicationId": am.ID,
+			"notificationType": "CREATE_APPLICATION",
+			"applicationId":    am.ID,
 		},
 	}
 	for mid := range managerIds {
@@ -107,7 +109,7 @@ func (s *service) _sendNotification(
 			Tokens: tokens,
 		})
 	}
-	err = s.miscService.SendNotification(&pushcn, ntype)
+	err = s.miscService.SendNotification(&pushcn)
 	if err != nil {
 		return err
 	}
@@ -116,7 +118,10 @@ func (s *service) _sendNotification(
 	emailcn = misc_dto.CreateNotification{
 		Title:   string(title),
 		Content: string(tenantEmailContent),
-		Data:    map[string]interface{}{},
+		Data: map[string]interface{}{
+			"notificationType": "CREATE_APPLICATION",
+			"applicationId":    am.ID,
+		},
 	}
 	if am.CreatorID != uuid.Nil {
 		var user auth_model.UserModel
@@ -137,7 +142,7 @@ func (s *service) _sendNotification(
 		})
 	}
 	// send email notification
-	err = s.miscService.SendNotification(&emailcn, ntype)
+	err = s.miscService.SendNotification(&emailcn)
 	if err != nil {
 		return err
 	}
@@ -147,7 +152,8 @@ func (s *service) _sendNotification(
 			Title:   string(title),
 			Content: string(tenantPushContent),
 			Data: map[string]interface{}{
-				"applicationId": am.ID,
+				"notificationType": "CREATE_APPLICATION",
+				"applicationId":    am.ID,
 			},
 		}
 		devices, err := s.miscService.GetNotificationDevice(am.CreatorID, uuid.Nil, "", "")
@@ -162,7 +168,7 @@ func (s *service) _sendNotification(
 			UserId: am.CreatorID,
 			Tokens: tokens,
 		})
-		err = s.miscService.SendNotification(&pushcn, ntype)
+		err = s.miscService.SendNotification(&pushcn)
 		if err != nil {
 			return err
 		}
@@ -193,13 +199,18 @@ func (s *service) sendNotificationOnNewApplication(am *application_model.Applica
 		return err
 	}
 
-	title, err := text_util.RenderText(struct{}{}, "templates/title/create_application.txt")
+	title, err := text_util.RenderText(
+		struct{}{},
+		"templates/title/create_application.txt",
+		nil,
+	)
 	if err != nil {
 		return err
 	}
 	ownerEmailContent, err := html_util.RenderHtml(
 		data,
 		"templates/email/create_application_manager.html",
+		nil,
 	)
 	if err != nil {
 		return err
@@ -207,6 +218,7 @@ func (s *service) sendNotificationOnNewApplication(am *application_model.Applica
 	ownerPushContent, err := text_util.RenderText(
 		data,
 		"templates/push/create_application_manager.txt",
+		nil,
 	)
 	if err != nil {
 		return err
@@ -214,6 +226,7 @@ func (s *service) sendNotificationOnNewApplication(am *application_model.Applica
 	tenantEmailContent, err := html_util.RenderHtml(
 		data,
 		"templates/email/create_application_tenant.html",
+		nil,
 	)
 	if err != nil {
 		return err
@@ -221,12 +234,13 @@ func (s *service) sendNotificationOnNewApplication(am *application_model.Applica
 	tenantPushContent, err := text_util.RenderText(
 		data,
 		"templates/push/create_application_tenant.txt",
+		nil,
 	)
 	if err != nil {
 		return err
 	}
 	return s._sendNotification(
-		am, misc_service.NOTIFICATIONTYPE_CREATEAPPLICATION, string(title),
+		am, string(title),
 		string(ownerEmailContent), string(ownerPushContent),
 		string(tenantEmailContent), string(tenantPushContent),
 	)
@@ -257,6 +271,7 @@ func (s *service) sendNotificationOnUpdateApplication(am *application_model.Appl
 	title, err := text_util.RenderText(
 		data,
 		"templates/title/update_application.txt",
+		nil,
 	)
 	if err != nil {
 		return err
@@ -264,6 +279,7 @@ func (s *service) sendNotificationOnUpdateApplication(am *application_model.Appl
 	ownerEmailContent, err := html_util.RenderHtml(
 		data,
 		"templates/email/update_application_manager.html",
+		nil,
 	)
 	if err != nil {
 		return err
@@ -271,6 +287,7 @@ func (s *service) sendNotificationOnUpdateApplication(am *application_model.Appl
 	ownerPushContent, err := text_util.RenderText(
 		data,
 		"templates/push/update_application_manager.txt",
+		nil,
 	)
 	if err != nil {
 		return err
@@ -278,6 +295,7 @@ func (s *service) sendNotificationOnUpdateApplication(am *application_model.Appl
 	tenantEmailContent, err := html_util.RenderHtml(
 		data,
 		"templates/email/update_application_tenant.html",
+		nil,
 	)
 	if err != nil {
 		return err
@@ -285,12 +303,13 @@ func (s *service) sendNotificationOnUpdateApplication(am *application_model.Appl
 	tenantPushContent, err := text_util.RenderText(
 		struct{}{},
 		"templates/push/update_application_tenant.txt",
+		nil,
 	)
 	if err != nil {
 		return err
 	}
 	return s._sendNotification(
-		am, misc_service.NOTIFICATIONTYPE_CREATEAPPLICATION, string(title),
+		am, string(title),
 		string(ownerEmailContent), string(ownerPushContent),
 		string(tenantEmailContent), string(tenantPushContent),
 	)

@@ -206,7 +206,7 @@ func (a *adapter) updateRentalComplaintStatus() fiber.Handler {
 			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": validation.GetValidationError(errs)})
 		}
 
-		err = a.service.UpdateRentalComplaint(&dto.UpdateRentalComplaint{
+		err = a.service.UpdateRentalComplaintStatus(&dto.UpdateRentalComplaintStatus{
 			ID:     rcId,
 			Status: query.Status,
 			UserID: ctx.Locals(auth_http.AuthorizationPayloadKey).(*token.Payload).UserID,

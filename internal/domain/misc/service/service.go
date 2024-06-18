@@ -21,7 +21,7 @@ type Service interface {
 	CreateNotificationDevice(userId uuid.UUID, payload *dto.CreateNotificationDevice) (model.NotificationDevice, error)
 	GetNotificationDevice(userId, sessionId uuid.UUID, token, platform string) ([]model.NotificationDevice, error)
 
-	SendNotification(payload *dto.CreateNotification, ntype NOTIFICATIONTYPE) error
+	SendNotification(payload *dto.CreateNotification) error
 	GetNotificationsOfUser(userId uuid.UUID, limit, offset int32) ([]model.Notification, error)
 }
 
@@ -90,7 +90,7 @@ const (
 	NOTIFICATIONTYPE_UPDATEAPPLICATION NOTIFICATIONTYPE = "UPDATE_APPLICATION"
 )
 
-func (s *service) SendNotification(payload *dto.CreateNotification, ntype NOTIFICATIONTYPE) error {
+func (s *service) SendNotification(payload *dto.CreateNotification) error {
 	// TODO: get user notification preferences and filter out the ones that are not allowed
 	// save to database
 	nms, err := s.domainRepo.MiscRepo.CreateNotification(context.Background(), payload)
@@ -126,8 +126,7 @@ func (s *service) SendNotification(payload *dto.CreateNotification, ntype NOTIFI
 		Data:    maps.Clone(payload.Data),
 	}
 	maps.Copy(nt.Data, map[string]interface{}{
-		"notificationType": ntype,
-		"notifications":    items,
+		"notifications": items,
 	})
 
 	emails := set.NewSet[string]()

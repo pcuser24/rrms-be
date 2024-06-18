@@ -51,9 +51,15 @@ type UpdateRentalComplaint struct {
 	Suggestion *string                        `json:"suggestion"`
 	Media      []string                       `json:"media"`
 	ReportAt   time.Time                      `json:"reportAt"`
-	Status     database.RENTALCOMPLAINTSTATUS `json:"status"`
+	Status     database.RENTALCOMPLAINTSTATUS `json:"status" validate:"omitempty,oneof=PENDING RESOLVED CLOSED"`
 	ID         int64                          `json:"id"`
 	UserID     uuid.UUID                      `json:"userId"`
+}
+
+type UpdateRentalComplaintStatus struct {
+	Status database.RENTALCOMPLAINTSTATUS `json:"status" validate:"omitempty,oneof=PENDING RESOLVED CLOSED"`
+	ID     int64                          `json:"id"`
+	UserID uuid.UUID                      `json:"userId"`
 }
 
 func (u *UpdateRentalComplaint) ToUpdateRentalComplaintDB() database.UpdateRentalComplaintParams {

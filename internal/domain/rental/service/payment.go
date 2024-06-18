@@ -16,8 +16,23 @@ import (
 )
 
 func (s *service) CreateRentalPayment(data *dto.CreateRentalPayment) (model.RentalPayment, error) {
+	rental, err := s.domainRepo.RentalRepo.GetRental(context.Background(), data.RentalID)
+	if err != nil {
+		return model.RentalPayment{}, err
+	}
+
 	// TODO: validate rental payment (code)
-	return s.domainRepo.RentalRepo.CreateRentalPayment(context.Background(), data)
+	res, err := s.domainRepo.RentalRepo.CreateRentalPayment(context.Background(), data)
+	if err != nil {
+		return model.RentalPayment{}, err
+	}
+
+	err = s.notifyCreateRentalPayment(&rental, &res)
+	if err != nil {
+		// TODO: log error
+	}
+
+	return res, nil
 }
 
 func (s *service) GetRentalPayment(id int64) (model.RentalPayment, error) {
@@ -83,6 +98,8 @@ func (s *service) UpdateRentalPayment(id int64, userId uuid.UUID, data dto.IUpda
 	if rp.Status != status {
 		return ErrInvalidPaymentTypeTransition
 	}
+
+	var willNotify bool = true
 	switch status {
 	case database.RENTALPAYMENTSTATUSPLAN:
 		__data := data.(*dto.UpdatePlanRentalPayment)
@@ -96,6 +113,9 @@ func (s *service) UpdateRentalPayment(id int64, userId uuid.UUID, data dto.IUpda
 			Amount:     &__data.Amount,
 			Discount:   __data.Discount,
 			ExpiryDate: __data.ExpiryDate,
+		}
+		if _data.Status == database.RENTALPAYMENTSTATUSPAID || _data.Status == database.RENTALPAYMENTSTATUSCANCELLED {
+			willNotify = false
 		}
 		log.Println("Send notification to tenant: Issue new rental payment")
 	case database.RENTALPAYMENTSTATUSISSUED:
@@ -191,5 +211,12 @@ func (s *service) UpdateRentalPayment(id int64, userId uuid.UUID, data dto.IUpda
 		return ErrInvalidPaymentTypeTransition
 	}
 
-	return s.domainRepo.RentalRepo.UpdateRentalPayment(context.Background(), &_data)
+	err = s.domainRepo.RentalRepo.UpdateRentalPayment(context.Background(), &_data)
+	if err != nil {
+		return err
+	}
+	if willNotify {
+		err = s.notifyUpdatePayments(&r, &rp, &_data)
+	}
+	return nil
 }

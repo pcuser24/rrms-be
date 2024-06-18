@@ -50,7 +50,7 @@ type Service interface {
 	CreateRentalComplaintReply(data *dto.CreateRentalComplaintReply) (model.RentalComplaintReply, error)
 	GetRentalComplaintsOfUser(userId uuid.UUID, query dto.GetRentalComplaintsOfUserQuery) ([]model.RentalComplaint, error)
 	GetRentalComplaintReplies(id int64, limit, offset int32) ([]model.RentalComplaintReply, error)
-	UpdateRentalComplaint(data *dto.UpdateRentalComplaint) error
+	UpdateRentalComplaintStatus(data *dto.UpdateRentalComplaintStatus) error
 }
 
 type service struct {
@@ -62,6 +62,8 @@ type service struct {
 
 	s3Client        s3.S3Client
 	imageBucketName string
+
+	feSite string
 }
 
 func NewService(
@@ -69,6 +71,7 @@ func NewService(
 	mService misc_service.Service,
 	c *cron.Cron,
 	s3Client s3.S3Client, imageBucketName string,
+	feSite string,
 ) Service {
 	res := &service{
 		domainRepo:      domainRepo,
@@ -76,6 +79,7 @@ func NewService(
 		mService:        mService,
 		s3Client:        s3Client,
 		imageBucketName: imageBucketName,
+		feSite:          feSite,
 	}
 	res.setupCronjob(c)
 	return res

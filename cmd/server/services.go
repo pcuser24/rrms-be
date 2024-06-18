@@ -62,6 +62,7 @@ func (c *serverCommand) setupInternalServices() {
 		c.internalServices.MiscService,
 		c.cronScheduler,
 		c.s3Client, c.config.AWSS3ImageBucket,
+		c.config.FESite,
 	)
 	c.internalServices.ReminderService = reminder.NewService(
 		domainRepo,
