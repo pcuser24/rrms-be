@@ -9,6 +9,7 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/stretchr/testify/require"
 	repos "github.com/user2410/rrms-backend/internal/domain/_repos"
+	auth_service "github.com/user2410/rrms-backend/internal/domain/auth/service"
 	property_service "github.com/user2410/rrms-backend/internal/domain/property/service"
 	"github.com/user2410/rrms-backend/internal/infrastructure/aws/s3"
 	"github.com/user2410/rrms-backend/internal/infrastructure/http"
@@ -34,6 +35,7 @@ func newTestServer(t *testing.T, ctrl *gomock.Controller) *server {
 	s3Client := s3.NewMockS3Client(ctrl)
 
 	// initialize service
+	authService := auth_service.NewService(domainRepo, tokenMaker, time.Hour, time.Hour)
 	service := property_service.NewService(domainRepo, s3Client, "")
 
 	// initialize http router
@@ -47,7 +49,7 @@ func newTestServer(t *testing.T, ctrl *gomock.Controller) *server {
 			AllowHeaders: "Origin, Content-Type, Accept, Authorization",
 		},
 	)
-	NewAdapter(service).RegisterServer(httpServer.GetApiRoute(), tokenMaker)
+	NewAdapter(service).RegisterServer(httpServer.GetApiRoute(), tokenMaker, authService)
 
 	return &server{
 		domainRepo: domainRepo,

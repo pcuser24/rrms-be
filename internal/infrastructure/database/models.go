@@ -449,6 +449,49 @@ func (ns NullPROPERTYTYPE) Value() (driver.Value, error) {
 	return string(ns.PROPERTYTYPE), nil
 }
 
+type PROPERTYVERIFICATIONSTATUS string
+
+const (
+	PROPERTYVERIFICATIONSTATUSPENDING  PROPERTYVERIFICATIONSTATUS = "PENDING"
+	PROPERTYVERIFICATIONSTATUSAPPROVED PROPERTYVERIFICATIONSTATUS = "APPROVED"
+	PROPERTYVERIFICATIONSTATUSREJECTED PROPERTYVERIFICATIONSTATUS = "REJECTED"
+)
+
+func (e *PROPERTYVERIFICATIONSTATUS) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = PROPERTYVERIFICATIONSTATUS(s)
+	case string:
+		*e = PROPERTYVERIFICATIONSTATUS(s)
+	default:
+		return fmt.Errorf("unsupported scan type for PROPERTYVERIFICATIONSTATUS: %T", src)
+	}
+	return nil
+}
+
+type NullPROPERTYVERIFICATIONSTATUS struct {
+	PROPERTYVERIFICATIONSTATUS PROPERTYVERIFICATIONSTATUS `json:"PROPERTYVERIFICATIONSTATUS"`
+	Valid                      bool                       `json:"valid"` // Valid is true if PROPERTYVERIFICATIONSTATUS is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullPROPERTYVERIFICATIONSTATUS) Scan(value interface{}) error {
+	if value == nil {
+		ns.PROPERTYVERIFICATIONSTATUS, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.PROPERTYVERIFICATIONSTATUS.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullPROPERTYVERIFICATIONSTATUS) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.PROPERTYVERIFICATIONSTATUS), nil
+}
+
 type REMINDERRECURRENCEMODE string
 
 const (
@@ -1141,6 +1184,22 @@ type PropertyTag struct {
 	ID         int64     `json:"id"`
 	PropertyID uuid.UUID `json:"property_id"`
 	Tag        string    `json:"tag"`
+}
+
+type PropertyVerificationRequest struct {
+	ID                        int64                      `json:"id"`
+	CreatorID                 uuid.UUID                  `json:"creator_id"`
+	PropertyID                uuid.UUID                  `json:"property_id"`
+	VideoUrl                  string                     `json:"video_url"`
+	HouseOwnershipCertificate pgtype.Text                `json:"house_ownership_certificate"`
+	CertificateOfLanduseRight pgtype.Text                `json:"certificate_of_landuse_right"`
+	FrontIdcard               string                     `json:"front_idcard"`
+	BackIdcard                string                     `json:"back_idcard"`
+	Note                      pgtype.Text                `json:"note"`
+	Feedback                  pgtype.Text                `json:"feedback"`
+	Status                    PROPERTYVERIFICATIONSTATUS `json:"status"`
+	CreatedAt                 time.Time                  `json:"created_at"`
+	UpdatedAt                 time.Time                  `json:"updated_at"`
 }
 
 type Reminder struct {

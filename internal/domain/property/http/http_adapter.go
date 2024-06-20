@@ -10,6 +10,7 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 	application_dto "github.com/user2410/rrms-backend/internal/domain/application/dto"
 	auth_http "github.com/user2410/rrms-backend/internal/domain/auth/http"
+	auth_service "github.com/user2410/rrms-backend/internal/domain/auth/service"
 	listing_dto "github.com/user2410/rrms-backend/internal/domain/listing/dto"
 	"github.com/user2410/rrms-backend/internal/domain/property/dto"
 	property_service "github.com/user2410/rrms-backend/internal/domain/property/service"
@@ -21,7 +22,7 @@ import (
 )
 
 type Adapter interface {
-	RegisterServer(route *fiber.Router, tokenMaker token.Maker)
+	RegisterServer(route *fiber.Router, tokenMaker token.Maker, authService auth_service.Service)
 }
 
 type adapter struct {
@@ -34,7 +35,7 @@ func NewAdapter(service property_service.Service) Adapter {
 	}
 }
 
-func (a *adapter) RegisterServer(router *fiber.Router, tokenMaker token.Maker) {
+func (a *adapter) RegisterServer(router *fiber.Router, tokenMaker token.Maker, authService auth_service.Service) {
 	propertyRoute := (*router).Group("/properties")
 
 	propertyRoute.Get("/property/:id",
@@ -93,6 +94,16 @@ func (a *adapter) RegisterServer(router *fiber.Router, tokenMaker token.Maker) {
 		CheckPropertyManageability(a.service),
 		a.deleteProperty(),
 	)
+
+	propertyVerificationRoute := propertyRoute.Group("/property/:id/verifications").Use(CheckPropertyManageability(a.service))
+	propertyVerificationRoute.Post("/_pre", a.preCreatePropertyVerificationRequest())
+	propertyVerificationRoute.Post("/", a.createVerificationRequest())
+	propertyVerificationRoute.Get("/", a.getVerificationRequestsOfProperty())
+	propertyVerificationRoute.Get("/verification/:vid", a.getVerificationRequest())
+
+	propertyRoute.Get("/verifications", auth_http.AuthorizedMiddleware(tokenMaker), auth_http.AdminOnlyRoutes(authService), a.getVerificationRequests())
+	propertyRoute.Patch("/verifications/:vid", auth_http.AuthorizedMiddleware(tokenMaker), auth_http.AdminOnlyRoutes(authService), a.updateVerificationRequestStatus())
+
 }
 
 func (a *adapter) preCreateProperty() fiber.Handler {

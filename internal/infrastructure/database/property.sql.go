@@ -307,6 +307,73 @@ func (q *Queries) CreatePropertyTag(ctx context.Context, arg CreatePropertyTagPa
 	return i, err
 }
 
+const createPropertyVerificationRequest = `-- name: CreatePropertyVerificationRequest :one
+INSERT INTO "property_verification_requests" (
+  "creator_id",
+  "property_id",
+  "video_url",
+  "house_ownership_certificate",
+  "certificate_of_landuse_right",
+  "front_idcard",
+  "back_idcard",
+  "note",
+  "created_at",
+  "updated_at"
+) VALUES (
+  $1,
+  $2,
+  $3,
+  $4,
+  $5,
+  $6,
+  $7,
+  $8,
+  NOW(),
+  NOW()
+) RETURNING id, creator_id, property_id, video_url, house_ownership_certificate, certificate_of_landuse_right, front_idcard, back_idcard, note, feedback, status, created_at, updated_at
+`
+
+type CreatePropertyVerificationRequestParams struct {
+	CreatorID                 uuid.UUID   `json:"creator_id"`
+	PropertyID                uuid.UUID   `json:"property_id"`
+	VideoUrl                  string      `json:"video_url"`
+	HouseOwnershipCertificate pgtype.Text `json:"house_ownership_certificate"`
+	CertificateOfLanduseRight pgtype.Text `json:"certificate_of_landuse_right"`
+	FrontIdcard               string      `json:"front_idcard"`
+	BackIdcard                string      `json:"back_idcard"`
+	Note                      pgtype.Text `json:"note"`
+}
+
+func (q *Queries) CreatePropertyVerificationRequest(ctx context.Context, arg CreatePropertyVerificationRequestParams) (PropertyVerificationRequest, error) {
+	row := q.db.QueryRow(ctx, createPropertyVerificationRequest,
+		arg.CreatorID,
+		arg.PropertyID,
+		arg.VideoUrl,
+		arg.HouseOwnershipCertificate,
+		arg.CertificateOfLanduseRight,
+		arg.FrontIdcard,
+		arg.BackIdcard,
+		arg.Note,
+	)
+	var i PropertyVerificationRequest
+	err := row.Scan(
+		&i.ID,
+		&i.CreatorID,
+		&i.PropertyID,
+		&i.VideoUrl,
+		&i.HouseOwnershipCertificate,
+		&i.CertificateOfLanduseRight,
+		&i.FrontIdcard,
+		&i.BackIdcard,
+		&i.Note,
+		&i.Feedback,
+		&i.Status,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
 const deleteProperty = `-- name: DeleteProperty :exec
 DELETE FROM properties WHERE id = $1
 `
@@ -597,9 +664,80 @@ func (q *Queries) GetPropertyTags(ctx context.Context, propertyID uuid.UUID) ([]
 	return items, nil
 }
 
+const getPropertyVerificationRequest = `-- name: GetPropertyVerificationRequest :one
+SELECT id, creator_id, property_id, video_url, house_ownership_certificate, certificate_of_landuse_right, front_idcard, back_idcard, note, feedback, status, created_at, updated_at FROM "property_verification_requests" WHERE "id" = $1 LIMIT 1
+`
+
+func (q *Queries) GetPropertyVerificationRequest(ctx context.Context, id int64) (PropertyVerificationRequest, error) {
+	row := q.db.QueryRow(ctx, getPropertyVerificationRequest, id)
+	var i PropertyVerificationRequest
+	err := row.Scan(
+		&i.ID,
+		&i.CreatorID,
+		&i.PropertyID,
+		&i.VideoUrl,
+		&i.HouseOwnershipCertificate,
+		&i.CertificateOfLanduseRight,
+		&i.FrontIdcard,
+		&i.BackIdcard,
+		&i.Note,
+		&i.Feedback,
+		&i.Status,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const getPropertyVerificationRequestsOfProperty = `-- name: GetPropertyVerificationRequestsOfProperty :many
+SELECT id, creator_id, property_id, video_url, house_ownership_certificate, certificate_of_landuse_right, front_idcard, back_idcard, note, feedback, status, created_at, updated_at FROM "property_verification_requests" WHERE "property_id" = $3 ORDER BY "updated_at" DESC LIMIT $1 OFFSET $2
+`
+
+type GetPropertyVerificationRequestsOfPropertyParams struct {
+	Limit      int32     `json:"limit"`
+	Offset     int32     `json:"offset"`
+	PropertyID uuid.UUID `json:"property_id"`
+}
+
+func (q *Queries) GetPropertyVerificationRequestsOfProperty(ctx context.Context, arg GetPropertyVerificationRequestsOfPropertyParams) ([]PropertyVerificationRequest, error) {
+	rows, err := q.db.Query(ctx, getPropertyVerificationRequestsOfProperty, arg.Limit, arg.Offset, arg.PropertyID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []PropertyVerificationRequest
+	for rows.Next() {
+		var i PropertyVerificationRequest
+		if err := rows.Scan(
+			&i.ID,
+			&i.CreatorID,
+			&i.PropertyID,
+			&i.VideoUrl,
+			&i.HouseOwnershipCertificate,
+			&i.CertificateOfLanduseRight,
+			&i.FrontIdcard,
+			&i.BackIdcard,
+			&i.Note,
+			&i.Feedback,
+			&i.Status,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const isPropertyVisible = `-- name: IsPropertyVisible :one
 SELECT (
   SELECT is_public FROM "properties" WHERE properties.id = $1 LIMIT 1
+) OR (
+  SELECT EXISTS (SELECT 1 FROM "User" WHERE "User".id = $2 AND "User".role = 'ADMIN' LIMIT 1)
 ) OR (
   SELECT EXISTS (SELECT 1 FROM "property_managers" WHERE property_managers.property_id = $1 AND property_managers.manager_id = $2 LIMIT 1)
 ) OR (
@@ -703,6 +841,47 @@ func (q *Queries) UpdateProperty(ctx context.Context, arg UpdatePropertyParams) 
 		arg.PrimaryImage,
 		arg.Description,
 		arg.IsPublic,
+	)
+	return err
+}
+
+const updatePropertyVerificationRequest = `-- name: UpdatePropertyVerificationRequest :exec
+UPDATE "property_verification_requests" SET
+  "video_url" = coalesce($2, video_url),
+  "house_ownership_certificate" = coalesce($3, house_ownership_certificate),
+  "certificate_of_landuse_right" = coalesce($4, certificate_of_landuse_right),
+  "front_idcard" = coalesce($5, front_idcard),
+  "back_idcard" = coalesce($6, back_idcard),
+  "note" = coalesce($7, note),
+  "feedback" = coalesce($8, feedback),
+  "status" = coalesce($9, status),
+  "updated_at" = NOW()
+WHERE "id" = $1
+`
+
+type UpdatePropertyVerificationRequestParams struct {
+	ID                        int64                          `json:"id"`
+	VideoUrl                  pgtype.Text                    `json:"video_url"`
+	HouseOwnershipCertificate pgtype.Text                    `json:"house_ownership_certificate"`
+	CertificateOfLanduseRight pgtype.Text                    `json:"certificate_of_landuse_right"`
+	FrontIdcard               pgtype.Text                    `json:"front_idcard"`
+	BackIdcard                pgtype.Text                    `json:"back_idcard"`
+	Note                      pgtype.Text                    `json:"note"`
+	Feedback                  pgtype.Text                    `json:"feedback"`
+	Status                    NullPROPERTYVERIFICATIONSTATUS `json:"status"`
+}
+
+func (q *Queries) UpdatePropertyVerificationRequest(ctx context.Context, arg UpdatePropertyVerificationRequestParams) error {
+	_, err := q.db.Exec(ctx, updatePropertyVerificationRequest,
+		arg.ID,
+		arg.VideoUrl,
+		arg.HouseOwnershipCertificate,
+		arg.CertificateOfLanduseRight,
+		arg.FrontIdcard,
+		arg.BackIdcard,
+		arg.Note,
+		arg.Feedback,
+		arg.Status,
 	)
 	return err
 }

@@ -109,4 +109,27 @@ CREATE TABLE IF NOT EXISTS "new_property_manager_requests" (
 ALTER TABLE "new_property_manager_requests" ADD CONSTRAINT "new_property_manager_requests_creator_fkey" FOREIGN KEY ("creator_id") REFERENCES "User"("id") ON DELETE CASCADE;
 ALTER TABLE "new_property_manager_requests" ADD CONSTRAINT "new_property_manager_requests_property_fkey" FOREIGN KEY ("property_id") REFERENCES "properties"("id") ON DELETE CASCADE;
 
+CREATE TYPE "PROPERTYVERIFICATIONSTATUS" AS ENUM (
+  'PENDING',
+  'APPROVED',
+  'REJECTED'
+);
+CREATE TABLE IF NOT EXISTS "property_verification_requests" (
+  "id" BIGSERIAL PRIMARY KEY,
+  "creator_id" UUID NOT NULL,
+  "property_id" UUID NOT NULL,
+  "video_url" TEXT NOT NULL,
+  "house_ownership_certificate" TEXT,
+  "certificate_of_landuse_right" TEXT,
+  "front_idcard" TEXT NOT NULL,
+  "back_idcard" TEXT NOT NULL,
+  "note" TEXT,
+  "feedback" TEXT,
+  "status" "PROPERTYVERIFICATIONSTATUS" NOT NULL DEFAULT 'PENDING',
+  "created_at" TIMESTAMPTZ DEFAULT NOW() NOT NULL,
+  "updated_at" TIMESTAMPTZ DEFAULT NOW() NOT NULL
+);
+ALTER TABLE "property_verification_requests" ADD CONSTRAINT "property_verification_requests_property_fkey" FOREIGN KEY ("property_id") REFERENCES "properties"("id") ON DELETE CASCADE;
+ALTER TABLE "property_verification_requests" ADD CONSTRAINT "property_verification_requests_creator_fkey" FOREIGN KEY ("creator_id") REFERENCES "User"("id") ON DELETE CASCADE;
+
 END;

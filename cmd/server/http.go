@@ -25,7 +25,7 @@ func (c *serverCommand) setupHttpServer() {
 		RegisterServer(apiRoute, c.tokenMaker)
 	property_http.
 		NewAdapter(c.internalServices.PropertyService).
-		RegisterServer(apiRoute, c.tokenMaker)
+		RegisterServer(apiRoute, c.tokenMaker, c.internalServices.AuthService)
 	unit_http.NewAdapter(c.internalServices.UnitService, c.internalServices.PropertyService).
 		RegisterServer(apiRoute, c.tokenMaker)
 	listing_http.

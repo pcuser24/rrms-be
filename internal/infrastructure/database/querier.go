@@ -48,6 +48,7 @@ type Querier interface {
 	CreatePropertyManager(ctx context.Context, arg CreatePropertyManagerParams) (PropertyManager, error)
 	CreatePropertyMedia(ctx context.Context, arg CreatePropertyMediaParams) (PropertyMedium, error)
 	CreatePropertyTag(ctx context.Context, arg CreatePropertyTagParams) (PropertyTag, error)
+	CreatePropertyVerificationRequest(ctx context.Context, arg CreatePropertyVerificationRequestParams) (PropertyVerificationRequest, error)
 	CreateReminder(ctx context.Context, arg CreateReminderParams) (Reminder, error)
 	CreateRental(ctx context.Context, arg CreateRentalParams) (Rental, error)
 	CreateRentalCoap(ctx context.Context, arg CreateRentalCoapParams) (RentalCoap, error)
@@ -135,6 +136,8 @@ type Querier interface {
 	GetPropertyManagers(ctx context.Context, propertyID uuid.UUID) ([]PropertyManager, error)
 	GetPropertyMedia(ctx context.Context, propertyID uuid.UUID) ([]PropertyMedium, error)
 	GetPropertyTags(ctx context.Context, propertyID uuid.UUID) ([]PropertyTag, error)
+	GetPropertyVerificationRequest(ctx context.Context, id int64) (PropertyVerificationRequest, error)
+	GetPropertyVerificationRequestsOfProperty(ctx context.Context, arg GetPropertyVerificationRequestsOfPropertyParams) ([]PropertyVerificationRequest, error)
 	GetRecentListings(ctx context.Context, limit int32) ([]uuid.UUID, error)
 	GetReminderById(ctx context.Context, id int64) (Reminder, error)
 	GetRemindersByCreator(ctx context.Context, creatorID uuid.UUID) ([]Reminder, error)
@@ -190,6 +193,7 @@ type Querier interface {
 	UpdateNotificationDeviceTokenTimestamp(ctx context.Context, arg UpdateNotificationDeviceTokenTimestampParams) error
 	UpdatePayment(ctx context.Context, arg UpdatePaymentParams) error
 	UpdateProperty(ctx context.Context, arg UpdatePropertyParams) error
+	UpdatePropertyVerificationRequest(ctx context.Context, arg UpdatePropertyVerificationRequestParams) error
 	UpdateReminder(ctx context.Context, arg UpdateReminderParams) ([]Reminder, error)
 	UpdateRental(ctx context.Context, arg UpdateRentalParams) error
 	UpdateRentalComplaint(ctx context.Context, arg UpdateRentalComplaintParams) error

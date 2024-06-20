@@ -137,6 +137,8 @@ OFFSET $3;
 SELECT (
   SELECT is_public FROM "properties" WHERE properties.id = sqlc.arg(property_id) LIMIT 1
 ) OR (
+  SELECT EXISTS (SELECT 1 FROM "User" WHERE "User".id = sqlc.arg(user_id) AND "User".role = 'ADMIN' LIMIT 1)
+) OR (
   SELECT EXISTS (SELECT 1 FROM "property_managers" WHERE property_managers.property_id = sqlc.arg(property_id) AND property_managers.manager_id = sqlc.arg(user_id) LIMIT 1)
 ) OR (
   SELECT EXISTS (SELECT 1 FROM "new_property_manager_requests" WHERE new_property_manager_requests.property_id = sqlc.arg(property_id) AND new_property_manager_requests.user_id = sqlc.arg(user_id) LIMIT 1)
@@ -196,3 +198,47 @@ DELETE FROM property_tags WHERE property_id = $1 AND id = $2;
 
 -- name: DeleteProperty :exec
 DELETE FROM properties WHERE id = $1;
+
+-- name: CreatePropertyVerificationRequest :one
+INSERT INTO "property_verification_requests" (
+  "creator_id",
+  "property_id",
+  "video_url",
+  "house_ownership_certificate",
+  "certificate_of_landuse_right",
+  "front_idcard",
+  "back_idcard",
+  "note",
+  "created_at",
+  "updated_at"
+) VALUES (
+  sqlc.arg(creator_id),
+  sqlc.arg(property_id),
+  sqlc.arg(video_url),
+  sqlc.narg(house_ownership_certificate),
+  sqlc.narg(certificate_of_landuse_right),
+  sqlc.arg(front_idcard),
+  sqlc.arg(back_idcard),
+  sqlc.narg(note),
+  NOW(),
+  NOW()
+) RETURNING *;
+
+-- name: GetPropertyVerificationRequest :one
+SELECT * FROM "property_verification_requests" WHERE "id" = $1 LIMIT 1;
+
+-- name: GetPropertyVerificationRequestsOfProperty :many
+SELECT * FROM "property_verification_requests" WHERE "property_id" = sqlc.arg(property_id) ORDER BY "updated_at" DESC LIMIT $1 OFFSET $2;
+
+-- name: UpdatePropertyVerificationRequest :exec
+UPDATE "property_verification_requests" SET
+  "video_url" = coalesce(sqlc.narg(video_url), video_url),
+  "house_ownership_certificate" = coalesce(sqlc.narg(house_ownership_certificate), house_ownership_certificate),
+  "certificate_of_landuse_right" = coalesce(sqlc.narg(certificate_of_landuse_right), certificate_of_landuse_right),
+  "front_idcard" = coalesce(sqlc.narg(front_idcard), front_idcard),
+  "back_idcard" = coalesce(sqlc.narg(back_idcard), back_idcard),
+  "note" = coalesce(sqlc.narg(note), note),
+  "feedback" = coalesce(sqlc.narg(feedback), feedback),
+  "status" = coalesce(sqlc.narg(status), status),
+  "updated_at" = NOW()
+WHERE "id" = $1;

@@ -39,6 +39,12 @@ type Repo interface {
 	GetNewPropertyManagerRequest(ctx context.Context, id int64) (property_model.NewPropertyManagerRequest, error)
 	GetNewPropertyManagerRequestsToUser(ctx context.Context, uid uuid.UUID, limit, offset int64) ([]property_model.NewPropertyManagerRequest, error)
 	UpdatePropertyManagerRequest(ctx context.Context, id int64, uid uuid.UUID, approved bool) error
+
+	CreatePropertyVerificationRequest(ctx context.Context, data *property_dto.CreatePropertyVerificationRequest) (property_model.PropertyVerificationRequest, error)
+	GetPropertyVerificationRequest(ctx context.Context, id int64) (property_model.PropertyVerificationRequest, error)
+	GetPropertyVerificationRequests(ctx context.Context, filter *property_dto.GetPropertyVerificationRequestsQuery) (*property_dto.GetPropertyVerificationRequestsResponse, error)
+	GetPropertyVerificationRequestsOfProperty(ctx context.Context, pid uuid.UUID, limit, offset int32) ([]property_model.PropertyVerificationRequest, error)
+	UpdatePropertyVerificationRequestStatus(ctx context.Context, id int64, data *property_dto.UpdatePropertyVerificationRequestStatus) error
 }
 
 type repo struct {
@@ -693,4 +699,112 @@ func (r *repo) FilterVisibleProperties(ctx context.Context, pids []uuid.UUID, ui
 	err := r.dao.QueryRowBatch(ctx, queries)
 
 	return resIDs, err
+}
+
+func (r *repo) CreatePropertyVerificationRequest(ctx context.Context, data *property_dto.CreatePropertyVerificationRequest) (property_model.PropertyVerificationRequest, error) {
+	res, err := r.dao.CreatePropertyVerificationRequest(ctx, data.ToCreatePropertyVerificationRequestParams())
+	if err != nil {
+		return property_model.PropertyVerificationRequest{}, err
+	}
+	return property_model.ToPropertyVerificationRequest(&res), nil
+}
+
+func (r *repo) GetPropertyVerificationRequest(ctx context.Context, id int64) (property_model.PropertyVerificationRequest, error) {
+	res, err := r.dao.GetPropertyVerificationRequest(ctx, id)
+	if err != nil {
+		return property_model.PropertyVerificationRequest{}, err
+	}
+	return property_model.ToPropertyVerificationRequest(&res), nil
+}
+
+func (r *repo) GetPropertyVerificationRequests(ctx context.Context, query *property_dto.GetPropertyVerificationRequestsQuery) (*property_dto.GetPropertyVerificationRequestsResponse, error) {
+	makeWhereExprs := func(sb *sqlbuilder.SelectBuilder) []string {
+		var exprs []string = make([]string, 0)
+		if query.CreatorID != uuid.Nil {
+			exprs = append(exprs, sb.Equal("creator_id", query.CreatorID))
+		}
+		if query.PropertyID != uuid.Nil {
+			exprs = append(exprs, sb.Equal("property_id", query.PropertyID))
+		}
+		if len(query.Status) > 0 {
+			exprs = append(exprs, sb.In("status", sqlbuilder.List(query.Status)))
+		}
+		return exprs
+	}
+
+	sb := sqlbuilder.PostgreSQL.NewSelectBuilder()
+	sb.Select("count(*) OVER() AS full_count")
+	sb.From("property_verification_requests")
+	sb.Where(makeWhereExprs(sb)...)
+
+	sql, args := sb.Build()
+	row := r.dao.QueryRow(ctx, sql, args...)
+	var fullCount int64
+	if err := row.Scan(&fullCount); err != nil {
+		return nil, err
+	}
+
+	sb = sqlbuilder.PostgreSQL.NewSelectBuilder()
+	sb.Select("id", "creator_id", "property_id", "video_url", "house_ownership_certificate", "certificate_of_landuse_right", "front_idcard", "back_idcard", "note", "status", "created_at", "updated_at")
+	sb.From("property_verification_requests")
+	sb.Where(makeWhereExprs(sb)...)
+	if query.SortBy != "" {
+		if query.Order == "asc" {
+			sb.OrderBy(query.SortBy).Asc()
+		} else {
+			sb.OrderBy(query.SortBy).Desc()
+		}
+	}
+	sb.Offset(int(query.Offset))
+	sb.Limit(int(query.Limit))
+
+	sql, args = sb.Build()
+	rows, err := r.dao.Query(ctx, sql, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := make([]property_model.PropertyVerificationRequest, 0, query.Limit)
+	for rows.Next() {
+		var i database.PropertyVerificationRequest
+		if err := rows.Scan(&i.ID, &i.CreatorID, &i.PropertyID, &i.VideoUrl, &i.HouseOwnershipCertificate, &i.CertificateOfLanduseRight, &i.FrontIdcard, &i.BackIdcard, &i.Note, &i.Status, &i.CreatedAt, &i.UpdatedAt); err != nil {
+			return nil, err
+		}
+		items = append(items, property_model.ToPropertyVerificationRequest(&i))
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return &property_dto.GetPropertyVerificationRequestsResponse{
+		FullCount: fullCount,
+		Items:     items,
+	}, nil
+}
+
+func (r *repo) GetPropertyVerificationRequestsOfProperty(ctx context.Context, pid uuid.UUID, limit, offset int32) ([]property_model.PropertyVerificationRequest, error) {
+	res, err := r.dao.GetPropertyVerificationRequestsOfProperty(ctx, database.GetPropertyVerificationRequestsOfPropertyParams{
+		PropertyID: pid,
+		Limit:      limit,
+		Offset:     offset,
+	})
+	if err != nil {
+		return nil, err
+	}
+	var items []property_model.PropertyVerificationRequest
+	for _, i := range res {
+		items = append(items, property_model.ToPropertyVerificationRequest(&i))
+	}
+	return items, nil
+}
+
+func (r *repo) UpdatePropertyVerificationRequestStatus(ctx context.Context, id int64, data *property_dto.UpdatePropertyVerificationRequestStatus) error {
+	return r.dao.UpdatePropertyVerificationRequest(ctx, database.UpdatePropertyVerificationRequestParams{
+		ID: id,
+		Status: database.NullPROPERTYVERIFICATIONSTATUS{
+			PROPERTYVERIFICATIONSTATUS: data.Status,
+			Valid:                      data.Status != "",
+		},
+		Feedback: types.StrN(data.Feedback),
+	})
 }

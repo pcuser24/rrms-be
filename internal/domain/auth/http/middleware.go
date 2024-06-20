@@ -1,6 +1,7 @@
 package http
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"strings"
@@ -10,6 +11,8 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
+	auth_service "github.com/user2410/rrms-backend/internal/domain/auth/service"
+	"github.com/user2410/rrms-backend/internal/infrastructure/database"
 	"github.com/user2410/rrms-backend/internal/utils/token"
 )
 
@@ -90,4 +93,28 @@ func AddAuthorization(
 
 	authorizationHeader := fmt.Sprintf("%s %s", authorizationType, token)
 	request.Header.Set(AuthorizationHeaderKey, authorizationHeader)
+}
+
+func AdminOnlyRoutes(service auth_service.Service) fiber.Handler {
+	return func(ctx *fiber.Ctx) error {
+		tkPayload, ok := ctx.Locals(AuthorizationPayloadKey).(*token.Payload)
+		if !ok {
+			return ctx.SendStatus(fiber.StatusForbidden)
+		}
+
+		user, err := service.GetUserById(tkPayload.UserID)
+		if err != nil {
+			if errors.Is(err, database.ErrRecordNotFound) {
+				return ctx.Status(fiber.StatusNotFound).JSON(fiber.Map{"message": "user not found"})
+			}
+
+			return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
+		}
+
+		if user.Role != database.USERROLEADMIN {
+			return ctx.Status(fiber.StatusForbidden).JSON(fiber.Map{"message": "operation not permitted"})
+		}
+
+		return ctx.Next()
+	}
 }

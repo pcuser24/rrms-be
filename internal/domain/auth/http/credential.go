@@ -43,6 +43,8 @@ func (a *adapter) credentialRegister() fiber.Handler {
 
 func (a *adapter) credentialLogin() fiber.Handler {
 	return func(ctx *fiber.Ctx) error {
+		admin := ctx.Query("admin")
+
 		var payload dto.LoginUser
 		if err := ctx.BodyParser(&payload); err != nil {
 			return ctx.SendStatus(fiber.StatusBadRequest)
@@ -74,6 +76,10 @@ func (a *adapter) credentialLogin() fiber.Handler {
 			return ctx.Status(http.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
 		}
 
+		if admin != "" && res.User.Role != database.USERROLEADMIN {
+			return ctx.Status(http.StatusForbidden).JSON(fiber.Map{"message": "forbidden"})
+		}
+
 		return ctx.Status(fiber.StatusOK).JSON(res)
 	}
 }
@@ -97,9 +103,9 @@ func (a *adapter) credentialGetCurrentUser() fiber.Handler {
 
 func (a *adapter) credentialGetUserByIds() fiber.Handler {
 	return func(ctx *fiber.Ctx) error {
-		q := struct {
+		var q struct {
 			Ids []uuid.UUID `json:"ids" validate:"required,dive,uuid4"`
-		}{}
+		}
 		if err := ctx.QueryParser(&q); err != nil {
 			return ctx.Status(http.StatusBadRequest).JSON(fiber.Map{"message": err.Error()})
 		}
