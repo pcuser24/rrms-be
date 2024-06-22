@@ -25,7 +25,8 @@ func (a *adapter) RegisterServer(route *fiber.Router, tokenMaker token.Maker) {
 	rentalRoute := (*route).Group("/rentals")
 	rentalRoute.Use(auth_http.AuthorizedMiddleware(tokenMaker))
 	rentalRoute.Post("/create/_pre", a.preCreateRental())
-	rentalRoute.Post("/create", a.createRental())
+	rentalRoute.Post("/create/pre", a.createPreRental())
+	// rentalRoute.Post("/create", a.createRental())
 	rentalRoute.Get("/managed-rentals", a.getManagedRentals())
 	rentalRoute.Get("/my-rentals", a.getMyRentals())
 	rentalRoute.Group("/rental/:id").Use(GetRentalID(), CheckRentalVisibility(a.service))
@@ -34,6 +35,20 @@ func (a *adapter) RegisterServer(route *fiber.Router, tokenMaker token.Maker) {
 	rentalRoute.Get("/rental/:id/contract", a.getRentalContract())
 	rentalRoute.Get("/rental/:id/ping-contract", a.pingContract())
 	rentalRoute.Post("/rental/:id/contract", a.createRentalContract())
+
+	prerentalRoute := (*route).Group("/prerentals")
+	prerentalRoute.Get("/to-me", auth_http.AuthorizedMiddleware(tokenMaker), a.getPreRentalsToMe())
+	prerentalRoute.Get("/managed", auth_http.AuthorizedMiddleware(tokenMaker), a.getManagedPreRentals())
+	prerentalRoute.Get("/prerental/:id",
+		auth_http.GetAuthorizationMiddleware(tokenMaker),
+		CheckPreRentalAccess(a.service),
+		a.getPreRental(),
+	)
+	prerentalRoute.Patch("/prerental/:id/state",
+		auth_http.GetAuthorizationMiddleware(tokenMaker),
+		CheckPreRentalAccess(a.service),
+		a.updatePreRentalState(),
+	)
 
 	contractRoute := (*route).Group("/contracts")
 	contractRoute.Use(auth_http.AuthorizedMiddleware(tokenMaker))

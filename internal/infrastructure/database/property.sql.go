@@ -742,6 +742,8 @@ SELECT (
   SELECT EXISTS (SELECT 1 FROM "property_managers" WHERE property_managers.property_id = $1 AND property_managers.manager_id = $2 LIMIT 1)
 ) OR (
   SELECT EXISTS (SELECT 1 FROM "new_property_manager_requests" WHERE new_property_manager_requests.property_id = $1 AND new_property_manager_requests.user_id = $2 LIMIT 1)
+) OR (
+  SELECT EXISTS (SELECT 1 FROM "rentals" WHERE rentals.property_id = $1 AND rentals.tenant_id = $2 LIMIT 1)
 )
 `
 

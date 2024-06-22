@@ -1,6 +1,7 @@
 package dto
 
 import (
+	"encoding/json"
 	"errors"
 	"time"
 
@@ -227,4 +228,66 @@ func (pm *CreateRental) Validate() error {
 	}
 
 	return nil
+}
+
+func FromPreRentalDBToCreateRental(pr *database.Prerental) (CreateRental, error) {
+	cr := CreateRental{
+		CreatorID:                pr.CreatorID,
+		PropertyID:               pr.PropertyID,
+		UnitID:                   pr.UnitID,
+		ApplicationID:            types.PNInt64(pr.ApplicationID),
+		TenantID:                 pr.TenantID.Bytes,
+		ProfileImage:             pr.ProfileImage,
+		TenantType:               pr.TenantType,
+		TenantName:               pr.TenantName,
+		TenantPhone:              pr.TenantPhone,
+		TenantEmail:              pr.TenantEmail,
+		OrganizationName:         types.PNStr(pr.OrganizationName),
+		OrganizationHqAddress:    types.PNStr(pr.OrganizationHqAddress),
+		StartDate:                pr.StartDate.Time,
+		MoveinDate:               pr.MoveinDate.Time,
+		RentalPeriod:             pr.RentalPeriod,
+		PaymentType:              pr.PaymentType,
+		RentalPrice:              pr.RentalPrice,
+		RentalPaymentBasis:       pr.RentalPaymentBasis,
+		RentalIntention:          pr.RentalIntention,
+		NoticePeriod:             types.PNInt32(pr.NoticePeriod),
+		GracePeriod:              pr.GracePeriod.Int32,
+		LatePaymentPenaltyScheme: pr.LatePaymentPenaltyScheme.LATEPAYMENTPENALTYSCHEME,
+		LatePaymentPenaltyAmount: types.PNFloat32(pr.LatePaymentPenaltyAmount),
+		ElectricitySetupBy:       pr.ElectricitySetupBy,
+		ElectricityPaymentType:   types.PNStr(pr.ElectricityPaymentType),
+		ElectricityPrice:         types.PNFloat32(pr.ElectricityPrice),
+		ElectricityCustomerCode:  types.PNStr(pr.ElectricityCustomerCode),
+		ElectricityProvider:      types.PNStr(pr.ElectricityProvider),
+		WaterSetupBy:             pr.WaterSetupBy,
+		WaterPaymentType:         types.PNStr(pr.WaterPaymentType),
+		WaterPrice:               types.PNFloat32(pr.WaterPrice),
+		WaterCustomerCode:        types.PNStr(pr.WaterCustomerCode),
+		WaterProvider:            types.PNStr(pr.WaterProvider),
+		Note:                     types.PNStr(pr.Note),
+	}
+
+	err := json.Unmarshal(pr.Coaps, &cr.Coaps)
+	if err != nil {
+		return cr, err
+	}
+	err = json.Unmarshal(pr.Minors, &cr.Minors)
+	if err != nil {
+		return cr, err
+	}
+	err = json.Unmarshal(pr.Pets, &cr.Pets)
+	if err != nil {
+		return cr, err
+	}
+	err = json.Unmarshal(pr.Services, &cr.Services)
+	if err != nil {
+		return cr, err
+	}
+	err = json.Unmarshal(pr.Policies, &cr.Policies)
+	if err != nil {
+		return cr, err
+	}
+
+	return cr, nil
 }

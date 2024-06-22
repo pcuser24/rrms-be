@@ -1,6 +1,7 @@
 package model
 
 import (
+	"encoding/json"
 	"time"
 
 	"github.com/google/uuid"
@@ -186,4 +187,82 @@ func ToRentalModel(pr *database.Rental) RentalModel {
 		Services:                 []RentalService{},
 		Policies:                 []RentalPolicy{},
 	}
+}
+
+type PreRental = RentalModel
+
+func ToPreRentalModel(pr *database.Prerental) (PreRental, error) {
+	prm := PreRental{
+		ID:                       pr.ID,
+		CreatorID:                pr.CreatorID,
+		PropertyID:               pr.PropertyID,
+		UnitID:                   pr.UnitID,
+		ApplicationID:            types.PNInt64(pr.ApplicationID),
+		TenantID:                 pr.TenantID.Bytes,
+		ProfileImage:             pr.ProfileImage,
+		TenantType:               pr.TenantType,
+		TenantName:               pr.TenantName,
+		TenantPhone:              pr.TenantPhone,
+		TenantEmail:              pr.TenantEmail,
+		OrganizationName:         types.PNStr(pr.OrganizationName),
+		OrganizationHqAddress:    types.PNStr(pr.OrganizationHqAddress),
+		StartDate:                pr.StartDate.Time,
+		MoveinDate:               pr.MoveinDate.Time,
+		RentalPeriod:             pr.RentalPeriod,
+		PaymentType:              pr.PaymentType,
+		RentalPrice:              pr.RentalPrice,
+		RentalPaymentBasis:       pr.RentalPaymentBasis,
+		RentalIntention:          pr.RentalIntention,
+		NoticePeriod:             pr.NoticePeriod.Int32,
+		GracePeriod:              pr.NoticePeriod.Int32,
+		LatePaymentPenaltyScheme: pr.LatePaymentPenaltyScheme.LATEPAYMENTPENALTYSCHEME,
+		LatePaymentPenaltyAmount: types.PNFloat32(pr.LatePaymentPenaltyAmount),
+		ElectricitySetupBy:       pr.ElectricitySetupBy,
+		ElectricityPaymentType:   types.PNStr(pr.ElectricityPaymentType),
+		ElectricityCustomerCode:  types.PNStr(pr.ElectricityCustomerCode),
+		ElectricityProvider:      types.PNStr(pr.ElectricityProvider),
+		ElectricityPrice:         types.PNFloat32(pr.ElectricityPrice),
+		WaterSetupBy:             pr.WaterSetupBy,
+		WaterPaymentType:         types.PNStr(pr.WaterPaymentType),
+		WaterCustomerCode:        types.PNStr(pr.WaterCustomerCode),
+		WaterProvider:            types.PNStr(pr.WaterProvider),
+		WaterPrice:               types.PNFloat32(pr.WaterPrice),
+		Note:                     types.PNStr(pr.Note),
+		CreatedAt:                pr.CreatedAt,
+	}
+
+	var err error
+
+	if pr.Coaps != nil {
+		err = json.Unmarshal(pr.Coaps, &prm.Coaps)
+		if err != nil {
+			return prm, err
+		}
+	}
+	if pr.Minors != nil {
+		err = json.Unmarshal(pr.Minors, &prm.Minors)
+		if err != nil {
+			return prm, err
+		}
+	}
+	if pr.Pets != nil {
+		err = json.Unmarshal(pr.Pets, &prm.Pets)
+		if err != nil {
+			return prm, err
+		}
+	}
+	if pr.Services != nil {
+		err = json.Unmarshal(pr.Services, &prm.Services)
+		if err != nil {
+			return prm, err
+		}
+	}
+	if pr.Policies != nil {
+		err = json.Unmarshal(pr.Policies, &prm.Policies)
+		if err != nil {
+			return prm, err
+		}
+	}
+
+	return prm, nil
 }

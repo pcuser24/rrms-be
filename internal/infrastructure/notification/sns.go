@@ -55,6 +55,8 @@ func (s *snsNotificationEndpoint) sendEmailNotification(ctx context.Context, not
 	})
 
 	return s.snsClient.Publish(ctx, notification.Title, notification.Content, s.emailNotificationTopicArn, msgAttributes)
+	// log.Printf("Email notification sent %v, with attributes: %v", *notification, msgAttributes)
+	// return nil
 }
 
 func (s *snsNotificationEndpoint) sendPushNotification(ctx context.Context, notification *NotificationTransport) error {
@@ -65,4 +67,6 @@ func (s *snsNotificationEndpoint) sendPushNotification(ctx context.Context, noti
 	})
 
 	return s.snsClient.Publish(ctx, notification.Title, notification.Content, s.emailNotificationTopicArn, msgAttributes)
+	// log.Printf("Push notification sent %v, with attributes: %v", *notification, msgAttributes)
+	// return nil
 }

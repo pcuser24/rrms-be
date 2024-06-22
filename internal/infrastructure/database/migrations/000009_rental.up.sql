@@ -31,7 +31,7 @@ CREATE TABLE IF NOT EXISTS "rentals" (
   "rental_intention" VARCHAR(20) NOT NULL,
   "notice_period" INTEGER DEFAULT 30,
   "grace_period" INTEGER DEFAULT 0 CHECK (grace_period >= 0),
-  "late_payment_penalty_scheme" "LATEPAYMENTPENALTYSCHEME" DEFAULT 'FIXED',
+  "late_payment_penalty_scheme" "LATEPAYMENTPENALTYSCHEME" DEFAULT 'NONE',
   "late_payment_penalty_amount" REAL DEFAULT 0 CHECK (late_payment_penalty_amount >= 0),
   
   -- basic services
@@ -53,9 +53,7 @@ CREATE TABLE IF NOT EXISTS "rentals" (
   "status" "RENTALSTATUS" NOT NULL DEFAULT 'INPROGRESS',
   
   "created_at" TIMESTAMPTZ DEFAULT NOW() NOT NULL,
-  "updated_at" TIMESTAMPTZ DEFAULT NOW() NOT NULL,
-
-  UNIQUE ("application_id")
+  "updated_at" TIMESTAMPTZ DEFAULT NOW() NOT NULL
 );
 ALTER TABLE "rentals" ADD CONSTRAINT "rental_application_id_fkey" FOREIGN KEY ("application_id") REFERENCES "applications"("id") ON DELETE SET NULL;
 ALTER TABLE "rentals" ADD CONSTRAINT "rental_creator_id_fkey" FOREIGN KEY ("creator_id") REFERENCES "User"("id") ON DELETE CASCADE;
@@ -110,5 +108,66 @@ CREATE TABLE IF NOT EXISTS "rental_policies" (
   "content" TEXT NOT NULL
 );
 ALTER TABLE "rental_policies" ADD CONSTRAINT "rental_policies_rental_id_fkey" FOREIGN KEY ("rental_id") REFERENCES "rentals"("id") ON DELETE CASCADE;
+
+CREATE TABLE IF NOT EXISTS "prerentals" (
+  "id" BIGSERIAL PRIMARY KEY,
+  "creator_id" UUID NOT NULL,
+  "property_id" UUID NOT NULL,
+  "unit_id" UUID NOT NULL,
+  "application_id" BIGINT,
+
+  "tenant_id" UUID,
+  "profile_image" TEXT NOT NULL,
+  "tenant_type" "TENANTTYPE" NOT NULL,
+  "tenant_name" VARCHAR(100) NOT NULL,
+  "tenant_phone" VARCHAR(20) NOT NULL,
+  "tenant_email" VARCHAR(100) NOT NULL,
+  "organization_name" TEXT,
+  "organization_hq_address" TEXT,
+
+  "start_date" DATE NOT NULL,
+  "movein_date" DATE NOT NULL,
+  "rental_period" INTEGER NOT NULL CHECK (rental_period >= 0),
+
+  "payment_type" "RENTALPAYMENTTYPE" NOT NULL DEFAULT 'POSTPAID',
+
+  "rental_price" REAL NOT NULL CHECK (rental_price >= 0),
+  "rental_payment_basis" INTEGER NOT NULL CHECK(rental_payment_basis >= 1),
+  CHECK(rental_payment_basis <= rental_period),
+  "rental_intention" VARCHAR(20) NOT NULL,
+  "notice_period" INTEGER DEFAULT 30,
+  "grace_period" INTEGER DEFAULT 0 CHECK (grace_period >= 0),
+  "late_payment_penalty_scheme" "LATEPAYMENTPENALTYSCHEME" DEFAULT 'NONE',
+  "late_payment_penalty_amount" REAL DEFAULT 0 CHECK (late_payment_penalty_amount >= 0),
+  
+  -- basic services
+  "electricity_setup_by" VARCHAR(20) NOT NULL,
+  "electricity_payment_type" VARCHAR(10),
+  "electricity_customer_code" VARCHAR(50),
+  "electricity_provider" TEXT,
+  "electricity_price" REAL CHECK (electricity_price >= 0),
+  "water_setup_by" VARCHAR(20) NOT NULL,
+  "water_payment_type" VARCHAR(10),
+  "water_customer_code" VARCHAR(50),
+  "water_provider" TEXT,
+  "water_price" REAL CHECK (water_price >= 0),
+
+  -- policy
+  -- "rental_payment_grace_period" INTEGER NOT NULL CHECK (rental_payment_grace_period >= 0),
+  "note" TEXT,
+
+  "coaps" JSONB,
+  "minors" JSONB,
+  "pets" JSONB,
+  "services" JSONB,
+  "policies" JSONB,
+  
+  "created_at" TIMESTAMPTZ DEFAULT NOW() NOT NULL
+);
+ALTER TABLE "prerentals" ADD CONSTRAINT "prerental_application_id_fkey" FOREIGN KEY ("application_id") REFERENCES "applications"("id") ON DELETE SET NULL;
+ALTER TABLE "prerentals" ADD CONSTRAINT "prerental_creator_id_fkey" FOREIGN KEY ("creator_id") REFERENCES "User"("id") ON DELETE CASCADE;
+ALTER TABLE "prerentals" ADD CONSTRAINT "prerental_tenant_id_fkey" FOREIGN KEY ("tenant_id") REFERENCES "User"("id") ON DELETE CASCADE;
+ALTER TABLE "prerentals" ADD CONSTRAINT "prerental_property_id_fkey" FOREIGN KEY ("property_id") REFERENCES "properties"("id") ON DELETE CASCADE;
+ALTER TABLE "prerentals" ADD CONSTRAINT "prerental_unit_id_fkey" FOREIGN KEY ("unit_id") REFERENCES "units"("id") ON DELETE CASCADE;
 
 END;

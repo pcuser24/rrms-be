@@ -7,9 +7,8 @@
   </a>
   <!-- Email Body -->
   <h2 style="font-size: 1.5rem; font-weight: 400;">Profile thuê nhà mới đã được tạo thành công</h2>
-  <p>Quá trình thuê nhà của bạn tại phòng <strong>{{.Unit.Name}}</strong> nhà cho thuê <a href="{{.FESite}}/manage/propertíes/property/{{.Property.ID}}"><strong>{{.Property.Name}}</strong></a> bắt đầu. Hãy kiểm tra thông tin và xác nhận thông tin thuê nhà của mình nhanh với chủ nhà sớm nhất có thể.</p>
-  <a href="{{.FESite}}/manage/rentals/rental/{{.Rental.ID}}">Xem chi tiết profile thuê nhà</a>
-  <a href="{{.FESite}}"></a>
+  <p>Đã tạo thành công profile thuê nhà mới cho {{.Rental.TenantName}} tại <strong>{{.Unit.Name}}</strong> nhà cho thuê <a href="{{.FESite}}/manage/propertíes/property/{{.Property.ID}}"><strong>{{.Property.Name}}</strong></a>. Hãy kiểm tra thông tin và xác nhận thông tin thuê nhà của mình nhanh với chủ nhà sớm nhất có thể.</p>
+  <a href="{{.AccessLink}}">Xem chi tiết profile thuê nhà</a>
   <!-- Email footer -->
   <p style="font-size: small; color:grey;">Nếu có bất kì thắc mắc nào hãy <a href="{{.FESite}}">liên hệ</a> với chúng tôi
   </p>

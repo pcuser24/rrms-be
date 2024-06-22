@@ -284,3 +284,129 @@ WHERE id = $1;
 
 -- name: DeleteRental :exec
 DELETE FROM rentals WHERE id = $1;
+
+-- name: CreatePreRental :one
+INSERT INTO prerentals (
+  application_id,
+  creator_id,
+  property_id,
+  unit_id,
+  profile_image,
+  
+  tenant_id,
+  tenant_type,
+  tenant_name,
+  tenant_phone,
+  tenant_email,
+  organization_name,
+  organization_hq_address,
+
+  start_date,
+  movein_date,
+  rental_period,
+
+  payment_type,
+
+  rental_price,
+  rental_payment_basis,
+  rental_intention,
+  notice_period,
+  grace_period,
+  late_payment_penalty_scheme,
+  late_payment_penalty_amount,
+
+  electricity_setup_by,
+  electricity_payment_type,
+  electricity_price,
+  electricity_customer_code,
+  electricity_provider,
+  water_setup_by,
+  water_payment_type,
+  water_price,
+  water_customer_code,
+  water_provider,
+
+  note,
+
+  coaps,
+  minors,
+  pets,
+  services,
+  policies
+) VALUES (
+  sqlc.narg(application_id),
+  sqlc.arg(creator_id),
+  sqlc.arg(property_id),
+  sqlc.arg(unit_id),
+  sqlc.arg(profile_image),
+  
+  sqlc.narg(tenant_id),
+  sqlc.arg(tenant_type),
+  sqlc.arg(tenant_name),
+  sqlc.arg(tenant_phone),
+  sqlc.arg(tenant_email),
+  sqlc.narg(organization_name),
+  sqlc.narg(organization_hq_address),
+
+  sqlc.arg(start_date),
+  sqlc.arg(movein_date),
+  sqlc.arg(rental_period),
+
+  sqlc.narg(payment_type),
+
+  sqlc.arg(rental_price),
+  sqlc.arg(rental_payment_basis),
+  sqlc.arg(rental_intention),
+  sqlc.narg(notice_period),
+  sqlc.arg(grace_period),
+  sqlc.arg(late_payment_penalty_scheme),
+  sqlc.narg(late_payment_penalty_amount),
+
+  sqlc.arg(electricity_setup_by),
+  sqlc.narg(electricity_payment_type),
+  sqlc.narg(electricity_price),
+  sqlc.narg(electricity_customer_code),
+  sqlc.narg(electricity_provider),
+  sqlc.arg(water_setup_by),
+  sqlc.narg(water_payment_type),
+  sqlc.narg(water_price),
+  sqlc.narg(water_customer_code),
+  sqlc.narg(water_provider),
+  
+  sqlc.narg(note),
+
+  sqlc.arg(coaps),
+  sqlc.arg(minors),
+  sqlc.arg(pets),
+  sqlc.arg(services),
+  sqlc.arg(policies)
+) RETURNING *;
+
+-- name: GetPreRental :one
+SELECT * FROM prerentals WHERE id = $1 LIMIT 1;
+
+-- name: GetPreRentalsToTenant :many
+SELECT * FROM prerentals WHERE tenant_id = sqlc.arg(user_id) ORDER BY created_at DESC LIMIT $1 OFFSET $2;
+
+-- name: GetManagedPreRentals :many
+SELECT * FROM prerentals WHERE 
+EXISTS (
+  SELECT 1 FROM property_managers WHERE manager_id = sqlc.arg(user_id) AND prerentals.property_id = property_managers.property_id
+) ORDER BY created_at DESC LIMIT $1 OFFSET $2;
+
+-- name: DeletePreRental :exec
+DELETE FROM prerentals WHERE id = $1;
+
+-- name: CheckPreRentalVisibility :one
+SELECT count(*) > 0 FROM prerentals 
+WHERE 
+  id = $1 
+  AND (
+    tenant_id = sqlc.arg(user_id) 
+    OR EXISTS (
+      SELECT 1 FROM property_managers 
+      WHERE 
+        property_managers.property_id = prerentals.property_id 
+        AND property_managers.manager_id = sqlc.arg(user_id)
+      )
+  );

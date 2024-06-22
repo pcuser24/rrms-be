@@ -20,6 +20,7 @@ type Querier interface {
 	CheckListingVisibility(ctx context.Context, arg CheckListingVisibilityParams) (bool, error)
 	CheckMsgGroupMembership(ctx context.Context, arg CheckMsgGroupMembershipParams) (bool, error)
 	CheckPaymentAccessible(ctx context.Context, arg CheckPaymentAccessibleParams) (bool, error)
+	CheckPreRentalVisibility(ctx context.Context, arg CheckPreRentalVisibilityParams) (bool, error)
 	CheckReminderVisibility(ctx context.Context, arg CheckReminderVisibilityParams) (bool, error)
 	CheckRentalVisibility(ctx context.Context, arg CheckRentalVisibilityParams) (bool, error)
 	CheckUnitManageability(ctx context.Context, arg CheckUnitManageabilityParams) (int64, error)
@@ -43,6 +44,7 @@ type Querier interface {
 	CreateNotificationDevice(ctx context.Context, arg CreateNotificationDeviceParams) (UserNotificationDevice, error)
 	CreatePayment(ctx context.Context, arg CreatePaymentParams) (Payment, error)
 	CreatePaymentItem(ctx context.Context, arg CreatePaymentItemParams) (PaymentItem, error)
+	CreatePreRental(ctx context.Context, arg CreatePreRentalParams) (Prerental, error)
 	CreateProperty(ctx context.Context, arg CreatePropertyParams) (Property, error)
 	CreatePropertyFeature(ctx context.Context, arg CreatePropertyFeatureParams) (PropertyFeature, error)
 	CreatePropertyManager(ctx context.Context, arg CreatePropertyManagerParams) (PropertyManager, error)
@@ -74,6 +76,7 @@ type Querier interface {
 	DeleteMsgGroupMember(ctx context.Context, arg DeleteMsgGroupMemberParams) error
 	DeleteNotificationDeviceToken(ctx context.Context, arg DeleteNotificationDeviceTokenParams) error
 	DeletePayment(ctx context.Context, id int64) error
+	DeletePreRental(ctx context.Context, id int64) error
 	DeleteProperty(ctx context.Context, id uuid.UUID) error
 	DeletePropertyFeature(ctx context.Context, arg DeletePropertyFeatureParams) error
 	DeletePropertyManager(ctx context.Context, arg DeletePropertyManagerParams) error
@@ -107,6 +110,7 @@ type Querier interface {
 	// Get expired / active listings
 	GetListingsOfProperty(ctx context.Context, arg GetListingsOfPropertyParams) ([]uuid.UUID, error)
 	GetMaintenanceRequests(ctx context.Context, arg GetMaintenanceRequestsParams) ([]int64, error)
+	GetManagedPreRentals(ctx context.Context, arg GetManagedPreRentalsParams) ([]Prerental, error)
 	GetManagedPropertiesByRole(ctx context.Context, arg GetManagedPropertiesByRoleParams) ([]uuid.UUID, error)
 	GetManagedRentals(ctx context.Context, arg GetManagedRentalsParams) ([]int64, error)
 	GetManagedUnits(ctx context.Context, managerID uuid.UUID) ([]uuid.UUID, error)
@@ -130,6 +134,8 @@ type Querier interface {
 	GetPaymentsOfRental(ctx context.Context, rentalID int64) ([]RentalPayment, error)
 	GetPaymentsOfUser(ctx context.Context, arg GetPaymentsOfUserParams) ([]Payment, error)
 	GetPaymentsStatistic(ctx context.Context, arg GetPaymentsStatisticParams) (float32, error)
+	GetPreRental(ctx context.Context, id int64) (Prerental, error)
+	GetPreRentalsToTenant(ctx context.Context, arg GetPreRentalsToTenantParams) ([]Prerental, error)
 	GetPropertiesWithActiveListing(ctx context.Context, managerID uuid.UUID) ([]uuid.UUID, error)
 	GetPropertyById(ctx context.Context, id uuid.UUID) (Property, error)
 	GetPropertyFeatures(ctx context.Context, propertyID uuid.UUID) ([]PropertyFeature, error)

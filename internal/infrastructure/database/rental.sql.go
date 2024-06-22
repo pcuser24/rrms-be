@@ -12,6 +12,33 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const checkPreRentalVisibility = `-- name: CheckPreRentalVisibility :one
+SELECT count(*) > 0 FROM prerentals 
+WHERE 
+  id = $1 
+  AND (
+    tenant_id = $2 
+    OR EXISTS (
+      SELECT 1 FROM property_managers 
+      WHERE 
+        property_managers.property_id = prerentals.property_id 
+        AND property_managers.manager_id = $2
+      )
+  )
+`
+
+type CheckPreRentalVisibilityParams struct {
+	ID     int64       `json:"id"`
+	UserID pgtype.UUID `json:"user_id"`
+}
+
+func (q *Queries) CheckPreRentalVisibility(ctx context.Context, arg CheckPreRentalVisibilityParams) (bool, error) {
+	row := q.db.QueryRow(ctx, checkPreRentalVisibility, arg.ID, arg.UserID)
+	var column_1 bool
+	err := row.Scan(&column_1)
+	return column_1, err
+}
+
 const checkRentalVisibility = `-- name: CheckRentalVisibility :one
 SELECT count(*) > 0 FROM rentals 
 WHERE 
@@ -37,6 +64,235 @@ func (q *Queries) CheckRentalVisibility(ctx context.Context, arg CheckRentalVisi
 	var column_1 bool
 	err := row.Scan(&column_1)
 	return column_1, err
+}
+
+const createPreRental = `-- name: CreatePreRental :one
+INSERT INTO prerentals (
+  application_id,
+  creator_id,
+  property_id,
+  unit_id,
+  profile_image,
+  
+  tenant_id,
+  tenant_type,
+  tenant_name,
+  tenant_phone,
+  tenant_email,
+  organization_name,
+  organization_hq_address,
+
+  start_date,
+  movein_date,
+  rental_period,
+
+  payment_type,
+
+  rental_price,
+  rental_payment_basis,
+  rental_intention,
+  notice_period,
+  grace_period,
+  late_payment_penalty_scheme,
+  late_payment_penalty_amount,
+
+  electricity_setup_by,
+  electricity_payment_type,
+  electricity_price,
+  electricity_customer_code,
+  electricity_provider,
+  water_setup_by,
+  water_payment_type,
+  water_price,
+  water_customer_code,
+  water_provider,
+
+  note,
+
+  coaps,
+  minors,
+  pets,
+  services,
+  policies
+) VALUES (
+  $1,
+  $2,
+  $3,
+  $4,
+  $5,
+  
+  $6,
+  $7,
+  $8,
+  $9,
+  $10,
+  $11,
+  $12,
+
+  $13,
+  $14,
+  $15,
+
+  $16,
+
+  $17,
+  $18,
+  $19,
+  $20,
+  $21,
+  $22,
+  $23,
+
+  $24,
+  $25,
+  $26,
+  $27,
+  $28,
+  $29,
+  $30,
+  $31,
+  $32,
+  $33,
+  
+  $34,
+
+  $35,
+  $36,
+  $37,
+  $38,
+  $39
+) RETURNING id, creator_id, property_id, unit_id, application_id, tenant_id, profile_image, tenant_type, tenant_name, tenant_phone, tenant_email, organization_name, organization_hq_address, start_date, movein_date, rental_period, payment_type, rental_price, rental_payment_basis, rental_intention, notice_period, grace_period, late_payment_penalty_scheme, late_payment_penalty_amount, electricity_setup_by, electricity_payment_type, electricity_customer_code, electricity_provider, electricity_price, water_setup_by, water_payment_type, water_customer_code, water_provider, water_price, note, coaps, minors, pets, services, policies, created_at
+`
+
+type CreatePreRentalParams struct {
+	ApplicationID            pgtype.Int8                  `json:"application_id"`
+	CreatorID                uuid.UUID                    `json:"creator_id"`
+	PropertyID               uuid.UUID                    `json:"property_id"`
+	UnitID                   uuid.UUID                    `json:"unit_id"`
+	ProfileImage             string                       `json:"profile_image"`
+	TenantID                 pgtype.UUID                  `json:"tenant_id"`
+	TenantType               TENANTTYPE                   `json:"tenant_type"`
+	TenantName               string                       `json:"tenant_name"`
+	TenantPhone              string                       `json:"tenant_phone"`
+	TenantEmail              string                       `json:"tenant_email"`
+	OrganizationName         pgtype.Text                  `json:"organization_name"`
+	OrganizationHqAddress    pgtype.Text                  `json:"organization_hq_address"`
+	StartDate                pgtype.Date                  `json:"start_date"`
+	MoveinDate               pgtype.Date                  `json:"movein_date"`
+	RentalPeriod             int32                        `json:"rental_period"`
+	PaymentType              NullRENTALPAYMENTTYPE        `json:"payment_type"`
+	RentalPrice              float32                      `json:"rental_price"`
+	RentalPaymentBasis       int32                        `json:"rental_payment_basis"`
+	RentalIntention          string                       `json:"rental_intention"`
+	NoticePeriod             pgtype.Int4                  `json:"notice_period"`
+	GracePeriod              pgtype.Int4                  `json:"grace_period"`
+	LatePaymentPenaltyScheme NullLATEPAYMENTPENALTYSCHEME `json:"late_payment_penalty_scheme"`
+	LatePaymentPenaltyAmount pgtype.Float4                `json:"late_payment_penalty_amount"`
+	ElectricitySetupBy       string                       `json:"electricity_setup_by"`
+	ElectricityPaymentType   pgtype.Text                  `json:"electricity_payment_type"`
+	ElectricityPrice         pgtype.Float4                `json:"electricity_price"`
+	ElectricityCustomerCode  pgtype.Text                  `json:"electricity_customer_code"`
+	ElectricityProvider      pgtype.Text                  `json:"electricity_provider"`
+	WaterSetupBy             string                       `json:"water_setup_by"`
+	WaterPaymentType         pgtype.Text                  `json:"water_payment_type"`
+	WaterPrice               pgtype.Float4                `json:"water_price"`
+	WaterCustomerCode        pgtype.Text                  `json:"water_customer_code"`
+	WaterProvider            pgtype.Text                  `json:"water_provider"`
+	Note                     pgtype.Text                  `json:"note"`
+	Coaps                    []byte                       `json:"coaps"`
+	Minors                   []byte                       `json:"minors"`
+	Pets                     []byte                       `json:"pets"`
+	Services                 []byte                       `json:"services"`
+	Policies                 []byte                       `json:"policies"`
+}
+
+func (q *Queries) CreatePreRental(ctx context.Context, arg CreatePreRentalParams) (Prerental, error) {
+	row := q.db.QueryRow(ctx, createPreRental,
+		arg.ApplicationID,
+		arg.CreatorID,
+		arg.PropertyID,
+		arg.UnitID,
+		arg.ProfileImage,
+		arg.TenantID,
+		arg.TenantType,
+		arg.TenantName,
+		arg.TenantPhone,
+		arg.TenantEmail,
+		arg.OrganizationName,
+		arg.OrganizationHqAddress,
+		arg.StartDate,
+		arg.MoveinDate,
+		arg.RentalPeriod,
+		arg.PaymentType,
+		arg.RentalPrice,
+		arg.RentalPaymentBasis,
+		arg.RentalIntention,
+		arg.NoticePeriod,
+		arg.GracePeriod,
+		arg.LatePaymentPenaltyScheme,
+		arg.LatePaymentPenaltyAmount,
+		arg.ElectricitySetupBy,
+		arg.ElectricityPaymentType,
+		arg.ElectricityPrice,
+		arg.ElectricityCustomerCode,
+		arg.ElectricityProvider,
+		arg.WaterSetupBy,
+		arg.WaterPaymentType,
+		arg.WaterPrice,
+		arg.WaterCustomerCode,
+		arg.WaterProvider,
+		arg.Note,
+		arg.Coaps,
+		arg.Minors,
+		arg.Pets,
+		arg.Services,
+		arg.Policies,
+	)
+	var i Prerental
+	err := row.Scan(
+		&i.ID,
+		&i.CreatorID,
+		&i.PropertyID,
+		&i.UnitID,
+		&i.ApplicationID,
+		&i.TenantID,
+		&i.ProfileImage,
+		&i.TenantType,
+		&i.TenantName,
+		&i.TenantPhone,
+		&i.TenantEmail,
+		&i.OrganizationName,
+		&i.OrganizationHqAddress,
+		&i.StartDate,
+		&i.MoveinDate,
+		&i.RentalPeriod,
+		&i.PaymentType,
+		&i.RentalPrice,
+		&i.RentalPaymentBasis,
+		&i.RentalIntention,
+		&i.NoticePeriod,
+		&i.GracePeriod,
+		&i.LatePaymentPenaltyScheme,
+		&i.LatePaymentPenaltyAmount,
+		&i.ElectricitySetupBy,
+		&i.ElectricityPaymentType,
+		&i.ElectricityCustomerCode,
+		&i.ElectricityProvider,
+		&i.ElectricityPrice,
+		&i.WaterSetupBy,
+		&i.WaterPaymentType,
+		&i.WaterCustomerCode,
+		&i.WaterProvider,
+		&i.WaterPrice,
+		&i.Note,
+		&i.Coaps,
+		&i.Minors,
+		&i.Pets,
+		&i.Services,
+		&i.Policies,
+		&i.CreatedAt,
+	)
+	return i, err
 }
 
 const createRental = `-- name: CreateRental :one
@@ -459,6 +715,15 @@ func (q *Queries) CreateRentalService(ctx context.Context, arg CreateRentalServi
 	return i, err
 }
 
+const deletePreRental = `-- name: DeletePreRental :exec
+DELETE FROM prerentals WHERE id = $1
+`
+
+func (q *Queries) DeletePreRental(ctx context.Context, id int64) error {
+	_, err := q.db.Exec(ctx, deletePreRental, id)
+	return err
+}
+
 const deleteRental = `-- name: DeleteRental :exec
 DELETE FROM rentals WHERE id = $1
 `
@@ -466,6 +731,81 @@ DELETE FROM rentals WHERE id = $1
 func (q *Queries) DeleteRental(ctx context.Context, id int64) error {
 	_, err := q.db.Exec(ctx, deleteRental, id)
 	return err
+}
+
+const getManagedPreRentals = `-- name: GetManagedPreRentals :many
+SELECT id, creator_id, property_id, unit_id, application_id, tenant_id, profile_image, tenant_type, tenant_name, tenant_phone, tenant_email, organization_name, organization_hq_address, start_date, movein_date, rental_period, payment_type, rental_price, rental_payment_basis, rental_intention, notice_period, grace_period, late_payment_penalty_scheme, late_payment_penalty_amount, electricity_setup_by, electricity_payment_type, electricity_customer_code, electricity_provider, electricity_price, water_setup_by, water_payment_type, water_customer_code, water_provider, water_price, note, coaps, minors, pets, services, policies, created_at FROM prerentals WHERE 
+EXISTS (
+  SELECT 1 FROM property_managers WHERE manager_id = $3 AND prerentals.property_id = property_managers.property_id
+) ORDER BY created_at DESC LIMIT $1 OFFSET $2
+`
+
+type GetManagedPreRentalsParams struct {
+	Limit  int32     `json:"limit"`
+	Offset int32     `json:"offset"`
+	UserID uuid.UUID `json:"user_id"`
+}
+
+func (q *Queries) GetManagedPreRentals(ctx context.Context, arg GetManagedPreRentalsParams) ([]Prerental, error) {
+	rows, err := q.db.Query(ctx, getManagedPreRentals, arg.Limit, arg.Offset, arg.UserID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Prerental
+	for rows.Next() {
+		var i Prerental
+		if err := rows.Scan(
+			&i.ID,
+			&i.CreatorID,
+			&i.PropertyID,
+			&i.UnitID,
+			&i.ApplicationID,
+			&i.TenantID,
+			&i.ProfileImage,
+			&i.TenantType,
+			&i.TenantName,
+			&i.TenantPhone,
+			&i.TenantEmail,
+			&i.OrganizationName,
+			&i.OrganizationHqAddress,
+			&i.StartDate,
+			&i.MoveinDate,
+			&i.RentalPeriod,
+			&i.PaymentType,
+			&i.RentalPrice,
+			&i.RentalPaymentBasis,
+			&i.RentalIntention,
+			&i.NoticePeriod,
+			&i.GracePeriod,
+			&i.LatePaymentPenaltyScheme,
+			&i.LatePaymentPenaltyAmount,
+			&i.ElectricitySetupBy,
+			&i.ElectricityPaymentType,
+			&i.ElectricityCustomerCode,
+			&i.ElectricityProvider,
+			&i.ElectricityPrice,
+			&i.WaterSetupBy,
+			&i.WaterPaymentType,
+			&i.WaterCustomerCode,
+			&i.WaterProvider,
+			&i.WaterPrice,
+			&i.Note,
+			&i.Coaps,
+			&i.Minors,
+			&i.Pets,
+			&i.Services,
+			&i.Policies,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const getManagedRentals = `-- name: GetManagedRentals :many
@@ -552,6 +892,131 @@ func (q *Queries) GetMyRentals(ctx context.Context, arg GetMyRentalsParams) ([]i
 			return nil, err
 		}
 		items = append(items, id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getPreRental = `-- name: GetPreRental :one
+SELECT id, creator_id, property_id, unit_id, application_id, tenant_id, profile_image, tenant_type, tenant_name, tenant_phone, tenant_email, organization_name, organization_hq_address, start_date, movein_date, rental_period, payment_type, rental_price, rental_payment_basis, rental_intention, notice_period, grace_period, late_payment_penalty_scheme, late_payment_penalty_amount, electricity_setup_by, electricity_payment_type, electricity_customer_code, electricity_provider, electricity_price, water_setup_by, water_payment_type, water_customer_code, water_provider, water_price, note, coaps, minors, pets, services, policies, created_at FROM prerentals WHERE id = $1 LIMIT 1
+`
+
+func (q *Queries) GetPreRental(ctx context.Context, id int64) (Prerental, error) {
+	row := q.db.QueryRow(ctx, getPreRental, id)
+	var i Prerental
+	err := row.Scan(
+		&i.ID,
+		&i.CreatorID,
+		&i.PropertyID,
+		&i.UnitID,
+		&i.ApplicationID,
+		&i.TenantID,
+		&i.ProfileImage,
+		&i.TenantType,
+		&i.TenantName,
+		&i.TenantPhone,
+		&i.TenantEmail,
+		&i.OrganizationName,
+		&i.OrganizationHqAddress,
+		&i.StartDate,
+		&i.MoveinDate,
+		&i.RentalPeriod,
+		&i.PaymentType,
+		&i.RentalPrice,
+		&i.RentalPaymentBasis,
+		&i.RentalIntention,
+		&i.NoticePeriod,
+		&i.GracePeriod,
+		&i.LatePaymentPenaltyScheme,
+		&i.LatePaymentPenaltyAmount,
+		&i.ElectricitySetupBy,
+		&i.ElectricityPaymentType,
+		&i.ElectricityCustomerCode,
+		&i.ElectricityProvider,
+		&i.ElectricityPrice,
+		&i.WaterSetupBy,
+		&i.WaterPaymentType,
+		&i.WaterCustomerCode,
+		&i.WaterProvider,
+		&i.WaterPrice,
+		&i.Note,
+		&i.Coaps,
+		&i.Minors,
+		&i.Pets,
+		&i.Services,
+		&i.Policies,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
+const getPreRentalsToTenant = `-- name: GetPreRentalsToTenant :many
+SELECT id, creator_id, property_id, unit_id, application_id, tenant_id, profile_image, tenant_type, tenant_name, tenant_phone, tenant_email, organization_name, organization_hq_address, start_date, movein_date, rental_period, payment_type, rental_price, rental_payment_basis, rental_intention, notice_period, grace_period, late_payment_penalty_scheme, late_payment_penalty_amount, electricity_setup_by, electricity_payment_type, electricity_customer_code, electricity_provider, electricity_price, water_setup_by, water_payment_type, water_customer_code, water_provider, water_price, note, coaps, minors, pets, services, policies, created_at FROM prerentals WHERE tenant_id = $3 ORDER BY created_at DESC LIMIT $1 OFFSET $2
+`
+
+type GetPreRentalsToTenantParams struct {
+	Limit  int32       `json:"limit"`
+	Offset int32       `json:"offset"`
+	UserID pgtype.UUID `json:"user_id"`
+}
+
+func (q *Queries) GetPreRentalsToTenant(ctx context.Context, arg GetPreRentalsToTenantParams) ([]Prerental, error) {
+	rows, err := q.db.Query(ctx, getPreRentalsToTenant, arg.Limit, arg.Offset, arg.UserID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Prerental
+	for rows.Next() {
+		var i Prerental
+		if err := rows.Scan(
+			&i.ID,
+			&i.CreatorID,
+			&i.PropertyID,
+			&i.UnitID,
+			&i.ApplicationID,
+			&i.TenantID,
+			&i.ProfileImage,
+			&i.TenantType,
+			&i.TenantName,
+			&i.TenantPhone,
+			&i.TenantEmail,
+			&i.OrganizationName,
+			&i.OrganizationHqAddress,
+			&i.StartDate,
+			&i.MoveinDate,
+			&i.RentalPeriod,
+			&i.PaymentType,
+			&i.RentalPrice,
+			&i.RentalPaymentBasis,
+			&i.RentalIntention,
+			&i.NoticePeriod,
+			&i.GracePeriod,
+			&i.LatePaymentPenaltyScheme,
+			&i.LatePaymentPenaltyAmount,
+			&i.ElectricitySetupBy,
+			&i.ElectricityPaymentType,
+			&i.ElectricityCustomerCode,
+			&i.ElectricityProvider,
+			&i.ElectricityPrice,
+			&i.WaterSetupBy,
+			&i.WaterPaymentType,
+			&i.WaterCustomerCode,
+			&i.WaterProvider,
+			&i.WaterPrice,
+			&i.Note,
+			&i.Coaps,
+			&i.Minors,
+			&i.Pets,
+			&i.Services,
+			&i.Policies,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err

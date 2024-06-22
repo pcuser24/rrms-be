@@ -10,7 +10,13 @@ import (
 )
 
 type Repo interface {
+	CreatePreRental(ctx context.Context, data *dto.CreateRental) (model.PreRental, error)
 	CreateRental(ctx context.Context, data *dto.CreateRental) (model.RentalModel, error)
+	GetPreRental(ctx context.Context, id int64) (model.PreRental, error)
+	GetPreRentalsToTenant(ctx context.Context, userId uuid.UUID, query *dto.GetPreRentalsQuery) ([]model.PreRental, error)
+	GetManagedPreRentals(ctx context.Context, userId uuid.UUID, query *dto.GetPreRentalsQuery) ([]model.PreRental, error)
+	MovePreRentalToRental(ctx context.Context, id int64) (model.RentalModel, error)
+	RemovePreRental(ctx context.Context, id int64) error
 	GetRental(ctx context.Context, id int64) (model.RentalModel, error)
 	GetRentalsByIds(ctx context.Context, ids []int64, fields []string) ([]model.RentalModel, error)
 	GetRentalSide(ctx context.Context, id int64, userId uuid.UUID) (string, error)
@@ -19,6 +25,7 @@ type Repo interface {
 	UpdateRental(ctx context.Context, data *dto.UpdateRental, id int64) error
 	// UpdateRentalContract(ctx context.Context, data *dto.UpdateRentalContract, id int64) error
 	CheckRentalVisibility(ctx context.Context, id int64, userId uuid.UUID) (bool, error)
+	CheckPreRentalVisibility(ctx context.Context, id int64, userId uuid.UUID) (bool, error)
 
 	CreateContract(ctx context.Context, data *dto.CreateContract) (*model.ContractModel, error)
 	GetRentalContractsOfUser(ctx context.Context, userId uuid.UUID, query *dto.GetRentalContracts) ([]int64, error)

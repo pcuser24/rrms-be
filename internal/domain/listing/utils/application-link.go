@@ -1,17 +1,14 @@
 package utils
 
 import (
-	"crypto/aes"
-	"crypto/cipher"
-	"crypto/rand"
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"io"
 	"net/url"
 	"time"
 
 	"github.com/user2410/rrms-backend/internal/domain/listing/dto"
+	aes_util "github.com/user2410/rrms-backend/internal/utils/encryption/aes"
 )
 
 func stringify(b []byte) string {
@@ -23,20 +20,6 @@ func parse(s string) ([]byte, error) {
 }
 
 func EncryptApplicationLink(secret string, data *dto.CreateApplicationLink) (string, error) {
-	// initialize aes cipher
-	c, err := aes.NewCipher([]byte(secret))
-	if err != nil {
-		return "", err
-	}
-	gcm, err := cipher.NewGCM(c)
-	if err != nil {
-		return "", err
-	}
-	nonce := make([]byte, gcm.NonceSize())
-	if _, err = io.ReadFull(rand.Reader, nonce); err != nil {
-		return "", err
-	}
-
 	// encode data to string
 	urlValues := url.Values{}
 	urlValues.Add("listingId", data.ListingId.String())
@@ -47,7 +30,10 @@ func EncryptApplicationLink(secret string, data *dto.CreateApplicationLink) (str
 	signData := urlValues.Encode()
 
 	// encrypt data
-	signedData := gcm.Seal(nonce, nonce, []byte(signData), nil)
+	signedData, err := aes_util.Encrypt(secret, []byte(signData))
+	if err != nil {
+		return "", err
+	}
 
 	return stringify(signedData), nil
 }
@@ -59,28 +45,13 @@ var (
 )
 
 func VerifyApplicationLink(query *dto.VerifyApplicationLink, secret string) (bool, error) {
-	// decrypt the hash
-	// initialize aes cipher
-	c, err := aes.NewCipher([]byte(secret))
+	cipherData, err := parse(query.Key)
 	if err != nil {
 		return false, err
 	}
-	gcm, err := cipher.NewGCM(c)
+	decryptedData, err := aes_util.Decrypt(secret, cipherData)
 	if err != nil {
 		return false, err
-	}
-	nonceSize := gcm.NonceSize()
-	ciphertext, err := parse(query.Key)
-	if err != nil {
-		return false, err
-	}
-	if len(ciphertext) < nonceSize {
-		return false, errors.Join(ErrInvalidKey, err)
-	}
-	nonce, ciphertext := ciphertext[:nonceSize], ciphertext[nonceSize:]
-	decryptedData, err := gcm.Open(nil, nonce, ciphertext, nil)
-	if err != nil {
-		return false, errors.Join(ErrInvalidKey, err)
 	}
 
 	// validate the data

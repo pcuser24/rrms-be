@@ -115,12 +115,13 @@ func (r *repo) GetUsersByIds(ctx context.Context, ids []uuid.UUID, fields []stri
 		return nil, nil
 	}
 	var nonFKFields []string = []string{"id"}
+	nonFKFields = append(nonFKFields, fields...)
 	// log.Println(nonFKFields, fkFields)
 
 	// get non fk fields
 	ib := sqlbuilder.PostgreSQL.NewSelectBuilder()
 	ib.Select(nonFKFields...)
-	ib.From("User")
+	ib.From("\"User\"")
 	ib.Where(ib.In("id::text", sqlbuilder.List(func() []string {
 		var res []string
 		for _, id := range ids {

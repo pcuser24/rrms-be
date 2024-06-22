@@ -761,7 +761,7 @@ func (q *Queries) GetTenantPendingPayments(ctx context.Context, arg GetTenantPen
 }
 
 const getTotalTenantPendingPayments = `-- name: GetTotalTenantPendingPayments :one
-SELECT SUM(rental_payments.amount)::REAL
+SELECT coalesce(SUM(rental_payments.amount), 0)::REAL
 FROM rental_payments 
 WHERE 
   status IN ('ISSUED', 'PENDING', 'REQUEST2PAY') AND 

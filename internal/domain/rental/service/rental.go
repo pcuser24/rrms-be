@@ -9,7 +9,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/user2410/rrms-backend/internal/domain/rental/dto"
-	"github.com/user2410/rrms-backend/internal/domain/rental/model"
+	rental_model "github.com/user2410/rrms-backend/internal/domain/rental/model"
 	"github.com/user2410/rrms-backend/internal/utils/types"
 )
 
@@ -29,35 +29,58 @@ func (s *service) PreCreateRental(data *dto.PreCreateRental, creatorID uuid.UUID
 	return nil
 }
 
-func (s *service) CreateRental(data *dto.CreateRental, userId uuid.UUID) (model.RentalModel, error) {
+func (s *service) CreatePreRental(data *dto.CreateRental, userId uuid.UUID) (rental_model.PreRental, error) {
 	expiryDate := data.MoveinDate.AddDate(0, int(data.RentalPeriod), 0)
 	today := time.Now().Truncate(24 * time.Hour) // time representing today at 00:00:00
 	if expiryDate.Before(today) {
-		return model.RentalModel{}, ErrInvalidRentalExpired
+		return rental_model.RentalModel{}, ErrInvalidRentalExpired
 	}
 
 	// TODO: validate applicationId, propertyId, unitId
 	data.CreatorID = userId
-	rental, err := s.domainRepo.RentalRepo.CreateRental(context.Background(), data)
+	rental, err := s.domainRepo.RentalRepo.CreatePreRental(context.Background(), data)
 	if err != nil {
-		return model.RentalModel{}, err
+		return rental_model.RentalModel{}, err
 	}
 
-	// plan rental payments
-	_, err = s.domainRepo.RentalRepo.PlanRentalPayment(context.Background(), rental.ID)
+	err = s.notifyCreatePreRental(&rental, s.secret)
 	if err != nil {
 		// TODO: log the error
-	}
 
-	err = s.notifyCreateRental(&rental)
-	if err != nil {
-		// TODO: log the error
 	}
 
 	return rental, nil
 }
 
-func (s *service) GetRental(id int64) (model.RentalModel, error) {
+// func (s *service) CreateRental(data *dto.CreateRental, userId uuid.UUID) (rental_model.RentalModel, error) {
+// 	expiryDate := data.MoveinDate.AddDate(0, int(data.RentalPeriod), 0)
+// 	today := time.Now().Truncate(24 * time.Hour) // time representing today at 00:00:00
+// 	if expiryDate.Before(today) {
+// 		return rental_model.RentalModel{}, ErrInvalidRentalExpired
+// 	}
+
+// 	// TODO: validate applicationId, propertyId, unitId
+// 	data.CreatorID = userId
+// 	rental, err := s.domainRepo.RentalRepo.CreateRental(context.Background(), data)
+// 	if err != nil {
+// 		return rental_model.RentalModel{}, err
+// 	}
+
+// 	// plan rental payments
+// 	_, err = s.domainRepo.RentalRepo.PlanRentalPayment(context.Background(), rental.ID)
+// 	if err != nil {
+// 		// TODO: log the error
+// 	}
+
+// 	err = s.notifyCreatePreRental(&rental)
+// 	if err != nil {
+// 		// TODO: log the error
+// 	}
+
+// 	return rental, nil
+// }
+
+func (s *service) GetRental(id int64) (rental_model.RentalModel, error) {
 	return s.domainRepo.RentalRepo.GetRental(context.Background(), id)
 }
 
@@ -69,7 +92,11 @@ func (s *service) CheckRentalVisibility(id int64, userId uuid.UUID) (bool, error
 	return s.domainRepo.RentalRepo.CheckRentalVisibility(context.Background(), id, userId)
 }
 
-func (s *service) GetManagedRentals(userId uuid.UUID, query *dto.GetRentalsQuery) ([]model.RentalModel, error) {
+func (s *service) CheckPreRentalVisibility(id int64, userId uuid.UUID) (bool, error) {
+	return s.domainRepo.RentalRepo.CheckPreRentalVisibility(context.Background(), id, userId)
+}
+
+func (s *service) GetManagedRentals(userId uuid.UUID, query *dto.GetRentalsQuery) ([]rental_model.RentalModel, error) {
 	if query.Limit == nil {
 		query.Limit = types.Ptr[int32](math.MaxInt32)
 	}
@@ -84,7 +111,7 @@ func (s *service) GetManagedRentals(userId uuid.UUID, query *dto.GetRentalsQuery
 	return s.domainRepo.RentalRepo.GetRentalsByIds(context.Background(), rs, query.Fields)
 }
 
-func (s *service) GetMyRentals(userId uuid.UUID, query *dto.GetRentalsQuery) ([]model.RentalModel, error) {
+func (s *service) GetMyRentals(userId uuid.UUID, query *dto.GetRentalsQuery) ([]rental_model.RentalModel, error) {
 	if query.Limit == nil {
 		query.Limit = types.Ptr[int32](math.MaxInt32)
 	}
@@ -97,4 +124,84 @@ func (s *service) GetMyRentals(userId uuid.UUID, query *dto.GetRentalsQuery) ([]
 	}
 
 	return s.domainRepo.RentalRepo.GetRentalsByIds(context.Background(), rs, query.Fields)
+}
+
+func (s *service) GetPreRentalExtended(id int64, userId uuid.UUID, key string) (dto.GetPreRentalResponse, error) {
+	// TODO: access control
+	pr, err := s.domainRepo.RentalRepo.GetPreRental(context.Background(), id)
+	if err != nil {
+		return dto.GetPreRentalResponse{}, err
+	}
+	property, err := s.domainRepo.PropertyRepo.GetPropertyById(context.Background(), pr.PropertyID)
+	if err != nil {
+		return dto.GetPreRentalResponse{}, err
+	}
+	unit, err := s.domainRepo.UnitRepo.GetUnitById(context.Background(), pr.UnitID)
+	if err != nil {
+		return dto.GetPreRentalResponse{}, err
+	}
+
+	return dto.GetPreRentalResponse{
+		PreRental: &pr,
+		Property:  property,
+		Unit:      unit,
+	}, nil
+}
+
+func (s *service) GetPreRentalByID(id int64) (rental_model.PreRental, error) {
+	return s.domainRepo.RentalRepo.GetPreRental(context.Background(), id)
+}
+
+func (s *service) UpdatePreRentalState(id int64, payload *dto.UpdatePreRental) (int64, error) {
+	var (
+		rental rental_model.PreRental
+		err    error
+	)
+
+	preRental, err := s.domainRepo.RentalRepo.GetPreRental(context.Background(), id)
+	if err != nil {
+		return 0, err
+	}
+
+	if payload.State == "APPROVED" {
+		rental, err = s.domainRepo.RentalRepo.MovePreRentalToRental(context.Background(), id)
+		if err != nil {
+			return 0, err
+		}
+		// plan rental payments
+		_, err = s.domainRepo.RentalRepo.PlanRentalPayment(context.Background(), rental.ID)
+		if err != nil {
+			// TODO: log the error
+		}
+		// TODO: send notification about the new rental payment plan
+		// s.notifyCreateRentalPayment(&rental, )
+		// send notification to managers about the acceptance
+		err = s.notifyUpdatePreRental(&preRental, &rental, payload)
+	} else if payload.State == "REVIEW" {
+		// send notifcation to managers to request a review
+		err = s.notifyUpdatePreRental(&preRental, nil, payload)
+	} else if payload.State == "REJECTED" {
+		err := s.domainRepo.RentalRepo.RemovePreRental(context.Background(), id)
+		if err != nil {
+			return 0, err
+		}
+		// send notification to managers about the rejection
+		err = s.notifyUpdatePreRental(&preRental, nil, payload)
+	}
+
+	if err != nil {
+		// TODO: log the error
+	}
+
+	return rental.ID, nil
+}
+
+func (s *service) GetPreRentalsToMe(userId uuid.UUID, query *dto.GetPreRentalsQuery) ([]rental_model.PreRental, error) {
+	// TODO: access control
+	return s.domainRepo.RentalRepo.GetPreRentalsToTenant(context.Background(), userId, query)
+}
+
+func (s *service) GetManagedPreRentals(userId uuid.UUID, query *dto.GetPreRentalsQuery) ([]rental_model.PreRental, error) {
+	// TODO: access control
+	return s.domainRepo.RentalRepo.GetManagedPreRentals(context.Background(), userId, query)
 }

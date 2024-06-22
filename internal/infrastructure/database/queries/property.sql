@@ -142,6 +142,8 @@ SELECT (
   SELECT EXISTS (SELECT 1 FROM "property_managers" WHERE property_managers.property_id = sqlc.arg(property_id) AND property_managers.manager_id = sqlc.arg(user_id) LIMIT 1)
 ) OR (
   SELECT EXISTS (SELECT 1 FROM "new_property_manager_requests" WHERE new_property_manager_requests.property_id = sqlc.arg(property_id) AND new_property_manager_requests.user_id = sqlc.arg(user_id) LIMIT 1)
+) OR (
+  SELECT EXISTS (SELECT 1 FROM "rentals" WHERE rentals.property_id = sqlc.arg(property_id) AND rentals.tenant_id = sqlc.arg(user_id) LIMIT 1)
 );
 
 -- name: UpdateNewPropertyManagerRequest :exec

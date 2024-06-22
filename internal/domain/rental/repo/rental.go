@@ -13,6 +13,18 @@ import (
 	"github.com/user2410/rrms-backend/internal/infrastructure/database"
 )
 
+func (r *repo) CreatePreRental(ctx context.Context, data *dto.CreatePreRental) (model.PreRental, error) {
+	params, err := data.ToCreatePreRentalDB()
+	if err != nil {
+		return model.PreRental{}, err
+	}
+	pr, err := r.dao.CreatePreRental(ctx, params)
+	if err != nil {
+		return model.PreRental{}, err
+	}
+	return model.ToPreRentalModel(&pr)
+}
+
 func (r *repo) CreateRental(ctx context.Context, data *dto.CreateRental) (model.RentalModel, error) {
 	prdb, err := r.dao.CreateRental(ctx, data.ToCreateRentalDB())
 	if err != nil {
@@ -64,6 +76,82 @@ func (r *repo) CreateRental(ctx context.Context, data *dto.CreateRental) (model.
 	}
 
 	return prm, nil
+}
+
+func (r *repo) GetPreRental(ctx context.Context, id int64) (model.PreRental, error) {
+	prdb, err := r.dao.GetPreRental(ctx, id)
+	if err != nil {
+		return model.PreRental{}, err
+	}
+	return model.ToPreRentalModel(&prdb)
+}
+
+func (r *repo) GetPreRentalsToTenant(ctx context.Context, userId uuid.UUID, query *dto.GetPreRentalsQuery) ([]model.PreRental, error) {
+	prs, err := r.dao.GetPreRentalsToTenant(ctx, database.GetPreRentalsToTenantParams{
+		UserID: pgtype.UUID{
+			Bytes: userId,
+			Valid: userId != uuid.Nil,
+		},
+		Limit:  query.Limit,
+		Offset: query.Offset,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	var items []model.PreRental
+	for _, pr := range prs {
+		prm, err := model.ToPreRentalModel(&pr)
+		if err != nil {
+			return nil, err
+		}
+		items = append(items, prm)
+	}
+
+	return items, nil
+}
+
+func (r *repo) GetManagedPreRentals(ctx context.Context, userId uuid.UUID, query *dto.GetPreRentalsQuery) ([]model.PreRental, error) {
+	prs, err := r.dao.GetManagedPreRentals(ctx, database.GetManagedPreRentalsParams{
+		UserID: userId,
+		Limit:  query.Limit,
+		Offset: query.Offset,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	var items []model.PreRental
+	for _, pr := range prs {
+		prm, err := model.ToPreRentalModel(&pr)
+		if err != nil {
+			return nil, err
+		}
+		items = append(items, prm)
+	}
+
+	return items, nil
+}
+
+func (r *repo) MovePreRentalToRental(ctx context.Context, id int64) (model.RentalModel, error) {
+	pr, err := r.dao.GetPreRental(ctx, id)
+	if err != nil {
+		return model.RentalModel{}, err
+	}
+	params, err := dto.FromPreRentalDBToCreateRental(&pr)
+	if err != nil {
+		return model.RentalModel{}, err
+	}
+	rental, err := r.CreateRental(ctx, &params)
+	if err != nil {
+		return model.RentalModel{}, err
+	}
+	err = r.dao.DeletePreRental(ctx, id)
+	return rental, err
+}
+
+func (r *repo) RemovePreRental(ctx context.Context, id int64) error {
+	return r.dao.DeletePreRental(ctx, id)
 }
 
 func (r *repo) GetRental(ctx context.Context, id int64) (model.RentalModel, error) {
@@ -288,6 +376,16 @@ func (r *repo) UpdateRental(ctx context.Context, data *dto.UpdateRental, id int6
 
 func (r *repo) CheckRentalVisibility(ctx context.Context, id int64, userId uuid.UUID) (bool, error) {
 	return r.dao.CheckRentalVisibility(ctx, database.CheckRentalVisibilityParams{
+		ID: id,
+		UserID: pgtype.UUID{
+			Bytes: userId,
+			Valid: true,
+		},
+	})
+}
+
+func (r *repo) CheckPreRentalVisibility(ctx context.Context, id int64, userId uuid.UUID) (bool, error) {
+	return r.dao.CheckPreRentalVisibility(ctx, database.CheckPreRentalVisibilityParams{
 		ID: id,
 		UserID: pgtype.UUID{
 			Bytes: userId,
