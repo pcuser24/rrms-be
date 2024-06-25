@@ -27,7 +27,7 @@ type SearchPropertyQuery struct {
 	POrientation    *string    `query:"porientation" validate:"omitempty"`
 	PMinFacade      *int32     `query:"pfacade" validate:"omitempty"`
 	PIsPublic       *bool      `query:"pisPublic" validate:"omitempty"`
-	PFeatures       []int32    `query:"pfeatures" validate:"omitempty"`
+	PFeatures       []int64    `query:"pfeatures" validate:"omitempty"`
 	PManagerIDS     []string   `query:"pmanagerIds" validate:"omitempty,dive,uuid4"`
 	PManagerRole    *string    `query:"pmanagerRole" validate:"omitempty"`
 	PMinCreatedAt   *time.Time `query:"pminCreatedAt" validate:"omitempty"`

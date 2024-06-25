@@ -38,22 +38,23 @@ type SuggestedProperty struct {
 	NumberOfFloors *int32    `json:"number_of_floors"`
 	YearBuilt      *int32    `json:"year_built"`
 	// n,s,w,e,nw,ne,sw,se
-	Orientation   *string               `json:"orientation"`
-	EntranceWidth *float32              `json:"entrance_width"`
-	Facade        *float32              `json:"facade"`
-	FullAddress   string                `json:"full_address"`
-	District      string                `json:"district"`
-	City          string                `json:"city"`
-	Ward          *string               `json:"ward"`
-	Lat           *float64              `json:"lat"`
-	Lng           *float64              `json:"lng"`
-	PrimaryImage  int64                 `json:"primary_image"`
-	Description   *string               `json:"description"`
-	Type          database.PROPERTYTYPE `json:"type"`
-	IsPublic      bool                  `json:"is_public"`
-	CreatedAt     time.Time             `json:"created_at"`
-	UpdatedAt     time.Time             `json:"updated_at"`
-	Features      []struct {
+	Orientation        *string               `json:"orientation"`
+	EntranceWidth      *float32              `json:"entrance_width"`
+	Facade             *float32              `json:"facade"`
+	FullAddress        string                `json:"full_address"`
+	District           string                `json:"district"`
+	City               string                `json:"city"`
+	Ward               *string               `json:"ward"`
+	Lat                *float64              `json:"lat"`
+	Lng                *float64              `json:"lng"`
+	PrimaryImage       int64                 `json:"primary_image"`
+	Description        *string               `json:"description"`
+	Type               database.PROPERTYTYPE `json:"type"`
+	IsPublic           bool                  `json:"is_public"`
+	CreatedAt          time.Time             `json:"created_at"`
+	UpdatedAt          time.Time             `json:"updated_at"`
+	VerifiactionStatus *string               `json:"verification_status"`
+	Features           []struct {
 		FeatureID   int64   `json:"feature_id"`
 		Description *string `json:"description"`
 	} `json:"features"`
@@ -84,6 +85,33 @@ type SuggestedListing struct {
 	Property          SuggestedProperty      `json:"property"`
 }
 
+// listings suggestion
+
+type ListingsSuggestionItem struct {
+	SuggestedListing
+}
+
 type ListingsSuggestionResult struct {
-	Hits []SuggestedListing `json:"hits"`
+	Hits []ListingsSuggestionItem `json:"hits"`
+}
+
+type ListingSuggestionQuery struct {
+	PTypes       []string `query:"ptypes" validate:"omitempty"`
+	PFeatures    []int64  `query:"pfeatures" validate:"omitempty"`
+	PMinArea     *float32 `query:"pminArea" validate:"omitempty"`
+	PMaxArea     *float32 `query:"pmaxArea" validate:"omitempty"`
+	PCity        []string `query:"pcity" validate:"omitempty"`
+	PDistrict    []string `query:"pdistrict" validate:"omitempty"`
+	PWard        []string `query:"pward" validate:"omitempty"`
+	POrientation []string `query:"porientation" validate:"omitempty"`
+	// PProject             []string `query:"pproject" validate:"omitempty"`
+	UNumberOfLivingRooms *int32   `query:"unumberOfLivingRooms" validate:"omitempty"`
+	UNumberOfBedrooms    *int32   `query:"unumberOfBedrooms" validate:"omitempty"`
+	UNumberOfBathrooms   *int32   `query:"unumberOfBathrooms" validate:"omitempty"`
+	UNumberOfToilets     *int32   `query:"unumberOfToilets" validate:"omitempty"`
+	UNumberOfKitchens    *int32   `query:"unumberOfKitchens" validate:"omitempty"`
+	UNumberOfBalconies   *int32   `query:"unumberOfBalconies" validate:"omitempty"`
+	UAmenities           []int64  `query:"uamenities" validate:"omitempty"`
+	LMinPrice            *float32 `json:"lminPrice"`
+	LMaxPrice            *float32 `json:"lmaxPrice"`
 }

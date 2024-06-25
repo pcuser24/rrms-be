@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"runtime"
 	"testing"
 	"time"
@@ -42,7 +43,7 @@ type AggregatedIndex struct {
 	Property          map[string]interface{}   `json:"property"`
 }
 
-func BuildAggregatedIndex(listing *listing_model.ListingModel, property *property_model.PropertyModel, units []unit_model.UnitModel) ([]byte, error) {
+func BuildAggregatedIndex(listing *listing_model.ListingModel, property *property_model.PropertyModel, verificationStatus string, units []unit_model.UnitModel) ([]byte, error) {
 	aggregated := AggregatedIndex{
 		ID:                listing.ID.String(),
 		CreatorID:         listing.CreatorID.String(),
@@ -65,7 +66,7 @@ func BuildAggregatedIndex(listing *listing_model.ListingModel, property *propert
 		ExpiredAt:         listing.ExpiredAt,
 		Tags:              convertTags(listing.Tags),
 		ListingUnits:      convertListingUnits(units, listing.Units),
-		Property:          convertProperty(property),
+		Property:          convertProperty(property, verificationStatus),
 	}
 	return json.Marshal(aggregated)
 }
@@ -119,8 +120,8 @@ func convertAmenities(amenities []unit_model.UnitAmenityModel) []map[string]inte
 	return result
 }
 
-func convertProperty(property *property_model.PropertyModel) map[string]interface{} {
-	return map[string]interface{}{
+func convertProperty(property *property_model.PropertyModel, verificationStatus string) map[string]interface{} {
+	res := map[string]interface{}{
 		"id":               property.ID.String(),
 		"creator_id":       property.CreatorID.String(),
 		"name":             property.Name,
@@ -146,6 +147,11 @@ func convertProperty(property *property_model.PropertyModel) map[string]interfac
 		"updated_at":       property.UpdatedAt,
 		"features":         convertFeatures(property.Features),
 	}
+	if verificationStatus != "" {
+		res["verification_status"] = verificationStatus
+
+	}
+	return res
 }
 
 func convertFeatures(features []property_model.PropertyFeatureModel) []map[string]interface{} {
@@ -202,6 +208,13 @@ func TestTransferData(t *testing.T) {
 				property.Features = append(property.Features, property_model.ToPropertyFeatureModel(&f))
 			}
 
+			var verificationStatus string
+			propertyVerification, err := dao.GetPropertyVerificationStatus(context.Background(), listing.PropertyID)
+			if !errors.Is(err, database.ErrRecordNotFound) {
+				require.NoError(t, err)
+			}
+			verificationStatus = string(propertyVerification.Status)
+
 			units := make([]unit_model.UnitModel, 0, len(listing.Units))
 			for _, u := range listing.Units {
 				unitDB, err := dao.GetUnitById(context.Background(), u.UnitID)
@@ -215,7 +228,7 @@ func TestTransferData(t *testing.T) {
 				units = append(units, *unit)
 			}
 
-			docByte, err := BuildAggregatedIndex(listing, property, units)
+			docByte, err := BuildAggregatedIndex(listing, property, verificationStatus, units)
 			require.NoError(t, err)
 
 			err = bi.Add(
@@ -248,7 +261,6 @@ func TestTransferData(t *testing.T) {
 		}
 
 		// Close the indexer
-		//
 		err = bi.Close(context.Background())
 		require.NoError(t, err)
 		biStats := bi.Stats()

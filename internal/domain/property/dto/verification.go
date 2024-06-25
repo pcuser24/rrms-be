@@ -94,3 +94,8 @@ type GetPropertyVerificationRequestsResponse struct {
 	FullCount int64                               `json:"fullCount"`
 	Items     []model.PropertyVerificationRequest `json:"items"`
 }
+
+type GetPropertyVerificationStatus struct {
+	PropertyID uuid.UUID                           `json:"propertyId"`
+	Status     database.PROPERTYVERIFICATIONSTATUS `json:"status"`
+}

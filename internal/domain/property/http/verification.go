@@ -135,6 +135,27 @@ func (a *adapter) getVerificationRequestsOfProperty() fiber.Handler {
 	}
 }
 
+func (a *adapter) getPropertiesVerificationStatus() fiber.Handler {
+	return func(ctx *fiber.Ctx) error {
+		var query struct {
+			IDs []uuid.UUID `query:"ids" validate:"required,dive,uuid4"`
+		}
+		if err := ctx.QueryParser(&query); err != nil {
+			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": err.Error()})
+		}
+		if errs := validation.ValidateStruct(nil, query); len(errs) > 0 {
+			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": validation.GetValidationError(errs)})
+		}
+
+		res, err := a.service.GetPropertiesVerificationStatus(query.IDs)
+		if err != nil {
+			return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
+		}
+
+		return ctx.Status(fiber.StatusOK).JSON(res)
+	}
+}
+
 func (a *adapter) updateVerificationRequestStatus() fiber.Handler {
 	return func(ctx *fiber.Ctx) error {
 		vid, err := strconv.ParseInt(ctx.Params("vid"), 10, 64)

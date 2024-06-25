@@ -144,6 +144,7 @@ type Querier interface {
 	GetPropertyTags(ctx context.Context, propertyID uuid.UUID) ([]PropertyTag, error)
 	GetPropertyVerificationRequest(ctx context.Context, id int64) (PropertyVerificationRequest, error)
 	GetPropertyVerificationRequestsOfProperty(ctx context.Context, arg GetPropertyVerificationRequestsOfPropertyParams) ([]PropertyVerificationRequest, error)
+	GetPropertyVerificationStatus(ctx context.Context, propertyID uuid.UUID) (GetPropertyVerificationStatusRow, error)
 	GetRecentListings(ctx context.Context, limit int32) ([]uuid.UUID, error)
 	GetReminderById(ctx context.Context, id int64) (Reminder, error)
 	GetRemindersByCreator(ctx context.Context, creatorID uuid.UUID) ([]Reminder, error)

@@ -51,6 +51,7 @@ func (c *serverCommand) setupInternalServices() {
 	c.internalServices.PropertyService = property_service.NewService(
 		domainRepo,
 		c.s3Client, c.config.AWSS3ImageBucket,
+		c.elasticsearch,
 	)
 	c.internalServices.UnitService = unit_service.NewService(domainRepo, c.s3Client, c.config.AWSS3ImageBucket)
 	c.internalServices.ListingService = listing_service.NewService(

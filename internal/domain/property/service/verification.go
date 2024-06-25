@@ -2,12 +2,15 @@ package service
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"path/filepath"
 	"time"
 
+	"github.com/elastic/go-elasticsearch/v8/typedapi/core/update"
 	"github.com/user2410/rrms-backend/internal/infrastructure/database"
+	"github.com/user2410/rrms-backend/internal/infrastructure/es"
 
 	"github.com/google/uuid"
 	property_dto "github.com/user2410/rrms-backend/internal/domain/property/dto"
@@ -85,6 +88,35 @@ func (s *service) GetPropertyVerificationRequestsOfProperty(pid uuid.UUID, limit
 	return s.domainRepo.PropertyRepo.GetPropertyVerificationRequestsOfProperty(context.Background(), pid, limit, offset)
 }
 
+func (s *service) GetPropertiesVerificationStatus(ids []uuid.UUID) ([]property_dto.GetPropertyVerificationStatus, error) {
+	return s.domainRepo.PropertyRepo.GetPropertiesVerificationStatus(context.Background(), ids)
+}
+
 func (s *service) UpdatePropertyVerificationRequestStatus(id int64, data *property_dto.UpdatePropertyVerificationRequestStatus) error {
-	return s.domainRepo.PropertyRepo.UpdatePropertyVerificationRequestStatus(context.Background(), id, data)
+	err := s.domainRepo.PropertyRepo.UpdatePropertyVerificationRequestStatus(context.Background(), id, data)
+	if err != nil {
+		return err
+	}
+
+	request, err := s.domainRepo.PropertyRepo.GetPropertyVerificationRequest(context.Background(), id)
+	if err != nil {
+		return err
+	}
+
+	// update es document
+	doc := map[string]interface{}{
+		"property.verification_status": data.Status,
+	}
+	docByte, err := json.Marshal(doc)
+	if err != nil {
+		return err
+	}
+	client := s.esClient.GetTypedClient()
+	_, err = client.Update(string(es.LISTINGINDEX), request.PropertyID.String()).
+		Request(&update.Request{
+			Doc: json.RawMessage(docByte),
+		}).
+		Do(context.Background())
+
+	return err
 }

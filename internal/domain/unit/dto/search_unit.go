@@ -11,14 +11,13 @@ type SearchUnitQuery struct {
 	UMinArea             *int64  `query:"uminPrice" validate:"omitempty"`
 	UMaxArea             *int64  `query:"umaxPrice" validate:"omitempty"`
 	UFloor               *int32  `query:"ufloor" validate:"omitempty"`
-	UPrice               int64   `query:"uprice" validate:"omitempty"`
 	UNumberOfLivingRooms *int32  `query:"unumberOfLivingRooms" validate:"omitempty"`
 	UNumberOfBedrooms    *int32  `query:"unumberOfBedrooms" validate:"omitempty"`
 	UNumberOfBathrooms   *int32  `query:"unumberOfBathrooms" validate:"omitempty"`
 	UNumberOfToilets     *int32  `query:"unumberOfToilets" validate:"omitempty"`
 	UNumberOfKitchens    *int32  `query:"unumberOfKitchens" validate:"omitempty"`
 	UNumberOfBalconies   *int32  `query:"unumberOfBalconies" validate:"omitempty"`
-	UAmenities           []int32 `query:"uamenities" validate:"omitempty"`
+	UAmenities           []int64 `query:"uamenities" validate:"omitempty"`
 }
 
 type SearchUnitCombinationQuery struct {

@@ -12,6 +12,7 @@ import (
 	application_model "github.com/user2410/rrms-backend/internal/domain/application/model"
 	"github.com/user2410/rrms-backend/internal/infrastructure/aws/s3"
 	"github.com/user2410/rrms-backend/internal/infrastructure/database"
+	"github.com/user2410/rrms-backend/internal/infrastructure/es"
 	"github.com/user2410/rrms-backend/pkg/ds/set"
 
 	"github.com/google/uuid"
@@ -59,6 +60,7 @@ type Service interface {
 	GetPropertyVerificationRequest(id int64) (property_model.PropertyVerificationRequest, error)
 	GetPropertyVerificationRequests(filter *dto.GetPropertyVerificationRequestsQuery) (*property_dto.GetPropertyVerificationRequestsResponse, error)
 	GetPropertyVerificationRequestsOfProperty(pid uuid.UUID, limit, offset int32) ([]property_model.PropertyVerificationRequest, error)
+	GetPropertiesVerificationStatus(ids []uuid.UUID) ([]property_dto.GetPropertyVerificationStatus, error)
 	UpdatePropertyVerificationRequestStatus(id int64, data *property_dto.UpdatePropertyVerificationRequestStatus) error
 }
 
@@ -67,17 +69,22 @@ type service struct {
 
 	s3Client        s3.S3Client
 	imageBucketName string
+
+	esClient *es.ElasticSearchClient
 }
 
 func NewService(
 	domainRepo repos.DomainRepo,
 	s3Client s3.S3Client, imageBucketName string,
+	esClient *es.ElasticSearchClient,
 ) Service {
 	return &service{
 		domainRepo: domainRepo,
 
 		s3Client:        s3Client,
 		imageBucketName: imageBucketName,
+
+		esClient: esClient,
 	}
 }
 

@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"errors"
 	"math"
 	"time"
 
@@ -252,8 +253,17 @@ func (s *service) GetTenantRentalStatistic(userId uuid.UUID) (res dto.TenantRent
 
 func (s *service) GetTenantMaintenanceStatistic(userId uuid.UUID) (res dto.TenantMaintenanceStatisticResponse, err error) {
 	res.Pending, err = s.domainRepo.StatisticRepo.GetRentalComplaintStatistics(context.Background(), userId, database.RENTALCOMPLAINTSTATUSPENDING)
+	if err != nil && !errors.Is(err, database.ErrRecordNotFound) {
+		return
+	}
 	res.Resolved, err = s.domainRepo.StatisticRepo.GetRentalComplaintStatistics(context.Background(), userId, database.RENTALCOMPLAINTSTATUSRESOLVED)
+	if err != nil && !errors.Is(err, database.ErrRecordNotFound) {
+		return
+	}
 	res.Closed, err = s.domainRepo.StatisticRepo.GetRentalComplaintStatistics(context.Background(), userId, database.RENTALCOMPLAINTSTATUSCLOSED)
+	if errors.Is(err, database.ErrRecordNotFound) {
+		return res, nil
+	}
 	return
 }
 

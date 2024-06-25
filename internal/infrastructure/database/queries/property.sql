@@ -227,10 +227,13 @@ INSERT INTO "property_verification_requests" (
 ) RETURNING *;
 
 -- name: GetPropertyVerificationRequest :one
-SELECT * FROM "property_verification_requests" WHERE "id" = $1 LIMIT 1;
+SELECT * FROM "property_verification_requests" WHERE "id" = $1 ORDER BY updated_at LIMIT 1;
 
 -- name: GetPropertyVerificationRequestsOfProperty :many
 SELECT * FROM "property_verification_requests" WHERE "property_id" = sqlc.arg(property_id) ORDER BY "updated_at" DESC LIMIT $1 OFFSET $2;
+
+-- name: GetPropertyVerificationStatus :one
+SELECT id, status FROM "property_verification_requests" WHERE "property_id" = sqlc.arg(property_id) ORDER BY "updated_at" DESC LIMIT 1;
 
 -- name: UpdatePropertyVerificationRequest :exec
 UPDATE "property_verification_requests" SET

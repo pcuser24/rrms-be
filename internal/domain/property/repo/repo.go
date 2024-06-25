@@ -3,6 +3,7 @@ package repo
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"slices"
 
@@ -43,6 +44,7 @@ type Repo interface {
 	CreatePropertyVerificationRequest(ctx context.Context, data *property_dto.CreatePropertyVerificationRequest) (property_model.PropertyVerificationRequest, error)
 	GetPropertyVerificationRequest(ctx context.Context, id int64) (property_model.PropertyVerificationRequest, error)
 	GetPropertyVerificationRequests(ctx context.Context, filter *property_dto.GetPropertyVerificationRequestsQuery) (*property_dto.GetPropertyVerificationRequestsResponse, error)
+	GetPropertiesVerificationStatus(ctx context.Context, ids []uuid.UUID) ([]property_dto.GetPropertyVerificationStatus, error)
 	GetPropertyVerificationRequestsOfProperty(ctx context.Context, pid uuid.UUID, limit, offset int32) ([]property_model.PropertyVerificationRequest, error)
 	UpdatePropertyVerificationRequestStatus(ctx context.Context, id int64, data *property_dto.UpdatePropertyVerificationRequestStatus) error
 }
@@ -798,6 +800,45 @@ func (r *repo) GetPropertyVerificationRequestsOfProperty(ctx context.Context, pi
 		items = append(items, property_model.ToPropertyVerificationRequest(&i))
 	}
 	return items, nil
+}
+
+func (r *repo) GetPropertiesVerificationStatus(ctx context.Context, ids []uuid.UUID) ([]property_dto.GetPropertyVerificationStatus, error) {
+	buildSQL := func(pid uuid.UUID) (string, []interface{}) {
+		sb := sqlbuilder.PostgreSQL.NewSelectBuilder()
+		sb.Select("property_id", "status")
+		sb.From("property_verification_requests")
+		sb.Where(sb.Equal("property_id", pid))
+		sb.OrderBy("updated_at").Desc()
+		sb.Limit(1)
+
+		return sb.Build()
+	}
+
+	res := make([]property_dto.GetPropertyVerificationStatus, 0, len(ids))
+
+	queries := make([]database.BatchedQueryRow, 0, len(ids))
+	for _, id := range ids {
+		sql, args := buildSQL(id)
+		queries = append(queries, database.BatchedQueryRow{
+			SQL:    sql,
+			Params: args,
+			Fn: func(row pgx.Row) error {
+				var vs property_dto.GetPropertyVerificationStatus
+				if err := row.Scan(&vs.PropertyID, &vs.Status); err != nil {
+					if errors.Is(err, database.ErrRecordNotFound) {
+						return nil
+					}
+					return err
+				}
+				res = append(res, vs)
+				return nil
+			},
+		})
+	}
+
+	err := r.dao.QueryRowBatch(ctx, queries)
+
+	return res, err
 }
 
 func (r *repo) UpdatePropertyVerificationRequestStatus(ctx context.Context, id int64, data *property_dto.UpdatePropertyVerificationRequestStatus) error {

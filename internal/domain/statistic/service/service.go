@@ -4,24 +4,24 @@ import (
 	"github.com/google/uuid"
 	repos "github.com/user2410/rrms-backend/internal/domain/_repos"
 	listing_model "github.com/user2410/rrms-backend/internal/domain/listing/model"
-	"github.com/user2410/rrms-backend/internal/domain/statistic/dto"
+	statistic_dto "github.com/user2410/rrms-backend/internal/domain/statistic/dto"
 	"github.com/user2410/rrms-backend/internal/infrastructure/es"
 )
 
 type Service interface {
-	GetPropertiesStatistic(userId uuid.UUID, query dto.PropertiesStatisticQuery) (res dto.PropertiesStatisticResponse, err error)
-	GetApplicationStatistic(userId uuid.UUID) (res dto.ApplicationStatisticResponse, err error)
-	GetRentalStatistic(userId uuid.UUID) (res dto.RentalStatisticResponse, err error)
-	GetRentalPaymentArrears(userId uuid.UUID, query *dto.RentalPaymentStatisticQuery) (res []dto.RentalPaymentArrearsItem, err error)
-	GetRentalPaymentIncomes(userId uuid.UUID, query *dto.RentalPaymentStatisticQuery) (res []dto.RentalPaymentIncomeItem, err error)
-	GetPaymentsStatistic(userId uuid.UUID, query dto.PaymentsStatisticQuery) (res []dto.PaymentsStatisticItem, err error)
-	GetTenantRentalStatistic(userId uuid.UUID) (res dto.TenantRentalStatisticResponse, err error)
-	GetTenantMaintenanceStatistic(userId uuid.UUID) (res dto.TenantMaintenanceStatisticResponse, err error)
-	GetTenantExpenditureStatistic(userId uuid.UUID, query *dto.RentalPaymentStatisticQuery) ([]dto.TenantExpenditureStatisticItem, error)
-	GetTenantArrearsStatistic(userId uuid.UUID, query *dto.RentalPaymentStatisticQuery) (dto.TenantArrearsStatistic, error)
+	GetPropertiesStatistic(userId uuid.UUID, query statistic_dto.PropertiesStatisticQuery) (res statistic_dto.PropertiesStatisticResponse, err error)
+	GetApplicationStatistic(userId uuid.UUID) (res statistic_dto.ApplicationStatisticResponse, err error)
+	GetRentalStatistic(userId uuid.UUID) (res statistic_dto.RentalStatisticResponse, err error)
+	GetRentalPaymentArrears(userId uuid.UUID, query *statistic_dto.RentalPaymentStatisticQuery) (res []statistic_dto.RentalPaymentArrearsItem, err error)
+	GetRentalPaymentIncomes(userId uuid.UUID, query *statistic_dto.RentalPaymentStatisticQuery) (res []statistic_dto.RentalPaymentIncomeItem, err error)
+	GetPaymentsStatistic(userId uuid.UUID, query statistic_dto.PaymentsStatisticQuery) (res []statistic_dto.PaymentsStatisticItem, err error)
+	GetTenantRentalStatistic(userId uuid.UUID) (res statistic_dto.TenantRentalStatisticResponse, err error)
+	GetTenantMaintenanceStatistic(userId uuid.UUID) (res statistic_dto.TenantMaintenanceStatisticResponse, err error)
+	GetTenantExpenditureStatistic(userId uuid.UUID, query *statistic_dto.RentalPaymentStatisticQuery) ([]statistic_dto.TenantExpenditureStatisticItem, error)
+	GetTenantArrearsStatistic(userId uuid.UUID, query *statistic_dto.RentalPaymentStatisticQuery) (statistic_dto.TenantArrearsStatistic, error)
 	// Landing
 	GetRecentListings(limit int32, fields []string) ([]listing_model.ListingModel, error)
-	GetListingSuggestion(id uuid.UUID, limit int) (dto.ListingsSuggestionResult, error)
+	GetSimilarListingsToListing(id uuid.UUID, limit int) (statistic_dto.ListingsSuggestionResult, error)
 }
 
 type service struct {

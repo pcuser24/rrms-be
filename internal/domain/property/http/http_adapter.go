@@ -56,6 +56,7 @@ func (a *adapter) RegisterServer(router *fiber.Router, tokenMaker token.Maker, a
 		auth_http.AuthorizedMiddleware(tokenMaker),
 		a.getNewPropertyManagerRequests(),
 	)
+	propertyRoute.Get("/verification-status", a.getPropertiesVerificationStatus())
 
 	propertyRoute.Use(auth_http.AuthorizedMiddleware(tokenMaker))
 

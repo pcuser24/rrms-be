@@ -42,5 +42,5 @@ func (a *adapter) RegisterServer(route *fiber.Router, tokenMaker token.Maker) {
 
 	landingRoute := (*route).Group("/landing")
 	landingRoute.Get("/recent", a.getRecentListings())
-	landingRoute.Get("/suggest", a.getListingSuggestions())
+	landingRoute.Get("/suggest/listings/listing/:id", a.getListingSuggestions())
 }

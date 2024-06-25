@@ -72,7 +72,7 @@ func TestSearchPropertyCombination(t *testing.T) {
 			query: dto.SearchPropertyCombinationQuery{
 				SearchSortPaginationQuery: defaultSearchSortPaginationQuery,
 				SearchPropertyQuery: dto.SearchPropertyQuery{
-					PFeatures: []int32{2, 5},
+					PFeatures: []int64{2, 5},
 				},
 			},
 			checkResult: func(

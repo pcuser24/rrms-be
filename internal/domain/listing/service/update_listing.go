@@ -6,11 +6,13 @@ import (
 
 	"github.com/elastic/go-elasticsearch/v8/typedapi/core/update"
 	"github.com/google/uuid"
-	"github.com/user2410/rrms-backend/internal/domain/listing/dto"
+	listing_dto "github.com/user2410/rrms-backend/internal/domain/listing/dto"
+	property_dto "github.com/user2410/rrms-backend/internal/domain/property/dto"
 	"github.com/user2410/rrms-backend/internal/infrastructure/es"
+	"github.com/user2410/rrms-backend/internal/utils/types"
 )
 
-func (s *service) UpdateListing(id uuid.UUID, data *dto.UpdateListing) error {
+func (s *service) UpdateListing(id uuid.UUID, data *listing_dto.UpdateListing) error {
 	err := s.domainRepo.ListingRepo.UpdateListing(context.Background(), id, data)
 	if err != nil {
 		return err
@@ -61,7 +63,19 @@ func (s *service) UpdateListing(id uuid.UUID, data *dto.UpdateListing) error {
 }
 
 func (s *service) UpdateListingStatus(id uuid.UUID, active bool) error {
+	if !active {
+		return nil
+	}
+
 	err := s.domainRepo.ListingRepo.UpdateListingStatus(context.Background(), id, active)
+	if err != nil {
+		return err
+	}
+
+	err = s.domainRepo.PropertyRepo.UpdateProperty(context.Background(), &property_dto.UpdateProperty{
+		ID:       id,
+		IsPublic: types.Ptr(true),
+	})
 	if err != nil {
 		return err
 	}

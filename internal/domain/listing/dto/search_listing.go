@@ -15,8 +15,8 @@ type SearchListingQuery struct {
 	LTitle                *string    `json:"ltitle"`
 	LCreatorID            *string    `json:"lcreatorId"`
 	LPropertyID           *string    `json:"lpropertyId"`
-	LMinPrice             *int64     `json:"lminPrice"`
-	LMaxPrice             *int64     `json:"lmaxPrice"`
+	LMinPrice             *float32   `json:"lminPrice"`
+	LMaxPrice             *float32   `json:"lmaxPrice"`
 	LPriceNegotiable      *bool      `json:"lpriceNegotiable"`
 	LSecurityDeposit      *int64     `json:"lsecurityDeposit"`
 	LLeaseTerm            *int32     `json:"lleaseTerm"`

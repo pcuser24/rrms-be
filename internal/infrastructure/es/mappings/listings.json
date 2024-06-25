@@ -194,6 +194,9 @@
           "is_public": {
             "type": "boolean"
           },
+          "verification_status": {
+            "type": "keyword"
+          },
           "created_at": {
             "type": "date",
             "format": "date_optional_time"

@@ -209,6 +209,21 @@ func (mr *MockRepoMockRecorder) GetPropertiesByIds(arg0, arg1, arg2 any) *gomock
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPropertiesByIds", reflect.TypeOf((*MockRepo)(nil).GetPropertiesByIds), arg0, arg1, arg2)
 }
 
+// GetPropertiesVerificationStatus mocks base method.
+func (m *MockRepo) GetPropertiesVerificationStatus(arg0 context.Context, arg1 []uuid.UUID) ([]dto1.GetPropertyVerificationStatus, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetPropertiesVerificationStatus", arg0, arg1)
+	ret0, _ := ret[0].([]dto1.GetPropertyVerificationStatus)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetPropertiesVerificationStatus indicates an expected call of GetPropertiesVerificationStatus.
+func (mr *MockRepoMockRecorder) GetPropertiesVerificationStatus(arg0, arg1 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPropertiesVerificationStatus", reflect.TypeOf((*MockRepo)(nil).GetPropertiesVerificationStatus), arg0, arg1)
+}
+
 // GetPropertyById mocks base method.
 func (m *MockRepo) GetPropertyById(arg0 context.Context, arg1 uuid.UUID) (*model.PropertyModel, error) {
 	m.ctrl.T.Helper()

@@ -49,7 +49,7 @@ func (a *adapter) getRecentListings() fiber.Handler {
 
 func (a *adapter) getListingSuggestions() fiber.Handler {
 	return func(ctx *fiber.Ctx) error {
-		listingId, err := uuid.Parse(ctx.Query("listingId"))
+		listingId, err := uuid.Parse(ctx.Params("id"))
 		if err != nil {
 			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": "Invalid listingId"})
 		}
@@ -64,7 +64,7 @@ func (a *adapter) getListingSuggestions() fiber.Handler {
 			limit = 16
 		}
 
-		res, err := a.service.GetListingSuggestion(listingId, int(limit))
+		res, err := a.service.GetSimilarListingsToListing(listingId, int(limit))
 		if err != nil {
 			if errors.Is(err, database.ErrRecordNotFound) {
 				return ctx.Status(fiber.StatusNotFound).JSON(fiber.Map{"message": err.Error()})

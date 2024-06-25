@@ -32,6 +32,7 @@ type Service interface {
 	GetListingsByIds(uid uuid.UUID, ids []uuid.UUID, fields []string) ([]model.ListingModel, error)
 	GetListingsOfUser(userId uuid.UUID, query *dto.GetListingsQuery) (int, []model.ListingModel, error)
 	GetListingPayments(id uuid.UUID) ([]payment_model.PaymentModel, error)
+
 	UpdateListing(id uuid.UUID, data *dto.UpdateListing) error
 	DeleteListing(id uuid.UUID) error
 	CheckListingOwnership(lid uuid.UUID, uid uuid.UUID) (bool, error)

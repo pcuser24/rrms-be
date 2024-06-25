@@ -665,7 +665,7 @@ func (q *Queries) GetPropertyTags(ctx context.Context, propertyID uuid.UUID) ([]
 }
 
 const getPropertyVerificationRequest = `-- name: GetPropertyVerificationRequest :one
-SELECT id, creator_id, property_id, video_url, house_ownership_certificate, certificate_of_landuse_right, front_idcard, back_idcard, note, feedback, status, created_at, updated_at FROM "property_verification_requests" WHERE "id" = $1 LIMIT 1
+SELECT id, creator_id, property_id, video_url, house_ownership_certificate, certificate_of_landuse_right, front_idcard, back_idcard, note, feedback, status, created_at, updated_at FROM "property_verification_requests" WHERE "id" = $1 ORDER BY updated_at LIMIT 1
 `
 
 func (q *Queries) GetPropertyVerificationRequest(ctx context.Context, id int64) (PropertyVerificationRequest, error) {
@@ -731,6 +731,22 @@ func (q *Queries) GetPropertyVerificationRequestsOfProperty(ctx context.Context,
 		return nil, err
 	}
 	return items, nil
+}
+
+const getPropertyVerificationStatus = `-- name: GetPropertyVerificationStatus :one
+SELECT id, status FROM "property_verification_requests" WHERE "property_id" = $1 ORDER BY "updated_at" DESC LIMIT 1
+`
+
+type GetPropertyVerificationStatusRow struct {
+	ID     int64                      `json:"id"`
+	Status PROPERTYVERIFICATIONSTATUS `json:"status"`
+}
+
+func (q *Queries) GetPropertyVerificationStatus(ctx context.Context, propertyID uuid.UUID) (GetPropertyVerificationStatusRow, error) {
+	row := q.db.QueryRow(ctx, getPropertyVerificationStatus, propertyID)
+	var i GetPropertyVerificationStatusRow
+	err := row.Scan(&i.ID, &i.Status)
+	return i, err
 }
 
 const isPropertyVisible = `-- name: IsPropertyVisible :one

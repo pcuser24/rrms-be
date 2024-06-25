@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
 	"os"
 	"strconv"
 	"time"
@@ -45,15 +44,13 @@ func init() {
 	decoder := json.NewDecoder(file)
 	err = decoder.Decode(&data)
 	if err != nil {
-		fmt.Println("Error decoding JSON:", err)
-		return
+		panic(err)
 	}
 
 	for key, value := range data.PrioritiesToPrice {
 		intKey, err := strconv.Atoi(key)
 		if err != nil {
-			fmt.Printf("Error converting key %s to int: %v\n", key, err)
-			continue
+			panic(err)
 		}
 		listingPriorities[intKey] = value
 	}
@@ -61,14 +58,10 @@ func init() {
 	for key, value := range data.DurationDiscounts {
 		intKey, err := strconv.Atoi(key)
 		if err != nil {
-			fmt.Printf("Error converting key %s to int: %v\n", key, err)
-			continue
+			panic(err)
 		}
 		listingDiscounts[intKey] = value
 	}
-
-	log.Println("Listing priorities loaded successfully", listingPriorities)
-	log.Println("Listing discounts loaded successfully", listingDiscounts)
 }
 
 var (
