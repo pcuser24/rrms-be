@@ -9,16 +9,12 @@ import (
 )
 
 type UpdateReminder struct {
-	ID              int64                           `json:"id"`
-	Title           *string                         `json:"title"`
-	StartAt         time.Time                       `json:"startAt"`
-	EndAt           time.Time                       `json:"endAt"`
-	Note            *string                         `json:"note"`
-	Location        *string                         `json:"location"`
-	Priority        *int32                          `json:"priority"`
-	RecurrenceDay   *int32                          `json:"recurrenceDay"`
-	RecurrenceMonth *int32                          `json:"recurrenceMonth"`
-	RecurrenceMode  database.REMINDERRECURRENCEMODE `json:"recurrenceMode"`
+	ID       int64     `json:"id"`
+	Title    *string   `json:"title"`
+	StartAt  time.Time `json:"startAt"`
+	EndAt    time.Time `json:"endAt"`
+	Note     *string   `json:"note"`
+	Location *string   `json:"location"`
 }
 
 func (u *UpdateReminder) ToUpdateReminderDB() database.UpdateReminderParams {
@@ -33,14 +29,7 @@ func (u *UpdateReminder) ToUpdateReminderDB() database.UpdateReminderParams {
 			Time:  u.EndAt,
 			Valid: !u.EndAt.IsZero(),
 		},
-		Note:            types.StrN(u.Note),
-		Location:        types.StrN(u.Location),
-		Priority:        types.Int32N(u.Priority),
-		RecurrenceDay:   types.Int32N(u.RecurrenceDay),
-		RecurrenceMonth: types.Int32N(u.RecurrenceMonth),
-		RecurrenceMode: database.NullREMINDERRECURRENCEMODE{
-			REMINDERRECURRENCEMODE: u.RecurrenceMode,
-			Valid:                  u.RecurrenceMode != "",
-		},
+		Note:     types.StrN(u.Note),
+		Location: types.StrN(u.Location),
 	}
 }

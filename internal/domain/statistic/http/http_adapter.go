@@ -31,6 +31,7 @@ func (a *adapter) RegisterServer(route *fiber.Router, tokenMaker token.Maker) {
 	managerStatisticRoute.Get("/applications", a.getApplicationStatistic())
 	managerStatisticRoute.Get("/payments", a.getPaymentsStatistic())
 	managerStatisticRoute.Get("/rentals", a.getManagerRentalStatistic())
+	managerStatisticRoute.Get("/tenants", a.getTotalTenantsStatistic())
 	managerStatisticRoute.Get("/rentals/payments/arrears", a.getRentalPaymentArrearsStatistic())
 	managerStatisticRoute.Get("/rentals/payments/incomes", a.getRentalPaymentIncomesStatistic())
 

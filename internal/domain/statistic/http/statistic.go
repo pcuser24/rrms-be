@@ -76,6 +76,27 @@ func (a *adapter) getManagerRentalStatistic() fiber.Handler {
 	}
 }
 
+func (a *adapter) getTotalTenantsStatistic() fiber.Handler {
+	return func(ctx *fiber.Ctx) error {
+		tkPayload := ctx.Locals(auth_http.AuthorizationPayloadKey).(*token.Payload)
+
+		var query dto.RentalStatisticQuery
+		if err := ctx.QueryParser(&query); err != nil {
+			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": err.Error()})
+		}
+		if errs := validation.ValidateStruct(nil, query); len(errs) > 0 {
+			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": validation.GetValidationError(errs)})
+		}
+
+		res, err := a.service.GetTotalTenantsStatistic(tkPayload.UserID, &query)
+		if err != nil {
+			return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
+		}
+
+		return ctx.Status(fiber.StatusOK).JSON(fiber.Map{"total": res})
+	}
+}
+
 func (a *adapter) getRentalPaymentArrearsStatistic() fiber.Handler {
 	return func(ctx *fiber.Ctx) error {
 		tkPayload := ctx.Locals(auth_http.AuthorizationPayloadKey).(*token.Payload)

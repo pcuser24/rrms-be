@@ -45,7 +45,7 @@ func (r *repo) GetRemindersOfUser(ctx context.Context, userId uuid.UUID, query *
 		res      []model.ReminderModel = make([]model.ReminderModel, 0)
 	)
 	sb := sqlbuilder.PostgreSQL.NewSelectBuilder()
-	sb.Select("id", "creator_id", "title", "start_at", "end_at", "note", "location", "recurrence_day", "recurrence_month", "recurrence_mode", "priority", "resource_tag", "created_at", "updated_at")
+	sb.Select("id", "creator_id", "title", "start_at", "end_at", "note", "location", "created_at", "updated_at")
 	sb.From("reminders")
 	if query.CreatorID != uuid.Nil {
 		andExprs = append(andExprs, sb.Equal("creator_id", query.CreatorID))
@@ -61,21 +61,6 @@ func (r *repo) GetRemindersOfUser(ctx context.Context, userId uuid.UUID, query *
 	}
 	if !query.MaxEndAt.IsZero() {
 		andExprs = append(andExprs, sb.LTE("end_at", query.MaxEndAt))
-	}
-	if query.Priority != nil {
-		andExprs = append(andExprs, sb.Equal("priority", *query.Priority))
-	}
-	if query.RecurrenceMode != "" {
-		andExprs = append(andExprs, sb.Equal("recurrence_mode", query.RecurrenceMode))
-	}
-	if query.RecurrenceDay != nil {
-		andExprs = append(andExprs, sb.Equal("recurrence_day", *query.RecurrenceDay))
-	}
-	if query.RecurrenceMonth != nil {
-		andExprs = append(andExprs, sb.Equal("recurrence_month", *query.RecurrenceMonth))
-	}
-	if query.ResourceTag != nil {
-		andExprs = append(andExprs, sb.Equal("resource_tag", *query.ResourceTag))
 	}
 	if len(andExprs) > 0 {
 		sb.Where(andExprs...)
@@ -99,11 +84,6 @@ func (r *repo) GetRemindersOfUser(ctx context.Context, userId uuid.UUID, query *
 			&i.EndAt,
 			&i.Note,
 			&i.Location,
-			&i.RecurrenceDay,
-			&i.RecurrenceMonth,
-			&i.RecurrenceMode,
-			&i.Priority,
-			&i.ResourceTag,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 		); err != nil {

@@ -5,24 +5,24 @@ INSERT INTO "reminders" (
   "start_at",
   "end_at",
   "note",
-  "location",
-  "priority",
-  "recurrence_day",
-  "recurrence_month",
-  "recurrence_mode",
-  "resource_tag"
+  "location"
+  -- "priority",
+  -- "recurrence_day",
+  -- "recurrence_month",
+  -- "recurrence_mode",
+  -- "resource_tag"
 ) VALUES (
   sqlc.arg(creator_id),
   sqlc.arg(title),
   sqlc.arg(start_at),
   sqlc.arg(end_at),
   sqlc.narg(note),
-  sqlc.arg(location),
-  sqlc.narg(priority),
-  sqlc.narg(recurrence_day),
-  sqlc.narg(recurrence_month),
-  sqlc.arg(recurrence_mode),
-  sqlc.arg(resource_tag)
+  sqlc.arg(location)
+  -- sqlc.narg(priority),
+  -- sqlc.narg(recurrence_day),
+  -- sqlc.narg(recurrence_month),
+  -- sqlc.arg(recurrence_mode),
+  -- sqlc.arg(resource_tag)
 ) RETURNING *;
 
 -- name: GetReminderById :one
@@ -30,13 +30,6 @@ SELECT * FROM "reminders" WHERE "id" = $1;
 
 -- name: GetRemindersByCreator :many
 SELECT * FROM "reminders" WHERE "creator_id" = $1;
-
--- name: GetRemindersOfUserWithResourceTag :many
-SELECT * 
-FROM "reminders" 
-WHERE 
-  "creator_id" = $1
-  AND "resource_tag" = $2;
 
 -- name: GetRemindersInDate :many
 SELECT * FROM "reminders" WHERE DATE_TRUNC('month', start_at) = DATE_TRUNC('month', $1);
@@ -51,10 +44,10 @@ UPDATE "reminders" SET
   "end_at" = coalesce(sqlc.narg(end_at), end_at),
   "note" = coalesce(sqlc.narg(note), note),
   "location" = coalesce(sqlc.narg(location), location),
-  "priority" = coalesce(sqlc.narg(priority), priority),
-  "recurrence_day" = coalesce(sqlc.narg(recurrence_day), recurrence_day),
-  "recurrence_month" = coalesce(sqlc.narg(recurrence_month), recurrence_month),
-  "recurrence_mode" = coalesce(sqlc.narg(recurrence_mode), recurrence_mode),
+  -- "priority" = coalesce(sqlc.narg(priority), priority),
+  -- "recurrence_day" = coalesce(sqlc.narg(recurrence_day), recurrence_day),
+  -- "recurrence_month" = coalesce(sqlc.narg(recurrence_month), recurrence_month),
+  -- "recurrence_mode" = coalesce(sqlc.narg(recurrence_mode), recurrence_mode),
   "updated_at" = NOW()
 WHERE 
   "id" = $1 

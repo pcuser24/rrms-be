@@ -492,49 +492,6 @@ func (ns NullPROPERTYVERIFICATIONSTATUS) Value() (driver.Value, error) {
 	return string(ns.PROPERTYVERIFICATIONSTATUS), nil
 }
 
-type REMINDERRECURRENCEMODE string
-
-const (
-	REMINDERRECURRENCEMODENONE    REMINDERRECURRENCEMODE = "NONE"
-	REMINDERRECURRENCEMODEWEEKLY  REMINDERRECURRENCEMODE = "WEEKLY"
-	REMINDERRECURRENCEMODEMONTHLY REMINDERRECURRENCEMODE = "MONTHLY"
-)
-
-func (e *REMINDERRECURRENCEMODE) Scan(src interface{}) error {
-	switch s := src.(type) {
-	case []byte:
-		*e = REMINDERRECURRENCEMODE(s)
-	case string:
-		*e = REMINDERRECURRENCEMODE(s)
-	default:
-		return fmt.Errorf("unsupported scan type for REMINDERRECURRENCEMODE: %T", src)
-	}
-	return nil
-}
-
-type NullREMINDERRECURRENCEMODE struct {
-	REMINDERRECURRENCEMODE REMINDERRECURRENCEMODE `json:"REMINDERRECURRENCEMODE"`
-	Valid                  bool                   `json:"valid"` // Valid is true if REMINDERRECURRENCEMODE is not NULL
-}
-
-// Scan implements the Scanner interface.
-func (ns *NullREMINDERRECURRENCEMODE) Scan(value interface{}) error {
-	if value == nil {
-		ns.REMINDERRECURRENCEMODE, ns.Valid = "", false
-		return nil
-	}
-	ns.Valid = true
-	return ns.REMINDERRECURRENCEMODE.Scan(value)
-}
-
-// Value implements the driver Valuer interface.
-func (ns NullREMINDERRECURRENCEMODE) Value() (driver.Value, error) {
-	if !ns.Valid {
-		return nil, nil
-	}
-	return string(ns.REMINDERRECURRENCEMODE), nil
-}
-
 type RENTALCOMPLAINTSTATUS string
 
 const (
@@ -1254,15 +1211,8 @@ type Reminder struct {
 	EndAt     time.Time   `json:"end_at"`
 	Note      pgtype.Text `json:"note"`
 	Location  string      `json:"location"`
-	// 7-bit integer representing days in a week (0-6) when the reminder should be triggered. 0 is Sunday, 1 is Monday, and so on.
-	RecurrenceDay pgtype.Int4 `json:"recurrence_day"`
-	// 32-bit integer representing days in a month (0-30) when the reminder should be triggered. 0 is the last day of the month, 1 is the first day of the month, and so on.
-	RecurrenceMonth pgtype.Int4            `json:"recurrence_month"`
-	RecurrenceMode  REMINDERRECURRENCEMODE `json:"recurrence_mode"`
-	Priority        int32                  `json:"priority"`
-	ResourceTag     string                 `json:"resource_tag"`
-	CreatedAt       time.Time              `json:"created_at"`
-	UpdatedAt       time.Time              `json:"updated_at"`
+	CreatedAt time.Time   `json:"created_at"`
+	UpdatedAt time.Time   `json:"updated_at"`
 }
 
 type Rental struct {

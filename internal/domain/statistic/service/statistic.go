@@ -94,6 +94,10 @@ func (s *service) GetRentalStatistic(userId uuid.UUID) (res dto.RentalStatisticR
 	return
 }
 
+func (s *service) GetTotalTenantsStatistic(userId uuid.UUID, query *dto.RentalStatisticQuery) (int32, error) {
+	return s.domainRepo.StatisticRepo.GetTotalTenantsStatistic(context.Background(), userId, query)
+}
+
 func (s *service) GetRentalPaymentArrears(userId uuid.UUID, query *dto.RentalPaymentStatisticQuery) (res []dto.RentalPaymentArrearsItem, err error) {
 	user, err := s.domainRepo.AuthRepo.GetUserById(context.Background(), userId)
 	if err != nil {

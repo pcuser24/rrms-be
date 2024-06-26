@@ -778,3 +778,49 @@ func (q *Queries) GetTotalTenantPendingPayments(ctx context.Context, userID pgty
 	err := row.Scan(&column_1)
 	return column_1, err
 }
+
+const getTotalTenantsStatistic = `-- name: GetTotalTenantsStatistic :one
+WITH rs AS (
+  SELECT id FROM rentals WHERE 
+  EXISTS (
+    SELECT 1 FROM property_managers 
+    WHERE property_managers.property_id = rentals.property_id 
+    AND manager_id = $1
+  ) 
+  AND start_date >= $2 
+  AND start_date <= $3
+  AND start_date + INTERVAL '1 month' * rental_period >= CURRENT_DATE
+)
+SELECT 
+  SUM(coaps_count + minors_count) + COUNT(DISTINCT counts.id) AS total_associated_records
+FROM (
+  SELECT 
+    rs.id, 
+    COALESCE(rc.coaps_count, 0) AS coaps_count, 
+    COALESCE(rm.minors_count, 0) AS minors_count
+  FROM rs 
+  LEFT JOIN (
+    SELECT rental_coaps.rental_id, COUNT(*) AS coaps_count 
+    FROM rental_coaps 
+    GROUP BY rental_id
+  ) rc ON rs.id = rc.rental_id
+  LEFT JOIN (
+    SELECT rental_id, COUNT(*) AS minors_count 
+    FROM rental_minors
+    GROUP BY rental_id
+  ) rm ON rs.id = rm.rental_id
+) AS counts
+`
+
+type GetTotalTenantsStatisticParams struct {
+	UserID    uuid.UUID   `json:"user_id"`
+	StartTime pgtype.Date `json:"start_time"`
+	EndTime   pgtype.Date `json:"end_time"`
+}
+
+func (q *Queries) GetTotalTenantsStatistic(ctx context.Context, arg GetTotalTenantsStatisticParams) (int32, error) {
+	row := q.db.QueryRow(ctx, getTotalTenantsStatistic, arg.UserID, arg.StartTime, arg.EndTime)
+	var total_associated_records int32
+	err := row.Scan(&total_associated_records)
+	return total_associated_records, err
+}

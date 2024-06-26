@@ -9,20 +9,15 @@ import (
 )
 
 type ReminderModel struct {
-	ID              int64                           `json:"id"`
-	CreatorID       uuid.UUID                       `json:"creatorId"`
-	Title           string                          `json:"title"`
-	StartAt         time.Time                       `json:"startAt"`
-	EndAt           time.Time                       `json:"endAt"`
-	Note            *string                         `json:"note"`
-	Location        string                          `json:"location"`
-	Priority        int32                           `json:"priority"`
-	RecurrenceDay   *int32                          `json:"recurrenceDay"`
-	RecurrenceMonth *int32                          `json:"recurrenceMonth"`
-	RecurrenceMode  database.REMINDERRECURRENCEMODE `json:"recurrenceMode"`
-	ResourceTag     string                          `json:"resourceTag"`
-	CreatedAt       time.Time                       `json:"createdAt"`
-	UpdatedAt       time.Time                       `json:"updatedAt"`
+	ID        int64     `json:"id"`
+	CreatorID uuid.UUID `json:"creatorId"`
+	Title     string    `json:"title"`
+	StartAt   time.Time `json:"startAt"`
+	EndAt     time.Time `json:"endAt"`
+	Note      *string   `json:"note"`
+	Location  string    `json:"location"`
+	CreatedAt time.Time `json:"createdAt"`
+	UpdatedAt time.Time `json:"updatedAt"`
 
 	ReminderMembers []ReminderMemberModel `json:"reminderMembers"`
 }
@@ -34,19 +29,14 @@ type ReminderMemberModel struct {
 
 func ToReminderModel(rdb *database.Reminder) ReminderModel {
 	return ReminderModel{
-		ID:              rdb.ID,
-		CreatorID:       rdb.CreatorID,
-		Title:           rdb.Title,
-		StartAt:         rdb.StartAt,
-		EndAt:           rdb.EndAt,
-		Note:            types.PNStr(rdb.Note),
-		Location:        rdb.Location,
-		Priority:        rdb.Priority,
-		RecurrenceDay:   types.PNInt32(rdb.RecurrenceDay),
-		RecurrenceMonth: types.PNInt32(rdb.RecurrenceMonth),
-		RecurrenceMode:  rdb.RecurrenceMode,
-		ResourceTag:     rdb.ResourceTag,
-		CreatedAt:       rdb.CreatedAt,
-		UpdatedAt:       rdb.UpdatedAt,
+		ID:        rdb.ID,
+		CreatorID: rdb.CreatorID,
+		Title:     rdb.Title,
+		StartAt:   rdb.StartAt,
+		EndAt:     rdb.EndAt,
+		Note:      types.PNStr(rdb.Note),
+		Location:  rdb.Location,
+		CreatedAt: rdb.CreatedAt,
+		UpdatedAt: rdb.UpdatedAt,
 	}
 }
