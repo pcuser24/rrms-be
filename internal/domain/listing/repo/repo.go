@@ -2,6 +2,7 @@ package repo
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"slices"
 	"time"
@@ -15,7 +16,10 @@ import (
 	payment_model "github.com/user2410/rrms-backend/internal/domain/payment/model"
 	payment_service "github.com/user2410/rrms-backend/internal/domain/payment/service"
 	"github.com/user2410/rrms-backend/internal/infrastructure/database"
+	"github.com/user2410/rrms-backend/internal/infrastructure/redisd"
 )
+
+const CACHE_EXPIRATION = 12 * time.Hour
 
 type Repo interface {
 	CreateListing(ctx context.Context, data *dto.CreateListing) (*model.ListingModel, error)
@@ -37,12 +41,14 @@ type Repo interface {
 }
 
 type repo struct {
-	dao database.DAO
+	dao         database.DAO
+	redisClient redisd.RedisClient
 }
 
-func NewRepo(d database.DAO) Repo {
+func NewRepo(d database.DAO, redisClient redisd.RedisClient) Repo {
 	return &repo{
-		dao: d,
+		dao:         d,
+		redisClient: redisClient,
 	}
 }
 
@@ -96,6 +102,9 @@ func (r *repo) CreateListing(ctx context.Context, data *dto.CreateListing) (*mod
 		return nil, err
 	}
 
+	// save to cache
+	r.saveListingToCache(ctx, lm)
+
 	return lm, nil
 }
 
@@ -103,6 +112,17 @@ func (r *repo) GetListingsByIds(ctx context.Context, ids []uuid.UUID, fields []s
 	if len(ids) == 0 {
 		return nil, nil
 	}
+
+	// read from cache
+	cacheRes, cacheMiss, err := r.readListingsFromCache(ctx, ids)
+	if err == nil {
+		if len(cacheRes) == len(ids) {
+			return cacheRes, nil
+		} else {
+			ids = cacheMiss
+		}
+	}
+
 	var nonFKFields []string = []string{"id"}
 	var fkFields []string
 	for _, f := range fields {
@@ -218,10 +238,18 @@ func (r *repo) GetListingsByIds(ctx context.Context, ids []uuid.UUID, fields []s
 		}
 	}
 
+	// combine cached and non-cached results
+	items = append(items, cacheRes...)
 	return items, nil
 }
 
 func (r *repo) GetListingByID(ctx context.Context, id uuid.UUID) (*model.ListingModel, error) {
+	// read from cache
+	cacheRes, err := r.readListingFromCache(ctx, id)
+	if err == nil && cacheRes != nil {
+		return cacheRes, nil
+	}
+
 	resDB, err := r.dao.GetListingByID(ctx, id)
 	if err != nil {
 		return nil, err
@@ -252,6 +280,9 @@ func (r *repo) GetListingByID(ctx context.Context, id uuid.UUID) (*model.Listing
 	for _, i := range t {
 		res.Tags = append(res.Tags, model.ListingTagModel(i))
 	}
+
+	// save to cache
+	r.saveListingToCache(ctx, res)
 
 	return res, nil
 }
@@ -589,4 +620,56 @@ func (r *repo) FilterVisibleListings(ctx context.Context, lids []uuid.UUID, uid 
 	err := r.dao.QueryRowBatch(ctx, queries)
 
 	return resIDs, err
+}
+
+func (r *repo) saveListingToCache(ctx context.Context, p *model.ListingModel) error {
+	dataMap, err := json.Marshal(p)
+	if err != nil {
+		return err
+	}
+	setRes := r.redisClient.Set(ctx, fmt.Sprintf("listing:%s", p.ID.String()), dataMap, CACHE_EXPIRATION)
+	return setRes.Err()
+}
+
+func (r *repo) readListingFromCache(ctx context.Context, id uuid.UUID) (*model.ListingModel, error) {
+	cacheRes := r.redisClient.Get(ctx, fmt.Sprintf("listing:%s", id.String()))
+	if err := cacheRes.Err(); err != nil {
+		return nil, err
+	}
+	dataStr := cacheRes.Val()
+	if dataStr == "" {
+		return nil, nil
+	}
+	var p model.ListingModel
+	if err := json.Unmarshal([]byte(dataStr), &p); err != nil {
+		return nil, err
+	}
+	return &p, nil
+}
+
+func (r *repo) readListingsFromCache(ctx context.Context, ids []uuid.UUID) (res []model.ListingModel, cacheMiss []uuid.UUID, err error) {
+	cacheRes := r.redisClient.MGet(ctx, func() []string {
+		var res []string
+		for _, id := range ids {
+			res = append(res, fmt.Sprintf("listing:%s", id.String()))
+		}
+		return res
+	}()...)
+	if err := cacheRes.Err(); err != nil {
+		return nil, nil, err
+	}
+	data := cacheRes.Val()
+	for i, datum := range data {
+		datumStr, ok := datum.(string)
+		if !ok {
+			cacheMiss = append(cacheMiss, ids[i])
+			continue
+		}
+		var p model.ListingModel
+		if err := json.Unmarshal([]byte(datumStr), &p); err != nil {
+			return nil, nil, err
+		}
+		res = append(res, p)
+	}
+	return res, cacheMiss, nil
 }

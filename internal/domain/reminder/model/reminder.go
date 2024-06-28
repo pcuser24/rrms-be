@@ -19,12 +19,7 @@ type ReminderModel struct {
 	CreatedAt time.Time `json:"createdAt"`
 	UpdatedAt time.Time `json:"updatedAt"`
 
-	ReminderMembers []ReminderMemberModel `json:"reminderMembers"`
-}
-
-type ReminderMemberModel struct {
-	ReminderID int64     `json:"reminderId"`
-	UserID     uuid.UUID `json:"userId"`
+	// ReminderMembers []ReminderMemberModel `json:"reminderMembers"`
 }
 
 func ToReminderModel(rdb *database.Reminder) ReminderModel {

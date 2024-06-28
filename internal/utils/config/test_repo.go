@@ -10,6 +10,11 @@ import (
 type TestRepoConfig struct {
 	DatabaseURL    string `mapstructure:"DB_TEST_URL" validate:"required,uri"`
 	DBMigrationDir string `mapstructure:"DB_MIGRATION_DIR" validate:"required"`
+
+	// Redis
+	RedisAddr     string `mapstructure:"REDIS_TEST_ADDR" validate:"required"`
+	RedisPassword string `mapstructure:"REDIS_TEST_PASSWORD" validate:"omitempty"`
+	RedisDB       int    `mapstructure:"REDIS_TEST_DB" validate:"required"`
 }
 
 func NewTestRepoConfig(envPath string) (*TestRepoConfig, error) {

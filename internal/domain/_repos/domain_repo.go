@@ -13,6 +13,7 @@ import (
 	statistic_repo "github.com/user2410/rrms-backend/internal/domain/statistic/repo"
 	unit_repo "github.com/user2410/rrms-backend/internal/domain/unit/repo"
 	"github.com/user2410/rrms-backend/internal/infrastructure/database"
+	"github.com/user2410/rrms-backend/internal/infrastructure/redisd"
 	"go.uber.org/mock/gomock"
 )
 
@@ -30,17 +31,17 @@ type DomainRepo struct {
 	MiscRepo        misc_repo.Repo
 }
 
-func NewDomainRepoFromDAO(dao database.DAO) DomainRepo {
+func NewDomainRepo(dao database.DAO, redisClient redisd.RedisClient) DomainRepo {
 	return DomainRepo{
 		AuthRepo:        auth_repo.NewRepo(dao),
-		PropertyRepo:    property_repo.NewRepo(dao),
-		UnitRepo:        unit_repo.NewRepo(dao),
-		ListingRepo:     listing_repo.NewRepo(dao),
+		PropertyRepo:    property_repo.NewRepo(dao, redisClient),
+		UnitRepo:        unit_repo.NewRepo(dao, redisClient),
+		ListingRepo:     listing_repo.NewRepo(dao, redisClient),
 		RentalRepo:      rental_repo.NewRepo(dao),
 		ApplicationRepo: application_repo.NewRepo(dao),
 		PaymentRepo:     payment_repo.NewRepo(dao),
 		ChatRepo:        chat_repo.NewRepo(dao),
-		ReminderRepo:    reminder_repo.NewRepo(dao),
+		ReminderRepo:    reminder_repo.NewRepo(dao, redisClient),
 		StatisticRepo:   statistic_repo.NewRepo(dao),
 		MiscRepo:        misc_repo.NewRepo(dao),
 	}

@@ -7,6 +7,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/huandu/go-sqlbuilder"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/user2410/rrms-backend/internal/domain/rental/dto"
 	"github.com/user2410/rrms-backend/internal/domain/rental/model"
@@ -413,4 +414,46 @@ func (r *repo) GetMyRentals(ctx context.Context, userId uuid.UUID, query *dto.Ge
 		Limit:   *query.Limit,
 		Offset:  *query.Offset,
 	})
+}
+
+func (r *repo) FilterVisibleRentals(ctx context.Context, uid uuid.UUID, ids []int64) ([]int64, error) {
+	buildSQL := func(id int64) (string, []interface{}) {
+		return `
+		SELECT count(*) > 0 FROM rentals 
+		WHERE 
+			id = $1 
+			AND (
+				tenant_id = $2 
+				OR EXISTS (
+					SELECT 1 FROM property_managers 
+					WHERE 
+						property_managers.property_id = rentals.property_id 
+						AND property_managers.manager_id = $2
+					)
+			)
+		`, []interface{}{id, uid}
+	}
+
+	resIDs := make([]int64, 0, len(ids))
+
+	queries := make([]database.BatchedQueryRow, 0, len(ids))
+	for _, uid := range ids {
+		sql, args := buildSQL(uid)
+		queries = append(queries, database.BatchedQueryRow{
+			SQL:    sql,
+			Params: args,
+			Fn: func(row pgx.Row) error {
+				var res bool
+				if err := row.Scan(&res); err != nil {
+					return err
+				}
+				resIDs = append(resIDs, uid)
+				return nil
+			},
+		})
+	}
+
+	err := r.dao.QueryRowBatch(ctx, queries)
+
+	return resIDs, err
 }

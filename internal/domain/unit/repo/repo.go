@@ -2,8 +2,10 @@ package repo
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"slices"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/huandu/go-sqlbuilder"
@@ -11,9 +13,12 @@ import (
 	"github.com/user2410/rrms-backend/internal/domain/unit/model"
 	"github.com/user2410/rrms-backend/internal/domain/unit/repo/sqlbuild"
 	"github.com/user2410/rrms-backend/internal/infrastructure/database"
+	"github.com/user2410/rrms-backend/internal/infrastructure/redisd"
 	"github.com/user2410/rrms-backend/internal/utils"
 	"github.com/user2410/rrms-backend/internal/utils/types"
 )
+
+const CACHE_EXPIRATION = 24 * 60 * 60 * time.Second // 24h0m0s
 
 type Repo interface {
 	CreateUnit(ctx context.Context, data *dto.CreateUnit) (*model.UnitModel, error)
@@ -29,12 +34,14 @@ type Repo interface {
 }
 
 type repo struct {
-	dao database.DAO
+	dao         database.DAO
+	redisClient redisd.RedisClient
 }
 
-func NewRepo(d database.DAO) Repo {
+func NewRepo(d database.DAO, redisClient redisd.RedisClient) Repo {
 	return &repo{
-		dao: d,
+		dao:         d,
+		redisClient: redisClient,
 	}
 }
 
@@ -79,10 +86,20 @@ func (r *repo) CreateUnit(ctx context.Context, data *dto.CreateUnit) (*model.Uni
 		return nil, err
 	}
 
+	// save to cache
+	r.saveUnitToCache(ctx, um)
+	r.saveUnitsOfPropertyToCache(ctx, res.PropertyID, []uuid.UUID{res.ID})
+
 	return um, nil
 }
 
 func (r *repo) GetUnitById(ctx context.Context, id uuid.UUID) (*model.UnitModel, error) {
+	// read from cache
+	uc, err := r.readUnitFromCache(ctx, id)
+	if err == nil && uc != nil {
+		return uc, nil
+	}
+
 	u, err := r.dao.GetUnitById(ctx, id)
 	if err != nil {
 		return nil, err
@@ -106,10 +123,23 @@ func (r *repo) GetUnitById(ctx context.Context, id uuid.UUID) (*model.UnitModel,
 		um.Media = append(um.Media, *model.ToUnitMediaModel(&mdb))
 	}
 
+	// save to cache
+	r.saveUnitToCache(ctx, um)
+	r.saveUnitsOfPropertyToCache(ctx, u.PropertyID, []uuid.UUID{u.ID})
+
 	return um, nil
 }
 
 func (r *repo) GetUnitsOfProperty(ctx context.Context, pid uuid.UUID) ([]model.UnitModel, error) {
+	// read from cache
+	uids, err := r.readUnitsOfPropertyFromCache(ctx, pid)
+	if err == nil && len(uids) > 0 {
+		ucs, _, err := r.readUnitsFromCache(ctx, uids)
+		if err == nil && len(ucs) == len(uids) {
+			return ucs, nil
+		}
+	}
+
 	_res, err := r.dao.GetUnitsOfProperty(ctx, pid)
 	if err != nil {
 		return nil, err
@@ -133,6 +163,11 @@ func (r *repo) GetUnitsOfProperty(ctx context.Context, pid uuid.UUID) ([]model.U
 			um.Media = append(um.Media, *model.ToUnitMediaModel(&mdb))
 		}
 		res = append(res, *um)
+
+		// save to cache
+		if r.redisClient.Exists(ctx, fmt.Sprintf("unit:%s", u.ID.String())).Val() == 0 {
+			r.saveUnitToCache(ctx, um)
+		}
 	}
 	return res, nil
 }
@@ -212,6 +247,17 @@ func (r *repo) GetUnitsByIds(ctx context.Context, ids []uuid.UUID, fields []stri
 	if len(ids) == 0 {
 		return nil, nil
 	}
+
+	// read from cache
+	ucs, cacheMiss, err := r.readUnitsFromCache(ctx, ids)
+	if err == nil {
+		if len(ucs) == len(ids) {
+			return ucs, nil
+		} else {
+			ids = cacheMiss
+		}
+	}
+
 	var nonFKFields []string = []string{"id"}
 	var fkFields []string
 	for _, f := range fields {
@@ -308,5 +354,88 @@ func (r *repo) GetUnitsByIds(ctx context.Context, ids []uuid.UUID, fields []stri
 		}
 	}
 
+	// combine cached and non-cached items
+	items = append(items, ucs...)
 	return items, nil
+}
+
+func (r *repo) saveUnitToCache(ctx context.Context, p *model.UnitModel) error {
+	dataMap, err := json.Marshal(p)
+	if err != nil {
+		return err
+	}
+	setRes := r.redisClient.Set(ctx, fmt.Sprintf("unit:%s", p.ID.String()), dataMap, CACHE_EXPIRATION)
+	return setRes.Err()
+}
+
+func (r *repo) saveUnitsOfPropertyToCache(ctx context.Context, pid uuid.UUID, units []uuid.UUID) error {
+	uidStrs := make([]string, 0, len(units))
+	for _, u := range units {
+		uidStrs = append(uidStrs, u.String())
+	}
+	res := r.redisClient.Sadd(ctx, fmt.Sprintf("property:%s:units", pid.String()), uidStrs)
+	return res.Err()
+}
+
+func (r *repo) readUnitsOfPropertyFromCache(ctx context.Context, pid uuid.UUID) ([]uuid.UUID, error) {
+	cacheRes := r.redisClient.SMembers(ctx, fmt.Sprintf("property:%s:units", pid.String()))
+	if err := cacheRes.Err(); err != nil {
+		return nil, err
+	}
+	// set expiration
+	r.redisClient.Expire(ctx, fmt.Sprintf("property:%s:units", pid.String()), CACHE_EXPIRATION)
+
+	data := cacheRes.Val()
+	res := make([]uuid.UUID, 0, len(data))
+	for _, datum := range data {
+		id, err := uuid.Parse(datum)
+		if err != nil {
+			return nil, err
+		}
+		res = append(res, id)
+	}
+	return res, nil
+}
+
+func (r *repo) readUnitFromCache(ctx context.Context, id uuid.UUID) (*model.UnitModel, error) {
+	cacheRes := r.redisClient.Get(ctx, fmt.Sprintf("unit:%s", id.String()))
+	if err := cacheRes.Err(); err != nil {
+		return nil, err
+	}
+	dataStr := cacheRes.Val()
+	if dataStr == "" {
+		return nil, nil
+	}
+	var p model.UnitModel
+	if err := json.Unmarshal([]byte(dataStr), &p); err != nil {
+		return nil, err
+	}
+	return &p, nil
+}
+
+func (r *repo) readUnitsFromCache(ctx context.Context, ids []uuid.UUID) (res []model.UnitModel, cacheMiss []uuid.UUID, err error) {
+	cacheRes := r.redisClient.MGet(ctx, func() []string {
+		var res []string
+		for _, id := range ids {
+			res = append(res, fmt.Sprintf("unit:%s", id.String()))
+		}
+		return res
+	}()...)
+	if err := cacheRes.Err(); err != nil {
+		return nil, nil, err
+	}
+	data := cacheRes.Val()
+	for i, datum := range data {
+		datumStr, ok := datum.(string)
+		if !ok {
+			cacheMiss = append(cacheMiss, ids[i])
+			continue
+		}
+		var p model.UnitModel
+		if err := json.Unmarshal([]byte(datumStr), &p); err != nil {
+			return nil, nil, err
+		}
+		res = append(res, p)
+	}
+	return res, cacheMiss, nil
 }

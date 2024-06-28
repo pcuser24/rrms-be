@@ -12,7 +12,7 @@ import (
 
 const PropertyFieldsLocalKey = "propertyFields"
 
-var retrievableFields = []string{"name", "building", "project", "area", "number_of_floors", "year_built", "orientation", "entrance_width", "facade", "full_address", "city", "district", "ward", "lat", "lng", "primary_image", "description", "type", "is_public", "created_at", "updated_at", "features", "tags", "media"}
+var retrievableFields = []string{"name", "building", "project", "area", "number_of_floors", "year_built", "orientation", "entrance_width", "facade", "full_address", "city", "district", "ward", "lat", "lng", "primary_image", "description", "type", "is_public", "created_at", "updated_at", "features", "tags", "media", "managers"}
 
 func GetRetrievableFields() []string {
 	rfs := make([]string, len(retrievableFields))

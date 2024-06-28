@@ -47,7 +47,7 @@ func (s *service) GetPaymentsOfRental(rentalID int64) ([]model.RentalPayment, er
 	return s.domainRepo.RentalRepo.GetPaymentsOfRental(context.Background(), rentalID)
 }
 
-func (s *service) GetManagedRentalPayments(uid uuid.UUID, query *dto.GetManagedRentalPaymentsQuery) ([]dto.GetManagedRentalPaymentsItem, error) {
+func (s *service) GetManagedRentalPayments(uid uuid.UUID, query *dto.GetManagedRentalPaymentsQuery) ([]model.RentalPayment, error) {
 	if query.Limit == nil {
 		query.Limit = types.Ptr[int32](math.MaxInt32)
 	}

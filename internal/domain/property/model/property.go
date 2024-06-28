@@ -1,6 +1,7 @@
 package model
 
 import (
+	"encoding/json"
 	"time"
 
 	"github.com/google/uuid"
@@ -8,37 +9,68 @@ import (
 	"github.com/user2410/rrms-backend/internal/utils/types"
 )
 
-type PropertyTagModel = database.PropertyTag
+type PROPERTYTYPE string
+
+const (
+	PROPERTYTYPEAPARTMENT     PROPERTYTYPE = "APARTMENT"
+	PROPERTYTYPEPRIVATE       PROPERTYTYPE = "PRIVATE"
+	PROPERTYTYPEROOM          PROPERTYTYPE = "ROOM"
+	PROPERTYTYPESTORE         PROPERTYTYPE = "STORE"
+	PROPERTYTYPEOFFICE        PROPERTYTYPE = "OFFICE"
+	PROPERTYTYPEVILLA         PROPERTYTYPE = "VILLA"
+	PROPERTYTYPEMINIAPARTMENT PROPERTYTYPE = "MINIAPARTMENT"
+)
+
+func (pt PROPERTYTYPE) MarshalBinary() ([]byte, error) {
+	return json.Marshal(pt)
+}
+
+func (pt *PROPERTYTYPE) UnmarshalBinary(data []byte) error {
+	return json.Unmarshal(data, pt)
+}
+
+type PropertyTagModel struct {
+	ID         int64     `json:"id" redis:"id"`
+	PropertyID uuid.UUID `json:"propertyId" redis:"propertyId"`
+	Tag        string    `json:"tag" redis:"tag"`
+}
+
+func (pt PropertyTagModel) MarshalBinary() (data []byte, err error) {
+	return json.Marshal(pt)
+}
+
+func (pt *PropertyTagModel) UnmarshalBinary(data []byte) error {
+	return json.Unmarshal(data, pt)
+}
 
 type PropertyModel struct {
-	ID             uuid.UUID `json:"id"`
-	CreatorID      uuid.UUID `json:"creatorId"`
-	Name           string    `json:"name"`
-	Building       *string   `json:"building"`
-	Project        *string   `json:"project"`
-	Area           float32   `json:"area"`
-	NumberOfFloors *int32    `json:"numberOfFloors"`
-	YearBuilt      *int32    `json:"yearBuilt"`
-	// n,s,w,e,nw,ne,sw,se
-	Orientation   *string                `json:"orientation"`
-	EntranceWidth *float32               `json:"entranceWidth"`
-	Facade        *float32               `json:"facade"`
-	FullAddress   string                 `json:"fullAddress"`
-	District      string                 `json:"district"`
-	City          string                 `json:"city"`
-	Ward          *string                `json:"ward"`
-	Lat           *float64               `json:"lat"`
-	Lng           *float64               `json:"lng"`
-	PrimaryImage  int64                  `json:"primaryImage"`
-	Description   *string                `json:"description"`
-	Type          database.PROPERTYTYPE  `json:"type"`
-	IsPublic      bool                   `json:"isPublic"`
-	CreatedAt     time.Time              `json:"createdAt"`
-	UpdatedAt     time.Time              `json:"updatedAt"`
-	Managers      []PropertyManagerModel `json:"managers"`
-	Features      []PropertyFeatureModel `json:"features"`
-	Media         []PropertyMediaModel   `json:"media"`
-	Tags          []PropertyTagModel     `json:"tags"`
+	ID             uuid.UUID              `json:"id" redis:"id"`
+	CreatorID      uuid.UUID              `json:"creatorId" redis:"creatorId"`
+	Name           string                 `json:"name" redis:"name"`
+	Building       *string                `json:"building" redis:"building"`
+	Project        *string                `json:"project" redis:"project"`
+	Area           float32                `json:"area" redis:"area"`
+	NumberOfFloors *int32                 `json:"numberOfFloors" redis:"numberOfFloors"`
+	YearBuilt      *int32                 `json:"yearBuilt" redis:"yearBuilt"`
+	Orientation    *string                `json:"orientation" redis:"orientation"`
+	EntranceWidth  *float32               `json:"entranceWidth" redis:"entranceWidth"`
+	Facade         *float32               `json:"facade" redis:"facade"`
+	FullAddress    string                 `json:"fullAddress" redis:"fullAddress"`
+	District       string                 `json:"district" redis:"district"`
+	City           string                 `json:"city" redis:"city"`
+	Ward           *string                `json:"ward" redis:"ward"`
+	Lat            *float64               `json:"lat" redis:"lat"`
+	Lng            *float64               `json:"lng" redis:"lng"`
+	PrimaryImage   int64                  `json:"primaryImage" redis:"primaryImage"`
+	Description    *string                `json:"description" redis:"description"`
+	Type           PROPERTYTYPE           `json:"type" redis:"type"`
+	IsPublic       bool                   `json:"isPublic" redis:"isPublic"`
+	CreatedAt      time.Time              `json:"createdAt" redis:"createdAt"`
+	UpdatedAt      time.Time              `json:"updatedAt" redis:"updatedAt"`
+	Managers       []PropertyManagerModel `json:"managers" redis:"managers"`
+	Features       []PropertyFeatureModel `json:"features" redis:"features"`
+	Media          []PropertyMediaModel   `json:"media" redis:"media"`
+	Tags           []PropertyTagModel     `json:"tags" redis:"tags"`
 }
 
 func ToPropertyModel(p *database.Property) *PropertyModel {
@@ -61,7 +93,7 @@ func ToPropertyModel(p *database.Property) *PropertyModel {
 		Lat:            types.PNFloat64(p.Lat),
 		Lng:            types.PNFloat64(p.Lng),
 		PrimaryImage:   p.PrimaryImage.Int64,
-		Type:           p.Type,
+		Type:           PROPERTYTYPE(p.Type),
 		IsPublic:       p.IsPublic,
 		CreatedAt:      p.CreatedAt,
 		UpdatedAt:      p.UpdatedAt,
@@ -71,4 +103,8 @@ func ToPropertyModel(p *database.Property) *PropertyModel {
 		Media:          make([]PropertyMediaModel, 0),
 		Tags:           make([]PropertyTagModel, 0),
 	}
+}
+
+func (p *PropertyModel) MarshalBinary() (data []byte, err error) {
+	return json.Marshal(p)
 }

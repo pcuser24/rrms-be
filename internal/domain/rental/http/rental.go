@@ -283,3 +283,28 @@ func (a *adapter) getMyRentals() fiber.Handler {
 		return ctx.Status(fiber.StatusOK).JSON(res)
 	}
 }
+
+func (a *adapter) getRentalsByIds() fiber.Handler {
+	return func(ctx *fiber.Ctx) error {
+		query := new(dto.GetRentalsByIdsQuery)
+		if err := query.QueryParser(ctx); err != nil {
+			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": err.Error()})
+		}
+
+		validator := validation.GetDefaultValidator()
+		validator.RegisterValidation(dto.RentalFieldsLocalKey, dto.ValidateQuery)
+		if errs := validation.ValidateStruct(validator, *query); len(errs) > 0 {
+			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": validation.GetValidationError(errs)})
+		}
+
+		tkPayload := ctx.Locals(auth_http.AuthorizationPayloadKey).(*token.Payload)
+
+		res, err := a.service.GetRentalByIds(tkPayload.UserID, query.IDs, query.Fields)
+		if err != nil {
+			ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
+			return nil
+		}
+
+		return ctx.Status(fiber.StatusOK).JSON(res)
+	}
+}

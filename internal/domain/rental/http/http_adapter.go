@@ -27,6 +27,7 @@ func (a *adapter) RegisterServer(route *fiber.Router, tokenMaker token.Maker) {
 	rentalRoute.Post("/create/_pre", a.preCreateRental())
 	rentalRoute.Post("/create/pre", a.createPreRental())
 	// rentalRoute.Post("/create", a.createRental())
+	rentalRoute.Get("/ids", a.getRentalsByIds())
 	rentalRoute.Get("/managed-rentals", a.getManagedRentals())
 	rentalRoute.Get("/my-rentals", a.getMyRentals())
 	rentalRoute.Group("/rental/:id").Use(GetRentalID(), CheckRentalVisibility(a.service))

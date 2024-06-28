@@ -6,7 +6,6 @@ import (
 
 	application_dto "github.com/user2410/rrms-backend/internal/domain/application/dto"
 	application_model "github.com/user2410/rrms-backend/internal/domain/application/model"
-	"github.com/user2410/rrms-backend/internal/infrastructure/database"
 
 	"github.com/google/uuid"
 	listing_dto "github.com/user2410/rrms-backend/internal/domain/listing/dto"
@@ -75,7 +74,7 @@ func (s *service) CreatePropertyManagerRequest(data *property_dto.CreateProperty
 	}
 
 	user, err := s.domainRepo.AuthRepo.GetUserByEmail(context.Background(), data.Email)
-	if err != nil && !errors.Is(err, database.ErrRecordNotFound) {
+	if err != nil {
 		return property_model.NewPropertyManagerRequest{}, err
 	} else {
 		data.UserID = user.ID

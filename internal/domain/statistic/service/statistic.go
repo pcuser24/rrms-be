@@ -226,7 +226,8 @@ func (s *service) GetPaymentsStatistic(userId uuid.UUID, query dto.PaymentsStati
 		// Move to the next month
 		current = endOfMonth.AddDate(0, 0, 1)
 	}
-	return nil, nil
+
+	return
 }
 
 func (s *service) GetTenantRentalStatistic(userId uuid.UUID) (res dto.TenantRentalStatisticResponse, err error) {

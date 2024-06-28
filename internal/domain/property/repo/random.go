@@ -274,7 +274,7 @@ func NewRandomPropertyModel(t *testing.T, creatorId uuid.UUID) *model.PropertyMo
 		Lat:            types.Ptr(random.RandomFloat64(10, 50)),
 		Lng:            types.Ptr(random.RandomFloat64(10, 50)),
 		Description:    types.Ptr(random.RandomAlphanumericStr(100)),
-		Type:           database.PROPERTYTYPE(propertyTypes[random.RandomInt32(0, int32(len(propertyTypes)-1))]),
+		Type:           model.PROPERTYTYPE(propertyTypes[random.RandomInt32(0, int32(len(propertyTypes)-1))]),
 		IsPublic:       false,
 		// CreatedAt:      time.Now(),
 		// UpdatedAt:      time.Now(),

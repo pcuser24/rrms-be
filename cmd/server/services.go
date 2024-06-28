@@ -13,34 +13,22 @@ import (
 	rental_service "github.com/user2410/rrms-backend/internal/domain/rental/service"
 	statistic_service "github.com/user2410/rrms-backend/internal/domain/statistic/service"
 	unit_service "github.com/user2410/rrms-backend/internal/domain/unit/service"
-
-	application_repo "github.com/user2410/rrms-backend/internal/domain/application/repo"
-	auth_repo "github.com/user2410/rrms-backend/internal/domain/auth/repo"
-	chat_repo "github.com/user2410/rrms-backend/internal/domain/chat/repo"
-	listing_repo "github.com/user2410/rrms-backend/internal/domain/listing/repo"
-	misc_repo "github.com/user2410/rrms-backend/internal/domain/misc/repo"
-	payment_repo "github.com/user2410/rrms-backend/internal/domain/payment/repo"
-	property_repo "github.com/user2410/rrms-backend/internal/domain/property/repo"
-	reminder_repo "github.com/user2410/rrms-backend/internal/domain/reminder/repo"
-	rental_repo "github.com/user2410/rrms-backend/internal/domain/rental/repo"
-	statistic_repo "github.com/user2410/rrms-backend/internal/domain/statistic/repo"
-	unit_repo "github.com/user2410/rrms-backend/internal/domain/unit/repo"
 )
 
 func (c *serverCommand) setupInternalServices() {
-	var domainRepo repos.DomainRepo
+	domainRepo := repos.NewDomainRepo(c.dao, c.redisClient)
 	// Initialize repositories
-	domainRepo.AuthRepo = auth_repo.NewRepo(c.dao)
-	domainRepo.PropertyRepo = property_repo.NewRepo(c.dao)
-	domainRepo.UnitRepo = unit_repo.NewRepo(c.dao)
-	domainRepo.ListingRepo = listing_repo.NewRepo(c.dao)
-	domainRepo.RentalRepo = rental_repo.NewRepo(c.dao)
-	domainRepo.ApplicationRepo = application_repo.NewRepo(c.dao)
-	domainRepo.PaymentRepo = payment_repo.NewRepo(c.dao)
-	domainRepo.ChatRepo = chat_repo.NewRepo(c.dao)
-	domainRepo.ReminderRepo = reminder_repo.NewRepo(c.dao)
-	domainRepo.StatisticRepo = statistic_repo.NewRepo(c.dao)
-	domainRepo.MiscRepo = misc_repo.NewRepo(c.dao)
+	// domainRepo.AuthRepo = auth_repo.NewRepo(c.dao)
+	// domainRepo.PropertyRepo = property_repo.NewRepo(c.dao, c.redisClient)
+	// domainRepo.UnitRepo = unit_repo.NewRepo(c.dao)
+	// domainRepo.ListingRepo = listing_repo.NewRepo(c.dao)
+	// domainRepo.RentalRepo = rental_repo.NewRepo(c.dao)
+	// domainRepo.ApplicationRepo = application_repo.NewRepo(c.dao)
+	// domainRepo.PaymentRepo = payment_repo.NewRepo(c.dao)
+	// domainRepo.ChatRepo = chat_repo.NewRepo(c.dao)
+	// domainRepo.ReminderRepo = reminder_repo.NewRepo(c.dao)
+	// domainRepo.StatisticRepo = statistic_repo.NewRepo(c.dao)
+	// domainRepo.MiscRepo = misc_repo.NewRepo(c.dao)
 
 	// Initialize internal services
 	c.internalServices.MiscService = misc_service.NewService(domainRepo, c.notificationEndpoint, c.cronScheduler)

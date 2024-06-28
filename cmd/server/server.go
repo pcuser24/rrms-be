@@ -12,6 +12,7 @@ import (
 	"github.com/go-playground/validator"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
+	"github.com/redis/go-redis/v9"
 	"github.com/robfig/cron/v3"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -24,6 +25,7 @@ import (
 	"github.com/user2410/rrms-backend/internal/infrastructure/es"
 	"github.com/user2410/rrms-backend/internal/infrastructure/http"
 	"github.com/user2410/rrms-backend/internal/infrastructure/notification"
+	"github.com/user2410/rrms-backend/internal/infrastructure/redisd"
 	"github.com/user2410/rrms-backend/internal/utils/token"
 )
 
@@ -67,6 +69,11 @@ type serverConfig struct {
 	ElasticsearchURL        *string `mapstructure:"ELASTICSEARCH_URL" validate:"omitempty"`
 	ElasticsearchCloudID    *string `mapstructure:"ELASTICSEARCH_CLOUD_ID" validate:"omitempty"`
 	ElasticsearchAPIKey     *string `mapstructure:"ELASTICSEARCH_API_KEY" validate:"omitempty"`
+
+	// Redis
+	RedisAddr     string `mapstructure:"REDIS_ADDR" validate:"required"`
+	RedisPassword string `mapstructure:"REDIS_PASSWORD" validate:"omitempty"`
+	RedisDB       int    `mapstructure:"REDIS_DB" validate:"omitempty"`
 }
 
 type serverCommand struct {
@@ -82,6 +89,7 @@ type serverCommand struct {
 	internalServices     services.DomainServices
 	httpServer           http.Server
 	elasticsearch        *es.ElasticSearchClient
+	redisClient          redisd.RedisClient
 }
 
 func NewServerCommand() *serverCommand {
@@ -212,6 +220,14 @@ func (c *serverCommand) setup() {
 	if err != nil {
 		log.Fatal("Error while initializing Elasticsearch client", err)
 	}
+
+	// setup redis client
+	rdb := redis.NewClient(&redis.Options{
+		Addr:     c.config.RedisAddr,
+		Password: c.config.RedisPassword,
+		DB:       c.config.RedisDB,
+	})
+	c.redisClient = redisd.NewRedisClient(rdb)
 
 	// new http server
 	c.httpServer = http.NewServer(

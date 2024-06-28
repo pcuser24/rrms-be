@@ -11,6 +11,7 @@ import (
 
 	property_repo "github.com/user2410/rrms-backend/internal/domain/property/repo"
 	unit_repo "github.com/user2410/rrms-backend/internal/domain/unit/repo"
+	"github.com/user2410/rrms-backend/internal/infrastructure/database"
 
 	auth_http "github.com/user2410/rrms-backend/internal/domain/auth/http"
 
@@ -312,7 +313,7 @@ func propertyModelToCreatePropertyArg(property *model.PropertyModel) *dto.Create
 		Lat:            property.Lat,
 		Lng:            property.Lng,
 		Description:    property.Description,
-		Type:           property.Type,
+		Type:           database.PROPERTYTYPE(property.Type),
 	}
 	for _, m := range property.Managers {
 		ret.Managers = append(ret.Managers, dto.CreatePropertyManager{

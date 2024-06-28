@@ -25,6 +25,7 @@ type Repo interface {
 	UpdateRental(ctx context.Context, data *dto.UpdateRental, id int64) error
 	// UpdateRentalContract(ctx context.Context, data *dto.UpdateRentalContract, id int64) error
 	CheckRentalVisibility(ctx context.Context, id int64, userId uuid.UUID) (bool, error)
+	FilterVisibleRentals(ctx context.Context, userId uuid.UUID, ids []int64) ([]int64, error)
 	CheckPreRentalVisibility(ctx context.Context, id int64, userId uuid.UUID) (bool, error)
 
 	CreateContract(ctx context.Context, data *dto.CreateContract) (*model.ContractModel, error)
@@ -39,7 +40,7 @@ type Repo interface {
 	CreateRentalPayment(ctx context.Context, data *dto.CreateRentalPayment) (model.RentalPayment, error)
 	GetRentalPayment(ctx context.Context, id int64) (model.RentalPayment, error)
 	GetPaymentsOfRental(ctx context.Context, rentalID int64) ([]model.RentalPayment, error)
-	GetManagedRentalPayments(ctx context.Context, uid uuid.UUID, query *dto.GetManagedRentalPaymentsQuery) ([]dto.GetManagedRentalPaymentsItem, error)
+	GetManagedRentalPayments(ctx context.Context, uid uuid.UUID, query *dto.GetManagedRentalPaymentsQuery) ([]model.RentalPayment, error)
 	UpdateRentalPayment(ctx context.Context, data *dto.UpdateRentalPayment) error
 	PlanRentalPayments(ctx context.Context) ([]int64, error)
 	PlanRentalPayment(ctx context.Context, rentalId int64) ([]int64, error)

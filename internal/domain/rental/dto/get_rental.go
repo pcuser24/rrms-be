@@ -16,9 +16,25 @@ import (
 const RentalFieldsLocalKey = "rentalFields"
 
 var (
-	rentalRetrievableFields = []string{"creator_id", "property_id", "unit_id", "application_id", "tenant_id", "profile_image", "tenant_type", "tenant_name", "tenant_phone", "tenant_email", "organization_name", "organization_hq_address", "start_date", "movein_date", "rental_period", "payment_type", "rental_price", "rental_payment_basis", "rental_intention", "grace_period", "late_payment_penalty_scheme", "late_payment_penalty_amount", "electricity_setup_by", "electricity_payment_type", "electricity_customer_code", "electricity_provider", "electricity_price", "water_setup_by", "water_payment_type", "water_customer_code", "water_provider", "water_price", "note", "status", "created_at", "updated_at"}
+	rentalRetrievableFields = []string{"creator_id", "property_id", "unit_id", "application_id", "tenant_id", "profile_image", "tenant_type", "tenant_name", "tenant_phone", "tenant_email", "organization_name", "organization_hq_address", "start_date", "movein_date", "rental_period", "payment_type", "rental_price", "rental_payment_basis", "rental_intention", "notice_period", "grace_period", "late_payment_penalty_scheme", "late_payment_penalty_amount", "electricity_setup_by", "electricity_payment_type", "electricity_customer_code", "electricity_provider", "electricity_price", "water_setup_by", "water_payment_type", "water_customer_code", "water_provider", "water_price", "note", "status", "created_at", "updated_at", "coaps", "minors", "pets", "services", "policies"}
 	sortbyFields            = append(rentalRetrievableFields, "remaining_time")
 )
+
+type GetRentalsByIdsQuery struct {
+	Fields []string `query:"fields" validate:"rentalFields"`
+	IDs    []int64  `query:"ids" validate:"required,dive,gt=0"`
+}
+
+func (q *GetRentalsByIdsQuery) QueryParser(ctx *fiber.Ctx) error {
+	err := ctx.QueryParser(q)
+	if err != nil {
+		return err
+	}
+	if len(q.Fields) == 1 {
+		q.Fields = strings.Split(q.Fields[0], ",")
+	}
+	return nil
+}
 
 func GetRetrievableFields() []string {
 	rfs := make([]string, len(rentalRetrievableFields))
@@ -98,7 +114,7 @@ func (q *GetRentalsOfPropertyQuery) QueryParser(ctx *fiber.Ctx) error {
 type GetManagedRentalPaymentsQuery struct {
 	Limit  *int32                         `query:"limit" validate:"omitempty,gte=0"`
 	Offset *int32                         `json:"offset" validate:"omitempty,gte=0"`
-	Status []database.RENTALPAYMENTSTATUS `query:"status" validate:"required,dive,oneof=PLAN ISSUED PENDING REQUEST2PAY PAID CANCELLED"`
+	Status []database.RENTALPAYMENTSTATUS `query:"status" validate:"required,dive,oneof=PLAN ISSUED PENDING REQUEST2PAY PAID CANCELLED PARTIALLYPAID PAYFINE"`
 }
 
 type GetManagedRentalPaymentsItem struct {

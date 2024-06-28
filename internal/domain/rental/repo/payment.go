@@ -5,10 +5,8 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/huandu/go-sqlbuilder"
-	property_repo "github.com/user2410/rrms-backend/internal/domain/property/repo"
 	"github.com/user2410/rrms-backend/internal/domain/rental/dto"
 	rental_model "github.com/user2410/rrms-backend/internal/domain/rental/model"
-	unit_repo "github.com/user2410/rrms-backend/internal/domain/unit/repo"
 	"github.com/user2410/rrms-backend/internal/infrastructure/database"
 )
 
@@ -75,7 +73,7 @@ func (r *repo) GetPaymentsOfRental(ctx context.Context, rentalID int64) ([]renta
 	return rms, nil
 }
 
-func (r *repo) GetManagedRentalPayments(ctx context.Context, uid uuid.UUID, query *dto.GetManagedRentalPaymentsQuery) (res []dto.GetManagedRentalPaymentsItem, err error) {
+func (r *repo) GetManagedRentalPayments(ctx context.Context, uid uuid.UUID, query *dto.GetManagedRentalPaymentsQuery) (res []rental_model.RentalPayment, err error) {
 	subSB1 := sqlbuilder.PostgreSQL.NewSelectBuilder()
 	subSB1.Select("1")
 	subSB1.From("property_managers")
@@ -133,32 +131,7 @@ func (r *repo) GetManagedRentalPayments(ctx context.Context, uid uuid.UUID, quer
 		return nil, err
 	}
 
-	rms := make([]dto.GetManagedRentalPaymentsItem, 0, len(payments))
-	for _, payment := range payments {
-		rm := dto.GetManagedRentalPaymentsItem{
-			Payment: payment,
-		}
-		// get rental
-		rm.Rental, err = r.GetRental(ctx, payment.RentalID)
-		if err != nil {
-			return nil, err
-		}
-		// get property based on rental.property_id
-		pRepo := property_repo.NewRepo(r.dao)
-		rm.Property, err = pRepo.GetPropertyById(ctx, rm.Rental.PropertyID)
-		if err != nil {
-			return nil, err
-		}
-		// get unit based on rental.unit_id
-		uRepo := unit_repo.NewRepo(r.dao)
-		rm.Unit, err = uRepo.GetUnitById(ctx, rm.Rental.UnitID)
-		if err != nil {
-			return nil, err
-		}
-
-		rms = append(rms, rm)
-	}
-	return rms, nil
+	return payments, nil
 }
 
 func (r *repo) UpdateRentalPayment(ctx context.Context, data *dto.UpdateRentalPayment) error {

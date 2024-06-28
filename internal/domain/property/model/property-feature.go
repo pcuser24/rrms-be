@@ -1,6 +1,8 @@
 package model
 
 import (
+	"encoding/json"
+
 	"github.com/google/uuid"
 	"github.com/user2410/rrms-backend/internal/infrastructure/database"
 	"github.com/user2410/rrms-backend/internal/utils/types"
@@ -13,9 +15,9 @@ type PFeature struct {
 }
 
 type PropertyFeatureModel struct {
-	PropertyID  uuid.UUID `json:"propertyId"`
-	FeatureID   int64     `json:"featureId"`
-	Description *string   `json:"description"`
+	PropertyID  uuid.UUID `json:"propertyId" redis:"propertyId"`
+	FeatureID   int64     `json:"featureId" redis:"featureId"`
+	Description *string   `json:"description" redis:"description"`
 }
 
 func ToPropertyFeatureModel(pa *database.PropertyFeature) PropertyFeatureModel {
@@ -24,4 +26,12 @@ func ToPropertyFeatureModel(pa *database.PropertyFeature) PropertyFeatureModel {
 		FeatureID:   pa.FeatureID,
 		Description: types.PNStr(pa.Description),
 	}
+}
+
+func (pf PropertyFeatureModel) MarshalBinary() (data []byte, err error) {
+	return json.Marshal(pf)
+}
+
+func (pf *PropertyFeatureModel) UnmarshalBinary(data []byte) error {
+	return json.Unmarshal(data, pf)
 }

@@ -11,6 +11,7 @@ import (
 	"github.com/user2410/rrms-backend/internal/domain/rental/dto"
 	rental_model "github.com/user2410/rrms-backend/internal/domain/rental/model"
 	"github.com/user2410/rrms-backend/internal/utils/types"
+	"github.com/user2410/rrms-backend/pkg/ds/set"
 )
 
 func (s *service) PreCreateRental(data *dto.PreCreateRental, creatorID uuid.UUID) error {
@@ -86,6 +87,10 @@ func (s *service) GetRental(id int64) (rental_model.RentalModel, error) {
 
 func (s *service) UpdateRental(data *dto.UpdateRental, id int64) error {
 	return s.domainRepo.RentalRepo.UpdateRental(context.Background(), data, id)
+}
+
+func (s *service) FilterVisibleRentals(userId uuid.UUID, ids []int64) ([]int64, error) {
+	return s.domainRepo.RentalRepo.FilterVisibleRentals(context.Background(), userId, ids)
 }
 
 func (s *service) CheckRentalVisibility(id int64, userId uuid.UUID) (bool, error) {
@@ -204,4 +209,13 @@ func (s *service) GetPreRentalsToMe(userId uuid.UUID, query *dto.GetPreRentalsQu
 func (s *service) GetManagedPreRentals(userId uuid.UUID, query *dto.GetPreRentalsQuery) ([]rental_model.PreRental, error) {
 	// TODO: access control
 	return s.domainRepo.RentalRepo.GetManagedPreRentals(context.Background(), userId, query)
+}
+
+func (s *service) GetRentalByIds(userId uuid.UUID, ids []int64, fields []string) ([]rental_model.RentalModel, error) {
+	idSet := set.NewSet[int64]().AddAll(ids...)
+	visibleIds, err := s.domainRepo.RentalRepo.FilterVisibleRentals(context.Background(), userId, idSet.ToSlice())
+	if err != nil {
+		return nil, err
+	}
+	return s.domainRepo.RentalRepo.GetRentalsByIds(context.Background(), visibleIds, fields)
 }

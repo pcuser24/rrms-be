@@ -30,6 +30,7 @@ type Service interface {
 	GetManagedPreRentals(userId uuid.UUID, query *dto.GetPreRentalsQuery) ([]rental_model.PreRental, error)
 	UpdatePreRentalState(id int64, payload *dto.UpdatePreRental) (newRentalID int64, err error)
 	GetRental(id int64) (rental_model.RentalModel, error)
+	GetRentalByIds(userId uuid.UUID, ids []int64, fields []string) ([]rental_model.RentalModel, error)
 	UpdateRental(data *dto.UpdateRental, id int64) error
 	// PrepareRentalContract(id int64, data *dto.PrepareRentalContract) (*model.RentalContractModel, error)
 	GetManagedRentals(userId uuid.UUID, query *dto.GetRentalsQuery) ([]rental_model.RentalModel, error)
@@ -50,7 +51,7 @@ type Service interface {
 	CreateRentalPayment(data *dto.CreateRentalPayment) (rental_model.RentalPayment, error)
 	GetRentalPayment(id int64) (rental_model.RentalPayment, error)
 	GetPaymentsOfRental(id int64) ([]rental_model.RentalPayment, error)
-	GetManagedRentalPayments(uid uuid.UUID, query *dto.GetManagedRentalPaymentsQuery) ([]dto.GetManagedRentalPaymentsItem, error)
+	GetManagedRentalPayments(uid uuid.UUID, query *dto.GetManagedRentalPaymentsQuery) ([]model.RentalPayment, error)
 	UpdateRentalPayment(id int64, userId uuid.UUID, data dto.IUpdateRentalPayment, status database.RENTALPAYMENTSTATUS) error
 
 	PreCreateRentalComplaint(data *dto.PreCreateRentalComplaint, creatorID uuid.UUID) error
