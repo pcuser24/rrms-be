@@ -6,6 +6,7 @@
 # executables
 rrmsd
 __debug*
+main
 
 # data
 db_data
