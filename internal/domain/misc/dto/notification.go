@@ -6,6 +6,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/user2410/rrms-backend/internal/infrastructure/database"
+	"github.com/user2410/rrms-backend/internal/utils/types"
 )
 
 type CreateNotificationDevice struct {
@@ -36,5 +37,29 @@ func (c *CreateNotification) ToCreateNotificationDB(userId uuid.UUID) database.C
 		Title:   c.Title,
 		Content: c.Content,
 		Data:    dataBytes,
+	}
+}
+
+type GetNotificationsOfUserQuery struct {
+	Limit   int32                        `json:"limit"`
+	Offset  int32                        `json:"offset"`
+	Channel database.NOTIFICATIONCHANNEL `json:"channel"`
+}
+
+type UpdateNotification struct {
+	Title   *string `json:"title"`
+	Content *string `json:"content"`
+	Data    []byte  `json:"data"`
+	Seen    *bool   `json:"seen"`
+	ID      int64   `json:"id"`
+}
+
+func (u *UpdateNotification) ToUpdateNotificationDB() database.UpdateNotificationParams {
+	return database.UpdateNotificationParams{
+		ID:      u.ID,
+		Title:   types.StrN(u.Title),
+		Content: types.StrN(u.Content),
+		Data:    u.Data,
+		Seen:    types.BoolN(u.Seen),
 	}
 }

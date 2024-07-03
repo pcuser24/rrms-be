@@ -25,13 +25,15 @@ var (
 	ErrListingIsClosed  = fmt.Errorf("listing is not active")
 	ErrInvalidApplicant = fmt.Errorf("invalid applicant")
 	ErrAlreadyApplied   = fmt.Errorf("user has already applied to this property within 30 days")
+
+	basePath = "internal/domain/application/service/templates"
 )
 
 func (s *service) PreCreateApplication(data *dto.PreCreateApplication, creatorID uuid.UUID) error {
 	ext := filepath.Ext(data.Avatar.Name)
 	fname := data.Avatar.Name[:len(data.Avatar.Name)-len(ext)]
 	// key = creatorID + "/" + "/property" + filename
-	objKey := fmt.Sprintf("%s/rentals/%s_%v%s", creatorID.String(), fname, time.Now().Unix(), ext)
+	objKey := fmt.Sprintf("%s/applications/%s_%v%s", creatorID.String(), fname, time.Now().Unix(), ext)
 
 	url, err := s.s3Client.GetPutObjectPresignedURL(
 		s.imageBucketName, objKey, data.Avatar.Type, data.Avatar.Size, UPLOAD_URL_LIFETIME*time.Minute,
@@ -104,6 +106,8 @@ func (s *service) UpdateApplicationStatus(aid int64, userId uuid.UUID, data *dto
 		return err
 	}
 
+	willNotify := true
+
 	switch data.Status {
 	case database.APPLICATIONSTATUSWITHDRAWN:
 		if a.Status != database.APPLICATIONSTATUSPENDING && a.Status != database.APPLICATIONSTATUSCONDITIONALLYAPPROVED {
@@ -113,6 +117,7 @@ func (s *service) UpdateApplicationStatus(aid int64, userId uuid.UUID, data *dto
 		if a.Status != database.APPLICATIONSTATUSPENDING {
 			return ErrInvalidStatusTransition
 		}
+		willNotify = false
 	case database.APPLICATIONSTATUSAPPROVED:
 		if a.Status != database.APPLICATIONSTATUSPENDING && a.Status != database.APPLICATIONSTATUSCONDITIONALLYAPPROVED {
 			return ErrInvalidStatusTransition
@@ -132,9 +137,14 @@ func (s *service) UpdateApplicationStatus(aid int64, userId uuid.UUID, data *dto
 	}
 
 	// Send notifications
-	err = s.sendNotificationOnUpdateApplication(a, data.Status)
+	if willNotify {
+		err = s.sendNotificationOnUpdateApplication(a, data.Status)
+		if err != nil {
+			// TODO: Log error
+		}
+	}
 
-	return err
+	return nil
 }
 
 func (s *service) GetApplicationsByUserId(uid uuid.UUID, q *dto.GetApplicationsToMeQuery) ([]model.ApplicationModel, error) {

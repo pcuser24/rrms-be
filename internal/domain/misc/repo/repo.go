@@ -18,7 +18,8 @@ type Repo interface {
 	DeleteExpiredTokens(ctx context.Context, interval int32) error
 
 	CreateNotification(ctx context.Context, data *dto.CreateNotification) ([]model.Notification, error)
-	GetNotificationsOfUser(ctx context.Context, userId uuid.UUID, limit, offset int32) ([]model.Notification, error)
+	GetNotificationsOfUser(ctx context.Context, userId uuid.UUID, query dto.GetNotificationsOfUserQuery) ([]model.Notification, error)
+	UpdateNotification(ctx context.Context, data *dto.UpdateNotification) error
 }
 
 type repo struct {
@@ -165,10 +166,11 @@ func (r *repo) CreateNotification(ctx context.Context, data *dto.CreateNotificat
 	return notifications, nil
 }
 
-func (r *repo) GetNotificationsOfUser(ctx context.Context, userId uuid.UUID, limit, offset int32) ([]model.Notification, error) {
+func (r *repo) GetNotificationsOfUser(ctx context.Context, userId uuid.UUID, query dto.GetNotificationsOfUserQuery) ([]model.Notification, error) {
 	res, err := r.dao.GetNotificationsOfUser(ctx, database.GetNotificationsOfUserParams{
-		Limit:  limit,
-		Offset: offset,
+		Limit:   query.Limit,
+		Offset:  query.Offset,
+		Channel: query.Channel,
 		UserID: pgtype.UUID{
 			Bytes: userId,
 			Valid: userId != uuid.Nil,
@@ -184,4 +186,8 @@ func (r *repo) GetNotificationsOfUser(ctx context.Context, userId uuid.UUID, lim
 	}
 
 	return notifications, nil
+}
+
+func (r *repo) UpdateNotification(ctx context.Context, data *dto.UpdateNotification) error {
+	return r.dao.UpdateNotification(ctx, data.ToUpdateNotificationDB())
 }

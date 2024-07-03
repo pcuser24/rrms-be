@@ -35,7 +35,7 @@ func newTestServer(t *testing.T, ctrl *gomock.Controller) *server {
 
 	uService := unit_service.NewService(domainRepo, s3Client, "")
 	pService := property_service.NewService(domainRepo, s3Client, "", nil)
-	lService := listing_service.NewService(domainRepo, "")
+	lService := listing_service.NewService(domainRepo, "", nil)
 
 	// initialize http router
 	httpServer := http.NewServer(

@@ -67,6 +67,7 @@ INSERT INTO notifications (
 SELECT *
 FROM notifications
 WHERE user_id = sqlc.arg(user_id)
+AND channel = sqlc.arg(channel)::"NOTIFICATIONCHANNEL"
 ORDER BY created_at DESC
 LIMIT $1 OFFSET $2;
 
@@ -76,7 +77,7 @@ FROM notifications
 WHERE id = sqlc.arg(id)
 LIMIT 1;
 
--- name: UpdatedNotification :exec
+-- name: UpdateNotification :exec
 UPDATE notifications
 SET
   title = coalesce(sqlc.narg(title), title),

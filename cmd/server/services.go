@@ -45,6 +45,7 @@ func (c *serverCommand) setupInternalServices() {
 	c.internalServices.ListingService = listing_service.NewService(
 		domainRepo,
 		c.config.TokenSecreteKey,
+		c.elasticsearch,
 	)
 	c.internalServices.RentalService = rental_service.NewService(
 		domainRepo,

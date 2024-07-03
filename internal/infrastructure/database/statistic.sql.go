@@ -779,7 +779,7 @@ func (q *Queries) GetTotalTenantPendingPayments(ctx context.Context, userID pgty
 	return column_1, err
 }
 
-const getTotalTenantsStatistic = `-- name: GetTotalTenantsStatistic :one
+const getTotalTenantsManagedByUserStatistic = `-- name: GetTotalTenantsManagedByUserStatistic :one
 WITH rs AS (
   SELECT id FROM rentals WHERE 
   EXISTS (
@@ -790,9 +790,10 @@ WITH rs AS (
   AND start_date >= $2 
   AND start_date <= $3
   AND start_date + INTERVAL '1 month' * rental_period >= CURRENT_DATE
+  AND status = 'INPROGRESS'
 )
 SELECT 
-  SUM(coaps_count + minors_count) + COUNT(DISTINCT counts.id) AS total_associated_records
+  COALESCE(SUM(coaps_count + minors_count) + COUNT(DISTINCT counts.id), 0)::INTEGER AS total_associated_records
 FROM (
   SELECT 
     rs.id, 
@@ -812,14 +813,49 @@ FROM (
 ) AS counts
 `
 
-type GetTotalTenantsStatisticParams struct {
+type GetTotalTenantsManagedByUserStatisticParams struct {
 	UserID    uuid.UUID   `json:"user_id"`
 	StartTime pgtype.Date `json:"start_time"`
 	EndTime   pgtype.Date `json:"end_time"`
 }
 
-func (q *Queries) GetTotalTenantsStatistic(ctx context.Context, arg GetTotalTenantsStatisticParams) (int32, error) {
-	row := q.db.QueryRow(ctx, getTotalTenantsStatistic, arg.UserID, arg.StartTime, arg.EndTime)
+func (q *Queries) GetTotalTenantsManagedByUserStatistic(ctx context.Context, arg GetTotalTenantsManagedByUserStatisticParams) (int32, error) {
+	row := q.db.QueryRow(ctx, getTotalTenantsManagedByUserStatistic, arg.UserID, arg.StartTime, arg.EndTime)
+	var total_associated_records int32
+	err := row.Scan(&total_associated_records)
+	return total_associated_records, err
+}
+
+const getTotalTenantsOfUnitStatistic = `-- name: GetTotalTenantsOfUnitStatistic :one
+WITH rs AS (
+  SELECT id FROM rentals WHERE 
+  unit_id = $1
+  AND start_date + INTERVAL '1 month' * rental_period >= CURRENT_DATE
+  AND status = 'INPROGRESS'
+)
+SELECT 
+  COALESCE(SUM(coaps_count + minors_count) + COUNT(DISTINCT counts.id), 0)::INTEGER AS total_associated_records
+FROM (
+  SELECT 
+    rs.id, 
+    COALESCE(rc.coaps_count, 0) AS coaps_count, 
+    COALESCE(rm.minors_count, 0) AS minors_count
+  FROM rs 
+  LEFT JOIN (
+    SELECT rental_coaps.rental_id, COUNT(*) AS coaps_count 
+    FROM rental_coaps 
+    GROUP BY rental_id
+  ) rc ON rs.id = rc.rental_id
+  LEFT JOIN (
+    SELECT rental_id, COUNT(*) AS minors_count 
+    FROM rental_minors
+    GROUP BY rental_id
+  ) rm ON rs.id = rm.rental_id
+) AS counts
+`
+
+func (q *Queries) GetTotalTenantsOfUnitStatistic(ctx context.Context, unitID uuid.UUID) (int32, error) {
+	row := q.db.QueryRow(ctx, getTotalTenantsOfUnitStatistic, unitID)
 	var total_associated_records int32
 	err := row.Scan(&total_associated_records)
 	return total_associated_records, err

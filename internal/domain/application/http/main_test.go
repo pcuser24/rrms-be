@@ -46,7 +46,7 @@ func newTestServer(
 	// TODO: mock s3 client
 	s3Client := s3.NewMockS3Client(mockCtrl)
 	applicationService := application.NewService(domainRepo, reminderService, miscService, s3Client, "", "https://rrms.rental.vn/")
-	lService := listing_service.NewService(domainRepo, "") // NOTE: leave paymentRepo nil for now
+	lService := listing_service.NewService(domainRepo, "", nil) // NOTE: leave esClient nil for now
 
 	// initialize http router
 	httpServer := http.NewServer(

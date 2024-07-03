@@ -233,6 +233,16 @@ ORDER BY
   created_at DESC
 LIMIT $2 OFFSET $3;
 
+-- name: GetRentalsOfUnit :many
+SELECT id
+FROM rentals
+WHERE 
+  unit_id = $1 AND
+  start_date + INTERVAL '1 month' * rental_period >= CURRENT_DATE AND 
+  status = 'INPROGRESS'
+ORDER BY
+  created_at DESC;
+
 -- name: CheckRentalVisibility :one
 SELECT count(*) > 0 FROM rentals 
 WHERE 

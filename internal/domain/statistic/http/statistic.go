@@ -4,9 +4,13 @@ import (
 	"errors"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgconn"
 	auth_http "github.com/user2410/rrms-backend/internal/domain/auth/http"
 	"github.com/user2410/rrms-backend/internal/domain/statistic/dto"
+	unit_http "github.com/user2410/rrms-backend/internal/domain/unit/http"
 	"github.com/user2410/rrms-backend/internal/infrastructure/database"
+	"github.com/user2410/rrms-backend/internal/interfaces/rest/responses"
 	"github.com/user2410/rrms-backend/internal/utils/token"
 	"github.com/user2410/rrms-backend/internal/utils/validation"
 )
@@ -88,7 +92,7 @@ func (a *adapter) getTotalTenantsStatistic() fiber.Handler {
 			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": validation.GetValidationError(errs)})
 		}
 
-		res, err := a.service.GetTotalTenantsStatistic(tkPayload.UserID, &query)
+		res, err := a.service.GetTotalTenantsManagedByUserStatistic(tkPayload.UserID, &query)
 		if err != nil {
 			return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
 		}
@@ -246,5 +250,21 @@ func (a *adapter) getTenantArrearsStatistic() fiber.Handler {
 		}
 
 		return ctx.Status(fiber.StatusOK).JSON(res)
+	}
+}
+
+func (a *adapter) getTotalTenantsOfUnitStatistic() fiber.Handler {
+	return func(ctx *fiber.Ctx) error {
+		unitId := ctx.Locals(unit_http.UnitIDLocalKey).(uuid.UUID)
+
+		res, err := a.service.GetTotalTenantsOfUnitStatistic(unitId)
+		if err != nil {
+			if dbErr, ok := err.(*pgconn.PgError); ok {
+				return responses.DBErrorResponse(ctx, dbErr)
+			}
+			return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
+		}
+
+		return ctx.Status(fiber.StatusOK).JSON(fiber.Map{"total": res})
 	}
 }

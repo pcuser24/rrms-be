@@ -2,6 +2,7 @@ package misc
 
 import (
 	"errors"
+	"strconv"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
@@ -12,6 +13,7 @@ import (
 	"github.com/user2410/rrms-backend/internal/infrastructure/database"
 	"github.com/user2410/rrms-backend/internal/interfaces/rest/responses"
 	"github.com/user2410/rrms-backend/internal/utils/token"
+	"github.com/user2410/rrms-backend/internal/utils/types"
 	"github.com/user2410/rrms-backend/internal/utils/validation"
 )
 
@@ -36,7 +38,7 @@ func (a *adapter) RegisterServer(router *fiber.Router, tokenMaker token.Maker) {
 
 	notificationRoute.Get("/", a.getNotificationsOfUser())
 	// notificationRoute.Get("/notification/:id", a.getNotification())
-	notificationRoute.Patch("/notification/:id", a.updateNotification())
+	notificationRoute.Patch("/notification/:id/seend", a.updateNotificationStatus())
 
 	deviceRoute := notificationRoute.Group("/devices")
 	deviceRoute.Post("/", a.createNotificationDevice())
@@ -92,16 +94,13 @@ func (a *adapter) getNotificationDevices() fiber.Handler {
 
 func (a *adapter) getNotificationsOfUser() fiber.Handler {
 	return func(ctx *fiber.Ctx) error {
-		var q struct {
-			Limit  int32 `json:"limit"`
-			Offset int32 `json:"offset"`
-		}
+		var q dto.GetNotificationsOfUserQuery
 		if err := ctx.QueryParser(&q); err != nil {
 			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": err.Error()})
 		}
 
 		tkPayload := ctx.Locals(auth_http.AuthorizationPayloadKey).(*token.Payload)
-		res, err := a.service.GetNotificationsOfUser(tkPayload.UserID, q.Limit, q.Offset)
+		res, err := a.service.GetNotificationsOfUser(tkPayload.UserID, q)
 		if err != nil {
 			return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
 		}
@@ -116,8 +115,26 @@ func (a *adapter) getNotificationsOfUser() fiber.Handler {
 // 	}
 // }
 
-func (a *adapter) updateNotification() fiber.Handler {
+func (a *adapter) updateNotificationStatus() fiber.Handler {
 	return func(ctx *fiber.Ctx) error {
-		return nil
+		id, err := strconv.ParseInt(ctx.Params("id"), 10, 64)
+		if err != nil {
+			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": "Invalid notification id"})
+		}
+
+		// tkPayload := ctx.Locals(auth_http.AuthorizationPayloadKey).(*token.Payload)
+		// TODO: check user permission
+
+		params := dto.UpdateNotification{
+			ID:   id,
+			Seen: types.Ptr(true),
+		}
+
+		err = a.service.UpdateNotification(&params)
+		if err != nil {
+			return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
+		}
+
+		return ctx.SendStatus(fiber.StatusOK)
 	}
 }

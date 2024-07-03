@@ -168,13 +168,15 @@ type Querier interface {
 	// Get rental side: Side A (lanlord and managers) and Side B (tenant). Otherwise return C
 	GetRentalSide(ctx context.Context, arg GetRentalSideParams) (string, error)
 	GetRentalsOfProperty(ctx context.Context, arg GetRentalsOfPropertyParams) ([]int64, error)
+	GetRentalsOfUnit(ctx context.Context, unitID uuid.UUID) ([]int64, error)
 	GetRentedProperties(ctx context.Context, tenantID pgtype.UUID) ([]uuid.UUID, error)
 	GetSessionById(ctx context.Context, id uuid.UUID) (Session, error)
 	GetSomeListings(ctx context.Context, arg GetSomeListingsParams) ([]Listing, error)
 	GetTenantExpenditure(ctx context.Context, arg GetTenantExpenditureParams) (float32, error)
 	GetTenantPendingPayments(ctx context.Context, arg GetTenantPendingPaymentsParams) ([]GetTenantPendingPaymentsRow, error)
 	GetTotalTenantPendingPayments(ctx context.Context, userID pgtype.UUID) (float32, error)
-	GetTotalTenantsStatistic(ctx context.Context, arg GetTotalTenantsStatisticParams) (int32, error)
+	GetTotalTenantsManagedByUserStatistic(ctx context.Context, arg GetTotalTenantsManagedByUserStatisticParams) (int32, error)
+	GetTotalTenantsOfUnitStatistic(ctx context.Context, unitID uuid.UUID) (int32, error)
 	GetUnitAmenities(ctx context.Context, unitID uuid.UUID) ([]UnitAmenity, error)
 	GetUnitById(ctx context.Context, id uuid.UUID) (Unit, error)
 	GetUnitManagers(ctx context.Context, id uuid.UUID) ([]PropertyManager, error)
@@ -197,6 +199,7 @@ type Querier interface {
 	UpdateListingStatus(ctx context.Context, arg UpdateListingStatusParams) error
 	UpdateMessage(ctx context.Context, arg UpdateMessageParams) ([]int64, error)
 	UpdateNewPropertyManagerRequest(ctx context.Context, arg UpdateNewPropertyManagerRequestParams) error
+	UpdateNotification(ctx context.Context, arg UpdateNotificationParams) error
 	UpdateNotificationDeviceTokenTimestamp(ctx context.Context, arg UpdateNotificationDeviceTokenTimestampParams) error
 	UpdatePayment(ctx context.Context, arg UpdatePaymentParams) error
 	UpdateProperty(ctx context.Context, arg UpdatePropertyParams) error
@@ -208,7 +211,6 @@ type Querier interface {
 	UpdateSessionBlockingStatus(ctx context.Context, arg UpdateSessionBlockingStatusParams) error
 	UpdateUnit(ctx context.Context, arg UpdateUnitParams) error
 	UpdateUser(ctx context.Context, arg UpdateUserParams) error
-	UpdatedNotification(ctx context.Context, arg UpdatedNotificationParams) error
 }
 
 var _ Querier = (*Queries)(nil)

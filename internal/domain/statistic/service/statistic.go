@@ -94,8 +94,8 @@ func (s *service) GetRentalStatistic(userId uuid.UUID) (res dto.RentalStatisticR
 	return
 }
 
-func (s *service) GetTotalTenantsStatistic(userId uuid.UUID, query *dto.RentalStatisticQuery) (int32, error) {
-	return s.domainRepo.StatisticRepo.GetTotalTenantsStatistic(context.Background(), userId, query)
+func (s *service) GetTotalTenantsManagedByUserStatistic(userId uuid.UUID, query *dto.RentalStatisticQuery) (int32, error) {
+	return s.domainRepo.StatisticRepo.GetTotalTenantsManagedByUserStatistic(context.Background(), userId, query)
 }
 
 func (s *service) GetRentalPaymentArrears(userId uuid.UUID, query *dto.RentalPaymentStatisticQuery) (res []dto.RentalPaymentArrearsItem, err error) {
@@ -325,4 +325,8 @@ func (s *service) GetTenantArrearsStatistic(userId uuid.UUID, query *dto.RentalP
 
 	res.Total, err = s.domainRepo.StatisticRepo.GetTotalTenantPendingPayments(context.Background(), userId)
 	return
+}
+
+func (s *service) GetTotalTenantsOfUnitStatistic(unitId uuid.UUID) (int32, error) {
+	return s.domainRepo.StatisticRepo.GetTotalTenantsOfUnitStatistic(context.Background(), unitId)
 }

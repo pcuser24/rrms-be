@@ -328,17 +328,32 @@ func (mr *MockRepoMockRecorder) GetTotalTenantPendingPayments(arg0, arg1 any) *g
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetTotalTenantPendingPayments", reflect.TypeOf((*MockRepo)(nil).GetTotalTenantPendingPayments), arg0, arg1)
 }
 
-// GetTotalTenantsStatistic mocks base method.
-func (m *MockRepo) GetTotalTenantsStatistic(arg0 context.Context, arg1 uuid.UUID, arg2 *dto.RentalStatisticQuery) (int32, error) {
+// GetTotalTenantsManagedByUserStatistic mocks base method.
+func (m *MockRepo) GetTotalTenantsManagedByUserStatistic(arg0 context.Context, arg1 uuid.UUID, arg2 *dto.RentalStatisticQuery) (int32, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetTotalTenantsStatistic", arg0, arg1, arg2)
+	ret := m.ctrl.Call(m, "GetTotalTenantsManagedByUserStatistic", arg0, arg1, arg2)
 	ret0, _ := ret[0].(int32)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// GetTotalTenantsStatistic indicates an expected call of GetTotalTenantsStatistic.
-func (mr *MockRepoMockRecorder) GetTotalTenantsStatistic(arg0, arg1, arg2 any) *gomock.Call {
+// GetTotalTenantsManagedByUserStatistic indicates an expected call of GetTotalTenantsManagedByUserStatistic.
+func (mr *MockRepoMockRecorder) GetTotalTenantsManagedByUserStatistic(arg0, arg1, arg2 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetTotalTenantsStatistic", reflect.TypeOf((*MockRepo)(nil).GetTotalTenantsStatistic), arg0, arg1, arg2)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetTotalTenantsManagedByUserStatistic", reflect.TypeOf((*MockRepo)(nil).GetTotalTenantsManagedByUserStatistic), arg0, arg1, arg2)
+}
+
+// GetTotalTenantsOfUnitStatistic mocks base method.
+func (m *MockRepo) GetTotalTenantsOfUnitStatistic(arg0 context.Context, arg1 uuid.UUID) (int32, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetTotalTenantsOfUnitStatistic", arg0, arg1)
+	ret0, _ := ret[0].(int32)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetTotalTenantsOfUnitStatistic indicates an expected call of GetTotalTenantsOfUnitStatistic.
+func (mr *MockRepoMockRecorder) GetTotalTenantsOfUnitStatistic(arg0, arg1 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetTotalTenantsOfUnitStatistic", reflect.TypeOf((*MockRepo)(nil).GetTotalTenantsOfUnitStatistic), arg0, arg1)
 }

@@ -23,10 +23,10 @@ func NewAdapter(paymentService service.Service) Adapter {
 }
 
 func (a *adapter) RegisterServer(route *fiber.Router, tokenMaker token.Maker) {
-	paymentRoute := (*route).Group("/payments").Use(auth_http.AuthorizedMiddleware(tokenMaker))
+	paymentRoute := (*route).Group("/payments")
 	// paymentRoute.Use(auth_http.AuthorizedMiddleware(tokenMaker))
-	paymentRoute.Get("/my-payments", a.getMyPayments())
-	paymentRoute.Get("/payment/:id", a.getPaymentById())
+	paymentRoute.Get("/my-payments", auth_http.AuthorizedMiddleware(tokenMaker), a.getMyPayments())
+	paymentRoute.Get("/payment/:id", auth_http.AuthorizedMiddleware(tokenMaker), a.getPaymentById())
 
 	_, ok := a.paymentService.(*vnpay.VnPayService)
 	if ok {

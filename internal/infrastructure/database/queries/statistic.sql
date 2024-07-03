@@ -235,7 +235,7 @@ WHERE
       )
   );
 
--- name: GetTotalTenantsStatistic :one
+-- name: GetTotalTenantsManagedByUserStatistic :one
 WITH rs AS (
   SELECT id FROM rentals WHERE 
   EXISTS (
@@ -246,9 +246,37 @@ WITH rs AS (
   AND start_date >= sqlc.arg(start_time) 
   AND start_date <= sqlc.arg(end_time)
   AND start_date + INTERVAL '1 month' * rental_period >= CURRENT_DATE
+  AND status = 'INPROGRESS'
 )
 SELECT 
-  SUM(coaps_count + minors_count) + COUNT(DISTINCT counts.id) AS total_associated_records
+  COALESCE(SUM(coaps_count + minors_count) + COUNT(DISTINCT counts.id), 0)::INTEGER AS total_associated_records
+FROM (
+  SELECT 
+    rs.id, 
+    COALESCE(rc.coaps_count, 0) AS coaps_count, 
+    COALESCE(rm.minors_count, 0) AS minors_count
+  FROM rs 
+  LEFT JOIN (
+    SELECT rental_coaps.rental_id, COUNT(*) AS coaps_count 
+    FROM rental_coaps 
+    GROUP BY rental_id
+  ) rc ON rs.id = rc.rental_id
+  LEFT JOIN (
+    SELECT rental_id, COUNT(*) AS minors_count 
+    FROM rental_minors
+    GROUP BY rental_id
+  ) rm ON rs.id = rm.rental_id
+) AS counts;
+
+-- name: GetTotalTenantsOfUnitStatistic :one
+WITH rs AS (
+  SELECT id FROM rentals WHERE 
+  unit_id = sqlc.arg(unit_id)
+  AND start_date + INTERVAL '1 month' * rental_period >= CURRENT_DATE
+  AND status = 'INPROGRESS'
+)
+SELECT 
+  COALESCE(SUM(coaps_count + minors_count) + COUNT(DISTINCT counts.id), 0)::INTEGER AS total_associated_records
 FROM (
   SELECT 
     rs.id, 

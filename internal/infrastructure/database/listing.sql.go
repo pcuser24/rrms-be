@@ -422,17 +422,20 @@ func (q *Queries) GetListingUnits(ctx context.Context, listingID uuid.UUID) ([]L
 
 const getListingsOfProperty = `-- name: GetListingsOfProperty :many
 SELECT DISTINCT id
-FROM listings
-WHERE 
-  property_id = $1
-  AND active = TRUE
-  AND CASE
-    WHEN $4::BOOLEAN THEN expired_at <= NOW()
-    WHEN NOT $4::BOOLEAN THEN expired_at > NOW()
-  END
-ORDER BY
-  created_at DESC
-LIMIT $2 OFFSET $3
+FROM (
+  SELECT id, created_at
+  FROM listings
+  WHERE 
+    property_id = $1
+    AND active = TRUE
+    AND CASE
+      WHEN $4::BOOLEAN THEN expired_at <= NOW()
+      WHEN NOT $4::BOOLEAN THEN expired_at > NOW()
+    END
+  ORDER BY
+    created_at DESC
+  LIMIT $2 OFFSET $3
+) subquery
 `
 
 type GetListingsOfPropertyParams struct {

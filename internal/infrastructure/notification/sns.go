@@ -66,7 +66,7 @@ func (s *snsNotificationEndpoint) sendPushNotification(ctx context.Context, noti
 		"tokens": notification.PushChannel.Tokens,
 	})
 
-	return s.snsClient.Publish(ctx, notification.Title, notification.Content, s.emailNotificationTopicArn, msgAttributes)
+	return s.snsClient.Publish(ctx, notification.Title, notification.Content, s.pushNotificationTopicArn, msgAttributes)
 	// log.Printf("Push notification sent %v, with attributes: %v", *notification, msgAttributes)
 	// return nil
 }

@@ -15,6 +15,8 @@ import (
 	misc_dto "github.com/user2410/rrms-backend/internal/domain/misc/dto"
 	rental_dto "github.com/user2410/rrms-backend/internal/domain/rental/dto"
 
+	misc_service "github.com/user2410/rrms-backend/internal/domain/misc/service"
+
 	"github.com/user2410/rrms-backend/internal/infrastructure/database"
 	"github.com/user2410/rrms-backend/pkg/ds/set"
 
@@ -191,8 +193,8 @@ func (s *service) notifyCreatePreRental(
 		Title:   string(title),
 		Content: string(emailContent),
 		Data: map[string]interface{}{
-			"notificationType": "CREATE_PRERENTAL",
-			"rentalId":         r.ID,
+			"notificationType": misc_service.NOTIFICATIONTYPE_CREATEPRERENTAL,
+			"prerentalId":      r.ID,
 			"key":              key,
 		},
 		Targets: targets,
@@ -204,8 +206,8 @@ func (s *service) notifyCreatePreRental(
 		Title:   string(title),
 		Content: string(pushContent),
 		Data: map[string]interface{}{
-			"notificationType": "CREATE_PRERENTAL",
-			"rentalId":         r.ID,
+			"notificationType": misc_service.NOTIFICATIONTYPE_CREATEPRERENTAL,
+			"prerentalId":      r.ID,
 			"key":              key,
 		},
 		Targets: targets,
@@ -306,7 +308,7 @@ func (s *service) notifyUpdatePreRental(
 		Title:   string(title),
 		Content: string(emailContent),
 		Data: map[string]interface{}{
-			"notificationType": "UPDATE_PRERENTAL",
+			"notificationType": misc_service.NOTIFICATIONTYPE_UPDATEPRERENTAL,
 			"preRentalId":      preRental.ID,
 		},
 		Targets: targets,
@@ -318,7 +320,7 @@ func (s *service) notifyUpdatePreRental(
 		Title:   string(title),
 		Content: string(pushContent),
 		Data: map[string]interface{}{
-			"notificationType": "UPDATE_PRERENTAL",
+			"notificationType": misc_service.NOTIFICATIONTYPE_UPDATEPRERENTAL,
 			"preRentalId":      preRental.ID,
 		},
 		Targets: targets,
@@ -453,7 +455,7 @@ func (s *service) notifyUpdatePayments(
 		Title:   string(title),
 		Content: string(emailContent),
 		Data: map[string]interface{}{
-			"notificationType": "UPDATE_RENTALPAYMENT",
+			"notificationType": misc_service.NOTIFICATIONTYPE_UPDATERENTALPAYMENT,
 			"rentalId":         r.ID,
 			"rentalPaymentId":  rp.ID,
 		},
@@ -466,7 +468,7 @@ func (s *service) notifyUpdatePayments(
 		Title:   string(title),
 		Content: string(pushContent),
 		Data: map[string]interface{}{
-			"notificationType": "UPDATE_RENTALPAYMENT",
+			"notificationType": misc_service.NOTIFICATIONTYPE_UPDATERENTALPAYMENT,
 			"rentalId":         r.ID,
 			"rentalPaymentId":  rp.ID,
 		},
@@ -534,8 +536,9 @@ func (s *service) notifyCreateRentalPayment(
 		Title:   string(title),
 		Content: string(emailContent),
 		Data: map[string]interface{}{
-			"notificationType": "CREATE_RENTAL",
+			"notificationType": misc_service.NOTIFICATIONTYPE_CREATERENTALPAYMENT,
 			"rentalId":         r.ID,
+			"rentalPaymentId":  rp.ID,
 		},
 		Targets: []misc_dto.CreateNotificationTarget{target},
 	}); err != nil {
@@ -546,8 +549,9 @@ func (s *service) notifyCreateRentalPayment(
 		Title:   string(title),
 		Content: string(pushContent),
 		Data: map[string]interface{}{
-			"notificationType": "CREATE_RENTAL",
+			"notificationType": misc_service.NOTIFICATIONTYPE_CREATERENTALPAYMENT,
 			"rentalId":         r.ID,
+			"rentalPaymentId":  rp.ID,
 		},
 		Targets: []misc_dto.CreateNotificationTarget{target},
 	}); err != nil {
@@ -652,7 +656,7 @@ func (s *service) notifyCreateContract(
 		Title:   string(title),
 		Content: string(emailContent),
 		Data: map[string]interface{}{
-			"notificationType": "CREATE_CONTRACT",
+			"notificationType": misc_service.NOTIFICATIONTYPE_CREATECONTRACT,
 			"rentalId":         r.ID,
 			"contractId":       c.ID,
 		},
@@ -665,7 +669,7 @@ func (s *service) notifyCreateContract(
 		Title:   string(title),
 		Content: string(pushContent),
 		Data: map[string]interface{}{
-			"notificationType": "CREATE_CONTRACT",
+			"notificationType": misc_service.NOTIFICATIONTYPE_CREATECONTRACT,
 			"rentalId":         r.ID,
 			"contractId":       c.ID,
 		},
@@ -781,7 +785,7 @@ func (s *service) notifyUpdateContract(
 		Title:   string(title),
 		Content: string(emailContent),
 		Data: map[string]interface{}{
-			"notificationType": "UPDATE_CONTRACT",
+			"notificationType": misc_service.NOTIFICATIONTYPE_UPDATECONTRACT,
 			"rentalId":         r.ID,
 			"contractId":       c.ID,
 		},
@@ -794,7 +798,7 @@ func (s *service) notifyUpdateContract(
 		Title:   string(title),
 		Content: string(pushContent),
 		Data: map[string]interface{}{
-			"notificationType": "UPDATE_CONTRACT",
+			"notificationType": misc_service.NOTIFICATIONTYPE_UPDATECONTRACT,
 			"rentalId":         r.ID,
 			"contractId":       c.ID,
 		},
@@ -906,7 +910,7 @@ func (s *service) notifyCreateRentalComplaint(
 		Title:   string(title),
 		Content: string(emailContent),
 		Data: map[string]interface{}{
-			"notificationType": "CREATE_RENTALCOMPLAINT",
+			"notificationType": misc_service.NOTIFICATIONTYPE_CREATERENTALCOMPLAINT,
 			"rentalId":         r.ID,
 			"complaintId":      c.ID,
 		},
@@ -919,7 +923,7 @@ func (s *service) notifyCreateRentalComplaint(
 		Title:   string(title),
 		Content: string(pushContent),
 		Data: map[string]interface{}{
-			"notificationType": "CREATE_RENTALCOMPLAINT",
+			"notificationType": misc_service.NOTIFICATIONTYPE_CREATERENTALCOMPLAINT,
 			"rentalId":         r.ID,
 			"complaintId":      c.ID,
 		},
@@ -1010,7 +1014,7 @@ func (s *service) notifyCreateComplaintReply(
 		Title:   string(title),
 		Content: string(emailContent),
 		Data: map[string]interface{}{
-			"notificationType": "CREATE_COMPLAINTREPLY",
+			"notificationType": misc_service.NOTIFICATIONTYPE_CREATERENTALCOMPLAINTREPLY,
 			"rentalId":         r.ID,
 			"complaintId":      c.ID,
 		},
@@ -1023,7 +1027,7 @@ func (s *service) notifyCreateComplaintReply(
 		Title:   string(title),
 		Content: string(pushContent),
 		Data: map[string]interface{}{
-			"notificationType": "CREATE_COMPLAINTREPLY",
+			"notificationType": misc_service.NOTIFICATIONTYPE_CREATERENTALCOMPLAINTREPLY,
 			"rentalId":         r.ID,
 			"complaintId":      c.ID,
 		},
@@ -1112,7 +1116,7 @@ func (s *service) notifyUpdateComplaintStatus(
 		Title:   string(title),
 		Content: string(emailContent),
 		Data: map[string]interface{}{
-			"notificationType": "UPDATE_COMPLAINTSTATUS",
+			"notificationType": misc_service.NOTIFICATIONTYPE_UPDATERENTALCOMPLAINTSTATUS,
 			"rentalId":         r.ID,
 			"complaintId":      c.ID,
 		},
@@ -1125,7 +1129,7 @@ func (s *service) notifyUpdateComplaintStatus(
 		Title:   string(title),
 		Content: string(pushContent),
 		Data: map[string]interface{}{
-			"notificationType": "UPDATE_COMPLAINTSTATUS",
+			"notificationType": misc_service.NOTIFICATIONTYPE_UPDATERENTALCOMPLAINTSTATUS,
 			"rentalId":         r.ID,
 			"complaintId":      c.ID,
 		},

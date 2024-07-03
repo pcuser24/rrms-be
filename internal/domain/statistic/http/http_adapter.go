@@ -4,11 +4,13 @@ import (
 	"github.com/gofiber/fiber/v2"
 	auth_http "github.com/user2410/rrms-backend/internal/domain/auth/http"
 	"github.com/user2410/rrms-backend/internal/domain/statistic/service"
+	unit_http "github.com/user2410/rrms-backend/internal/domain/unit/http"
+	unit_service "github.com/user2410/rrms-backend/internal/domain/unit/service"
 	"github.com/user2410/rrms-backend/internal/utils/token"
 )
 
 type Adapter interface {
-	RegisterServer(route *fiber.Router, tokenMaker token.Maker)
+	RegisterServer(route *fiber.Router, tokenMaker token.Maker, unitService unit_service.Service)
 }
 
 type adapter struct {
@@ -21,7 +23,7 @@ func NewAdapter(service service.Service) Adapter {
 	}
 }
 
-func (a *adapter) RegisterServer(route *fiber.Router, tokenMaker token.Maker) {
+func (a *adapter) RegisterServer(route *fiber.Router, tokenMaker token.Maker, unitService unit_service.Service) {
 	statisticRoute := (*route).Group("/statistics")
 	statisticRoute.Use(auth_http.AuthorizedMiddleware(tokenMaker))
 
@@ -41,7 +43,9 @@ func (a *adapter) RegisterServer(route *fiber.Router, tokenMaker token.Maker) {
 	tenantStatisticRoute.Get("/expenditures", a.getTenantExpenditureStatistic())
 	tenantStatisticRoute.Get("/arrears", a.getTenantArrearsStatistic())
 
+	// public routes
 	landingRoute := (*route).Group("/landing")
 	landingRoute.Get("/recent", a.getRecentListings())
 	landingRoute.Get("/suggest/listings/listing/:id", a.getListingSuggestions())
+	landingRoute.Get("/rentals/unit/:id", auth_http.GetAuthorizationMiddleware(tokenMaker), unit_http.CheckUnitVisiblitiy(unitService), a.getTotalTenantsOfUnitStatistic())
 }

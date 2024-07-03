@@ -57,10 +57,12 @@ type service struct {
 func NewService(
 	domainRepo repos.DomainRepo,
 	hashSecret string,
+	esClient *es.ElasticSearchClient,
 ) Service {
 	return &service{
 		hashSecret: hashSecret,
 		domainRepo: domainRepo,
+		esClient:   esClient,
 	}
 }
 

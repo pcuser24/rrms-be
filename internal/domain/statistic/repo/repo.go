@@ -32,7 +32,8 @@ type Repo interface {
 	GetTotalTenantPendingPayments(ctx context.Context, userId uuid.UUID) (float32, error)
 	GetTenantPendingPayments(ctx context.Context, userId uuid.UUID, query statistic_dto.RentalPaymentStatisticQuery) ([]statistic_dto.RentalPayment, error)
 	GetTenantExpenditure(ctx context.Context, userId uuid.UUID, query statistic_dto.RentalPaymentStatisticQuery) (float32, error)
-	GetTotalTenantsStatistic(ctx context.Context, userId uuid.UUID, query *statistic_dto.RentalStatisticQuery) (int32, error)
+	GetTotalTenantsManagedByUserStatistic(ctx context.Context, userId uuid.UUID, query *statistic_dto.RentalStatisticQuery) (int32, error)
+	GetTotalTenantsOfUnitStatistic(ctx context.Context, unitId uuid.UUID) (int32, error)
 	GetRentalComplaintStatistics(ctx context.Context, userId uuid.UUID, status database.RENTALCOMPLAINTSTATUS) (int64, error)
 }
 
@@ -410,8 +411,8 @@ func (r *repo) GetRentalComplaintStatistics(ctx context.Context, userId uuid.UUI
 	})
 }
 
-func (r *repo) GetTotalTenantsStatistic(ctx context.Context, userId uuid.UUID, query *statistic_dto.RentalStatisticQuery) (int32, error) {
-	return r.dao.GetTotalTenantsStatistic(ctx, database.GetTotalTenantsStatisticParams{
+func (r *repo) GetTotalTenantsManagedByUserStatistic(ctx context.Context, userId uuid.UUID, query *statistic_dto.RentalStatisticQuery) (int32, error) {
+	return r.dao.GetTotalTenantsManagedByUserStatistic(ctx, database.GetTotalTenantsManagedByUserStatisticParams{
 		UserID: userId,
 		StartTime: pgtype.Date{
 			Time:  query.StartTime,
@@ -422,4 +423,8 @@ func (r *repo) GetTotalTenantsStatistic(ctx context.Context, userId uuid.UUID, q
 			Valid: !query.EndTime.IsZero(),
 		},
 	})
+}
+
+func (r *repo) GetTotalTenantsOfUnitStatistic(ctx context.Context, unitId uuid.UUID) (int32, error) {
+	return r.dao.GetTotalTenantsOfUnitStatistic(ctx, unitId)
 }

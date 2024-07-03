@@ -1,7 +1,7 @@
 {{if eq .UpdateData.State "APPROVED"}}
 Bắt đầu quản lý quá trình cho thuê của {{.PreRental.TenantName}} tại phòng {{.Unit.Name}} nhà cho thuê {{.Property.Name}}.
 {{else if eq .UpdateData.State "REJECTED"}}
-{{.PreRental.TenantName}} đã từ chối profile cho thuê tại phòng {{.Unit.Name}} nhà cho thuê {{.Property.Name}}</h2>
+{{.PreRental.TenantName}} đã từ chối profile cho thuê tại phòng {{.Unit.Name}} nhà cho thuê {{.Property.Name}}
 {{else if eq .UpdateData.State "REVIEW"}}
 {{.PreRental.TenantName}} yêu cầu xem xét lại profile cho thuê tại phòng {{.Unit.Name}} nhà cho thuê {{.Property.Name}}: {{.UpdateData.Feedback}}
 {{end}}

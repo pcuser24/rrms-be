@@ -51,7 +51,7 @@ func (c *serverCommand) setupHttpServer() {
 		RegisterServer(apiRoute, c.tokenMaker)
 	statistic_http.
 		NewAdapter(c.internalServices.StatisticService).
-		RegisterServer(apiRoute, c.tokenMaker)
+		RegisterServer(apiRoute, c.tokenMaker, c.internalServices.UnitService)
 	misc.
 		NewAdapter(c.internalServices.MiscService).
 		RegisterServer(apiRoute, c.tokenMaker)

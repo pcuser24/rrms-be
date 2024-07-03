@@ -84,17 +84,20 @@ SELECT * FROM listing_tags WHERE listing_id = $1;
 -- Get expired / active listings
 -- name: GetListingsOfProperty :many
 SELECT DISTINCT id
-FROM listings
-WHERE 
-  property_id = $1
-  AND active = TRUE
-  AND CASE
-    WHEN sqlc.arg(expired)::BOOLEAN THEN expired_at <= NOW()
-    WHEN NOT sqlc.arg(expired)::BOOLEAN THEN expired_at > NOW()
-  END
-ORDER BY
-  created_at DESC
-LIMIT $2 OFFSET $3;
+FROM (
+  SELECT id, created_at
+  FROM listings
+  WHERE 
+    property_id = $1
+    AND active = TRUE
+    AND CASE
+      WHEN sqlc.arg(expired)::BOOLEAN THEN expired_at <= NOW()
+      WHEN NOT sqlc.arg(expired)::BOOLEAN THEN expired_at > NOW()
+    END
+  ORDER BY
+    created_at DESC
+  LIMIT $2 OFFSET $3
+) subquery;
 
 -- name: GetAllRentalPolicies :many
 SELECT * FROM l_policies;

@@ -205,18 +205,25 @@ const getNotificationsOfUser = `-- name: GetNotificationsOfUser :many
 SELECT id, user_id, title, content, data, seen, target, channel, created_at, updated_at
 FROM notifications
 WHERE user_id = $3
+AND channel = $4::"NOTIFICATIONCHANNEL"
 ORDER BY created_at DESC
 LIMIT $1 OFFSET $2
 `
 
 type GetNotificationsOfUserParams struct {
-	Limit  int32       `json:"limit"`
-	Offset int32       `json:"offset"`
-	UserID pgtype.UUID `json:"user_id"`
+	Limit   int32               `json:"limit"`
+	Offset  int32               `json:"offset"`
+	UserID  pgtype.UUID         `json:"user_id"`
+	Channel NOTIFICATIONCHANNEL `json:"channel"`
 }
 
 func (q *Queries) GetNotificationsOfUser(ctx context.Context, arg GetNotificationsOfUserParams) ([]Notification, error) {
-	rows, err := q.db.Query(ctx, getNotificationsOfUser, arg.Limit, arg.Offset, arg.UserID)
+	rows, err := q.db.Query(ctx, getNotificationsOfUser,
+		arg.Limit,
+		arg.Offset,
+		arg.UserID,
+		arg.Channel,
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -246,6 +253,36 @@ func (q *Queries) GetNotificationsOfUser(ctx context.Context, arg GetNotificatio
 	return items, nil
 }
 
+const updateNotification = `-- name: UpdateNotification :exec
+UPDATE notifications
+SET
+  title = coalesce($1, title),
+  content = coalesce($2, content),
+  data = coalesce($3, data),
+  seen = coalesce($4, seen),
+  updated_at = NOW()
+WHERE id = $5
+`
+
+type UpdateNotificationParams struct {
+	Title   pgtype.Text `json:"title"`
+	Content pgtype.Text `json:"content"`
+	Data    []byte      `json:"data"`
+	Seen    pgtype.Bool `json:"seen"`
+	ID      int64       `json:"id"`
+}
+
+func (q *Queries) UpdateNotification(ctx context.Context, arg UpdateNotificationParams) error {
+	_, err := q.db.Exec(ctx, updateNotification,
+		arg.Title,
+		arg.Content,
+		arg.Data,
+		arg.Seen,
+		arg.ID,
+	)
+	return err
+}
+
 const updateNotificationDeviceTokenTimestamp = `-- name: UpdateNotificationDeviceTokenTimestamp :exec
 UPDATE "user_notification_devices"
 SET "last_accessed" = NOW()
@@ -261,35 +298,5 @@ type UpdateNotificationDeviceTokenTimestampParams struct {
 
 func (q *Queries) UpdateNotificationDeviceTokenTimestamp(ctx context.Context, arg UpdateNotificationDeviceTokenTimestampParams) error {
 	_, err := q.db.Exec(ctx, updateNotificationDeviceTokenTimestamp, arg.UserID, arg.SessionID)
-	return err
-}
-
-const updatedNotification = `-- name: UpdatedNotification :exec
-UPDATE notifications
-SET
-  title = coalesce($1, title),
-  content = coalesce($2, content),
-  data = coalesce($3, data),
-  seen = coalesce($4, seen),
-  updated_at = NOW()
-WHERE id = $5
-`
-
-type UpdatedNotificationParams struct {
-	Title   pgtype.Text `json:"title"`
-	Content pgtype.Text `json:"content"`
-	Data    []byte      `json:"data"`
-	Seen    pgtype.Bool `json:"seen"`
-	ID      int64       `json:"id"`
-}
-
-func (q *Queries) UpdatedNotification(ctx context.Context, arg UpdatedNotificationParams) error {
-	_, err := q.db.Exec(ctx, updatedNotification,
-		arg.Title,
-		arg.Content,
-		arg.Data,
-		arg.Seen,
-		arg.ID,
-	)
 	return err
 }

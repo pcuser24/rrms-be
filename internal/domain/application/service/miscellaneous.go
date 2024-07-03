@@ -2,11 +2,13 @@ package service
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/google/uuid"
 	application_model "github.com/user2410/rrms-backend/internal/domain/application/model"
 	auth_model "github.com/user2410/rrms-backend/internal/domain/auth/model"
 	misc_dto "github.com/user2410/rrms-backend/internal/domain/misc/dto"
+	misc_service "github.com/user2410/rrms-backend/internal/domain/misc/service"
 	property_model "github.com/user2410/rrms-backend/internal/domain/property/model"
 	rental_model "github.com/user2410/rrms-backend/internal/domain/rental/model"
 	unit_model "github.com/user2410/rrms-backend/internal/domain/unit/model"
@@ -25,6 +27,7 @@ func (s *service) _sendNotification(
 	title string,
 	ownerEmailContent, ownerPushContent string,
 	tenantEmailContent, tenantPushContent string,
+	notificationType misc_service.NOTIFICATIONTYPE,
 ) error {
 	// get all managers
 	managers, err := s.domainRepo.PropertyRepo.GetPropertyManagers(context.Background(), am.PropertyID)
@@ -40,7 +43,6 @@ func (s *service) _sendNotification(
 	var users []auth_model.UserModel
 	if am.CreatorID != uuid.Nil {
 		userIds := managerIds.Clone()
-		userIds.AddAll(managerIds.ToSlice()...)
 		userIds.Add(am.CreatorID)
 
 		users, err = s.domainRepo.AuthRepo.GetUsersByIds(context.Background(), userIds.ToSlice(), []string{"first_name", "last_name", "email", "phone"})
@@ -55,12 +57,11 @@ func (s *service) _sendNotification(
 	}
 
 	// prepare and send notifications to managers
-
 	emailcn := misc_dto.CreateNotification{
 		Title:   string(title),
 		Content: string(ownerEmailContent),
 		Data: map[string]interface{}{
-			"notificationType": "CREATE_APPLICATION",
+			"notificationType": notificationType,
 			"applicationId":    am.ID,
 		},
 	}
@@ -89,7 +90,7 @@ func (s *service) _sendNotification(
 		Title:   string(title),
 		Content: string(ownerPushContent),
 		Data: map[string]interface{}{
-			"notificationType": "CREATE_APPLICATION",
+			"notificationType": notificationType,
 			"applicationId":    am.ID,
 		},
 	}
@@ -119,7 +120,7 @@ func (s *service) _sendNotification(
 		Title:   string(title),
 		Content: string(tenantEmailContent),
 		Data: map[string]interface{}{
-			"notificationType": "CREATE_APPLICATION",
+			"notificationType": notificationType,
 			"applicationId":    am.ID,
 		},
 	}
@@ -152,7 +153,7 @@ func (s *service) _sendNotification(
 			Title:   string(title),
 			Content: string(tenantPushContent),
 			Data: map[string]interface{}{
-				"notificationType": "CREATE_APPLICATION",
+				"notificationType": notificationType,
 				"applicationId":    am.ID,
 			},
 		}
@@ -201,7 +202,7 @@ func (s *service) sendNotificationOnNewApplication(am *application_model.Applica
 
 	title, err := text_util.RenderText(
 		struct{}{},
-		"templates/title/create_application.txt",
+		fmt.Sprintf("%s/title/create_application.txt", basePath),
 		nil,
 	)
 	if err != nil {
@@ -209,7 +210,7 @@ func (s *service) sendNotificationOnNewApplication(am *application_model.Applica
 	}
 	ownerEmailContent, err := html_util.RenderHtml(
 		data,
-		"templates/email/create_application_manager.html",
+		fmt.Sprintf("%s/email/create_application_manager.html", basePath),
 		nil,
 	)
 	if err != nil {
@@ -217,7 +218,7 @@ func (s *service) sendNotificationOnNewApplication(am *application_model.Applica
 	}
 	ownerPushContent, err := text_util.RenderText(
 		data,
-		"templates/push/create_application_manager.txt",
+		fmt.Sprintf("%s/push/create_application_manager.txt", basePath),
 		nil,
 	)
 	if err != nil {
@@ -225,7 +226,7 @@ func (s *service) sendNotificationOnNewApplication(am *application_model.Applica
 	}
 	tenantEmailContent, err := html_util.RenderHtml(
 		data,
-		"templates/email/create_application_tenant.html",
+		fmt.Sprintf("%s/email/create_application_tenant.html", basePath),
 		nil,
 	)
 	if err != nil {
@@ -233,7 +234,7 @@ func (s *service) sendNotificationOnNewApplication(am *application_model.Applica
 	}
 	tenantPushContent, err := text_util.RenderText(
 		data,
-		"templates/push/create_application_tenant.txt",
+		fmt.Sprintf("%s/push/create_application_tenant.txt", basePath),
 		nil,
 	)
 	if err != nil {
@@ -243,6 +244,7 @@ func (s *service) sendNotificationOnNewApplication(am *application_model.Applica
 		am, string(title),
 		string(ownerEmailContent), string(ownerPushContent),
 		string(tenantEmailContent), string(tenantPushContent),
+		misc_service.NOTIFICATIONTYPE_CREATEAPPLICATION,
 	)
 }
 
@@ -253,9 +255,11 @@ func (s *service) sendNotificationOnUpdateApplication(am *application_model.Appl
 			Property    *property_model.PropertyModel
 			Unit        *unit_model.UnitModel
 			Status      database.APPLICATIONSTATUS
+			FESite      string
 		}{
 			Application: am,
 			Status:      status,
+			FESite:      s.feSite,
 		}
 		err error
 	)
@@ -270,7 +274,7 @@ func (s *service) sendNotificationOnUpdateApplication(am *application_model.Appl
 
 	title, err := text_util.RenderText(
 		data,
-		"templates/title/update_application.txt",
+		fmt.Sprintf("%s/title/update_application.txt", basePath),
 		nil,
 	)
 	if err != nil {
@@ -278,7 +282,7 @@ func (s *service) sendNotificationOnUpdateApplication(am *application_model.Appl
 	}
 	ownerEmailContent, err := html_util.RenderHtml(
 		data,
-		"templates/email/update_application_manager.html",
+		fmt.Sprintf("%s/email/update_application_manager.html", basePath),
 		nil,
 	)
 	if err != nil {
@@ -286,7 +290,7 @@ func (s *service) sendNotificationOnUpdateApplication(am *application_model.Appl
 	}
 	ownerPushContent, err := text_util.RenderText(
 		data,
-		"templates/push/update_application_manager.txt",
+		fmt.Sprintf("%s/push/update_application_manager.txt", basePath),
 		nil,
 	)
 	if err != nil {
@@ -294,15 +298,15 @@ func (s *service) sendNotificationOnUpdateApplication(am *application_model.Appl
 	}
 	tenantEmailContent, err := html_util.RenderHtml(
 		data,
-		"templates/email/update_application_tenant.html",
+		fmt.Sprintf("%s/email/update_application_tenant.html", basePath),
 		nil,
 	)
 	if err != nil {
 		return err
 	}
 	tenantPushContent, err := text_util.RenderText(
-		struct{}{},
-		"templates/push/update_application_tenant.txt",
+		data,
+		fmt.Sprintf("%s/push/update_application_tenant.txt", basePath),
 		nil,
 	)
 	if err != nil {
@@ -312,5 +316,6 @@ func (s *service) sendNotificationOnUpdateApplication(am *application_model.Appl
 		am, string(title),
 		string(ownerEmailContent), string(ownerPushContent),
 		string(tenantEmailContent), string(tenantPushContent),
+		misc_service.NOTIFICATIONTYPE_UPDATEAPPLICATION,
 	)
 }

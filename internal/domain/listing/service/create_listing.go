@@ -206,7 +206,7 @@ func (s *service) CreateListing(data *dto.CreateListing) (*dto.CreateListingResp
 		units = append(units, *unit)
 	}
 	doc := buildAggregatedIndex(res.Listing, property, units)
-	_, err = esClient.Index(string(es.LISTINGINDEX)).Request(doc).Do(context.Background())
+	_, err = esClient.Index(string(es.LISTINGINDEX)).Request(doc).Id(res.Listing.ID.String()).Do(context.Background())
 
 	return res, err
 }

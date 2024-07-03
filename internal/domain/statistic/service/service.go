@@ -19,7 +19,8 @@ type Service interface {
 	GetTenantMaintenanceStatistic(userId uuid.UUID) (res statistic_dto.TenantMaintenanceStatisticResponse, err error)
 	GetTenantExpenditureStatistic(userId uuid.UUID, query *statistic_dto.RentalPaymentStatisticQuery) ([]statistic_dto.TenantExpenditureStatisticItem, error)
 	GetTenantArrearsStatistic(userId uuid.UUID, query *statistic_dto.RentalPaymentStatisticQuery) (statistic_dto.TenantArrearsStatistic, error)
-	GetTotalTenantsStatistic(userId uuid.UUID, query *statistic_dto.RentalStatisticQuery) (int32, error)
+	GetTotalTenantsManagedByUserStatistic(userId uuid.UUID, query *statistic_dto.RentalStatisticQuery) (int32, error)
+	GetTotalTenantsOfUnitStatistic(unitId uuid.UUID) (int32, error)
 	// Landing
 	GetRecentListings(limit int32, fields []string) ([]listing_model.ListingModel, error)
 	GetSimilarListingsToListing(id uuid.UUID, limit int) (statistic_dto.ListingsSuggestionResult, error)

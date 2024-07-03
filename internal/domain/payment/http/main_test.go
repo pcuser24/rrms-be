@@ -39,7 +39,7 @@ type server struct {
 func newTestServer(t *testing.T, ctrl *gomock.Controller) *server {
 
 	domainRepo := repos.NewDomainRepoFromMockCtrl(ctrl)
-	listingService := listing_service.NewService(domainRepo, "")
+	listingService := listing_service.NewService(domainRepo, "", nil)
 	vnpService := vnpay.NewVnpayService(domainRepo, listingService, conf.VnpTmnCode, conf.VnpHashSecret, conf.VnpUrl, conf.VnpApi)
 
 	httpServer := http.NewServer(

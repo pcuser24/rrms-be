@@ -8,6 +8,7 @@ import (
 	estypes "github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/elastic/go-elasticsearch/v8/typedapi/types/enums/functionboostmode"
 	"github.com/elastic/go-elasticsearch/v8/typedapi/types/enums/functionscoremode"
+	"github.com/elastic/go-elasticsearch/v8/typedapi/types/enums/sortorder"
 	"github.com/google/uuid"
 	listing_model "github.com/user2410/rrms-backend/internal/domain/listing/model"
 	statistic_dto "github.com/user2410/rrms-backend/internal/domain/statistic/dto"
@@ -140,7 +141,6 @@ func (s *service) GetSimilarListingsToListing(id uuid.UUID, limit int) (statisti
 		res.Hits = append(res.Hits, i)
 	}
 
-	// suggestion by db
 	return res, nil
 }
 
@@ -191,7 +191,7 @@ func (s *service) SuggestSimilarListings(query *statistic_dto.ListingSuggestionQ
 					},
 				},
 			},
-			Weight: types.Ptr[estypes.Float64](3),
+			Weight: types.Ptr[estypes.Float64](0.5),
 		},
 	}
 	if len(query.PCity) > 0 {
@@ -203,7 +203,7 @@ func (s *service) SuggestSimilarListings(query *statistic_dto.ListingSuggestionQ
 					},
 				},
 			},
-			Weight: types.Ptr[estypes.Float64](3),
+			Weight: types.Ptr[estypes.Float64](5),
 		})
 	}
 	if len(query.PDistrict) > 0 {
@@ -215,7 +215,7 @@ func (s *service) SuggestSimilarListings(query *statistic_dto.ListingSuggestionQ
 					},
 				},
 			},
-			Weight: types.Ptr[estypes.Float64](2),
+			Weight: types.Ptr[estypes.Float64](5),
 		})
 	}
 	if len(query.PWard) > 0 {
@@ -227,7 +227,7 @@ func (s *service) SuggestSimilarListings(query *statistic_dto.ListingSuggestionQ
 					},
 				},
 			},
-			Weight: types.Ptr[estypes.Float64](1.5),
+			Weight: types.Ptr[estypes.Float64](5),
 		})
 	}
 	if query.LMaxPrice != nil {
@@ -239,7 +239,7 @@ func (s *service) SuggestSimilarListings(query *statistic_dto.ListingSuggestionQ
 					},
 				},
 			},
-			Weight: types.Ptr[estypes.Float64](2),
+			Weight: types.Ptr[estypes.Float64](4.5),
 		})
 	}
 	if query.LMinPrice != nil {
@@ -251,7 +251,7 @@ func (s *service) SuggestSimilarListings(query *statistic_dto.ListingSuggestionQ
 					},
 				},
 			},
-			Weight: types.Ptr[estypes.Float64](2),
+			Weight: types.Ptr[estypes.Float64](4.5),
 		})
 	}
 	if query.PMaxArea != nil {
@@ -263,7 +263,7 @@ func (s *service) SuggestSimilarListings(query *statistic_dto.ListingSuggestionQ
 					},
 				},
 			},
-			Weight: types.Ptr[estypes.Float64](2),
+			Weight: types.Ptr[estypes.Float64](4.5),
 		})
 	}
 	if query.PMinArea != nil {
@@ -275,7 +275,7 @@ func (s *service) SuggestSimilarListings(query *statistic_dto.ListingSuggestionQ
 					},
 				},
 			},
-			Weight: types.Ptr[estypes.Float64](2),
+			Weight: types.Ptr[estypes.Float64](4.5),
 		})
 	}
 	if len(query.PTypes) > 0 {
@@ -287,7 +287,7 @@ func (s *service) SuggestSimilarListings(query *statistic_dto.ListingSuggestionQ
 					},
 				},
 			},
-			Weight: types.Ptr[estypes.Float64](3),
+			Weight: types.Ptr[estypes.Float64](4.5),
 		})
 	}
 	if query.UNumberOfBedrooms != nil {
@@ -304,7 +304,7 @@ func (s *service) SuggestSimilarListings(query *statistic_dto.ListingSuggestionQ
 					},
 				},
 			},
-			Weight: types.Ptr[estypes.Float64](1),
+			Weight: types.Ptr[estypes.Float64](3),
 		})
 	}
 	if query.UNumberOfBathrooms != nil {
@@ -321,7 +321,7 @@ func (s *service) SuggestSimilarListings(query *statistic_dto.ListingSuggestionQ
 					},
 				},
 			},
-			Weight: types.Ptr[estypes.Float64](1),
+			Weight: types.Ptr[estypes.Float64](3),
 		})
 	}
 	if query.UNumberOfBalconies != nil {
@@ -338,7 +338,7 @@ func (s *service) SuggestSimilarListings(query *statistic_dto.ListingSuggestionQ
 					},
 				},
 			},
-			Weight: types.Ptr[estypes.Float64](1),
+			Weight: types.Ptr[estypes.Float64](3),
 		})
 	}
 	if query.UNumberOfToilets != nil {
@@ -355,7 +355,7 @@ func (s *service) SuggestSimilarListings(query *statistic_dto.ListingSuggestionQ
 					},
 				},
 			},
-			Weight: types.Ptr[estypes.Float64](1),
+			Weight: types.Ptr[estypes.Float64](3),
 		})
 	}
 	if query.UNumberOfLivingRooms != nil {
@@ -372,7 +372,7 @@ func (s *service) SuggestSimilarListings(query *statistic_dto.ListingSuggestionQ
 					},
 				},
 			},
-			Weight: types.Ptr[estypes.Float64](1),
+			Weight: types.Ptr[estypes.Float64](2),
 		})
 	}
 	if query.UNumberOfKitchens != nil {
@@ -389,7 +389,7 @@ func (s *service) SuggestSimilarListings(query *statistic_dto.ListingSuggestionQ
 					},
 				},
 			},
-			Weight: types.Ptr[estypes.Float64](1),
+			Weight: types.Ptr[estypes.Float64](2),
 		})
 	}
 	if len(query.POrientation) > 0 {
@@ -401,7 +401,7 @@ func (s *service) SuggestSimilarListings(query *statistic_dto.ListingSuggestionQ
 					},
 				},
 			},
-			Weight: types.Ptr[estypes.Float64](1),
+			Weight: types.Ptr[estypes.Float64](3),
 		})
 	}
 	if len(query.PFeatures) > 0 {
@@ -454,9 +454,19 @@ func (s *service) SuggestSimilarListings(query *statistic_dto.ListingSuggestionQ
 					},
 					Functions: scoreFns,
 					ScoreMode: &functionscoremode.Sum,
-					BoostMode: &functionboostmode.Sum,
+					BoostMode: &functionboostmode.Replace,
 				},
-			}})
+			},
+			Sort: []estypes.SortCombinations{
+				estypes.SortOptions{
+					SortOptions: map[string]estypes.FieldSort{
+						"priority": {
+							Order: &sortorder.Desc,
+						},
+					},
+				},
+			},
+		})
 
 	return search.Do(context.Background())
 }

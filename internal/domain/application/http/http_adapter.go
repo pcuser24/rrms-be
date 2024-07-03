@@ -296,6 +296,9 @@ func (a *adapter) updateApplicationStatus() fiber.Handler {
 			if err == database.ErrRecordNotFound {
 				return ctx.Status(fiber.StatusNotFound).JSON(fiber.Map{"message": "application not found"})
 			}
+			if errors.Is(err, application_service.ErrInvalidStatusTransition) {
+				return ctx.Status(fiber.StatusConflict).JSON(fiber.Map{"message": err.Error()})
+			}
 			return ctx.SendStatus(fiber.StatusInternalServerError)
 		}
 

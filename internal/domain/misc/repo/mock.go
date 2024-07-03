@@ -102,18 +102,32 @@ func (mr *MockRepoMockRecorder) GetNotificationDevice(arg0, arg1, arg2, arg3, ar
 }
 
 // GetNotificationsOfUser mocks base method.
-func (m *MockRepo) GetNotificationsOfUser(arg0 context.Context, arg1 uuid.UUID, arg2, arg3 int32) ([]model.Notification, error) {
+func (m *MockRepo) GetNotificationsOfUser(arg0 context.Context, arg1 uuid.UUID, arg2 dto.GetNotificationsOfUserQuery) ([]model.Notification, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetNotificationsOfUser", arg0, arg1, arg2, arg3)
+	ret := m.ctrl.Call(m, "GetNotificationsOfUser", arg0, arg1, arg2)
 	ret0, _ := ret[0].([]model.Notification)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetNotificationsOfUser indicates an expected call of GetNotificationsOfUser.
-func (mr *MockRepoMockRecorder) GetNotificationsOfUser(arg0, arg1, arg2, arg3 any) *gomock.Call {
+func (mr *MockRepoMockRecorder) GetNotificationsOfUser(arg0, arg1, arg2 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetNotificationsOfUser", reflect.TypeOf((*MockRepo)(nil).GetNotificationsOfUser), arg0, arg1, arg2, arg3)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetNotificationsOfUser", reflect.TypeOf((*MockRepo)(nil).GetNotificationsOfUser), arg0, arg1, arg2)
+}
+
+// UpdateNotification mocks base method.
+func (m *MockRepo) UpdateNotification(arg0 context.Context, arg1 *dto.UpdateNotification) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateNotification", arg0, arg1)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpdateNotification indicates an expected call of UpdateNotification.
+func (mr *MockRepoMockRecorder) UpdateNotification(arg0, arg1 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateNotification", reflect.TypeOf((*MockRepo)(nil).UpdateNotification), arg0, arg1)
 }
 
 // UpdateNotificationDeviceTokenTimestamp mocks base method.

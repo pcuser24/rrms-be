@@ -8,9 +8,45 @@ import (
 	"github.com/google/uuid"
 	listing_dto "github.com/user2410/rrms-backend/internal/domain/listing/dto"
 	property_dto "github.com/user2410/rrms-backend/internal/domain/property/dto"
+	"github.com/user2410/rrms-backend/internal/infrastructure/database"
 	"github.com/user2410/rrms-backend/internal/infrastructure/es"
 	"github.com/user2410/rrms-backend/internal/utils/types"
 )
+
+// func (s *service) GetESDocumentIDByListingId(id uuid.UUID) (string, error) {
+// 	client := s.esClient.GetTypedClient()
+// 	// search for document with "id" field equal to id.String()
+// 	searchRes, err := client.Search().
+// 		Index(string(es.LISTINGINDEX)).
+// 		Request(&search.Request{
+// 			Size: types.Ptr(1),
+// 			Query: &estypes.Query{
+// 				Bool: &estypes.BoolQuery{
+// 					Must: []estypes.Query{
+// 						{
+// 							Term: map[string]estypes.TermQuery{
+// 								"id": {
+// 									Value: id.String(),
+// 								},
+// 							},
+// 						},
+// 					},
+// 				},
+// 			},
+// 		}).
+// 		Do(context.Background())
+// 	if err != nil {
+// 		return "", err
+// 	}
+// 	if searchRes.Hits.Total.Value == 0 {
+// 		return "", nil
+// 	}
+// 	idOfTheFirstHit := searchRes.Hits.Hits[0].Id_
+// 	if idOfTheFirstHit == nil {
+// 		return "", nil
+// 	}
+// 	return *idOfTheFirstHit, nil
+// }
 
 func (s *service) UpdateListing(id uuid.UUID, data *listing_dto.UpdateListing) error {
 	err := s.domainRepo.ListingRepo.UpdateListing(context.Background(), id, data)
@@ -67,22 +103,37 @@ func (s *service) UpdateListingStatus(id uuid.UUID, active bool) error {
 		return nil
 	}
 
+	var propertyID uuid.UUID
+	{
+		ls, err := s.domainRepo.ListingRepo.GetListingsByIds(context.Background(), []uuid.UUID{id}, []string{"property_id"})
+		if err != nil {
+			return err
+		}
+		if len(ls) == 0 {
+			return database.ErrRecordNotFound
+		}
+		propertyID = ls[0].PropertyID
+	}
+
 	err := s.domainRepo.ListingRepo.UpdateListingStatus(context.Background(), id, active)
 	if err != nil {
 		return err
 	}
 
 	err = s.domainRepo.PropertyRepo.UpdateProperty(context.Background(), &property_dto.UpdateProperty{
-		ID:       id,
+		ID:       propertyID,
 		IsPublic: types.Ptr(true),
 	})
 	if err != nil {
 		return err
 	}
 
-	// update es document
+	// update the "active" field of the listing and  to true
 	doc := map[string]interface{}{
 		"active": active,
+		"property": map[string]interface{}{
+			"is_public": true,
+		},
 	}
 	docByte, err := json.Marshal(doc)
 	if err != nil {

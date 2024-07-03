@@ -7,14 +7,14 @@
   </a>
   <!-- Email Body -->
   {{if eq .Status "APPROVED"}}
-  <h2 style="font-size: 1.5rem; font-weight: 400;">Đơn ứng tuyển của bạn tới phòng {{.Unit.Name}} nhà cho thuê {{.Property.FullName}} đã được thông qua</h2>
-  <p>Chúc mừng bạn đã được chấp nhận vào phòng {{.Unit.Name}} nhà cho thuê {{.Property.FullName}}. Bạn sẽ nhận được thông báo khi chủ nhà hoàn thành profile thuê nhà của bạn.</p>
+  <h2 style="font-size: 1.5rem; font-weight: 400;">Đơn ứng tuyển của bạn tới phòng {{.Unit.Name}} nhà cho thuê {{.Property.Name}} đã được thông qua</h2>
+  <p>Chúc mừng bạn đã được chấp nhận vào phòng {{.Unit.Name}} nhà cho thuê {{.Property.Name}}. Bạn sẽ nhận được thông báo khi chủ nhà hoàn thành profile thuê nhà của bạn.</p>
   {{else if eq .Status "REJECTED"}}
-  <h2 style="font-size: 1.5rem; font-weight: 400;">Đơn ứng tuyển của bạn vào phòng {{.Unit.Name}} nhà cho thuê {{.Property.FullName}} đã bị từ chối</h2>
+  <h2 style="font-size: 1.5rem; font-weight: 400;">Đơn ứng tuyển của bạn vào phòng {{.Unit.Name}} nhà cho thuê {{.Property.Name}} đã bị từ chối</h2>
   <p>Hãy tiếp tục tìm kiếm những nhà cho thuê phù hợp với nhu cầu của bạn trên RRMS. Dưới đây là một số nhà cho thuê tương tự:</p>
   <!-- TODO: Add similar listings -->
   {{else if eq .Status "WITHDRAWN"}}
-  <h2 style="font-size: 1.5rem; font-weight: 400;">Bạn đã rút đơn ứng tuyển vào phòng {{.Unit.Name}} nhà cho thuê {{.Property.FullName}} </h2>
+  <h2 style="font-size: 1.5rem; font-weight: 400;">Bạn đã rút đơn ứng tuyển vào phòng {{.Unit.Name}} nhà cho thuê {{.Property.Name}} </h2>
   <p>Hãy tiếp tục tìm kiếm những nhà cho thuê phù hợp với nhu cầu của bạn trên RRMS. Dưới đây là một số nhà cho thuê tương tự:</p>
   <!-- TODO: Add similar listings -->
   {{end}}

@@ -1,4 +1,4 @@
-package misc
+package service
 
 import (
 	"context"
@@ -22,7 +22,8 @@ type Service interface {
 	GetNotificationDevice(userId, sessionId uuid.UUID, token, platform string) ([]model.NotificationDevice, error)
 
 	SendNotification(payload *dto.CreateNotification) error
-	GetNotificationsOfUser(userId uuid.UUID, limit, offset int32) ([]model.Notification, error)
+	GetNotificationsOfUser(userId uuid.UUID, query dto.GetNotificationsOfUserQuery) ([]model.Notification, error)
+	UpdateNotification(data *dto.UpdateNotification) error
 }
 
 type service struct {
@@ -79,8 +80,8 @@ func (s *service) setupCronjob(c *cron.Cron) ([]cron.EntryID, error) {
 	return s.cronEntries, nil
 }
 
-func (s *service) GetNotificationsOfUser(userId uuid.UUID, limit, offset int32) ([]model.Notification, error) {
-	return s.domainRepo.MiscRepo.GetNotificationsOfUser(context.Background(), userId, limit, offset)
+func (s *service) GetNotificationsOfUser(userId uuid.UUID, query dto.GetNotificationsOfUserQuery) ([]model.Notification, error) {
+	return s.domainRepo.MiscRepo.GetNotificationsOfUser(context.Background(), userId, query)
 }
 
 type NOTIFICATIONTYPE = string
@@ -88,6 +89,19 @@ type NOTIFICATIONTYPE = string
 const (
 	NOTIFICATIONTYPE_CREATEAPPLICATION NOTIFICATIONTYPE = "CREATE_APPLICATION"
 	NOTIFICATIONTYPE_UPDATEAPPLICATION NOTIFICATIONTYPE = "UPDATE_APPLICATION"
+
+	NOTIFICATIONTYPE_CREATEPRERENTAL NOTIFICATIONTYPE = "CREATE_PRERENTAL"
+	NOTIFICATIONTYPE_UPDATEPRERENTAL NOTIFICATIONTYPE = "UPDATE_PRERENTAL"
+
+	NOTIFICATIONTYPE_CREATERENTALPAYMENT NOTIFICATIONTYPE = "CREATE_RENTALPAYMENT"
+	NOTIFICATIONTYPE_UPDATERENTALPAYMENT NOTIFICATIONTYPE = "UPDATE_RENTALPAYMENT"
+
+	NOTIFICATIONTYPE_CREATECONTRACT NOTIFICATIONTYPE = "CREATE_CONTRACT"
+	NOTIFICATIONTYPE_UPDATECONTRACT NOTIFICATIONTYPE = "UPDATE_CONTRACT"
+
+	NOTIFICATIONTYPE_CREATERENTALCOMPLAINT       NOTIFICATIONTYPE = "CREATE_RENTALCOMPLAINT"
+	NOTIFICATIONTYPE_UPDATERENTALCOMPLAINTSTATUS NOTIFICATIONTYPE = "UPDATE_RENTALCOMPLAINTSTATUS"
+	NOTIFICATIONTYPE_CREATERENTALCOMPLAINTREPLY  NOTIFICATIONTYPE = "CREATE_RENTALCOMPLAINTREPLY"
 )
 
 func (s *service) SendNotification(payload *dto.CreateNotification) error {
@@ -151,4 +165,8 @@ func (s *service) SendNotification(payload *dto.CreateNotification) error {
 
 	errs := s.notificationEndpoint.SendNotification(context.Background(), &nt)
 	return errors.Join(errs...)
+}
+
+func (s *service) UpdateNotification(data *dto.UpdateNotification) error {
+	return s.domainRepo.MiscRepo.UpdateNotification(context.Background(), data)
 }

@@ -1342,6 +1342,37 @@ func (q *Queries) GetRentalsOfProperty(ctx context.Context, arg GetRentalsOfProp
 	return items, nil
 }
 
+const getRentalsOfUnit = `-- name: GetRentalsOfUnit :many
+SELECT id
+FROM rentals
+WHERE 
+  unit_id = $1 AND
+  start_date + INTERVAL '1 month' * rental_period >= CURRENT_DATE AND 
+  status = 'INPROGRESS'
+ORDER BY
+  created_at DESC
+`
+
+func (q *Queries) GetRentalsOfUnit(ctx context.Context, unitID uuid.UUID) ([]int64, error) {
+	rows, err := q.db.Query(ctx, getRentalsOfUnit, unitID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []int64
+	for rows.Next() {
+		var id int64
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		items = append(items, id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const updateRental = `-- name: UpdateRental :exec
 UPDATE rentals SET
   tenant_id = coalesce($2, tenant_id),

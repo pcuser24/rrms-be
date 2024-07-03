@@ -7,7 +7,7 @@
   </a>
   <!-- Email Body -->
   {{if eq .Status "APPROVED"}}
-  <h2 style="font-size: 1.5rem; font-weight: 400;">Đơn ứng tuyển của {{.Application.FullName}} vào phòng {{.Unit.Name}} nhà cho thuê {{.Property.FullName}} đã được thông qua</h2>
+  <h2 style="font-size: 1.5rem; font-weight: 400;">Đơn ứng tuyển của {{.Application.FullName}} vào phòng {{.Unit.Name}} nhà cho thuê {{.Property.Name}} đã được thông qua</h2>
   <p>Hãy tiến hành tạo profile thuê trọ cho khách thuê của bạn để bắt đầu quản lý quá trình cho thuê.</p>
   <a href="{{.FESite}}/manage/rentals/new?applicationId={{.Application.ID}}&propertyID={{.Application.PropertyID}}&unitID={{.Application.UnitID}}">Tạo profile thuê nhà</a>
   <a href="{{.FESite}}/manage/applications/application/{{.Application.ID}}">Xem đơn ứng tuyển</a>
