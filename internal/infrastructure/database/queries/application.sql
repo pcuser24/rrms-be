@@ -196,6 +196,7 @@ SELECT count(*) > 0 FROM applications WHERE
   id = $1 
   AND (
     property_id IN (SELECT property_id FROM property_managers WHERE manager_id = $2)
+    OR creator_id = $2
   );
   
 
@@ -206,7 +207,10 @@ SET
   updated_at = NOW() 
 WHERE 
   id = $2
-  AND property_id IN (SELECT property_id FROM property_managers WHERE manager_id = $3)
+  AND (
+    property_id IN (SELECT property_id FROM property_managers WHERE manager_id = sqlc.arg(user_id))
+    OR creator_id = sqlc.arg(user_id)
+  )
 RETURNING id;
 
 -- name: DeleteApplication :exec

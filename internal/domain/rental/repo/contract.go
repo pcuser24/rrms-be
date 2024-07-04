@@ -36,10 +36,11 @@ func (r *repo) GetContractsByIds(ctx context.Context, ids []int64, fields []stri
 		return nil, nil
 	}
 	var nonFKFields []string = []string{"id"}
+	nonFKFields = append(nonFKFields, fields...)
 
 	ib := sqlbuilder.PostgreSQL.NewSelectBuilder()
 	ib.Select(nonFKFields...)
-	ib.From("rentals")
+	ib.From("contracts")
 	ib.Where(ib.In("id", sqlbuilder.List(ids)))
 	sql, args := ib.Build()
 	// log.Println(query, args)

@@ -183,11 +183,17 @@ func (q *Queries) GetRentalComplaintReplies(ctx context.Context, arg GetRentalCo
 }
 
 const getRentalComplaintsByRentalId = `-- name: GetRentalComplaintsByRentalId :many
-SELECT id, rental_id, creator_id, title, content, suggestion, media, occurred_at, created_at, updated_at, updated_by, type, status FROM rental_complaints WHERE rental_id = $1
+SELECT id, rental_id, creator_id, title, content, suggestion, media, occurred_at, created_at, updated_at, updated_by, type, status FROM rental_complaints WHERE rental_id = $1 ORDER BY created_at DESC LIMIT $2 OFFSET $3
 `
 
-func (q *Queries) GetRentalComplaintsByRentalId(ctx context.Context, rentalID int64) ([]RentalComplaint, error) {
-	rows, err := q.db.Query(ctx, getRentalComplaintsByRentalId, rentalID)
+type GetRentalComplaintsByRentalIdParams struct {
+	RentalID int64 `json:"rental_id"`
+	Limit    int32 `json:"limit"`
+	Offset   int32 `json:"offset"`
+}
+
+func (q *Queries) GetRentalComplaintsByRentalId(ctx context.Context, arg GetRentalComplaintsByRentalIdParams) ([]RentalComplaint, error) {
+	rows, err := q.db.Query(ctx, getRentalComplaintsByRentalId, arg.RentalID, arg.Limit, arg.Offset)
 	if err != nil {
 		return nil, err
 	}

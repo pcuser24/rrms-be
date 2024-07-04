@@ -7,11 +7,13 @@
   </a>
   <!-- Email Body -->
   <h2 style="font-size: 1.5rem; font-weight: 400;">
-    {{if eq .UpdateData.Status "PLAN"}}
+    {{if eq .UpdateData.Status "PARTIALLYPAID"}}
     Đã thanh toán 1 phần khoản thu tại phòng {{.Unit.Name}} nhà cho
     thuê {{.Property.Name}}:
-    {{else}}
+    {{else if eq .UpdateData.Status "PAID"}}
     Đã hoàn thành thanh toán khoản thu tại phòng {{.Unit.Name}} nhà cho thuê {{.Property.Name}}:
+    {{else}}
+    Thanh toán muộn khoản thu tại phòng {{.Unit.Name}} nhà cho thuê {{.Property.Name}}:
     {{end}}
   </h2>
   <table>
@@ -21,7 +23,7 @@
     </tr>
     <tr>
       <td style="padding: 0.5rem 1rem; font-weight: 600;">Dịch vụ</td>
-      <td style="padding: 0.5rem 1rem;">{{.Payment.PaymentService}}</td>
+      <td style="padding: 0.5rem 1rem;">{{.PaymentService}}</td>
     </tr>
     <tr>
       <td style="padding: 0.5rem 1rem; font-weight: 600;">Ngày bắt đầu</td>

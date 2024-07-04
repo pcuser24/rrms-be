@@ -9,7 +9,7 @@
   {{if eq .UpdateData.State "APPROVED"}}
   <h2 style="font-size: 1.5rem; font-weight: 400;">{{.PreRental.TenantName}} đã chấp thuận profile cho thuê</h2>
   <p>Bắt đầu quản lý quá trình cho thuê của {{.PreRental.TenantName}} tại phòng <strong>{{.Unit.Name}}</strong> nhà cho thuê <a href="{{.FESite}}/manage/propertíes/property/{{.Property.ID}}"><strong>{{.Property.Name}}</strong></a>.</p>
-  <a href="{{.FESite}}/manage/rentals/rental/{{.Rental.ID}}"></a>
+  <a href="{{.FESite}}/manage/rentals/rental/{{.Rental.ID}}">Xem chi tiết</a>
   {{else if eq .UpdateData.State "REJECTED"}}
   <h2 style="font-size: 1.5rem; font-weight: 400;">{{.PreRental.TenantName}} đã từ chối profile cho thuê tại phòng <strong>{{.Unit.Name}}</strong> nhà cho thuê <a href="{{.FESite}}/manage/propertíes/property/{{.Property.ID}}"><strong>{{.Property.Name}}</strong></a></h2>
   {{else if eq .UpdateData.State "REVIEW"}}

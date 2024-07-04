@@ -299,6 +299,9 @@ func (a *adapter) updateApplicationStatus() fiber.Handler {
 			if errors.Is(err, application_service.ErrInvalidStatusTransition) {
 				return ctx.Status(fiber.StatusConflict).JSON(fiber.Map{"message": err.Error()})
 			}
+			if errors.Is(err, application_service.ErrUnauthorizedUpdate) {
+				return ctx.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"message": err.Error()})
+			}
 			return ctx.SendStatus(fiber.StatusInternalServerError)
 		}
 

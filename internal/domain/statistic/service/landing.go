@@ -152,7 +152,7 @@ func (s *service) SuggestSimilarListings(query *statistic_dto.ListingSuggestionQ
 		{
 			Filter: &estypes.Query{
 				Term: map[string]estypes.TermQuery{
-					"property.verificationStatus": {
+					"property.verification_status": {
 						Value: "APPROVED",
 					},
 				},
@@ -162,7 +162,7 @@ func (s *service) SuggestSimilarListings(query *statistic_dto.ListingSuggestionQ
 		{
 			Filter: &estypes.Query{
 				Term: map[string]estypes.TermQuery{
-					"property.verificationStatus": {
+					"property.verification_status": {
 						Value: "PENDING",
 					},
 				},
@@ -172,7 +172,7 @@ func (s *service) SuggestSimilarListings(query *statistic_dto.ListingSuggestionQ
 		{
 			Filter: &estypes.Query{
 				Term: map[string]estypes.TermQuery{
-					"property.verificationStatus": {
+					"property.verification_status": {
 						Value: "REJECTED",
 					},
 				},
@@ -185,7 +185,7 @@ func (s *service) SuggestSimilarListings(query *statistic_dto.ListingSuggestionQ
 					MustNot: []estypes.Query{
 						{
 							Exists: &estypes.ExistsQuery{
-								Field: "property.verificationStatus",
+								Field: "property.verification_status",
 							},
 						},
 					},
@@ -315,7 +315,7 @@ func (s *service) SuggestSimilarListings(query *statistic_dto.ListingSuggestionQ
 					Query: &estypes.Query{
 						Range: map[string]estypes.RangeQuery{
 							"listing_units.number_of_bathrooms": estypes.NumberRangeQuery{
-								Gte: types.Ptr(estypes.Float64(*query.UNumberOfBedrooms)),
+								Gte: types.Ptr(estypes.Float64(*query.UNumberOfBathrooms)),
 							},
 						},
 					},

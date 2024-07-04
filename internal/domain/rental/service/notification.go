@@ -68,7 +68,7 @@ func (s *service) _getNotificationTenantTargets(tenantID uuid.UUID, tenantEmail 
 	emailTargets := set.NewSet[string]()
 	pushTargets := set.NewSet[string]()
 	emailTargets.Add(tenantEmail)
-	if tenantID == uuid.Nil {
+	if tenantID != uuid.Nil {
 		ts, err := s.domainRepo.AuthRepo.GetUsersByIds(context.Background(), []uuid.UUID{tenantID}, []string{"email"})
 		if err != nil {
 			return misc_dto.CreateNotificationTarget{}, err
@@ -189,7 +189,7 @@ func (s *service) notifyCreatePreRental(
 		return err
 	}
 
-	if err = s.mService.SendNotification(&misc_dto.CreateNotification{
+	cn := misc_dto.CreateNotification{
 		Title:   string(title),
 		Content: string(emailContent),
 		Data: map[string]interface{}{
@@ -197,21 +197,35 @@ func (s *service) notifyCreatePreRental(
 			"prerentalId":      r.ID,
 			"key":              key,
 		},
-		Targets: targets,
-	}); err != nil {
+		Targets: func() []misc_dto.CreateNotificationTarget {
+			var ts []misc_dto.CreateNotificationTarget
+			for _, t := range targets {
+				ts = append(ts, misc_dto.CreateNotificationTarget{
+					UserId: t.UserId,
+					Emails: t.Emails,
+					Tokens: []string{},
+				})
+			}
+			return ts
+		}(),
+	}
+	if err = s.mService.SendNotification(&cn); err != nil {
 		return err
 	}
 
-	if err = s.mService.SendNotification(&misc_dto.CreateNotification{
-		Title:   string(title),
-		Content: string(pushContent),
-		Data: map[string]interface{}{
-			"notificationType": misc_service.NOTIFICATIONTYPE_CREATEPRERENTAL,
-			"prerentalId":      r.ID,
-			"key":              key,
-		},
-		Targets: targets,
-	}); err != nil {
+	cn.Content = string(pushContent)
+	cn.Targets = func() []misc_dto.CreateNotificationTarget {
+		var ts []misc_dto.CreateNotificationTarget
+		for _, t := range targets {
+			ts = append(ts, misc_dto.CreateNotificationTarget{
+				UserId: t.UserId,
+				Emails: []string{},
+				Tokens: t.Tokens,
+			})
+		}
+		return ts
+	}()
+	if err = s.mService.SendNotification(&cn); err != nil {
 		return err
 	}
 
@@ -304,27 +318,45 @@ func (s *service) notifyUpdatePreRental(
 		return err
 	}
 
-	if err = s.mService.SendNotification(&misc_dto.CreateNotification{
+	cn := misc_dto.CreateNotification{
 		Title:   string(title),
 		Content: string(emailContent),
 		Data: map[string]interface{}{
 			"notificationType": misc_service.NOTIFICATIONTYPE_UPDATEPRERENTAL,
 			"preRentalId":      preRental.ID,
 		},
-		Targets: targets,
-	}); err != nil {
+		Targets: func() []misc_dto.CreateNotificationTarget {
+			var ts []misc_dto.CreateNotificationTarget
+			for _, t := range targets {
+				ts = append(ts, misc_dto.CreateNotificationTarget{
+					UserId: t.UserId,
+					Emails: t.Emails,
+					Tokens: []string{},
+				})
+			}
+			return ts
+		}(),
+	}
+	if rental != nil {
+		cn.Data["rentalId"] = rental.ID
+	}
+	if err = s.mService.SendNotification(&cn); err != nil {
 		return err
 	}
 
-	if err = s.mService.SendNotification(&misc_dto.CreateNotification{
-		Title:   string(title),
-		Content: string(pushContent),
-		Data: map[string]interface{}{
-			"notificationType": misc_service.NOTIFICATIONTYPE_UPDATEPRERENTAL,
-			"preRentalId":      preRental.ID,
-		},
-		Targets: targets,
-	}); err != nil {
+	cn.Content = string(pushContent)
+	cn.Targets = func() []misc_dto.CreateNotificationTarget {
+		var ts []misc_dto.CreateNotificationTarget
+		for _, t := range targets {
+			ts = append(ts, misc_dto.CreateNotificationTarget{
+				UserId: t.UserId,
+				Emails: []string{},
+				Tokens: t.Tokens,
+			})
+		}
+		return ts
+	}()
+	if err = s.mService.SendNotification(&cn); err != nil {
 		return err
 	}
 
@@ -348,7 +380,7 @@ var (
 
 func (s *service) notifyUpdatePayments(
 	r *rental_model.RentalModel,
-	rp *rental_model.RentalPayment,
+	rp *rental_model.RentalPayment, // old rental payment data before update
 	u *rental_dto.UpdateRentalPayment,
 ) error {
 	// get target emails and push tokens
@@ -444,14 +476,14 @@ func (s *service) notifyUpdatePayments(
 		data,
 		mapStatusToNotificationFile[rp.Status].Push,
 		map[string]any{
-			"Dereference": template_util.Dereference("-"),
+			"Dereference": template_util.Dereference("0"),
 		},
 	)
 	if err != nil {
 		return err
 	}
 
-	if err = s.mService.SendNotification(&misc_dto.CreateNotification{
+	cn := misc_dto.CreateNotification{
 		Title:   string(title),
 		Content: string(emailContent),
 		Data: map[string]interface{}{
@@ -459,21 +491,35 @@ func (s *service) notifyUpdatePayments(
 			"rentalId":         r.ID,
 			"rentalPaymentId":  rp.ID,
 		},
-		Targets: targets,
-	}); err != nil {
+		Targets: func() []misc_dto.CreateNotificationTarget {
+			var ts []misc_dto.CreateNotificationTarget
+			for _, t := range targets {
+				ts = append(ts, misc_dto.CreateNotificationTarget{
+					UserId: t.UserId,
+					Emails: t.Emails,
+					Tokens: []string{},
+				})
+			}
+			return ts
+		}(),
+	}
+	if err = s.mService.SendNotification(&cn); err != nil {
 		return err
 	}
 
-	if err = s.mService.SendNotification(&misc_dto.CreateNotification{
-		Title:   string(title),
-		Content: string(pushContent),
-		Data: map[string]interface{}{
-			"notificationType": misc_service.NOTIFICATIONTYPE_UPDATERENTALPAYMENT,
-			"rentalId":         r.ID,
-			"rentalPaymentId":  rp.ID,
-		},
-		Targets: targets,
-	}); err != nil {
+	cn.Content = string(pushContent)
+	cn.Targets = func() []misc_dto.CreateNotificationTarget {
+		var ts []misc_dto.CreateNotificationTarget
+		for _, t := range targets {
+			ts = append(ts, misc_dto.CreateNotificationTarget{
+				UserId: t.UserId,
+				Emails: []string{},
+				Tokens: t.Tokens,
+			})
+		}
+		return ts
+	}()
+	if err = s.mService.SendNotification(&cn); err != nil {
 		return err
 	}
 
@@ -491,14 +537,45 @@ func (s *service) notifyCreateRentalPayment(
 		return err
 	}
 
+	var (
+		property property_model.PropertyModel
+		unit     unit_model.UnitModel
+	)
+	{
+		ps, err := s.domainRepo.PropertyRepo.GetPropertiesByIds(context.Background(), []uuid.UUID{r.PropertyID}, []string{"name"})
+		if err != nil {
+			return err
+		}
+		if len(ps) == 0 {
+			return database.ErrRecordNotFound
+		}
+		property = ps[0]
+
+		us, err := s.domainRepo.UnitRepo.GetUnitsByIds(context.Background(), []uuid.UUID{r.UnitID}, []string{"name"})
+		if err != nil {
+			return err
+		}
+		if len(us) == 0 {
+			return database.ErrRecordNotFound
+		}
+		unit = us[0]
+	}
+
+	rpServiceName, _ := rental_util.GetServiceName(rp.Code, r.Services)
 	data := struct {
-		FESite        string
-		Rental        *rental_model.RentalModel
-		RentalPayment *rental_model.RentalPayment
+		FESite         string
+		Property       property_model.PropertyModel
+		Unit           unit_model.UnitModel
+		Rental         *rental_model.RentalModel
+		Payment        *rental_model.RentalPayment
+		PaymentService string
 	}{
-		FESite:        s.feSite,
-		Rental:        r,
-		RentalPayment: rp,
+		FESite:         s.feSite,
+		Property:       property,
+		Unit:           unit,
+		Rental:         r,
+		Payment:        rp,
+		PaymentService: rpServiceName,
 	}
 
 	title, err := text_util.RenderText(
@@ -532,7 +609,7 @@ func (s *service) notifyCreateRentalPayment(
 		return err
 	}
 
-	if err = s.mService.SendNotification(&misc_dto.CreateNotification{
+	cn := misc_dto.CreateNotification{
 		Title:   string(title),
 		Content: string(emailContent),
 		Data: map[string]interface{}{
@@ -540,25 +617,21 @@ func (s *service) notifyCreateRentalPayment(
 			"rentalId":         r.ID,
 			"rentalPaymentId":  rp.ID,
 		},
-		Targets: []misc_dto.CreateNotificationTarget{target},
-	}); err != nil {
+		Targets: []misc_dto.CreateNotificationTarget{{
+			UserId: target.UserId,
+			Emails: target.Emails,
+		}},
+	}
+	if err = s.mService.SendNotification(&cn); err != nil {
 		return err
 	}
 
-	if err = s.mService.SendNotification(&misc_dto.CreateNotification{
-		Title:   string(title),
-		Content: string(pushContent),
-		Data: map[string]interface{}{
-			"notificationType": misc_service.NOTIFICATIONTYPE_CREATERENTALPAYMENT,
-			"rentalId":         r.ID,
-			"rentalPaymentId":  rp.ID,
-		},
-		Targets: []misc_dto.CreateNotificationTarget{target},
-	}); err != nil {
-		return err
-	}
-
-	return nil
+	cn.Content = string(pushContent)
+	cn.Targets = []misc_dto.CreateNotificationTarget{{
+		UserId: target.UserId,
+		Tokens: target.Tokens,
+	}}
+	return s.mService.SendNotification(&cn)
 }
 
 func (s *service) notifyCreateContract(
@@ -652,7 +725,7 @@ func (s *service) notifyCreateContract(
 		return err
 	}
 
-	if err = s.mService.SendNotification(&misc_dto.CreateNotification{
+	cn := misc_dto.CreateNotification{
 		Title:   string(title),
 		Content: string(emailContent),
 		Data: map[string]interface{}{
@@ -660,21 +733,21 @@ func (s *service) notifyCreateContract(
 			"rentalId":         r.ID,
 			"contractId":       c.ID,
 		},
-		Targets: []misc_dto.CreateNotificationTarget{target},
-	}); err != nil {
+		Targets: []misc_dto.CreateNotificationTarget{{
+			UserId: target.UserId,
+			Emails: target.Emails,
+		}},
+	}
+	if err = s.mService.SendNotification(&cn); err != nil {
 		return err
 	}
 
-	if err = s.mService.SendNotification(&misc_dto.CreateNotification{
-		Title:   string(title),
-		Content: string(pushContent),
-		Data: map[string]interface{}{
-			"notificationType": misc_service.NOTIFICATIONTYPE_CREATECONTRACT,
-			"rentalId":         r.ID,
-			"contractId":       c.ID,
-		},
-		Targets: []misc_dto.CreateNotificationTarget{target},
-	}); err != nil {
+	cn.Content = string(pushContent)
+	cn.Targets = []misc_dto.CreateNotificationTarget{{
+		UserId: target.UserId,
+		Tokens: target.Tokens,
+	}}
+	if err = s.mService.SendNotification(&cn); err != nil {
 		return err
 	}
 
@@ -781,7 +854,7 @@ func (s *service) notifyUpdateContract(
 		return err
 	}
 
-	if err = s.mService.SendNotification(&misc_dto.CreateNotification{
+	cn := misc_dto.CreateNotification{
 		Title:   string(title),
 		Content: string(emailContent),
 		Data: map[string]interface{}{
@@ -789,21 +862,35 @@ func (s *service) notifyUpdateContract(
 			"rentalId":         r.ID,
 			"contractId":       c.ID,
 		},
-		Targets: targets,
-	}); err != nil {
+		Targets: func() []misc_dto.CreateNotificationTarget {
+			var ts []misc_dto.CreateNotificationTarget
+			for _, t := range targets {
+				ts = append(ts, misc_dto.CreateNotificationTarget{
+					UserId: t.UserId,
+					Emails: t.Emails,
+					Tokens: []string{},
+				})
+			}
+			return ts
+		}(),
+	}
+	if err = s.mService.SendNotification(&cn); err != nil {
 		return err
 	}
 
-	if err = s.mService.SendNotification(&misc_dto.CreateNotification{
-		Title:   string(title),
-		Content: string(pushContent),
-		Data: map[string]interface{}{
-			"notificationType": misc_service.NOTIFICATIONTYPE_UPDATECONTRACT,
-			"rentalId":         r.ID,
-			"contractId":       c.ID,
-		},
-		Targets: targets,
-	}); err != nil {
+	cn.Content = string(pushContent)
+	cn.Targets = func() []misc_dto.CreateNotificationTarget {
+		var ts []misc_dto.CreateNotificationTarget
+		for _, t := range targets {
+			ts = append(ts, misc_dto.CreateNotificationTarget{
+				UserId: t.UserId,
+				Emails: []string{},
+				Tokens: t.Tokens,
+			})
+		}
+		return ts
+	}()
+	if err = s.mService.SendNotification(&cn); err != nil {
 		return err
 	}
 
@@ -849,14 +936,14 @@ func (s *service) notifyCreateRentalComplaint(
 		}
 		property = ps[0]
 
-		us, err := s.domainRepo.UnitRepo.GetUnitsByIds(context.Background(), []uuid.UUID{r.UnitID}, []string{"name"})
+		units, err := s.domainRepo.UnitRepo.GetUnitsByIds(context.Background(), []uuid.UUID{r.UnitID}, []string{"name"})
 		if err != nil {
 			return err
 		}
-		if len(us) == 0 {
+		if len(units) == 0 {
 			return database.ErrRecordNotFound
 		}
-		unit = us[0]
+		unit = units[0]
 	}
 
 	data := struct {
@@ -906,7 +993,7 @@ func (s *service) notifyCreateRentalComplaint(
 		return err
 	}
 
-	if err = s.mService.SendNotification(&misc_dto.CreateNotification{
+	cn := misc_dto.CreateNotification{
 		Title:   string(title),
 		Content: string(emailContent),
 		Data: map[string]interface{}{
@@ -914,21 +1001,35 @@ func (s *service) notifyCreateRentalComplaint(
 			"rentalId":         r.ID,
 			"complaintId":      c.ID,
 		},
-		Targets: targets,
-	}); err != nil {
+		Targets: func() []misc_dto.CreateNotificationTarget {
+			var ts []misc_dto.CreateNotificationTarget
+			for _, t := range targets {
+				ts = append(ts, misc_dto.CreateNotificationTarget{
+					UserId: t.UserId,
+					Emails: t.Emails,
+					Tokens: []string{},
+				})
+			}
+			return ts
+		}(),
+	}
+	if err = s.mService.SendNotification(&cn); err != nil {
 		return err
 	}
 
-	if err = s.mService.SendNotification(&misc_dto.CreateNotification{
-		Title:   string(title),
-		Content: string(pushContent),
-		Data: map[string]interface{}{
-			"notificationType": misc_service.NOTIFICATIONTYPE_CREATERENTALCOMPLAINT,
-			"rentalId":         r.ID,
-			"complaintId":      c.ID,
-		},
-		Targets: targets,
-	}); err != nil {
+	cn.Content = string(pushContent)
+	cn.Targets = func() []misc_dto.CreateNotificationTarget {
+		var ts []misc_dto.CreateNotificationTarget
+		for _, t := range targets {
+			ts = append(ts, misc_dto.CreateNotificationTarget{
+				UserId: t.UserId,
+				Emails: []string{},
+				Tokens: t.Tokens,
+			})
+		}
+		return ts
+	}()
+	if err = s.mService.SendNotification(&cn); err != nil {
 		return err
 	}
 
@@ -1010,7 +1111,7 @@ func (s *service) notifyCreateComplaintReply(
 		return err
 	}
 
-	if err = s.mService.SendNotification(&misc_dto.CreateNotification{
+	cn := misc_dto.CreateNotification{
 		Title:   string(title),
 		Content: string(emailContent),
 		Data: map[string]interface{}{
@@ -1018,21 +1119,35 @@ func (s *service) notifyCreateComplaintReply(
 			"rentalId":         r.ID,
 			"complaintId":      c.ID,
 		},
-		Targets: targets,
-	}); err != nil {
+		Targets: func() []misc_dto.CreateNotificationTarget {
+			var ts []misc_dto.CreateNotificationTarget
+			for _, t := range targets {
+				ts = append(ts, misc_dto.CreateNotificationTarget{
+					UserId: t.UserId,
+					Emails: t.Emails,
+					Tokens: []string{},
+				})
+			}
+			return ts
+		}(),
+	}
+	if err = s.mService.SendNotification(&cn); err != nil {
 		return err
 	}
 
-	if err = s.mService.SendNotification(&misc_dto.CreateNotification{
-		Title:   string(title),
-		Content: string(pushContent),
-		Data: map[string]interface{}{
-			"notificationType": misc_service.NOTIFICATIONTYPE_CREATERENTALCOMPLAINTREPLY,
-			"rentalId":         r.ID,
-			"complaintId":      c.ID,
-		},
-		Targets: targets,
-	}); err != nil {
+	cn.Content = string(pushContent)
+	cn.Targets = func() []misc_dto.CreateNotificationTarget {
+		var ts []misc_dto.CreateNotificationTarget
+		for _, t := range targets {
+			ts = append(ts, misc_dto.CreateNotificationTarget{
+				UserId: t.UserId,
+				Emails: []string{},
+				Tokens: t.Tokens,
+			})
+		}
+		return ts
+	}()
+	if err = s.mService.SendNotification(&cn); err != nil {
 		return err
 	}
 
@@ -1112,7 +1227,7 @@ func (s *service) notifyUpdateComplaintStatus(
 		return err
 	}
 
-	if err = s.mService.SendNotification(&misc_dto.CreateNotification{
+	cn := misc_dto.CreateNotification{
 		Title:   string(title),
 		Content: string(emailContent),
 		Data: map[string]interface{}{
@@ -1120,21 +1235,35 @@ func (s *service) notifyUpdateComplaintStatus(
 			"rentalId":         r.ID,
 			"complaintId":      c.ID,
 		},
-		Targets: targets,
-	}); err != nil {
+		Targets: func() []misc_dto.CreateNotificationTarget {
+			var ts []misc_dto.CreateNotificationTarget
+			for _, t := range targets {
+				ts = append(ts, misc_dto.CreateNotificationTarget{
+					UserId: t.UserId,
+					Emails: t.Emails,
+					Tokens: []string{},
+				})
+			}
+			return ts
+		}(),
+	}
+	if err = s.mService.SendNotification(&cn); err != nil {
 		return err
 	}
 
-	if err = s.mService.SendNotification(&misc_dto.CreateNotification{
-		Title:   string(title),
-		Content: string(pushContent),
-		Data: map[string]interface{}{
-			"notificationType": misc_service.NOTIFICATIONTYPE_UPDATERENTALCOMPLAINTSTATUS,
-			"rentalId":         r.ID,
-			"complaintId":      c.ID,
-		},
-		Targets: targets,
-	}); err != nil {
+	cn.Content = string(pushContent)
+	cn.Targets = func() []misc_dto.CreateNotificationTarget {
+		var ts []misc_dto.CreateNotificationTarget
+		for _, t := range targets {
+			ts = append(ts, misc_dto.CreateNotificationTarget{
+				UserId: t.UserId,
+				Emails: []string{},
+				Tokens: t.Tokens,
+			})
+		}
+		return ts
+	}()
+	if err = s.mService.SendNotification(&cn); err != nil {
 		return err
 	}
 

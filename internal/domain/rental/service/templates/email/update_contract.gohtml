@@ -17,7 +17,7 @@
     <p>{{.Updater.FirstName}} {{.Updater.LastName}} đã hủy hợp đồng thuê nhà tại phòng {{.Unit.Name}} nhà cho thuê {{.Property.Name}}</p>
   {{else}}
     <h2 style="font-size: 1.5rem; font-weight: 400;">{{.Updater.FirstName}} {{.Updater.LastName}} đã cập nhật hợp đồng</h2>
-    <p>Hợp đồng thuê nhà tại phòng {{.Unit.Name}} nhà cho thuê {{.Property.Name}} đã được cập nhật bởi {{.Updater.FirstName}} {{.Updater.LastName}} vào lúc {{.Contract.UpdatedAt.Format "02/01/2006"}}.</p>
+    <p>Hợp đồng thuê nhà tại phòng {{.Unit.Name}} nhà cho thuê {{.Property.Name}} đã được cập nhật bởi {{.Updater.FirstName}} {{.Updater.LastName}} vào lúc {{.Contract.UpdatedAt.Format "15:04:05 02/01/2006"}}.</p>
   {{end}}
   <a href="{{.FESite}}/manage/rentals/rental/{{.Rental.ID}}">Xem chi tiết hợp đồng</a>
   <!-- Email footer -->

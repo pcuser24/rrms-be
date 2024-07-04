@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"math"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/user2410/rrms-backend/internal/domain/rental/dto"
@@ -124,7 +125,8 @@ func (s *service) UpdateContract(data *dto.UpdateContract) error {
 	if err != nil {
 		return err
 	}
-
+	cs[0].UpdatedAt = time.Now()
+	cs[0].UpdatedBy = data.UserID
 	if lastUpdaterSide != updaterSide {
 		s.notifyUpdateContract(&cs[0], &rental, updaterSide)
 	}
@@ -175,6 +177,9 @@ func (s *service) UpdateContractContent(data *dto.UpdateContractContent) error {
 		return ErrUnauthorizedToUpdateContract
 	}
 
+	cs[0].UpdatedAt = time.Now()
+	cs[0].UpdatedBy = data.UserID
+	cs[0].Status = data.Status
 	err = s.domainRepo.RentalRepo.UpdateContractContent(context.Background(), data)
 	if err != nil {
 		return err

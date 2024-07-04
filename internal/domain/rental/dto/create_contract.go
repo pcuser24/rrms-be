@@ -19,17 +19,17 @@ type CreateContract struct {
 	AIdentity              string    `json:"aIdentity" validate:"required"`
 	AIdentityIssuedBy      string    `json:"aIdentityIssuedBy" validate:"required"`
 	AIdentityIssuedAt      time.Time `json:"aIdentityIssuedAt" validate:"required"`
-	ADocuments             []string  `json:"aDocuments" validate:"required"`
+	ADocuments             []string  `json:"aDocuments" validate:"omitempty"`
 	ABankAccount           *string   `json:"aBankAccount" validate:"omitempty"`
 	ABank                  *string   `json:"aBank" validate:"omitempty"`
 	ARegistrationNumber    string    `json:"aRegistrationNumber" validate:"required"`
-	BFullname              string    `json:"bFullname" validate:"required"`
-	BPhone                 string    `json:"bPhone" validate:"required"`
-	PaymentMethod          string    `json:"paymentMethod" validate:"required"`
-	NCopies                int32     `json:"nCopies" validate:"required"`
-	CreatedAtPlace         string    `json:"createdAtPlace" validate:"required"`
-	Content                *string   `json:"content" validate:"omitempty"`
-	UserID                 uuid.UUID `json:"userId" validate:"required"`
+	// BFullname              string    `json:"bFullname" validate:"required"`
+	// BPhone                 string    `json:"bPhone" validate:"required"`
+	PaymentMethod  string  `json:"paymentMethod" validate:"required"`
+	NCopies        int32   `json:"nCopies" validate:"required"`
+	CreatedAtPlace string  `json:"createdAtPlace" validate:"required"`
+	Content        *string `json:"content" validate:"omitempty"`
+	UserID         uuid.UUID
 }
 
 func (c *CreateContract) ToCreateContractDB() database.CreateContractParams {
@@ -62,12 +62,12 @@ func (c *CreateContract) ToCreateContractDB() database.CreateContractParams {
 		ABankAccount:        types.StrN(c.ABankAccount),
 		ABank:               types.StrN(c.ABank),
 		ARegistrationNumber: c.ARegistrationNumber,
-		BFullname:           c.BFullname,
-		BPhone:              c.BPhone,
-		PaymentMethod:       c.PaymentMethod,
-		NCopies:             c.NCopies,
-		CreatedAtPlace:      c.CreatedAtPlace,
-		Content:             content,
-		UserID:              c.UserID,
+		// BFullname:           c.BFullname,
+		// BPhone:              c.BPhone,
+		PaymentMethod:  c.PaymentMethod,
+		NCopies:        c.NCopies,
+		CreatedAtPlace: c.CreatedAtPlace,
+		Content:        content,
+		UserID:         c.UserID,
 	}
 }

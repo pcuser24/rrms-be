@@ -313,9 +313,9 @@ func (r *repo) CheckUpdatability(ctx context.Context, id int64, uid uuid.UUID) (
 
 func (r *repo) UpdateApplicationStatus(ctx context.Context, aid int64, userId uuid.UUID, status database.APPLICATIONSTATUS) (int, error) {
 	res, err := r.dao.UpdateApplicationStatus(ctx, database.UpdateApplicationStatusParams{
-		ID:        aid,
-		Status:    status,
-		ManagerID: userId,
+		ID:     aid,
+		Status: status,
+		UserID: userId,
 	})
 	if err != nil {
 		return 0, err

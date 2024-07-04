@@ -2,14 +2,20 @@ package service
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"math"
 	"path/filepath"
 	"time"
 
+	"github.com/elastic/go-elasticsearch/v8/typedapi/core/update"
 	"github.com/user2410/rrms-backend/internal/infrastructure/database"
+	"github.com/user2410/rrms-backend/internal/infrastructure/es"
+	"github.com/user2410/rrms-backend/internal/utils/types"
 
 	"github.com/google/uuid"
+	"github.com/user2410/rrms-backend/internal/domain/listing/dto"
 	property_dto "github.com/user2410/rrms-backend/internal/domain/property/dto"
 	property_model "github.com/user2410/rrms-backend/internal/domain/property/model"
 )
@@ -95,25 +101,35 @@ func (s *service) UpdatePropertyVerificationRequestStatus(id int64, data *proper
 		return err
 	}
 
-	// request, err := s.domainRepo.PropertyRepo.GetPropertyVerificationRequest(context.Background(), id)
-	// if err != nil {
-	// 	return err
-	// }
+	request, err := s.domainRepo.PropertyRepo.GetPropertyVerificationRequest(context.Background(), id)
+	if err != nil {
+		return err
+	}
+
+	listingIds, err := s.domainRepo.PropertyRepo.GetListingsOfProperty(context.Background(), request.PropertyID, &dto.GetListingsOfPropertyQuery{
+		Limit:  types.Ptr[int32](math.MaxInt32),
+		Offset: types.Ptr[int32](0),
+	})
+	if err != nil {
+		return err
+	}
 
 	// TODO: update es document
-	// doc := map[string]interface{}{
-	// 	"property.verification_status": data.Status,
-	// }
-	// docByte, err := json.Marshal(doc)
-	// if err != nil {
-	// 	return err
-	// }
-	// client := s.esClient.GetTypedClient()
-	// _, err = client.Update(string(es.LISTINGINDEX), request.PropertyID.String()).
-	// 	Request(&update.Request{
-	// 		Doc: json.RawMessage(docByte),
-	// 	}).
-	// 	Do(context.Background())
+	doc := map[string]interface{}{
+		"property.verification_status": data.Status,
+	}
+	docByte, err := json.Marshal(doc)
+	if err != nil {
+		return err
+	}
+	client := s.esClient.GetTypedClient()
+	for _, listingId := range listingIds {
+		_, err = client.Update(string(es.LISTINGINDEX), listingId.String()).
+			Request(&update.Request{
+				Doc: json.RawMessage(docByte),
+			}).
+			Do(context.Background())
+	}
 
 	return err
 }

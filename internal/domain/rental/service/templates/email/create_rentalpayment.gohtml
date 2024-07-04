@@ -14,15 +14,15 @@
     </tr>
     <tr>
       <td style="padding: 0.5rem 1rem; font-weight: 600;">Dịch vụ</td>
-      <td style="padding: 0.5rem 1rem;">{{.Payment.PaymentService}}</td>
+      <td style="padding: 0.5rem 1rem;">{{.PaymentService}}</td>
     </tr>
     <tr>
       <td style="padding: 0.5rem 1rem; font-weight: 600;">Ngày bắt đầu</td>
-      <td style="padding: 0.5rem 1rem;">{{.Payment.StartDate.Format "02/01/2006"}}</td>
+      <td style="padding: 0.5rem 1rem;">{{.Payment.StartDate.Format "15:04:05 02/01/2006"}}</td>
     </tr>
     <tr>
       <td style="padding: 0.5rem 1rem; font-weight: 600;">Ngày kết thúc</td>
-      <td style="padding: 0.5rem 1rem;">{{.Payment.EndDate.Format "02/01/2006"}}</td>
+      <td style="padding: 0.5rem 1rem;">{{.Payment.EndDate.Format "15:04:05 02/01/2006"}}</td>
     </tr>
     <tr>
       <td style="padding: 0.5rem 1rem; font-weight: 600;">Số tiền</td>
@@ -36,7 +36,6 @@
   <p style="font-size: 0.75rem; color: slategray">Nếu có bất cứ thắc mắc nào về khoản thu này, vui lòng phản hồi với bên quản lý nhà cho thuê sớm nhất có thể..</p>
   <a href="{{.FESite}}/manage/rentals/rental/{{.Rental.ID}}">Xem chi tiết</a>
   <!-- Email footer -->
-  <p style="font-size: small; color:grey;">Nếu có bất kì thắc mắc nào hãy <a href="{{.FESite}}">liên hệ</a> với chúng
-    tôi
+  <p style="font-size: small; color:grey;">Nếu có bất kì thắc mắc nào hãy <a href="{{.FESite}}">liên hệ</a> với chúng tôi
   </p>
 </div>

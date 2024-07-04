@@ -268,25 +268,35 @@ func FromPreRentalDBToCreateRental(pr *database.Prerental) (CreateRental, error)
 		Note:                     types.PNStr(pr.Note),
 	}
 
-	err := json.Unmarshal(pr.Coaps, &cr.Coaps)
-	if err != nil {
-		return cr, err
+	if pr.Coaps != nil {
+		err := json.Unmarshal(pr.Coaps, &cr.Coaps)
+		if err != nil {
+			return cr, err
+		}
 	}
-	err = json.Unmarshal(pr.Minors, &cr.Minors)
-	if err != nil {
-		return cr, err
+	if pr.Minors != nil {
+		err := json.Unmarshal(pr.Minors, &cr.Minors)
+		if err != nil {
+			return cr, err
+		}
 	}
-	err = json.Unmarshal(pr.Pets, &cr.Pets)
-	if err != nil {
-		return cr, err
+	if pr.Pets != nil {
+		err := json.Unmarshal(pr.Pets, &cr.Pets)
+		if err != nil {
+			return cr, err
+		}
 	}
-	err = json.Unmarshal(pr.Services, &cr.Services)
-	if err != nil {
-		return cr, err
+	if pr.Services != nil {
+		err := json.Unmarshal(pr.Services, &cr.Services)
+		if err != nil {
+			return cr, err
+		}
 	}
-	err = json.Unmarshal(pr.Policies, &cr.Policies)
-	if err != nil {
-		return cr, err
+	if pr.Policies != nil {
+		err := json.Unmarshal(pr.Policies, &cr.Policies)
+		if err != nil {
+			return cr, err
+		}
 	}
 
 	return cr, nil

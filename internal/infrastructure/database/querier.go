@@ -155,7 +155,7 @@ type Querier interface {
 	GetRentalComplaint(ctx context.Context, id int64) (RentalComplaint, error)
 	GetRentalComplaintReplies(ctx context.Context, arg GetRentalComplaintRepliesParams) ([]RentalComplaintReply, error)
 	GetRentalComplaintStatistics(ctx context.Context, arg GetRentalComplaintStatisticsParams) (int64, error)
-	GetRentalComplaintsByRentalId(ctx context.Context, rentalID int64) ([]RentalComplaint, error)
+	GetRentalComplaintsByRentalId(ctx context.Context, arg GetRentalComplaintsByRentalIdParams) ([]RentalComplaint, error)
 	GetRentalComplaintsOfUser(ctx context.Context, arg GetRentalComplaintsOfUserParams) ([]RentalComplaint, error)
 	GetRentalContractsOfUser(ctx context.Context, arg GetRentalContractsOfUserParams) ([]int64, error)
 	GetRentalMinorsByRentalID(ctx context.Context, rentalID int64) ([]RentalMinor, error)

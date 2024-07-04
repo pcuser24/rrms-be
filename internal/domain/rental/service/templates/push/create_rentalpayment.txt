@@ -1,1 +1,1 @@
-Dịch vụ: {{.Payment.PaymentService}}, {{.Payment.StartDate.Format "02/01/2006"}} - {{.Payment.EndDate.Format "02/01/2006"}}, Số tiền: {{.Payment.MustPay}} VNĐ (khấu trừ {{Dereference .Payment.Discount}} VNĐ). Hạn nộp {{.Payment.ExpiryDate.Format "02/01/2006"}}
+Dịch vụ: {{.PaymentService}}, {{.Payment.StartDate.Format "02/01/2006"}} - {{.Payment.EndDate.Format "02/01/2006"}}, Số tiền: {{.Payment.MustPay}} VNĐ (khấu trừ {{Dereference .Payment.Discount}} VNĐ). Hạn nộp {{.Payment.ExpiryDate.Format "02/01/2006"}}

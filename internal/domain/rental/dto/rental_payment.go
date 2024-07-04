@@ -124,7 +124,7 @@ func (u UpdatePlanRentalPayment) Validate() error {
 }
 
 type UpdateIssuedRentalPayment struct {
-	Note   *string                      `json:"amount" validate:"omitempty"`
+	Note   *string                      `json:"note" validate:"omitempty"`
 	Status database.RENTALPAYMENTSTATUS `json:"status" validate:"required,oneof=PENDING PLAN"`
 }
 

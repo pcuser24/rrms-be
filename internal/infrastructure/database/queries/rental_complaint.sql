@@ -38,7 +38,7 @@ WHERE id = sqlc.arg(id);
 SELECT * FROM rental_complaints WHERE id = $1 LIMIT 1;
 
 -- name: GetRentalComplaintsByRentalId :many
-SELECT * FROM rental_complaints WHERE rental_id = $1;
+SELECT * FROM rental_complaints WHERE rental_id = $1 ORDER BY created_at DESC LIMIT $2 OFFSET $3;
 
 -- name: CreateRentalComplaintReply :one
 INSERT INTO rental_complaint_replies (

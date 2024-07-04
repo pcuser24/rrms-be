@@ -165,7 +165,7 @@ func ToRentalModel(pr *database.Rental) RentalModel {
 		RentalPaymentBasis:       pr.RentalPaymentBasis,
 		RentalIntention:          pr.RentalIntention,
 		NoticePeriod:             pr.NoticePeriod.Int32,
-		GracePeriod:              pr.NoticePeriod.Int32,
+		GracePeriod:              pr.GracePeriod.Int32,
 		LatePaymentPenaltyScheme: pr.LatePaymentPenaltyScheme.LATEPAYMENTPENALTYSCHEME,
 		LatePaymentPenaltyAmount: types.PNFloat32(pr.LatePaymentPenaltyAmount),
 		ElectricitySetupBy:       pr.ElectricitySetupBy,
@@ -214,7 +214,7 @@ func ToPreRentalModel(pr *database.Prerental) (PreRental, error) {
 		RentalPaymentBasis:       pr.RentalPaymentBasis,
 		RentalIntention:          pr.RentalIntention,
 		NoticePeriod:             pr.NoticePeriod.Int32,
-		GracePeriod:              pr.NoticePeriod.Int32,
+		GracePeriod:              pr.GracePeriod.Int32,
 		LatePaymentPenaltyScheme: pr.LatePaymentPenaltyScheme.LATEPAYMENTPENALTYSCHEME,
 		LatePaymentPenaltyAmount: types.PNFloat32(pr.LatePaymentPenaltyAmount),
 		ElectricitySetupBy:       pr.ElectricitySetupBy,
@@ -238,30 +238,40 @@ func ToPreRentalModel(pr *database.Prerental) (PreRental, error) {
 		if err != nil {
 			return prm, err
 		}
+	} else {
+		prm.Coaps = []RentalCoapModel{}
 	}
 	if pr.Minors != nil {
 		err = json.Unmarshal(pr.Minors, &prm.Minors)
 		if err != nil {
 			return prm, err
 		}
+	} else {
+		prm.Minors = []RentalMinor{}
 	}
 	if pr.Pets != nil {
 		err = json.Unmarshal(pr.Pets, &prm.Pets)
 		if err != nil {
 			return prm, err
 		}
+	} else {
+		prm.Pets = []RentalPet{}
 	}
 	if pr.Services != nil {
 		err = json.Unmarshal(pr.Services, &prm.Services)
 		if err != nil {
 			return prm, err
 		}
+	} else {
+		prm.Services = []RentalService{}
 	}
 	if pr.Policies != nil {
 		err = json.Unmarshal(pr.Policies, &prm.Policies)
 		if err != nil {
 			return prm, err
 		}
+	} else {
+		prm.Policies = []RentalPolicy{}
 	}
 
 	return prm, nil

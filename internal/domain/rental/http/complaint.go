@@ -108,7 +108,15 @@ func (a *adapter) getRentalComplaintsByRentalId() fiber.Handler {
 			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": "invalid rental id: " + err.Error()})
 		}
 
-		res, err := a.service.GetRentalComplaintsByRentalId(rId)
+		var query struct {
+			Limit  int32 `query:"limit"`
+			Offset int32 `query:"offset"`
+		}
+		if err := ctx.QueryParser(&query); err != nil {
+			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": err.Error()})
+		}
+
+		res, err := a.service.GetRentalComplaintsByRentalId(rId, query.Limit, query.Offset)
 		if err != nil {
 			return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
 		}

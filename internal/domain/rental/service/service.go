@@ -57,7 +57,7 @@ type Service interface {
 	PreCreateRentalComplaint(data *dto.PreCreateRentalComplaint, creatorID uuid.UUID) error
 	CreateRentalComplaint(data *dto.CreateRentalComplaint) (rental_model.RentalComplaint, error)
 	GetRentalComplaint(id int64) (rental_model.RentalComplaint, error)
-	GetRentalComplaintsByRentalId(rid int64) ([]rental_model.RentalComplaint, error)
+	GetRentalComplaintsByRentalId(rid int64, limit, offset int32) ([]rental_model.RentalComplaint, error)
 	PreCreateRentalComplaintReply(data *dto.PreCreateRentalComplaint, creatorID uuid.UUID) error
 	CreateRentalComplaintReply(data *dto.CreateRentalComplaintReply) (rental_model.RentalComplaintReply, error)
 	GetRentalComplaintsOfUser(userId uuid.UUID, query dto.GetRentalComplaintsOfUserQuery) ([]rental_model.RentalComplaint, error)

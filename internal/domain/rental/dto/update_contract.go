@@ -82,7 +82,7 @@ type UpdateContractContent struct {
 	ID      int64                   `json:"id"`
 	Content *string                 `json:"content"`
 	Status  database.CONTRACTSTATUS `json:"status"`
-	UserID  uuid.UUID               `json:"userId"`
+	UserID  uuid.UUID
 }
 
 func (c *UpdateContractContent) ToUpdateContractContentDB() database.UpdateContractContentParams {

@@ -9,6 +9,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/user2410/rrms-backend/internal/domain/rental/dto"
 	"github.com/user2410/rrms-backend/internal/domain/rental/model"
+	"github.com/user2410/rrms-backend/internal/infrastructure/database"
 )
 
 func (s *service) PreCreateRentalComplaint(data *dto.PreCreateRentalComplaint, creatorID uuid.UUID) error {
@@ -40,7 +41,7 @@ func (s *service) CreateRentalComplaint(data *dto.CreateRentalComplaint) (model.
 	}
 
 	canCreate := false
-	if rental.CreatorID == data.CreatorID {
+	if rental.TenantID == data.CreatorID {
 		canCreate = true
 	} else {
 		managers, err := s.domainRepo.PropertyRepo.GetPropertyManagers(context.Background(), rental.PropertyID)
@@ -75,8 +76,8 @@ func (s *service) GetRentalComplaint(id int64) (model.RentalComplaint, error) {
 	return s.domainRepo.RentalRepo.GetRentalComplaint(context.Background(), id)
 }
 
-func (s *service) GetRentalComplaintsByRentalId(rid int64) ([]model.RentalComplaint, error) {
-	return s.domainRepo.RentalRepo.GetRentalComplaintsByRentalId(context.Background(), rid)
+func (s *service) GetRentalComplaintsByRentalId(rid int64, limit, offset int32) ([]model.RentalComplaint, error) {
+	return s.domainRepo.RentalRepo.GetRentalComplaintsByRentalId(context.Background(), rid, limit, offset)
 }
 
 func (s *service) PreCreateRentalComplaintReply(data *dto.PreCreateRentalComplaint, creatorID uuid.UUID) error {
@@ -99,10 +100,17 @@ func (s *service) PreCreateRentalComplaintReply(data *dto.PreCreateRentalComplai
 	return nil
 }
 
+var (
+	ErrUnauthorizedToCreateComplaintReply = fmt.Errorf("unauthorized to create complaint reply")
+)
+
 func (s *service) CreateRentalComplaintReply(data *dto.CreateRentalComplaintReply) (model.RentalComplaintReply, error) {
 	complaint, err := s.domainRepo.RentalRepo.GetRentalComplaint(context.Background(), data.ComplaintID)
 	if err != nil {
 		return model.RentalComplaintReply{}, err
+	}
+	if complaint.Status != database.RENTALCOMPLAINTSTATUSPENDING {
+		return model.RentalComplaintReply{}, ErrUnauthorizedToCreateComplaintReply
 	}
 	rental, err := s.domainRepo.RentalRepo.GetRental(context.Background(), complaint.RentalID)
 	if err != nil {

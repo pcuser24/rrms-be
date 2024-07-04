@@ -1,1 +1,1 @@
-Dịch vụ: {{.Payment.PaymentService}}, {{.Payment.StartDate.Format "02/01/2006"}} - {{.Payment.EndDate.Format "02/01/2006"}}, Tiền phạt: {{.Payment.Fine}} VNĐ, Ngày thanh toán: {{.UpdateData.PaymentDate.Format "02/01/2006"}}
+Dịch vụ: {{.PaymentService}}, {{.Payment.StartDate.Format "02/01/2006"}} - {{.Payment.EndDate.Format "02/01/2006"}}, Tiền phạt: {{.Payment.Fine}} VNĐ, Ngày thanh toán: {{.UpdateData.PaymentDate.Format "02/01/2006"}}

@@ -5,5 +5,5 @@
 {{else if eq .Contract.Status "CANCELLED"}}
   {{.Updater.FirstName}} {{.Updater.LastName}} đã hủy hợp đồng thuê nhà tại phòng {{.Unit.Name}} nhà cho thuê {{.Property.Name}}
 {{else}}
-  Hợp đồng thuê nhà tại phòng {{.Unit.Name}} nhà cho thuê {{.Property.Name}} đã được cập nhật bởi {{.Updater.FirstName}} {{.Updater.LastName}} vào lúc {{.Contract.UpdatedAt.Format "02/01/2006"}}.
+  Hợp đồng thuê nhà tại phòng {{.Unit.Name}} nhà cho thuê {{.Property.Name}} đã được cập nhật bởi {{.Updater.FirstName}} {{.Updater.LastName}} vào lúc {{.Contract.UpdatedAt.Format "15:04:05 02/01/2006"}}.
 {{end}}

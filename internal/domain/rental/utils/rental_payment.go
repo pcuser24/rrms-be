@@ -58,7 +58,7 @@ func GetServiceName(rpCode string, rServices []model.RentalService) (string, err
 		return "", ErrInvalidRentalPaymentCode
 	}
 	if parts[1] == string(RENTALPAYMENTTYPESERVICE) {
-		if len(parts) != 4 {
+		if len(parts) < 4 {
 			return "", ErrInvalidRentalPaymentCode
 		}
 		var (

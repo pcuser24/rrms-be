@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"log"
 	"math"
 	"time"
 
@@ -117,7 +116,7 @@ func (s *service) UpdateRentalPayment(id int64, userId uuid.UUID, data dto.IUpda
 		if _data.Status == database.RENTALPAYMENTSTATUSPAID || _data.Status == database.RENTALPAYMENTSTATUSCANCELLED {
 			willNotify = false
 		}
-		log.Println("Send notification to tenant: Issue new rental payment")
+		// log.Println("Send notification to tenant: Issue new rental payment")
 	case database.RENTALPAYMENTSTATUSISSUED:
 		__data := data.(*dto.UpdateIssuedRentalPayment)
 		if side != "B" {
@@ -129,7 +128,7 @@ func (s *service) UpdateRentalPayment(id int64, userId uuid.UUID, data dto.IUpda
 			Status: __data.Status,
 			Note:   __data.Note,
 		}
-		log.Println("Send notification to managers:", utils.Ternary(__data.Status == database.RENTALPAYMENTSTATUSPENDING, "Tenant agree with the issued payment", "Tenant request a payment review"))
+		// log.Println("Send notification to managers:", utils.Ternary(__data.Status == database.RENTALPAYMENTSTATUSPENDING, "Tenant agree with the issued payment", "Tenant request a payment review"))
 	case database.RENTALPAYMENTSTATUSPENDING:
 		__data := data.(*dto.UpdatePendingRentalPayment)
 		if side != "B" {
@@ -138,8 +137,8 @@ func (s *service) UpdateRentalPayment(id int64, userId uuid.UUID, data dto.IUpda
 		// update status to PAYFINE if rp.expiryDate + r.gracePeriod day < today
 		if time.Now().After(rp.ExpiryDate.AddDate(0, 0, int(r.GracePeriod))) && rp.MustPay > 0 {
 			_data = payFine(&r, &rp)
-			log.Println("Send notification to tenant: Pay fine")
-			log.Println("Send notification to managers: Tenant is late for a payment")
+			// log.Println("Send notification to tenant: Pay fine")
+			// log.Println("Send notification to managers: Tenant is late for a payment")
 		} else {
 			_data = dto.UpdateRentalPayment{
 				ID:          id,
@@ -148,7 +147,7 @@ func (s *service) UpdateRentalPayment(id int64, userId uuid.UUID, data dto.IUpda
 				Payamount:   types.Ptr(__data.PayAmount),
 				Status:      database.RENTALPAYMENTSTATUSREQUEST2PAY,
 			}
-			log.Println("Send notification to managers: Tenant has update his payment status, review now")
+			// log.Println("Send notification to managers: Tenant has update his payment status, review now")
 		}
 	case database.RENTALPAYMENTSTATUSREQUEST2PAY:
 		__data := data.(*dto.UpdatePendingRentalPayment)
@@ -158,8 +157,8 @@ func (s *service) UpdateRentalPayment(id int64, userId uuid.UUID, data dto.IUpda
 		// update status to PAYFINE if rp.expiryDate + r.gracePeriod day < today
 		if time.Now().After(rp.ExpiryDate.AddDate(0, 0, int(r.GracePeriod))) && rp.MustPay > 0 {
 			_data = payFine(&r, &rp)
-			log.Println("Send notification to tenant: Pay fine")
-			log.Println("Send notification to managers: Tenant is late for a payment")
+			// log.Println("Send notification to tenant: Pay fine")
+			// log.Println("Send notification to managers: Tenant is late for a payment")
 		} else {
 			_data = dto.UpdateRentalPayment{
 				ID:          id,
@@ -173,7 +172,7 @@ func (s *service) UpdateRentalPayment(id int64, userId uuid.UUID, data dto.IUpda
 					database.RENTALPAYMENTSTATUSPAID,
 				),
 			}
-			log.Println("Send notification to tenant: your payment is recorded")
+			// log.Println("Send notification to tenant: your payment is recorded")
 		}
 	case database.RENTALPAYMENTSTATUSPARTIALLYPAID:
 		__data := data.(*dto.UpdatePartiallyPaidRentalPayment)
@@ -183,8 +182,8 @@ func (s *service) UpdateRentalPayment(id int64, userId uuid.UUID, data dto.IUpda
 		// update status to PAYFINE if rp.expiryDate + r.gracePeriod day < today
 		if time.Now().After(rp.ExpiryDate.AddDate(0, 0, int(r.GracePeriod))) && rp.MustPay > 0 {
 			_data = payFine(&r, &rp)
-			log.Println("Send notification to tenant: Pay fine")
-			log.Println("Send notification to managers: Tenant is late for a payment")
+			// log.Println("Send notification to tenant: Pay fine")
+			// log.Println("Send notification to managers: Tenant is late for a payment")
 		} else {
 			_data = dto.UpdateRentalPayment{
 				ID:          id,
@@ -193,7 +192,7 @@ func (s *service) UpdateRentalPayment(id int64, userId uuid.UUID, data dto.IUpda
 				PaymentDate: __data.PaymentDate,
 				Status:      database.RENTALPAYMENTSTATUSREQUEST2PAY,
 			}
-			log.Println("Send notification to managers: Tenant has update his payment status, review now")
+			// log.Println("Send notification to managers: Tenant has update his payment status, review now")
 		}
 	case database.RENTALPAYMENTSTATUSPAYFINE:
 		if side != "A" {
@@ -206,7 +205,7 @@ func (s *service) UpdateRentalPayment(id int64, userId uuid.UUID, data dto.IUpda
 			Paid:      rp.Fine,
 			Status:    database.RENTALPAYMENTSTATUSPAID,
 		}
-		log.Println("Send notification to tenant: your fine payment is done, good job")
+		// log.Println("Send notification to tenant: your fine payment is done, good job")
 	default:
 		return ErrInvalidPaymentTypeTransition
 	}
@@ -217,6 +216,9 @@ func (s *service) UpdateRentalPayment(id int64, userId uuid.UUID, data dto.IUpda
 	}
 	if willNotify {
 		err = s.notifyUpdatePayments(&r, &rp, &_data)
+		if err != nil {
+			// TODO: log error
+		}
 	}
 	return nil
 }

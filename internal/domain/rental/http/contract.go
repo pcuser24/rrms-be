@@ -105,7 +105,7 @@ func (a *adapter) pingContract() fiber.Handler {
 
 func (a *adapter) getRentalContract() fiber.Handler {
 	return func(ctx *fiber.Ctx) error {
-		id := ctx.Locals(RentalContractIDLocalKey).(int64)
+		id := ctx.Locals(RentalIDLocalKey).(int64)
 
 		res, err := a.service.GetRentalContract(id)
 		if err != nil {
@@ -156,6 +156,7 @@ func (a *adapter) updateContractContent() fiber.Handler {
 			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": err.Error()})
 		}
 		payload.ID = id
+		payload.UserID = ctx.Locals(auth_http.AuthorizationPayloadKey).(*token.Payload).UserID
 		if errs := validation.ValidateStruct(nil, payload); len(errs) > 0 {
 			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": validation.GetValidationError(errs)})
 		}

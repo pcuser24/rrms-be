@@ -6,8 +6,7 @@
     <h1 style="font-weight: 600; margin-left: 1rem; text-decoration: none; color: black">RRMS</h1>
   </a>
   <!-- Email Body -->
-  <h2 style="font-size: 1.5rem; font-weight: 400;">Khoản thu mới tại phòng {{.Unit.Name}} nhà cho thuê
-    {{.Property.Name}} vừa được duyệt:</h2>
+  <h2 style="font-size: 1.5rem; font-weight: 400;">Khoản thu mới tại phòng {{.Unit.Name}} nhà cho thuê {{.Property.Name}} vừa được duyệt:</h2>
   <table>
     <tr>
       <td style="padding: 0.5rem 1rem; font-weight: 600;">Mã hóa đơn</td>
@@ -15,7 +14,7 @@
     </tr>
     <tr>
       <td style="padding: 0.5rem 1rem; font-weight: 600;">Dịch vụ</td>
-      <td style="padding: 0.5rem 1rem;">{{.Payment.PaymentService}}</td>
+      <td style="padding: 0.5rem 1rem;">{{.PaymentService}}</td>
     </tr>
     <tr>
       <td style="padding: 0.5rem 1rem; font-weight: 600;">Ngày bắt đầu</td>
@@ -43,8 +42,7 @@
     </tr>
   </table>
   <a href="{{.FESite}}/manage/rentals/rental/{{.Rental.ID}}">Xem chi tiết</a>
-  <p style="font-size: 0.75rem; color: slategray">Nếu có bất cứ thắc mắc nào về khoản thu này, vui lòng phản hồi với bên
-    quản lý nhà cho thuê sớm nhất có thể.</p>
+  <p style="font-size: 0.75rem; color: slategray">Nếu có bất cứ thắc mắc nào về khoản thu này, vui lòng phản hồi với bên quản lý nhà cho thuê sớm nhất có thể.</p>
   <!-- Email footer -->
   <p style="font-size: small; color:grey;">Nếu có bất kì thắc mắc nào hãy <a href="{{.FESite}}">liên hệ</a> với chúng
     tôi

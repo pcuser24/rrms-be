@@ -18,6 +18,7 @@ SELECT count(*) > 0 FROM applications WHERE
   id = $1 
   AND (
     property_id IN (SELECT property_id FROM property_managers WHERE manager_id = $2)
+    OR creator_id = $2
   )
 `
 
@@ -712,18 +713,21 @@ SET
   updated_at = NOW() 
 WHERE 
   id = $2
-  AND property_id IN (SELECT property_id FROM property_managers WHERE manager_id = $3)
+  AND (
+    property_id IN (SELECT property_id FROM property_managers WHERE manager_id = $3)
+    OR creator_id = $3
+  )
 RETURNING id
 `
 
 type UpdateApplicationStatusParams struct {
-	Status    APPLICATIONSTATUS `json:"status"`
-	ID        int64             `json:"id"`
-	ManagerID uuid.UUID         `json:"manager_id"`
+	Status APPLICATIONSTATUS `json:"status"`
+	ID     int64             `json:"id"`
+	UserID uuid.UUID         `json:"user_id"`
 }
 
 func (q *Queries) UpdateApplicationStatus(ctx context.Context, arg UpdateApplicationStatusParams) ([]int64, error) {
-	rows, err := q.db.Query(ctx, updateApplicationStatus, arg.Status, arg.ID, arg.ManagerID)
+	rows, err := q.db.Query(ctx, updateApplicationStatus, arg.Status, arg.ID, arg.UserID)
 	if err != nil {
 		return nil, err
 	}

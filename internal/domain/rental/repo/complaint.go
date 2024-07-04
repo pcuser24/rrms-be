@@ -26,8 +26,12 @@ func (r *repo) GetRentalComplaint(ctx context.Context, id int64) (model.RentalCo
 	return model.ToRentalComplaintModel(&res), nil
 }
 
-func (r *repo) GetRentalComplaintsByRentalId(ctx context.Context, rid int64) ([]model.RentalComplaint, error) {
-	res, err := r.dao.GetRentalComplaintsByRentalId(ctx, rid)
+func (r *repo) GetRentalComplaintsByRentalId(ctx context.Context, rid int64, limit, offset int32) ([]model.RentalComplaint, error) {
+	res, err := r.dao.GetRentalComplaintsByRentalId(ctx, database.GetRentalComplaintsByRentalIdParams{
+		RentalID: rid,
+		Limit:    limit,
+		Offset:   offset,
+	})
 	if err != nil {
 		return nil, err
 	}

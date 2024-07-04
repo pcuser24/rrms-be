@@ -1,1 +1,1 @@
-Báo cáo vấn đề liên quan đến nhà cho thuê
+{{if eq .Side "A"}} Bên cho thuê{{else}}Bên thuê{{end}} đã tạo báo cáo vấn đề liên quan đến nhà cho thuê tại phòng {{.Unit.Name}} nhà cho thuê {{.Property.Name}}

@@ -1,7 +1,5 @@
-{{if .UpdateData.Status "PLAN"}}
-Khách thuê {{.Rental.TenantName}} tại phòng {{.Unit.Name}} nhà cho
-thuê {{.Property.Name}} yêu cầu xem xét khoản thu
+{{if eq .UpdateData.Status "PLAN"}}
+Khách thuê {{.Rental.TenantName}} tại phòng {{.Unit.Name}} nhà cho thuê {{.Property.Name}} yêu cầu xem xét khoản thu {{.PaymentService}} từ {{.Payment.StartDate.Format "02/01/2006"}} đến {{.Payment.EndDate.Format "02/01/2006"}}: {{.UpdateData.Note}}
 {{else}}
-Khách thuê {{.Rental.TenantName}} tại phòng {{.Unit.Name}} nhà cho
-thuê {{.Property.Name}} đã đồng ý với khoản thu
+Khách thuê {{.Rental.TenantName}} tại phòng {{.Unit.Name}} nhà cho thuê {{.Property.Name}} đã đồng ý với khoản thu {{.PaymentService}} từ {{.Payment.StartDate.Format "02/01/2006"}} đến {{.Payment.EndDate.Format "02/01/2006"}}
 {{end}}
