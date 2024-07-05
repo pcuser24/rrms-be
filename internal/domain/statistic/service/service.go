@@ -11,7 +11,7 @@ import (
 type Service interface {
 	GetPropertiesStatistic(userId uuid.UUID, query statistic_dto.PropertiesStatisticQuery) (res statistic_dto.PropertiesStatisticResponse, err error)
 	GetApplicationStatistic(userId uuid.UUID) (res statistic_dto.ApplicationStatisticResponse, err error)
-	GetRentalStatistic(userId uuid.UUID) (res statistic_dto.RentalStatisticResponse, err error)
+	GetMaintenanceStatistic(userId uuid.UUID) (res statistic_dto.RentalStatisticResponse, err error)
 	GetRentalPaymentArrears(userId uuid.UUID, query *statistic_dto.RentalPaymentStatisticQuery) (res []statistic_dto.RentalPaymentArrearsItem, err error)
 	GetRentalPaymentIncomes(userId uuid.UUID, query *statistic_dto.RentalPaymentStatisticQuery) (res []statistic_dto.RentalPaymentIncomeItem, err error)
 	GetPaymentsStatistic(userId uuid.UUID, query statistic_dto.PaymentsStatisticQuery) (res []statistic_dto.PaymentsStatisticItem, err error)

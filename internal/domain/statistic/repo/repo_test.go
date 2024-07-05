@@ -29,7 +29,7 @@ func TestMain(m *testing.M) {
 }
 
 func TestGetNewApplications(t *testing.T) {
-	res, err := statisticRepo.GetNewApplications(context.Background(), uuid.MustParse("e0a8d123-c55b-4230-91e8-bd1b7b762366"), time.Now().AddDate(0, -2, 0))
+	res, err := statisticRepo.GetApplicationsInMonth(context.Background(), uuid.MustParse("e0a8d123-c55b-4230-91e8-bd1b7b762366"), time.Now())
 	require.NoError(t, err)
 
 	t.Log(res)

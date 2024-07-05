@@ -46,8 +46,15 @@ func NewService(domainRepo repos.DomainRepo, notificationEndpoint notification.N
 }
 
 func (s *service) CreateNotificationDevice(userId uuid.UUID, payload *dto.CreateNotificationDevice) (model.NotificationDevice, error) {
-	sessionId := uuid.New()
+	nds, err := s.GetNotificationDevice(userId, uuid.Nil, payload.Token, string(payload.Platform))
+	if err != nil {
+		return model.NotificationDevice{}, err
+	}
+	if len(nds) > 0 {
+		return nds[0], nil
+	}
 
+	sessionId := uuid.New()
 	return s.domainRepo.MiscRepo.CreateNotificationDevice(context.Background(), userId, sessionId, payload)
 }
 

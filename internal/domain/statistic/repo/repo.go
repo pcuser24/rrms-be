@@ -23,7 +23,7 @@ type Repo interface {
 	GetMostRentedUnits(ctx context.Context, userId uuid.UUID, limit, offset int32) ([]statistic_dto.ExtremelyRentedUnitItem, error)
 	GetLeastRentedProperties(ctx context.Context, userId uuid.UUID, limit, offset int32) ([]statistic_dto.ExtremelyRentedPropertyItem, error)
 	GetLeastRentedUnits(ctx context.Context, userId uuid.UUID, limit, offset int32) ([]statistic_dto.ExtremelyRentedUnitItem, error)
-	GetNewApplications(ctx context.Context, userId uuid.UUID, month time.Time) ([]int64, error)
+	GetApplicationsInMonth(ctx context.Context, userId uuid.UUID, month time.Time) ([]int64, error)
 	GetRentalPaymentArrears(ctx context.Context, userId uuid.UUID, query statistic_dto.RentalPaymentStatisticQuery) ([]statistic_dto.RentalPayment, error)
 	GetRentalPaymentIncomes(ctx context.Context, userId uuid.UUID, query statistic_dto.RentalPaymentStatisticQuery) (float32, error)
 	GetMaintenanceRequests(ctx context.Context, userId uuid.UUID, month time.Time) ([]int64, error)
@@ -146,46 +146,15 @@ func (r *repo) GetManagedUnits(ctx context.Context, userId uuid.UUID) ([]uuid.UU
 	return r.dao.GetManagedUnits(ctx, userId)
 }
 
-// GetNewApplications returns the new applications of the given user in the given month.
-func (r *repo) GetNewApplications(ctx context.Context, userId uuid.UUID, month time.Time) ([]int64, error) {
-	month = time.Date(month.Year(), month.Month(), 1, 0, 0, 0, 0, &time.Location{})
-
-	subSB := sqlbuilder.NewSelectBuilder()
-	subSB.Select("1").
-		From("property_managers").
-		Where(
-			subSB.Equal("property_managers.manager_id", userId),
-			"property_managers.property_id = applications.property_id",
-		)
-
-	sb := sqlbuilder.PostgreSQL.NewSelectBuilder()
-	sb.Select("id").
-		From("applications").
-		Where(
-			sb.Exists(subSB),
-			sb.Equal("DATE_TRUNC('month', applications.created_at)", pgtype.Date{Time: month, Valid: !month.IsZero()}),
-		)
-
-	sql, args := sb.Build()
-	rows, err := r.dao.Query(ctx, sql, args...)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var ids []int64
-	for rows.Next() {
-		var id int64
-		if err = rows.Scan(&id); err != nil {
-			return nil, err
-		}
-		ids = append(ids, id)
-	}
-	rows.Close()
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-
-	return ids, nil
+// GetApplicationsInMonth returns the new applications of the given user in the given month.
+func (r *repo) GetApplicationsInMonth(ctx context.Context, userId uuid.UUID, month time.Time) ([]int64, error) {
+	return r.dao.GetApplicationsInMonth(ctx, database.GetApplicationsInMonthParams{
+		ManagerID: userId,
+		Month: pgtype.Timestamp{
+			Time:  month,
+			Valid: !month.IsZero(),
+		},
+	})
 }
 
 func (r *repo) GetOccupiedUnits(ctx context.Context, userId uuid.UUID) ([]uuid.UUID, error) {

@@ -74,16 +74,16 @@ func (s *service) GetPropertiesStatistic(userId uuid.UUID, query dto.PropertiesS
 func (s *service) GetApplicationStatistic(userId uuid.UUID) (res dto.ApplicationStatisticResponse, err error) {
 	now := time.Now()
 
-	res.NewApplicationsThisMonth, err = s.domainRepo.StatisticRepo.GetNewApplications(context.Background(), userId, now)
+	res.NewApplicationsThisMonth, err = s.domainRepo.StatisticRepo.GetApplicationsInMonth(context.Background(), userId, now)
 	if err != nil {
 		return
 	}
 
-	res.NewApplicationsLastMonth, err = s.domainRepo.StatisticRepo.GetNewApplications(context.Background(), userId, now.AddDate(0, -1, 0))
+	res.NewApplicationsLastMonth, err = s.domainRepo.StatisticRepo.GetApplicationsInMonth(context.Background(), userId, now.AddDate(0, -1, 0))
 	return
 }
 
-func (s *service) GetRentalStatistic(userId uuid.UUID) (res dto.RentalStatisticResponse, err error) {
+func (s *service) GetMaintenanceStatistic(userId uuid.UUID) (res dto.RentalStatisticResponse, err error) {
 	now := time.Now()
 	res.NewMaintenancesThisMonth, err = s.domainRepo.StatisticRepo.GetMaintenanceRequests(context.Background(), userId, now)
 	if err != nil {

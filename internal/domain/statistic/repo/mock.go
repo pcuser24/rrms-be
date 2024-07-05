@@ -43,6 +43,21 @@ func (m *MockRepo) EXPECT() *MockRepoMockRecorder {
 	return m.recorder
 }
 
+// GetApplicationsInMonth mocks base method.
+func (m *MockRepo) GetApplicationsInMonth(arg0 context.Context, arg1 uuid.UUID, arg2 time.Time) ([]int64, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetApplicationsInMonth", arg0, arg1, arg2)
+	ret0, _ := ret[0].([]int64)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetApplicationsInMonth indicates an expected call of GetApplicationsInMonth.
+func (mr *MockRepoMockRecorder) GetApplicationsInMonth(arg0, arg1, arg2 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetApplicationsInMonth", reflect.TypeOf((*MockRepo)(nil).GetApplicationsInMonth), arg0, arg1, arg2)
+}
+
 // GetLeastRentedProperties mocks base method.
 func (m *MockRepo) GetLeastRentedProperties(arg0 context.Context, arg1 uuid.UUID, arg2, arg3 int32) ([]dto.ExtremelyRentedPropertyItem, error) {
 	m.ctrl.T.Helper()
@@ -146,21 +161,6 @@ func (m *MockRepo) GetMostRentedUnits(arg0 context.Context, arg1 uuid.UUID, arg2
 func (mr *MockRepoMockRecorder) GetMostRentedUnits(arg0, arg1, arg2, arg3 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetMostRentedUnits", reflect.TypeOf((*MockRepo)(nil).GetMostRentedUnits), arg0, arg1, arg2, arg3)
-}
-
-// GetNewApplications mocks base method.
-func (m *MockRepo) GetNewApplications(arg0 context.Context, arg1 uuid.UUID, arg2 time.Time) ([]int64, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetNewApplications", arg0, arg1, arg2)
-	ret0, _ := ret[0].([]int64)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetNewApplications indicates an expected call of GetNewApplications.
-func (mr *MockRepoMockRecorder) GetNewApplications(arg0, arg1, arg2 any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetNewApplications", reflect.TypeOf((*MockRepo)(nil).GetNewApplications), arg0, arg1, arg2)
 }
 
 // GetOccupiedProperties mocks base method.

@@ -106,12 +106,12 @@ SELECT DISTINCT unit_id FROM rentals WHERE
   start_date + INTERVAL '1 month' * rental_period >= CURRENT_DATE AND
   status = 'INPROGRESS';
 
--- name: GetNewApplications :many
+-- name: GetApplicationsInMonth :many
 SELECT id FROM applications WHERE 
   EXISTS (
     SELECT 1 FROM property_managers WHERE manager_id = $1 AND property_managers.property_id = applications.property_id 
   ) AND
-  DATE_TRUNC('month', created_at) = DATE_TRUNC('month', sqlc.arg(month))
+  DATE_TRUNC('month', created_at) = DATE_TRUNC('month', sqlc.arg(month)::TIMESTAMP)
 ;
 
 -- name: GetMaintenanceRequests :many
@@ -130,7 +130,7 @@ SELECT id FROM rental_complaints WHERE
 SELECT rental_payments.*, (rental_payments.expiry_date - CURRENT_DATE) AS expiry_duration, rentals.tenant_id, rentals.tenant_name, rentals.property_id, rentals.unit_id 
 FROM rental_payments INNER JOIN rentals ON rentals.id = rental_payments.rental_id
 WHERE 
-  rental_payments.status IN ('ISSUED', 'PENDING', 'REQUEST2PAY') AND 
+  rental_payments.status IN ('ISSUED', 'PENDING', 'REQUEST2PAY', 'PARTIALLYPAID', 'PAYFINE') AND 
   EXISTS (
     SELECT 1 FROM rentals WHERE 
       rental_payments.rental_id = rentals.id AND

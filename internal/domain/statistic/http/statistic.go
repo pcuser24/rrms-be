@@ -39,12 +39,6 @@ func (a *adapter) getPropertiesStatistic() fiber.Handler {
 	}
 }
 
-func (a *adapter) getListingsStatistic() fiber.Handler {
-	return func(ctx *fiber.Ctx) error {
-		return nil
-	}
-}
-
 func (a *adapter) getApplicationStatistic() fiber.Handler {
 	return func(ctx *fiber.Ctx) error {
 		tkPayload := ctx.Locals(auth_http.AuthorizationPayloadKey).(*token.Payload)
@@ -61,11 +55,11 @@ func (a *adapter) getApplicationStatistic() fiber.Handler {
 	}
 }
 
-func (a *adapter) getManagerRentalStatistic() fiber.Handler {
+func (a *adapter) getManagerMaintenanceStatistic() fiber.Handler {
 	return func(ctx *fiber.Ctx) error {
 		tkPayload := ctx.Locals(auth_http.AuthorizationPayloadKey).(*token.Payload)
 
-		res, err := a.service.GetRentalStatistic(tkPayload.UserID)
+		res, err := a.service.GetMaintenanceStatistic(tkPayload.UserID)
 		if err != nil {
 			if errors.Is(err, database.ErrRecordNotFound) {
 				return ctx.Status(fiber.StatusOK).JSON(dto.RentalStatisticResponse{

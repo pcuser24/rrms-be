@@ -13,6 +13,39 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const getApplicationsInMonth = `-- name: GetApplicationsInMonth :many
+SELECT id FROM applications WHERE 
+  EXISTS (
+    SELECT 1 FROM property_managers WHERE manager_id = $1 AND property_managers.property_id = applications.property_id 
+  ) AND
+  DATE_TRUNC('month', created_at) = DATE_TRUNC('month', $2::TIMESTAMP)
+`
+
+type GetApplicationsInMonthParams struct {
+	ManagerID uuid.UUID        `json:"manager_id"`
+	Month     pgtype.Timestamp `json:"month"`
+}
+
+func (q *Queries) GetApplicationsInMonth(ctx context.Context, arg GetApplicationsInMonthParams) ([]int64, error) {
+	rows, err := q.db.Query(ctx, getApplicationsInMonth, arg.ManagerID, arg.Month)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []int64
+	for rows.Next() {
+		var id int64
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		items = append(items, id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getLeastRentedProperties = `-- name: GetLeastRentedProperties :many
 SELECT r.id, COALESCE(c.count, 0) AS count
 FROM 
@@ -314,39 +347,6 @@ func (q *Queries) GetMostRentedUnits(ctx context.Context, arg GetMostRentedUnits
 			return nil, err
 		}
 		items = append(items, i)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
-const getNewApplications = `-- name: GetNewApplications :many
-SELECT id FROM applications WHERE 
-  EXISTS (
-    SELECT 1 FROM property_managers WHERE manager_id = $1 AND property_managers.property_id = applications.property_id 
-  ) AND
-  DATE_TRUNC('month', created_at) = DATE_TRUNC('month', $2)
-`
-
-type GetNewApplicationsParams struct {
-	ManagerID uuid.UUID       `json:"manager_id"`
-	Month     pgtype.Interval `json:"month"`
-}
-
-func (q *Queries) GetNewApplications(ctx context.Context, arg GetNewApplicationsParams) ([]int64, error) {
-	rows, err := q.db.Query(ctx, getNewApplications, arg.ManagerID, arg.Month)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []int64
-	for rows.Next() {
-		var id int64
-		if err := rows.Scan(&id); err != nil {
-			return nil, err
-		}
-		items = append(items, id)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err
