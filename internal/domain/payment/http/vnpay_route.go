@@ -2,6 +2,7 @@ package http
 
 import (
 	"errors"
+	"fmt"
 	"io"
 	"maps"
 	"strconv"
@@ -11,7 +12,6 @@ import (
 	auth_http "github.com/user2410/rrms-backend/internal/domain/auth/http"
 	"github.com/user2410/rrms-backend/internal/domain/payment/dto"
 	"github.com/user2410/rrms-backend/internal/domain/payment/service/vnpay"
-	"github.com/user2410/rrms-backend/internal/interfaces/rest/responses"
 	"github.com/user2410/rrms-backend/internal/utils/token"
 	"github.com/user2410/rrms-backend/internal/utils/validation"
 )
@@ -76,15 +76,15 @@ func (a *adapter) vnpReturn() fiber.Handler {
 		err := paymentService.Return(queries)
 		if err != nil {
 			if errors.Is(err, vnpay.ErrInvalidHash) {
-				return ctx.Status(fiber.StatusOK).JSON(fiber.Map{"code": "97"})
+				return ctx.Status(fiber.StatusOK).SendString(fmt.Sprintf("Thanh toán thất bại: mã lỗi 97, %s", err.Error()))
 			}
 			if dbErr, ok := err.(*pgconn.PgError); ok {
-				return responses.DBErrorResponse(ctx, dbErr)
+				return ctx.Status(fiber.StatusOK).SendString(fmt.Sprintf("Thanh toán thất bại: lỗi hệ thống, %s", dbErr.Error()))
 			}
 			return ctx.SendStatus(fiber.StatusInternalServerError)
 		}
 
-		return ctx.Status(fiber.StatusOK).JSON(fiber.Map{"code": queries["vnp_ResponseCode"]})
+		return ctx.Status(fiber.StatusOK).SendString("Thanh toán thành công, hãy đóng tab này để tiếp tục")
 	}
 }
 

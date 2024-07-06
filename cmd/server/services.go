@@ -53,6 +53,7 @@ func (c *serverCommand) setupInternalServices() {
 		c.cronScheduler,
 		c.s3Client, c.config.AWSS3ImageBucket,
 		c.config.FESite, c.config.TokenSecreteKey,
+		c.asyncTaskDistributor,
 	)
 	c.internalServices.ReminderService = reminder.NewService(
 		domainRepo,
@@ -61,6 +62,7 @@ func (c *serverCommand) setupInternalServices() {
 		domainRepo,
 		c.internalServices.ReminderService, c.internalServices.MiscService,
 		c.s3Client, c.config.AWSS3ImageBucket,
+		c.asyncTaskDistributor,
 		c.config.FESite,
 	)
 	c.internalServices.PaymentService = vnp_service.NewVnpayService(

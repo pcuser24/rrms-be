@@ -23,20 +23,20 @@ type UpdateRental struct {
 	RentalPrice        *float32            `json:"rentalPrice" validate:"omitempty"`
 	RentalPaymentBasis *int32              `json:"rentalPaymentBasis" validate:"omitempty"`
 
-	ElectricitySetupBy             *string  `json:"electricitySetupBy" validate:"omitempty"`
-	ElectricityPaymentType         *string  `json:"electricityPaymentType" validate:"omitempty"`
-	ElectricityProvider            *string  `json:"electricityProvider" validate:"omitempty"`
-	ElectricityCustomerCode        *string  `json:"electricityCustomerCode" validate:"omitempty"`
-	ElectricityPrice               *float32 `json:"electricityPrice" validate:"omitempty"`
-	WaterSetupBy                   *string  `json:"waterSetupBy" validate:"omitempty"`
-	WaterPaymentType               *string  `json:"waterPaymentType" validate:"omitempty"`
-	WaterCustomerCode              *string  `json:"waterCustomerCode" validate:"omitempty"`
-	WaterProvider                  *string  `json:"waterProvider" validate:"omitempty"`
-	WaterPrice                     *float32 `json:"waterPrice" validate:"omitempty"`
-	RentalPaymentGracePeriod       *int32   `json:"rentalPaymentGracePeriod" validate:"omitempty"`
-	RentalPaymentLateFeePercentage *float32 `json:"rentalPaymentLateFeePercentage" validate:"omitempty"`
-
-	Note *string `json:"note" validate:"omitempty"`
+	ElectricitySetupBy             *string               `json:"electricitySetupBy" validate:"omitempty"`
+	ElectricityPaymentType         *string               `json:"electricityPaymentType" validate:"omitempty"`
+	ElectricityProvider            *string               `json:"electricityProvider" validate:"omitempty"`
+	ElectricityCustomerCode        *string               `json:"electricityCustomerCode" validate:"omitempty"`
+	ElectricityPrice               *float32              `json:"electricityPrice" validate:"omitempty"`
+	WaterSetupBy                   *string               `json:"waterSetupBy" validate:"omitempty"`
+	WaterPaymentType               *string               `json:"waterPaymentType" validate:"omitempty"`
+	WaterCustomerCode              *string               `json:"waterCustomerCode" validate:"omitempty"`
+	WaterProvider                  *string               `json:"waterProvider" validate:"omitempty"`
+	WaterPrice                     *float32              `json:"waterPrice" validate:"omitempty"`
+	RentalPaymentGracePeriod       *int32                `json:"rentalPaymentGracePeriod" validate:"omitempty"`
+	RentalPaymentLateFeePercentage *float32              `json:"rentalPaymentLateFeePercentage" validate:"omitempty"`
+	Status                         database.RENTALSTATUS `json:"status" validate:"omitempty,oneof=INPROGRESS END"`
+	Note                           *string               `json:"note" validate:"omitempty"`
 }
 
 func (pm *UpdateRental) ToUpdateRentalDB(id int64) database.UpdateRentalParams {
@@ -73,5 +73,9 @@ func (pm *UpdateRental) ToUpdateRentalDB(id int64) database.UpdateRentalParams {
 		WaterProvider:           types.StrN(pm.WaterProvider),
 		WaterPrice:              types.Float32N(pm.WaterPrice),
 		Note:                    types.StrN(pm.Note),
+		Status: database.NullRENTALSTATUS{
+			RENTALSTATUS: pm.Status,
+			Valid:        pm.Status != "",
+		},
 	}
 }

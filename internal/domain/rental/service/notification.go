@@ -18,7 +18,6 @@ import (
 	misc_service "github.com/user2410/rrms-backend/internal/domain/misc/service"
 
 	"github.com/user2410/rrms-backend/internal/infrastructure/database"
-	"github.com/user2410/rrms-backend/pkg/ds/set"
 
 	rental_util "github.com/user2410/rrms-backend/internal/domain/rental/utils"
 	template_util "github.com/user2410/rrms-backend/internal/utils/template"
@@ -30,68 +29,7 @@ var (
 	basePath = "internal/domain/rental/service/templates"
 )
 
-func (s *service) _getNotificationManagersTargets(propertyID uuid.UUID) ([]misc_dto.CreateNotificationTarget, error) {
-	managers, err := s.domainRepo.PropertyRepo.GetPropertyManagers(context.Background(), propertyID)
-	if err != nil {
-		return nil, err
-	}
-	managerIds := make([]uuid.UUID, 0)
-	for _, m := range managers {
-		managerIds = append(managerIds, m.ManagerID)
-	}
-
-	us, err := s.domainRepo.AuthRepo.GetUsersByIds(context.Background(), managerIds, []string{"email"})
-	if err != nil {
-		return nil, err
-	}
-
-	targets := make([]misc_dto.CreateNotificationTarget, 0)
-	for _, u := range us {
-		target := misc_dto.CreateNotificationTarget{
-			UserId: u.ID,
-			Emails: []string{u.Email},
-		}
-		ds, err := s.mService.GetNotificationDevice(u.ID, uuid.Nil, "", "")
-		if err != nil {
-			return nil, err
-		}
-		for _, d := range ds {
-			target.Tokens = append(target.Tokens, d.Token)
-		}
-		targets = append(targets, target)
-	}
-
-	return targets, nil
-}
-
-func (s *service) _getNotificationTenantTargets(tenantID uuid.UUID, tenantEmail string) (misc_dto.CreateNotificationTarget, error) {
-	emailTargets := set.NewSet[string]()
-	pushTargets := set.NewSet[string]()
-	emailTargets.Add(tenantEmail)
-	if tenantID != uuid.Nil {
-		ts, err := s.domainRepo.AuthRepo.GetUsersByIds(context.Background(), []uuid.UUID{tenantID}, []string{"email"})
-		if err != nil {
-			return misc_dto.CreateNotificationTarget{}, err
-		}
-		if len(ts) > 0 {
-			emailTargets.Add(ts[0].Email)
-			ds, err := s.mService.GetNotificationDevice(tenantID, uuid.Nil, "", "")
-			if err != nil {
-				return misc_dto.CreateNotificationTarget{}, err
-			}
-			for _, d := range ds {
-				pushTargets.Add(d.Token)
-			}
-		}
-	}
-	return misc_dto.CreateNotificationTarget{
-		UserId: tenantID,
-		Emails: emailTargets.ToSlice(),
-		Tokens: pushTargets.ToSlice(),
-	}, nil
-}
-
-func (s *service) notifyCreatePreRental(
+func (s *service) NotifyCreatePreRental(
 	r *rental_model.RentalModel,
 	secret string,
 ) error {
@@ -104,12 +42,12 @@ func (s *service) notifyCreatePreRental(
 		key        string
 	)
 	{
-		ts, err := s._getNotificationManagersTargets(r.PropertyID)
+		ts, err := s.mService.GetNotificationManagersTargets(r.PropertyID)
 		if err != nil {
 			return err
 		}
 		targets = append(targets, ts...)
-		t, err := s._getNotificationTenantTargets(r.TenantID, r.TenantEmail)
+		t, err := s.mService.GetNotificationTenantTargets(r.TenantID, r.TenantEmail)
 		if err != nil {
 			return err
 		}
@@ -232,7 +170,7 @@ func (s *service) notifyCreatePreRental(
 	return nil
 }
 
-func (s *service) notifyUpdatePreRental(
+func (s *service) NotifyUpdatePreRental(
 	preRental *rental_model.PreRental,
 	rental *rental_model.RentalModel,
 	updateData *rental_dto.UpdatePreRental,
@@ -244,7 +182,7 @@ func (s *service) notifyUpdatePreRental(
 		unit     unit_model.UnitModel
 	)
 	{
-		ts, err := s._getNotificationManagersTargets(preRental.PropertyID)
+		ts, err := s.mService.GetNotificationManagersTargets(preRental.PropertyID)
 		if err != nil {
 			return err
 		}
@@ -378,7 +316,7 @@ var (
 	}
 )
 
-func (s *service) notifyUpdatePayments(
+func (s *service) NotifyUpdatePayments(
 	r *rental_model.RentalModel,
 	rp *rental_model.RentalPayment, // old rental payment data before update
 	u *rental_dto.UpdateRentalPayment,
@@ -395,7 +333,7 @@ func (s *service) notifyUpdatePayments(
 		database.RENTALPAYMENTSTATUSPAYFINE,
 	}, rp.Status) {
 		// notify tenant
-		t, err := s._getNotificationTenantTargets(r.TenantID, r.TenantEmail)
+		t, err := s.mService.GetNotificationTenantTargets(r.TenantID, r.TenantEmail)
 		if err != nil {
 			return err
 		}
@@ -406,7 +344,7 @@ func (s *service) notifyUpdatePayments(
 		database.RENTALPAYMENTSTATUSPARTIALLYPAID,
 	}, rp.Status) {
 		// notify managers
-		ts, err := s._getNotificationManagersTargets(r.PropertyID)
+		ts, err := s.mService.GetNotificationManagersTargets(r.PropertyID)
 		if err != nil {
 			return err
 		}
@@ -526,13 +464,13 @@ func (s *service) notifyUpdatePayments(
 	return nil
 }
 
-// notifyCreateRentalPayment notifies tenant about newly issued rental payment
-func (s *service) notifyCreateRentalPayment(
+// NotifyCreateRentalPayment notifies tenant about newly issued rental payment
+func (s *service) NotifyCreateRentalPayment(
 	r *rental_model.RentalModel,
 	rp *rental_model.RentalPayment,
 ) error {
 	// get target emails and push tokens
-	target, err := s._getNotificationTenantTargets(r.TenantID, r.TenantEmail)
+	target, err := s.mService.GetNotificationTenantTargets(r.TenantID, r.TenantEmail)
 	if err != nil {
 		return err
 	}
@@ -634,12 +572,12 @@ func (s *service) notifyCreateRentalPayment(
 	return s.mService.SendNotification(&cn)
 }
 
-func (s *service) notifyCreateContract(
+func (s *service) NotifyCreateContract(
 	c *rental_model.ContractModel,
 	r *rental_model.RentalModel,
 ) error {
 	// get target emails and push tokens
-	target, err := s._getNotificationTenantTargets(r.TenantID, r.TenantEmail)
+	target, err := s.mService.GetNotificationTenantTargets(r.TenantID, r.TenantEmail)
 	if err != nil {
 		return err
 	}
@@ -754,7 +692,7 @@ func (s *service) notifyCreateContract(
 	return nil
 }
 
-func (s *service) notifyUpdateContract(
+func (s *service) NotifyUpdateContract(
 	c *rental_model.ContractModel,
 	r *rental_model.RentalModel,
 	side string,
@@ -764,13 +702,13 @@ func (s *service) notifyUpdateContract(
 		err     error
 	)
 	if side == "A" {
-		target, err := s._getNotificationTenantTargets(r.TenantID, r.TenantEmail)
+		target, err := s.mService.GetNotificationTenantTargets(r.TenantID, r.TenantEmail)
 		if err != nil {
 			return err
 		}
 		targets = []misc_dto.CreateNotificationTarget{target}
 	} else if side == "B" {
-		targets, err = s._getNotificationManagersTargets(r.PropertyID)
+		targets, err = s.mService.GetNotificationManagersTargets(r.PropertyID)
 		if err != nil {
 			return err
 		}
@@ -897,7 +835,7 @@ func (s *service) notifyUpdateContract(
 	return nil
 }
 
-func (s *service) notifyCreateRentalComplaint(
+func (s *service) NotifyCreateRentalComplaint(
 	c *rental_model.RentalComplaint,
 	r *rental_model.RentalModel,
 ) error {
@@ -915,13 +853,13 @@ func (s *service) notifyCreateRentalComplaint(
 			return err
 		}
 		if side == "A" {
-			target, err := s._getNotificationTenantTargets(r.TenantID, r.TenantEmail)
+			target, err := s.mService.GetNotificationTenantTargets(r.TenantID, r.TenantEmail)
 			if err != nil {
 				return err
 			}
 			targets = []misc_dto.CreateNotificationTarget{target}
 		} else if side == "B" {
-			targets, err = s._getNotificationManagersTargets(r.PropertyID)
+			targets, err = s.mService.GetNotificationManagersTargets(r.PropertyID)
 			if err != nil {
 				return err
 			}
@@ -1036,7 +974,7 @@ func (s *service) notifyCreateRentalComplaint(
 	return nil
 }
 
-func (s *service) notifyCreateComplaintReply(
+func (s *service) NotifyCreateComplaintReply(
 	c *rental_model.RentalComplaint,
 	cr *rental_model.RentalComplaintReply,
 	r *rental_model.RentalModel,
@@ -1053,13 +991,13 @@ func (s *service) notifyCreateComplaintReply(
 			return err
 		}
 		if side == "A" {
-			target, err := s._getNotificationTenantTargets(r.TenantID, r.TenantEmail)
+			target, err := s.mService.GetNotificationTenantTargets(r.TenantID, r.TenantEmail)
 			if err != nil {
 				return err
 			}
 			targets = []misc_dto.CreateNotificationTarget{target}
 		} else if side == "B" {
-			targets, err = s._getNotificationManagersTargets(r.PropertyID)
+			targets, err = s.mService.GetNotificationManagersTargets(r.PropertyID)
 			if err != nil {
 				return err
 			}
@@ -1154,7 +1092,7 @@ func (s *service) notifyCreateComplaintReply(
 	return nil
 }
 
-func (s *service) notifyUpdateComplaintStatus(
+func (s *service) NotifyUpdateComplaintStatus(
 	c *rental_model.RentalComplaint,
 	r *rental_model.RentalModel,
 	status database.RENTALCOMPLAINTSTATUS,
@@ -1171,13 +1109,13 @@ func (s *service) notifyUpdateComplaintStatus(
 			return err
 		}
 		if side == "A" {
-			target, err := s._getNotificationTenantTargets(r.TenantID, r.TenantEmail)
+			target, err := s.mService.GetNotificationTenantTargets(r.TenantID, r.TenantEmail)
 			if err != nil {
 				return err
 			}
 			targets = []misc_dto.CreateNotificationTarget{target}
 		} else if side == "B" {
-			targets, err = s._getNotificationManagersTargets(r.PropertyID)
+			targets, err = s.mService.GetNotificationManagersTargets(r.PropertyID)
 			if err != nil {
 				return err
 			}

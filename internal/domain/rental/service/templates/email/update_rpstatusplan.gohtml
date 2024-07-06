@@ -26,19 +26,15 @@
     </tr>
     <tr>
       <td style="padding: 0.5rem 1rem; font-weight: 600;">Số tiền</td>
-      <td style="padding: 0.5rem 1rem;">{{.Payment.Amount}} VNĐ</td>
+      <td style="padding: 0.5rem 1rem;">{{.UpdateData.Amount}} VNĐ</td>
     </tr>
     <tr>
       <td style="padding: 0.5rem 1rem;">Khấu trừ</td>
-      <td style="padding: 0.5rem 1rem;">{{Dereference .Payment.Discount}} VNĐ</td>
-    </tr>
-    <tr>
-      <td style="padding: 0.5rem 1rem; font-weight: 600;">Phải nộp</td>
-      <td style="padding: 0.5rem 1rem;">{{.Payment.MustPay}} VNĐ</td>
+      <td style="padding: 0.5rem 1rem;">{{Dereference .UpdateData.Discount}} VNĐ</td>
     </tr>
     <tr>
       <td style="padding: 0.5rem 1rem; font-weight: 600;">Hạn nộp</td>
-      <td style="padding: 0.5rem 1rem;">{{.Payment.ExpiryDate.Format "02/01/2006"}}</td>
+      <td style="padding: 0.5rem 1rem;">{{.UpdateData.ExpiryDate.Format "02/01/2006"}}</td>
     </tr>
   </table>
   <a href="{{.FESite}}/manage/rentals/rental/{{.Rental.ID}}">Xem chi tiết</a>

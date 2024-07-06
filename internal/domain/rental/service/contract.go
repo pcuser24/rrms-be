@@ -9,6 +9,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/user2410/rrms-backend/internal/domain/rental/dto"
 	"github.com/user2410/rrms-backend/internal/domain/rental/model"
+	"github.com/user2410/rrms-backend/internal/infrastructure/asynctask"
 	"github.com/user2410/rrms-backend/internal/infrastructure/database"
 	"github.com/user2410/rrms-backend/internal/utils/types"
 )
@@ -41,12 +42,14 @@ func (s *service) CreateContract(data *dto.CreateContract) (*model.ContractModel
 		return nil, err
 	}
 
-	err = s.notifyCreateContract(contract, &rental)
-	if err != nil {
-		// TODO: log error
+	// err = s.NotifyCreateContract(contract, &rental)
+	notifyData := dto.NotifyCreateContract{
+		Contract: contract,
+		Rental:   &rental,
 	}
+	err = s.asynctaskDistributor.DistributeTaskJSON(context.Background(), asynctask.RENTAL_CONTRACT_CREATE, notifyData)
 
-	return contract, nil
+	return contract, err
 }
 
 func (s *service) GetRentalContractsOfUser(userId uuid.UUID, query *dto.GetRentalContracts) ([]model.ContractModel, error) {
@@ -128,10 +131,16 @@ func (s *service) UpdateContract(data *dto.UpdateContract) error {
 	cs[0].UpdatedAt = time.Now()
 	cs[0].UpdatedBy = data.UserID
 	if lastUpdaterSide != updaterSide {
-		s.notifyUpdateContract(&cs[0], &rental, updaterSide)
+		// s.NotifyUpdateContract(&cs[0], &rental, updaterSide)
+		notifyData := dto.NotifyUpdateContract{
+			Contract: &cs[0],
+			Rental:   &rental,
+			Side:     updaterSide,
+		}
+		err = s.asynctaskDistributor.DistributeTaskJSON(context.Background(), asynctask.RENTAL_CONTRACT_UPDATE, notifyData)
 	}
 
-	return nil
+	return err
 }
 
 func (s *service) UpdateContractContent(data *dto.UpdateContractContent) error {
@@ -186,7 +195,7 @@ func (s *service) UpdateContractContent(data *dto.UpdateContractContent) error {
 	}
 
 	if lastUpdaterSide != updaterSide {
-		s.notifyUpdateContract(&cs[0], &rental, updaterSide)
+		s.NotifyUpdateContract(&cs[0], &rental, updaterSide)
 	}
 
 	return nil

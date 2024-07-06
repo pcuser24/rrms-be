@@ -8,9 +8,9 @@ import (
 	repos "github.com/user2410/rrms-backend/internal/domain/_repos"
 	misc_service "github.com/user2410/rrms-backend/internal/domain/misc/service"
 	"github.com/user2410/rrms-backend/internal/domain/rental/dto"
-	"github.com/user2410/rrms-backend/internal/domain/rental/model"
 	rental_model "github.com/user2410/rrms-backend/internal/domain/rental/model"
 	"github.com/user2410/rrms-backend/internal/domain/rental/utils"
+	"github.com/user2410/rrms-backend/internal/infrastructure/asynctask"
 	"github.com/user2410/rrms-backend/internal/infrastructure/aws/s3"
 	"github.com/user2410/rrms-backend/internal/infrastructure/database"
 )
@@ -25,7 +25,7 @@ type Service interface {
 	CreatePreRental(data *dto.CreateRental, creatorID uuid.UUID) (rental_model.PreRental, error)
 	// CreateRental(data *dto.CreateRental, creatorID uuid.UUID) (rental_model.RentalModel, error)
 	GetPreRentalExtended(id int64, userId uuid.UUID, key string) (dto.GetPreRentalResponse, error)
-	GetPreRentalByID(id int64) (model.PreRental, error)
+	GetPreRentalByID(id int64) (rental_model.PreRental, error)
 	GetPreRentalsToMe(userId uuid.UUID, query *dto.GetPreRentalsQuery) ([]rental_model.PreRental, error)
 	GetManagedPreRentals(userId uuid.UUID, query *dto.GetPreRentalsQuery) ([]rental_model.PreRental, error)
 	UpdatePreRentalState(id int64, payload *dto.UpdatePreRental) (newRentalID int64, err error)
@@ -51,7 +51,7 @@ type Service interface {
 	CreateRentalPayment(data *dto.CreateRentalPayment) (rental_model.RentalPayment, error)
 	GetRentalPayment(id int64) (rental_model.RentalPayment, error)
 	GetPaymentsOfRental(id int64) ([]rental_model.RentalPayment, error)
-	GetManagedRentalPayments(uid uuid.UUID, query *dto.GetManagedRentalPaymentsQuery) ([]model.RentalPayment, error)
+	GetManagedRentalPayments(uid uuid.UUID, query *dto.GetManagedRentalPaymentsQuery) ([]rental_model.RentalPayment, error)
 	UpdateRentalPayment(id int64, userId uuid.UUID, data dto.IUpdateRentalPayment, status database.RENTALPAYMENTSTATUS) error
 
 	PreCreateRentalComplaint(data *dto.PreCreateRentalComplaint, creatorID uuid.UUID) error
@@ -63,6 +63,49 @@ type Service interface {
 	GetRentalComplaintsOfUser(userId uuid.UUID, query dto.GetRentalComplaintsOfUserQuery) ([]rental_model.RentalComplaint, error)
 	GetRentalComplaintReplies(id int64, limit, offset int32) ([]rental_model.RentalComplaintReply, error)
 	UpdateRentalComplaintStatus(data *dto.UpdateRentalComplaintStatus) error
+
+	NotifyCreatePreRental(
+		r *rental_model.RentalModel,
+		secret string,
+	) error
+	NotifyUpdatePreRental(
+		preRental *rental_model.PreRental,
+		rental *rental_model.RentalModel,
+		updateData *dto.UpdatePreRental,
+	) error
+	NotifyUpdatePayments(
+		r *rental_model.RentalModel,
+		rp *rental_model.RentalPayment, // old rental payment data before update
+		u *dto.UpdateRentalPayment,
+	) error
+	NotifyCreateRentalPayment(
+		r *rental_model.RentalModel,
+		rp *rental_model.RentalPayment,
+	) error
+	NotifyCreateContract(
+		c *rental_model.ContractModel,
+		r *rental_model.RentalModel,
+	) error
+	NotifyUpdateContract(
+		c *rental_model.ContractModel,
+		r *rental_model.RentalModel,
+		side string,
+	) error
+	NotifyCreateRentalComplaint(
+		c *rental_model.RentalComplaint,
+		r *rental_model.RentalModel,
+	) error
+	NotifyCreateComplaintReply(
+		c *rental_model.RentalComplaint,
+		cr *rental_model.RentalComplaintReply,
+		r *rental_model.RentalModel,
+	) error
+	NotifyUpdateComplaintStatus(
+		c *rental_model.RentalComplaint,
+		r *rental_model.RentalModel,
+		status database.RENTALCOMPLAINTSTATUS,
+		updatedBy uuid.UUID,
+	) error
 }
 
 type service struct {
@@ -75,6 +118,8 @@ type service struct {
 	s3Client        s3.S3Client
 	imageBucketName string
 
+	asynctaskDistributor asynctask.Distributor
+
 	feSite string
 	secret string
 }
@@ -85,15 +130,17 @@ func NewService(
 	c *cron.Cron,
 	s3Client s3.S3Client, imageBucketName string,
 	feSite, secret string,
+	asynctaskDistributor asynctask.Distributor,
 ) Service {
 	res := &service{
-		domainRepo:      domainRepo,
-		cronEntries:     []cron.EntryID{},
-		mService:        mService,
-		s3Client:        s3Client,
-		imageBucketName: imageBucketName,
-		feSite:          feSite,
-		secret:          secret,
+		domainRepo:           domainRepo,
+		cronEntries:          []cron.EntryID{},
+		mService:             mService,
+		s3Client:             s3Client,
+		imageBucketName:      imageBucketName,
+		feSite:               feSite,
+		secret:               secret,
+		asynctaskDistributor: asynctaskDistributor,
 	}
 	res.setupCronjob(c)
 	return res

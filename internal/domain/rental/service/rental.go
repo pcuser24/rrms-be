@@ -10,6 +10,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/user2410/rrms-backend/internal/domain/rental/dto"
 	rental_model "github.com/user2410/rrms-backend/internal/domain/rental/model"
+	"github.com/user2410/rrms-backend/internal/infrastructure/asynctask"
 	"github.com/user2410/rrms-backend/internal/utils/types"
 	"github.com/user2410/rrms-backend/pkg/ds/set"
 )
@@ -44,13 +45,15 @@ func (s *service) CreatePreRental(data *dto.CreateRental, userId uuid.UUID) (ren
 		return rental_model.RentalModel{}, err
 	}
 
-	err = s.notifyCreatePreRental(&rental, s.secret)
-	if err != nil {
-		// TODO: log the error
-
+	{
+		notifyData := dto.NotifyCreatePreRental{
+			Rental: &rental,
+			Secret: s.secret,
+		}
+		err = s.asynctaskDistributor.DistributeTaskJSON(context.Background(), asynctask.RENTAL_PRERENTAL_NEW, notifyData)
 	}
 
-	return rental, nil
+	return rental, err
 }
 
 // func (s *service) CreateRental(data *dto.CreateRental, userId uuid.UUID) (rental_model.RentalModel, error) {
@@ -159,8 +162,9 @@ func (s *service) GetPreRentalByID(id int64) (rental_model.PreRental, error) {
 
 func (s *service) UpdatePreRentalState(id int64, payload *dto.UpdatePreRental) (int64, error) {
 	var (
-		rental rental_model.PreRental
-		err    error
+		rental     rental_model.PreRental
+		err        error
+		notifyData dto.NotifyUpdatePreRental
 	)
 
 	preRental, err := s.domainRepo.RentalRepo.GetPreRental(context.Background(), id)
@@ -181,24 +185,34 @@ func (s *service) UpdatePreRentalState(id int64, payload *dto.UpdatePreRental) (
 		// TODO: send notification about the new rental payment plan
 		// s.notifyCreateRentalPayment(&rental, )
 		// send notification to managers about the acceptance
-		err = s.notifyUpdatePreRental(&preRental, &rental, payload)
+		// err = s.NotifyUpdatePreRental(&preRental, &rental, payload)
+		notifyData = dto.NotifyUpdatePreRental{
+			PreRental:  &preRental,
+			Rental:     &rental,
+			UpdateData: payload,
+		}
 	} else if payload.State == "REVIEW" {
 		// send notifcation to managers to request a review
-		err = s.notifyUpdatePreRental(&preRental, nil, payload)
+		// err = s.NotifyUpdatePreRental(&preRental, nil, payload)
+		notifyData = dto.NotifyUpdatePreRental{
+			PreRental:  &preRental,
+			UpdateData: payload,
+		}
 	} else if payload.State == "REJECTED" {
 		err := s.domainRepo.RentalRepo.RemovePreRental(context.Background(), id)
 		if err != nil {
 			return 0, err
 		}
 		// send notification to managers about the rejection
-		err = s.notifyUpdatePreRental(&preRental, nil, payload)
+		// err = s.NotifyUpdatePreRental(&preRental, nil, payload)
+		notifyData = dto.NotifyUpdatePreRental{
+			PreRental:  &preRental,
+			UpdateData: payload,
+		}
 	}
+	err = s.asynctaskDistributor.DistributeTaskJSON(context.Background(), asynctask.RENTAL_PRERENTAL_UPDATE, notifyData)
 
-	if err != nil {
-		// TODO: log the error
-	}
-
-	return rental.ID, nil
+	return rental.ID, err
 }
 
 func (s *service) GetPreRentalsToMe(userId uuid.UUID, query *dto.GetPreRentalsQuery) ([]rental_model.PreRental, error) {

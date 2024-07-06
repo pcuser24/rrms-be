@@ -13,6 +13,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/user2410/rrms-backend/internal/domain/application/dto"
 	"github.com/user2410/rrms-backend/internal/domain/application/model"
+	"github.com/user2410/rrms-backend/internal/infrastructure/asynctask"
 	"github.com/user2410/rrms-backend/internal/infrastructure/database"
 )
 
@@ -72,7 +73,8 @@ func (s *service) CreateApplication(data *dto.CreateApplication) (*model.Applica
 	}
 
 	// Send notifications
-	err = s.sendNotificationOnNewApplication(am)
+	// err = s.SendNotificationOnNewApplication(am)
+	err = s.asynctaskDistributor.DistributeTaskJSON(context.Background(), asynctask.APPLICATION_NEW, am)
 
 	return am, err
 }
@@ -138,13 +140,14 @@ func (s *service) UpdateApplicationStatus(aid int64, userId uuid.UUID, data *dto
 
 	// Send notifications
 	if willNotify {
-		err = s.sendNotificationOnUpdateApplication(a, data.Status)
-		if err != nil {
-			// TODO: Log error
+		data := dto.NotificationOnUpdateApplication{
+			Application: a,
+			Status:      data.Status,
 		}
+		err = s.asynctaskDistributor.DistributeTaskJSON(context.Background(), asynctask.APPLICATION_UPDATE, data)
 	}
 
-	return nil
+	return err
 }
 
 func (s *service) GetApplicationsByUserId(uid uuid.UUID, q *dto.GetApplicationsToMeQuery) ([]model.ApplicationModel, error) {

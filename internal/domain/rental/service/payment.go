@@ -8,6 +8,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/user2410/rrms-backend/internal/domain/rental/dto"
 	"github.com/user2410/rrms-backend/internal/domain/rental/model"
+	"github.com/user2410/rrms-backend/internal/infrastructure/asynctask"
 	"github.com/user2410/rrms-backend/internal/infrastructure/database"
 	"github.com/user2410/rrms-backend/internal/utils"
 	"github.com/user2410/rrms-backend/internal/utils/types"
@@ -26,12 +27,13 @@ func (s *service) CreateRentalPayment(data *dto.CreateRentalPayment) (model.Rent
 		return model.RentalPayment{}, err
 	}
 
-	err = s.notifyCreateRentalPayment(&rental, &res)
-	if err != nil {
-		// TODO: log error
+	notifyData := dto.NotifyCreateRentalPayment{
+		Rental:        &rental,
+		RentalPayment: &res,
 	}
+	err = s.asynctaskDistributor.DistributeTaskJSON(context.Background(), asynctask.RENTAL_PAYMENT_CREATE, notifyData)
 
-	return res, nil
+	return res, err
 }
 
 func (s *service) GetRentalPayment(id int64) (model.RentalPayment, error) {
@@ -215,10 +217,12 @@ func (s *service) UpdateRentalPayment(id int64, userId uuid.UUID, data dto.IUpda
 		return err
 	}
 	if willNotify {
-		err = s.notifyUpdatePayments(&r, &rp, &_data)
-		if err != nil {
-			// TODO: log error
+		notifyData := dto.NotifyUpdatePayments{
+			Rental:        &r,
+			RentalPayment: &rp,
+			UpdateData:    &_data,
 		}
+		err = s.asynctaskDistributor.DistributeTaskJSON(context.Background(), asynctask.RENTAL_PAYMENT_UPDATE, notifyData)
 	}
-	return nil
+	return err
 }

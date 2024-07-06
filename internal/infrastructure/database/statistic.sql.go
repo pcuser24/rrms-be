@@ -493,7 +493,7 @@ const getRentalPaymentArrears = `-- name: GetRentalPaymentArrears :many
 SELECT rental_payments.id, rental_payments.code, rental_payments.rental_id, rental_payments.created_at, rental_payments.updated_at, rental_payments.start_date, rental_payments.end_date, rental_payments.expiry_date, rental_payments.payment_date, rental_payments.updated_by, rental_payments.status, rental_payments.amount, rental_payments.discount, rental_payments.paid, rental_payments.payamount, rental_payments.fine, rental_payments.note, (rental_payments.expiry_date - CURRENT_DATE) AS expiry_duration, rentals.tenant_id, rentals.tenant_name, rentals.property_id, rentals.unit_id 
 FROM rental_payments INNER JOIN rentals ON rentals.id = rental_payments.rental_id
 WHERE 
-  rental_payments.status IN ('ISSUED', 'PENDING', 'REQUEST2PAY') AND 
+  rental_payments.status IN ('ISSUED', 'PENDING', 'REQUEST2PAY', 'PARTIALLYPAID', 'PAYFINE') AND 
   EXISTS (
     SELECT 1 FROM rentals WHERE 
       rental_payments.rental_id = rentals.id AND
@@ -672,7 +672,7 @@ func (q *Queries) GetTenantExpenditure(ctx context.Context, arg GetTenantExpendi
 }
 
 const getTenantPendingPayments = `-- name: GetTenantPendingPayments :many
-SELECT rental_payments.id, rental_payments.code, rental_payments.rental_id, rental_payments.created_at, rental_payments.updated_at, rental_payments.start_date, rental_payments.end_date, rental_payments.expiry_date, rental_payments.payment_date, rental_payments.updated_by, rental_payments.status, rental_payments.amount, rental_payments.discount, rental_payments.paid, rental_payments.payamount, rental_payments.fine, rental_payments.note, (rental_payments.expiry_date - CURRENT_DATE) AS expiry_duration, rentals.tenant_id, rentals.tenant_name, rentals.property_id, rentals.unit_id 
+SELECT rental_payments.id, rental_payments.code, rental_payments.rental_id, rental_payments.created_at, rental_payments.updated_at, rental_payments.start_date, rental_payments.end_date, rental_payments.expiry_date, rental_payments.payment_date, rental_payments.updated_by, rental_payments.status, rental_payments.amount, rental_payments.discount, rental_payments.paid, rental_payments.payamount, rental_payments.fine, rental_payments.note, coalesce(rental_payments.expiry_date - CURRENT_DATE, -1)::INTEGER AS expiry_duration, rentals.tenant_id, rentals.tenant_name, rentals.property_id, rentals.unit_id 
 FROM rental_payments INNER JOIN rentals ON rentals.id = rental_payments.rental_id
 WHERE 
   rental_payments.status IN ('ISSUED', 'PENDING', 'REQUEST2PAY') AND 

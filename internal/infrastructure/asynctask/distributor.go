@@ -80,3 +80,18 @@ func (d *RedisTaskDistributor) DistributeTaskJSON(
 
 	return d.DistributeTask(ctx, taskType, jsonPayload, opts...)
 }
+
+const (
+	APPLICATION_NEW    = "applications/new"
+	APPLICATION_UPDATE = "applications/application/update"
+
+	RENTAL_PRERENTAL_NEW           = "rentals/prerental/new"
+	RENTAL_PRERENTAL_UPDATE        = "rentals/prerental/update"
+	RENTAL_PAYMENT_CREATE          = "rentals/payment/create"
+	RENTAL_PAYMENT_UPDATE          = "rentals/payment/update"
+	RENTAL_CONTRACT_CREATE         = "rentals/contract/create"
+	RENTAL_CONTRACT_UPDATE         = "rentals/contract/update"
+	RENTAL_COMPLAINT_CREATE        = "rentals/complaint/create"
+	RENTAL_COMPLAINT_REPLY         = "rentals/complaint/reply"
+	RENTAL_COMPLAINT_STATUS_UPDATE = "rentals/complaint/status/update"
+)

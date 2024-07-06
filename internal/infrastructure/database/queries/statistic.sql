@@ -183,7 +183,7 @@ WHERE
   );
 
 -- name: GetTenantPendingPayments :many
-SELECT rental_payments.*, (rental_payments.expiry_date - CURRENT_DATE) AS expiry_duration, rentals.tenant_id, rentals.tenant_name, rentals.property_id, rentals.unit_id 
+SELECT rental_payments.*, coalesce(rental_payments.expiry_date - CURRENT_DATE, -1)::INTEGER AS expiry_duration, rentals.tenant_id, rentals.tenant_name, rentals.property_id, rentals.unit_id 
 FROM rental_payments INNER JOIN rentals ON rentals.id = rental_payments.rental_id
 WHERE 
   rental_payments.status IN ('ISSUED', 'PENDING', 'REQUEST2PAY') AND 

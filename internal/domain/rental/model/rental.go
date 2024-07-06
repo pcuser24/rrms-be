@@ -132,6 +132,7 @@ type RentalModel struct {
 	WaterCustomerCode        *string                           `json:"waterCustomerCode"`
 	WaterProvider            *string                           `json:"waterProvider"`
 	Note                     *string                           `json:"note"`
+	Status                   database.RENTALSTATUS             `json:"status"`
 	CreatedAt                time.Time                         `json:"createdAt"`
 	UpdatedAt                time.Time                         `json:"updatedAt"`
 
@@ -179,6 +180,7 @@ func ToRentalModel(pr *database.Rental) RentalModel {
 		WaterProvider:            types.PNStr(pr.WaterProvider),
 		WaterPrice:               types.PNFloat32(pr.WaterPrice),
 		Note:                     types.PNStr(pr.Note),
+		Status:                   pr.Status,
 		CreatedAt:                pr.CreatedAt,
 		UpdatedAt:                pr.UpdatedAt,
 		Coaps:                    []RentalCoapModel{},

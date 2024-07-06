@@ -12,12 +12,14 @@ import (
 	"github.com/go-playground/validator"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
+	"github.com/hibiken/asynq"
 	"github.com/redis/go-redis/v9"
 	"github.com/robfig/cron/v3"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/user2410/rrms-backend/cmd/version"
 	services "github.com/user2410/rrms-backend/internal/domain/_services"
+	"github.com/user2410/rrms-backend/internal/infrastructure/asynctask"
 	"github.com/user2410/rrms-backend/internal/infrastructure/aws"
 	"github.com/user2410/rrms-backend/internal/infrastructure/aws/s3"
 	"github.com/user2410/rrms-backend/internal/infrastructure/aws/sns"
@@ -71,9 +73,10 @@ type serverConfig struct {
 	ElasticsearchAPIKey     *string `mapstructure:"ELASTICSEARCH_API_KEY" validate:"omitempty"`
 
 	// Redis
-	RedisAddr     string `mapstructure:"REDIS_ADDR" validate:"required"`
-	RedisPassword string `mapstructure:"REDIS_PASSWORD" validate:"omitempty"`
-	RedisDB       int    `mapstructure:"REDIS_DB" validate:"omitempty"`
+	RedisAddr         string `mapstructure:"REDIS_ADDR" validate:"required"`
+	RedisPassword     string `mapstructure:"REDIS_PASSWORD" validate:"omitempty"`
+	RedisDB           int    `mapstructure:"REDIS_DB" validate:"omitempty"`
+	AsynqRedisAddress string `mapstructure:"ASYNQ_REDIS_ADDRESS" validate:"required"`
 }
 
 type serverCommand struct {
@@ -90,6 +93,8 @@ type serverCommand struct {
 	httpServer           http.Server
 	elasticsearch        *es.ElasticSearchClient
 	redisClient          redisd.RedisClient
+	asyncTaskDistributor asynctask.Distributor
+	asyncTaskProcessor   asynctask.Processor
 }
 
 func NewServerCommand() *serverCommand {
@@ -139,6 +144,7 @@ func (c *serverCommand) run(cmd *cobra.Command, args []string) {
 
 	errChan := make(chan error, 1)
 	c.cronScheduler.Start()
+	go c.runAsyncTaskProcessor(errChan)
 	go c.runHttpServer(errChan)
 
 	select {
@@ -156,8 +162,12 @@ func (c *serverCommand) shutdown() {
 	c.dao.Close()
 
 	if err := c.httpServer.Shutdown(); err != nil {
-		log.Fatal(err)
+		log.Println("failed to close http server:", err)
 	}
+	if err := c.asyncTaskDistributor.Close(); err != nil {
+		log.Println("failed to close async task distributor:", err)
+	}
+	c.asyncTaskProcessor.Shutdown()
 
 	c.cronScheduler.Stop()
 
@@ -229,6 +239,14 @@ func (c *serverCommand) setup() {
 	})
 	c.redisClient = redisd.NewRedisClient(rdb)
 
+	// setup async task distributor
+	c.asyncTaskDistributor = asynctask.NewRedisTaskDistributor(asynq.RedisClientOpt{
+		Addr: c.config.AsynqRedisAddress,
+	})
+	c.asyncTaskProcessor = asynctask.NewRedisTaskProcessor(asynq.RedisClientOpt{
+		Addr: c.config.AsynqRedisAddress,
+	})
+
 	// new http server
 	c.httpServer = http.NewServer(
 		fiber.Config{
@@ -244,5 +262,7 @@ func (c *serverCommand) setup() {
 	// setup internal services
 	c.setupInternalServices()
 
+	// setup adapter layer
 	c.setupHttpServer()
+	c.setupAsyncTaskProcessor()
 }

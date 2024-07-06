@@ -9,6 +9,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/user2410/rrms-backend/internal/domain/rental/dto"
 	"github.com/user2410/rrms-backend/internal/domain/rental/model"
+	"github.com/user2410/rrms-backend/internal/infrastructure/asynctask"
 	"github.com/user2410/rrms-backend/internal/infrastructure/database"
 )
 
@@ -64,12 +65,14 @@ func (s *service) CreateRentalComplaint(data *dto.CreateRentalComplaint) (model.
 		return model.RentalComplaint{}, err
 	}
 
-	err = s.notifyCreateRentalComplaint(&res, &rental)
-	if err != nil {
-		// TODO: log the error
+	// err = s.NotifyCreateRentalComplaint(&res, &rental)
+	notifyData := dto.NotifyCreateRentalComplaint{
+		Rental:    &rental,
+		Complaint: &res,
 	}
+	err = s.asynctaskDistributor.DistributeTaskJSON(context.Background(), asynctask.RENTAL_COMPLAINT_CREATE, notifyData)
 
-	return res, nil
+	return res, err
 }
 
 func (s *service) GetRentalComplaint(id int64) (model.RentalComplaint, error) {
@@ -129,12 +132,15 @@ func (s *service) CreateRentalComplaintReply(data *dto.CreateRentalComplaintRepl
 		return res, err
 	}
 
-	err = s.notifyCreateComplaintReply(&complaint, &res, &rental)
-	if err != nil {
-		// TODO: log the error
+	// err = s.NotifyCreateComplaintReply(&complaint, &res, &rental)
+	notifyData := dto.NotifyCreateComplaintReply{
+		Rental:         &rental,
+		ComplaintReply: &res,
+		Complaint:      &complaint,
 	}
+	err = s.asynctaskDistributor.DistributeTaskJSON(context.Background(), asynctask.RENTAL_COMPLAINT_REPLY, notifyData)
 
-	return res, nil
+	return res, err
 }
 
 func (s *service) GetRentalComplaintReplies(rid int64, limit, offset int32) ([]model.RentalComplaintReply, error) {
@@ -164,10 +170,14 @@ func (s *service) UpdateRentalComplaintStatus(data *dto.UpdateRentalComplaintSta
 		return err
 	}
 
-	err = s.notifyUpdateComplaintStatus(&complaint, &rental, data.Status, data.UserID)
-	if err != nil {
-		// TODO: log the error
+	// err = s.NotifyUpdateComplaintStatus(&complaint, &rental, data.Status, data.UserID)
+	notifyData := dto.NotifyUpdateComplaintStatus{
+		Rental:    &rental,
+		Complaint: &complaint,
+		Status:    data.Status,
+		UpdatedBy: data.UserID,
 	}
+	err = s.asynctaskDistributor.DistributeTaskJSON(context.Background(), asynctask.RENTAL_COMPLAINT_STATUS_UPDATE, notifyData)
 
-	return nil
+	return err
 }

@@ -1404,7 +1404,8 @@ UPDATE rentals SET
   water_provider = coalesce($28, water_provider),
   -- rental_payment_grace_period = coalesce(sqlc.narg(rental_payment_grace_period), rental_payment_grace_period),
   -- rental_payment_late_fee_percentage = coalesce(sqlc.narg(rental_payment_late_fee_percentage), rental_payment_late_fee_percentage),
-  note = coalesce($29, note),
+  status = coalesce($29, status),
+  note = coalesce($30, note),
   updated_at = NOW()
 WHERE id = $1
 `
@@ -1438,6 +1439,7 @@ type UpdateRentalParams struct {
 	WaterPrice               pgtype.Float4                `json:"water_price"`
 	WaterCustomerCode        pgtype.Text                  `json:"water_customer_code"`
 	WaterProvider            pgtype.Text                  `json:"water_provider"`
+	Status                   NullRENTALSTATUS             `json:"status"`
 	Note                     pgtype.Text                  `json:"note"`
 }
 
@@ -1471,6 +1473,7 @@ func (q *Queries) UpdateRental(ctx context.Context, arg UpdateRentalParams) erro
 		arg.WaterPrice,
 		arg.WaterCustomerCode,
 		arg.WaterProvider,
+		arg.Status,
 		arg.Note,
 	)
 	return err

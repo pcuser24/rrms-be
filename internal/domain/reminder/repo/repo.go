@@ -58,12 +58,15 @@ func (r *repo) GetRemindersOfUser(ctx context.Context, userId uuid.UUID, query *
 	}
 
 	var (
-		andExprs []string              = make([]string, 0)
+		andExprs []string
 		res      []model.ReminderModel = make([]model.ReminderModel, 0)
 	)
 	sb := sqlbuilder.PostgreSQL.NewSelectBuilder()
 	sb.Select("id", "creator_id", "title", "start_at", "end_at", "note", "location", "created_at", "updated_at")
 	sb.From("reminders")
+	andExprs = []string{
+		sb.Equal("creator_id", userId),
+	}
 	if query.CreatorID != uuid.Nil {
 		andExprs = append(andExprs, sb.Equal("creator_id", query.CreatorID))
 	}

@@ -6,7 +6,9 @@ import (
 	misc_service "github.com/user2410/rrms-backend/internal/domain/misc/service"
 	reminder_service "github.com/user2410/rrms-backend/internal/domain/reminder"
 	rental_model "github.com/user2410/rrms-backend/internal/domain/rental/model"
+	"github.com/user2410/rrms-backend/internal/infrastructure/asynctask"
 	"github.com/user2410/rrms-backend/internal/infrastructure/aws/s3"
+	"github.com/user2410/rrms-backend/internal/infrastructure/database"
 
 	"github.com/google/uuid"
 	"github.com/user2410/rrms-backend/internal/domain/application/dto"
@@ -26,6 +28,9 @@ type Service interface {
 	CreateApplicationMsgGroup(aid int64, userId uuid.UUID) (*chat_model.MsgGroup, error)
 	GetApplicationMsgGroup(aid int64, userId uuid.UUID) (*chat_model.MsgGroupExtended, error)
 	GetRentalByApplicationId(aid int64) (rental_model.RentalModel, error)
+
+	SendNotificationOnNewApplication(am *model.ApplicationModel) error
+	SendNotificationOnUpdateApplication(am *model.ApplicationModel, status database.APPLICATIONSTATUS) error
 }
 
 type service struct {
@@ -36,7 +41,8 @@ type service struct {
 	s3Client        s3.S3Client
 	imageBucketName string
 
-	feSite string
+	asynctaskDistributor asynctask.Distributor
+	feSite               string
 }
 
 func NewService(
@@ -45,14 +51,16 @@ func NewService(
 	miscService misc_service.Service,
 	s3Client s3.S3Client,
 	imageBucketName string,
+	asynctaskDistributor asynctask.Distributor,
 	feSite string,
 ) Service {
 	return &service{
-		domainRepo:      domainRepo,
-		reminderService: reminderService,
-		miscService:     miscService,
-		s3Client:        s3Client,
-		imageBucketName: imageBucketName,
-		feSite:          feSite,
+		domainRepo:           domainRepo,
+		reminderService:      reminderService,
+		miscService:          miscService,
+		s3Client:             s3Client,
+		imageBucketName:      imageBucketName,
+		asynctaskDistributor: asynctaskDistributor,
+		feSite:               feSite,
 	}
 }

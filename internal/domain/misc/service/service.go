@@ -24,6 +24,9 @@ type Service interface {
 	SendNotification(payload *dto.CreateNotification) error
 	GetNotificationsOfUser(userId uuid.UUID, query dto.GetNotificationsOfUserQuery) ([]model.Notification, error)
 	UpdateNotification(data *dto.UpdateNotification) error
+
+	GetNotificationManagersTargets(propertyID uuid.UUID) ([]dto.CreateNotificationTarget, error)
+	GetNotificationTenantTargets(tenantID uuid.UUID, tenantEmail string) (dto.CreateNotificationTarget, error)
 }
 
 type service struct {
@@ -176,4 +179,65 @@ func (s *service) SendNotification(payload *dto.CreateNotification) error {
 
 func (s *service) UpdateNotification(data *dto.UpdateNotification) error {
 	return s.domainRepo.MiscRepo.UpdateNotification(context.Background(), data)
+}
+
+func (s *service) GetNotificationManagersTargets(propertyID uuid.UUID) ([]dto.CreateNotificationTarget, error) {
+	managers, err := s.domainRepo.PropertyRepo.GetPropertyManagers(context.Background(), propertyID)
+	if err != nil {
+		return nil, err
+	}
+	managerIds := make([]uuid.UUID, 0)
+	for _, m := range managers {
+		managerIds = append(managerIds, m.ManagerID)
+	}
+
+	us, err := s.domainRepo.AuthRepo.GetUsersByIds(context.Background(), managerIds, []string{"email"})
+	if err != nil {
+		return nil, err
+	}
+
+	targets := make([]dto.CreateNotificationTarget, 0)
+	for _, u := range us {
+		target := dto.CreateNotificationTarget{
+			UserId: u.ID,
+			Emails: []string{u.Email},
+		}
+		ds, err := s.GetNotificationDevice(u.ID, uuid.Nil, "", "")
+		if err != nil {
+			return nil, err
+		}
+		for _, d := range ds {
+			target.Tokens = append(target.Tokens, d.Token)
+		}
+		targets = append(targets, target)
+	}
+
+	return targets, nil
+}
+
+func (s *service) GetNotificationTenantTargets(tenantID uuid.UUID, tenantEmail string) (dto.CreateNotificationTarget, error) {
+	emailTargets := set.NewSet[string]()
+	pushTargets := set.NewSet[string]()
+	emailTargets.Add(tenantEmail)
+	if tenantID != uuid.Nil {
+		ts, err := s.domainRepo.AuthRepo.GetUsersByIds(context.Background(), []uuid.UUID{tenantID}, []string{"email"})
+		if err != nil {
+			return dto.CreateNotificationTarget{}, err
+		}
+		if len(ts) > 0 {
+			emailTargets.Add(ts[0].Email)
+			ds, err := s.GetNotificationDevice(tenantID, uuid.Nil, "", "")
+			if err != nil {
+				return dto.CreateNotificationTarget{}, err
+			}
+			for _, d := range ds {
+				pushTargets.Add(d.Token)
+			}
+		}
+	}
+	return dto.CreateNotificationTarget{
+		UserId: tenantID,
+		Emails: emailTargets.ToSlice(),
+		Tokens: pushTargets.ToSlice(),
+	}, nil
 }

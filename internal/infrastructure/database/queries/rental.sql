@@ -288,6 +288,7 @@ UPDATE rentals SET
   water_provider = coalesce(sqlc.narg(water_provider), water_provider),
   -- rental_payment_grace_period = coalesce(sqlc.narg(rental_payment_grace_period), rental_payment_grace_period),
   -- rental_payment_late_fee_percentage = coalesce(sqlc.narg(rental_payment_late_fee_percentage), rental_payment_late_fee_percentage),
+  status = coalesce(sqlc.narg(status), status),
   note = coalesce(sqlc.narg(note), note),
   updated_at = NOW()
 WHERE id = $1;
