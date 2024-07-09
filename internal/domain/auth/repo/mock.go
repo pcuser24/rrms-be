@@ -72,6 +72,21 @@ func (mr *MockRepoMockRecorder) CreateUser(arg0, arg1 any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateUser", reflect.TypeOf((*MockRepo)(nil).CreateUser), arg0, arg1)
 }
 
+// GetAdminUsers mocks base method.
+func (m *MockRepo) GetAdminUsers(arg0 context.Context) ([]uuid.UUID, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetAdminUsers", arg0)
+	ret0, _ := ret[0].([]uuid.UUID)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetAdminUsers indicates an expected call of GetAdminUsers.
+func (mr *MockRepoMockRecorder) GetAdminUsers(arg0 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAdminUsers", reflect.TypeOf((*MockRepo)(nil).GetAdminUsers), arg0)
+}
+
 // GetSessionById mocks base method.
 func (m *MockRepo) GetSessionById(arg0 context.Context, arg1 uuid.UUID) (*model.SessionModel, error) {
 	m.ctrl.T.Helper()

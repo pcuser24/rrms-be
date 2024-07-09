@@ -94,4 +94,7 @@ const (
 	RENTAL_COMPLAINT_CREATE        = "rentals/complaint/create"
 	RENTAL_COMPLAINT_REPLY         = "rentals/complaint/reply"
 	RENTAL_COMPLAINT_STATUS_UPDATE = "rentals/complaint/status/update"
+
+	PROPERTY_VERIFICATION_CREATE = "properties/verification/create"
+	PROPERTY_VERIFICATION_UPDATE = "properties/verification/update"
 )

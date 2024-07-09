@@ -194,6 +194,14 @@ func (r *repo) GetRental(ctx context.Context, id int64) (model.RentalModel, erro
 		prm.Services = append(prm.Services, model.ToRentalService(&item))
 	}
 
+	policydb, err := r.dao.GetRentalPoliciesByRentalID(ctx, id)
+	if err != nil {
+		return model.RentalModel{}, err
+	}
+	for _, item := range policydb {
+		prm.Policies = append(prm.Policies, model.RentalPolicy(item))
+	}
+
 	return prm, nil
 }
 

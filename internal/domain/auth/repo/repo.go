@@ -17,6 +17,7 @@ type Repo interface {
 	GetUserByEmail(ctx context.Context, email string) (*model.UserModel, error)
 	GetUserById(ctx context.Context, id uuid.UUID) (*model.UserModel, error)
 	GetUsersByIds(ctx context.Context, ids []uuid.UUID, fields []string) ([]model.UserModel, error)
+	GetAdminUsers(ctx context.Context) ([]uuid.UUID, error)
 	GetSessionById(ctx context.Context, id uuid.UUID) (*model.SessionModel, error)
 	UpdateUser(ctx context.Context, id uuid.UUID, data *dto.UpdateUser) error
 	UpdateSessionStatus(ctx context.Context, id uuid.UUID, isBlocked bool) error
@@ -185,4 +186,8 @@ func (r *repo) GetUsersByIds(ctx context.Context, ids []uuid.UUID, fields []stri
 	}
 
 	return items, nil
+}
+
+func (r *repo) GetAdminUsers(ctx context.Context) ([]uuid.UUID, error) {
+	return r.dao.GetAdminUsers(ctx)
 }

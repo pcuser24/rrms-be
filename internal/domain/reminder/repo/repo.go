@@ -78,8 +78,6 @@ func (r *repo) GetRemindersOfUser(ctx context.Context, userId uuid.UUID, query *
 	}
 	if len(andExprs) > 0 {
 		sb.Where(andExprs...)
-	} else {
-		sb.Where(sb.Equal("creator_id", userId))
 	}
 
 	sql, args := sb.Build()

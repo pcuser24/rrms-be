@@ -135,7 +135,10 @@ func (r *repo) CreateNotification(ctx context.Context, data *dto.CreateNotificat
 	}
 
 	query, args := sb.Build()
-	rows, err := r.dao.Query(ctx, query+"  RETURNING id, user_id, title, content, data, seen, target, channel, created_at, updated_at", args...)
+	if len(args) == 0 {
+		return nil, nil
+	}
+	rows, err := r.dao.Query(ctx, query+" RETURNING id, user_id, title, content, data, seen, target, channel, created_at, updated_at", args...)
 	if err != nil {
 		return nil, err
 	}

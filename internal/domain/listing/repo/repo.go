@@ -243,13 +243,7 @@ func (r *repo) GetListingsByIds(ctx context.Context, ids []uuid.UUID, fields []s
 	return items, nil
 }
 
-func (r *repo) GetListingByID(ctx context.Context, id uuid.UUID) (*model.ListingModel, error) {
-	// read from cache
-	cacheRes, err := r.readListingFromCache(ctx, id)
-	if err == nil && cacheRes != nil {
-		return cacheRes, nil
-	}
-
+func (r *repo) getListingByIDWithoutCache(ctx context.Context, id uuid.UUID) (*model.ListingModel, error) {
 	resDB, err := r.dao.GetListingByID(ctx, id)
 	if err != nil {
 		return nil, err
@@ -280,6 +274,18 @@ func (r *repo) GetListingByID(ctx context.Context, id uuid.UUID) (*model.Listing
 	for _, i := range t {
 		res.Tags = append(res.Tags, model.ListingTagModel(i))
 	}
+
+	return res, nil
+}
+
+func (r *repo) GetListingByID(ctx context.Context, id uuid.UUID) (*model.ListingModel, error) {
+	// read from cache
+	cacheRes, err := r.readListingFromCache(ctx, id)
+	if err == nil && cacheRes != nil {
+		return cacheRes, nil
+	}
+
+	res, err := r.getListingByIDWithoutCache(ctx, id)
 
 	// save to cache
 	r.saveListingToCache(ctx, res)
@@ -344,21 +350,53 @@ func (r *repo) UpdateListing(ctx context.Context, id uuid.UUID, data *dto.Update
 	if txErr != nil {
 		return error(txErr)
 	}
+
+	// update cache
+	listing, err := r.getListingByIDWithoutCache(ctx, id)
+	if err != nil {
+		return err
+	}
+	r.saveListingToCache(ctx, listing)
+
 	return nil
 }
 
 func (r *repo) UpdateListingStatus(ctx context.Context, id uuid.UUID, active bool) error {
-	return r.dao.UpdateListingStatus(ctx, database.UpdateListingStatusParams{
+	err := r.dao.UpdateListingStatus(ctx, database.UpdateListingStatusParams{
 		ID:     id,
 		Active: active,
 	})
+	if err != nil {
+		return err
+	}
+
+	// update cache
+	listing, err := r.getListingByIDWithoutCache(ctx, id)
+	if err != nil {
+		return err
+	}
+	r.saveListingToCache(ctx, listing)
+
+	return nil
 }
 
 func (r *repo) UpdateListingPriority(ctx context.Context, id uuid.UUID, priority int) error {
-	return r.dao.UpdateListingPriority(ctx, database.UpdateListingPriorityParams{
+	err := r.dao.UpdateListingPriority(ctx, database.UpdateListingPriorityParams{
 		ID:       id,
 		Priority: int32(priority),
 	})
+	if err != nil {
+		return err
+	}
+
+	// update cache
+	listing, err := r.getListingByIDWithoutCache(ctx, id)
+	if err != nil {
+		return err
+	}
+	r.saveListingToCache(ctx, listing)
+
+	return nil
 }
 
 func (r *repo) UpdateListingExpiration(ctx context.Context, id uuid.UUID, duration int64) (time.Time, error) {
@@ -375,6 +413,17 @@ func (r *repo) UpdateListingExpiration(ctx context.Context, id uuid.UUID, durati
 	row := r.dao.QueryRow(ctx, sql, args...)
 	var res time.Time
 	err := row.Scan(&res)
+
+	if err != nil {
+		return time.Time{}, err
+	}
+
+	// update cache
+	listing, err := r.getListingByIDWithoutCache(ctx, id)
+	if err != nil {
+		return time.Time{}, err
+	}
+	r.saveListingToCache(ctx, listing)
 
 	return res, err
 }

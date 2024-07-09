@@ -31,6 +31,9 @@ SELECT * FROM "User" WHERE id = $1 LIMIT 1;
 -- name: GetSessionById :one
 SELECT * FROM "Session" WHERE id = $1 LIMIT 1;
 
+-- name: GetAdminUsers :many
+SELECT id FROM "User" WHERE role = 'ADMIN';
+
 -- name: UpdateUser :exec
 UPDATE "User" SET 
   email = coalesce(sqlc.narg(email), email), 

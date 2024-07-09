@@ -69,14 +69,14 @@ var (
 	ErrInvalidDuration = errors.New("invalid duration")
 )
 
-func CalculateListingPrice(priority int, postDuration int) (float32, int, error) {
+func CalculateListingPrice(priority int, postDuration int) (float32, int, int, error) {
 	p := listingPriorities[priority]
 	if p == 0 {
-		return 0, 0, ErrInvalidPriority
+		return 0, 0, 0, ErrInvalidPriority
 	}
 	discount := listingDiscounts[postDuration]
 
-	return float32((p - (p*discount)/100) * postDuration), discount, nil
+	return float32((p - (p*discount)/100) * postDuration), p, discount, nil
 }
 
 func CalculateUpgradeListingPrice(l *model.ListingModel, p int) (float32, int, error) {

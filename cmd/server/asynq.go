@@ -4,10 +4,14 @@ import (
 	"log"
 
 	application_asynctask "github.com/user2410/rrms-backend/internal/domain/application/asynctask"
+	property_asynctask "github.com/user2410/rrms-backend/internal/domain/property/asynctask"
 	rental_asynctask "github.com/user2410/rrms-backend/internal/domain/rental/asynctask"
 )
 
 func (c *serverCommand) setupAsyncTaskProcessor() {
+	property_asynctask.
+		NewAdapter(c.internalServices.PropertyService).
+		Register(c.asyncTaskProcessor)
 	application_asynctask.
 		NewAdapter(c.internalServices.ApplicationService).
 		Register(c.asyncTaskProcessor)

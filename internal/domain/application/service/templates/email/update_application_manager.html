@@ -12,10 +12,10 @@
   <a href="{{.FESite}}/manage/rentals/new?applicationId={{.Application.ID}}&propertyID={{.Application.PropertyID}}&unitID={{.Application.UnitID}}">Tạo profile thuê nhà</a>
   <a href="{{.FESite}}/manage/applications/application/{{.Application.ID}}">Xem đơn ứng tuyển</a>
   {{else if eq .Status "REJECTED"}}
-  <h2 style="font-size: 1.5rem; font-weight: 400;">Đơn ứng tuyển của {{.Application.FullName}} vào phòng {{.Unit.Name}} nhà cho thuê {{.Property.FullName}} đã bị từ chối</h2>
+  <h2 style="font-size: 1.5rem; font-weight: 400;">Đơn ứng tuyển của {{.Application.FullName}} vào phòng {{.Unit.Name}} nhà cho thuê {{.Property.Name}} đã bị từ chối</h2>
   <p>Thông báo sẽ được gửi tới <strong>{{.Application.FullName}}</strong></p>
   {{else if eq .Status "WITHDRAWN"}}
-  <h2 style="font-size: 1.5rem; font-weight: 400;"><strong>{{.Application.FullName}}</strong> đã rút đơn ứng tuyển vào phòng {{.Unit.Name}} nhà cho thuê {{.Property.FullName}} </h2>
+  <h2 style="font-size: 1.5rem; font-weight: 400;"><strong>{{.Application.FullName}}</strong> đã rút đơn ứng tuyển vào phòng {{.Unit.Name}} nhà cho thuê {{.Property.Name}} </h2>
   {{end}}
   <!-- Email footer -->
   <p style="font-size: small; color:grey;">Nếu có bất kì thắc mắc nào hãy <a href="{{.FESite}}">liên hệ</a> với chúng

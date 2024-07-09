@@ -50,7 +50,7 @@ func TestCalculateListingPrice(t *testing.T) {
 	for i := range testcases {
 		tc := &testcases[i]
 		t.Run(tc.name, func(t *testing.T) {
-			result, _, err := CalculateListingPrice(tc.priority, tc.postDuration)
+			result, _, _, err := CalculateListingPrice(tc.priority, tc.postDuration)
 			tc.checkResult(t, result, err)
 		})
 	}

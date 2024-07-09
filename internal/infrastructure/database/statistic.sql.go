@@ -495,14 +495,10 @@ FROM rental_payments INNER JOIN rentals ON rentals.id = rental_payments.rental_i
 WHERE 
   rental_payments.status IN ('ISSUED', 'PENDING', 'REQUEST2PAY', 'PARTIALLYPAID', 'PAYFINE') AND 
   EXISTS (
-    SELECT 1 FROM rentals WHERE 
-      rental_payments.rental_id = rentals.id AND
-      EXISTS (
-        SELECT 1 FROM property_managers WHERE manager_id = $1 AND property_managers.property_id = rentals.property_id 
-      )
+    SELECT 1 FROM property_managers WHERE manager_id = $1 AND property_managers.property_id = rentals.property_id   
   ) AND
-  rental_payments.expiry_date >= $4 AND
-  rental_payments.expiry_date <= $5
+  rental_payments.expiry_date + INTERVAL '1 day' * rentals.grace_period >= $4 AND
+  rental_payments.expiry_date + INTERVAL '1 day' * rentals.grace_period <= $5
 ORDER BY
   (rental_payments.expiry_date - CURRENT_DATE) ASC
 LIMIT $2
@@ -592,10 +588,10 @@ func (q *Queries) GetRentalPaymentArrears(ctx context.Context, arg GetRentalPaym
 }
 
 const getRentalPaymentIncomes = `-- name: GetRentalPaymentIncomes :one
-SELECT coalesce(SUM(amount), 0)::REAL 
+SELECT coalesce(SUM(paid), 0)::REAL 
 FROM rental_payments 
 WHERE 
-  status = 'PAID' AND 
+  rental_payments.status IN ('PAID', 'PARTIALLYPAID') AND 
   EXISTS (
     SELECT 1 FROM rentals WHERE 
       rental_payments.rental_id = rentals.id AND

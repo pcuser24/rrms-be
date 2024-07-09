@@ -1,0 +1,5 @@
+{{if eq .UpdateData.Status "APPROVED"}}
+Nhà cho thuê {{.Property.Name}} đã được xác minh thành công.
+{{else if eq .UpdateData.Status "REJECTED"}}
+Nhà cho thuê {{.Property.Name}} đã bị từ chối xác minh.
+{{end}}

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/google/uuid"
 	application_model "github.com/user2410/rrms-backend/internal/domain/application/model"
 	misc_dto "github.com/user2410/rrms-backend/internal/domain/misc/dto"
 	misc_service "github.com/user2410/rrms-backend/internal/domain/misc/service"
@@ -32,13 +33,24 @@ func (s *service) SendNotificationOnNewApplication(am *application_model.Applica
 		}
 		err error
 	)
-	data.Property, err = s.domainRepo.PropertyRepo.GetPropertyById(context.Background(), am.PropertyID)
-	if err != nil {
-		return err
-	}
-	data.Unit, err = s.domainRepo.UnitRepo.GetUnitById(context.Background(), am.UnitID)
-	if err != nil {
-		return err
+	{
+		ps, err := s.domainRepo.PropertyRepo.GetPropertiesByIds(context.Background(), []uuid.UUID{am.PropertyID}, []string{"name"})
+		if err != nil {
+			return err
+		}
+		if len(ps) == 0 {
+			return database.ErrRecordNotFound
+		}
+		data.Property = &ps[0]
+
+		us, err := s.domainRepo.UnitRepo.GetUnitsByIds(context.Background(), []uuid.UUID{am.UnitID}, []string{"name"})
+		if err != nil {
+			return err
+		}
+		if len(us) == 0 {
+			return database.ErrRecordNotFound
+		}
+		data.Unit = &us[0]
 	}
 
 	title, err := text_util.RenderText(
@@ -123,13 +135,24 @@ func (s *service) SendNotificationOnUpdateApplication(am *application_model.Appl
 		}
 		err error
 	)
-	data.Property, err = s.domainRepo.PropertyRepo.GetPropertyById(context.Background(), am.PropertyID)
-	if err != nil {
-		return err
-	}
-	data.Unit, err = s.domainRepo.UnitRepo.GetUnitById(context.Background(), am.UnitID)
-	if err != nil {
-		return err
+	{
+		ps, err := s.domainRepo.PropertyRepo.GetPropertiesByIds(context.Background(), []uuid.UUID{am.PropertyID}, []string{"name"})
+		if err != nil {
+			return err
+		}
+		if len(ps) == 0 {
+			return database.ErrRecordNotFound
+		}
+		data.Property = &ps[0]
+
+		us, err := s.domainRepo.UnitRepo.GetUnitsByIds(context.Background(), []uuid.UUID{am.UnitID}, []string{"name"})
+		if err != nil {
+			return err
+		}
+		if len(us) == 0 {
+			return database.ErrRecordNotFound
+		}
+		data.Unit = &us[0]
 	}
 
 	title, err := text_util.RenderText(

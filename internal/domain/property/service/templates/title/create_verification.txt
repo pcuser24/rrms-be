@@ -1,0 +1,1 @@
+{{.Creator.FirstName}} {{.Creator.LastName}} yêu cầu xác minh thông tin nhà cho thuê

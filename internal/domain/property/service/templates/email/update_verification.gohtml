@@ -1,0 +1,19 @@
+<div style="width: 60vw; padding: 2rem 1rem;">
+  <!-- Email Header and Logo -->
+  <a href="{{.FESite}}"
+    style="display: flex; flex-direction: row; align-items: center; gap: 1rem; text-decoration: none;">
+    <img src="https://iili.io/d9zGgat.png" alt="d9zGgat.png" style="width: 4rem; height: 4rem; display: inline;" />
+    <h1 style="font-weight: 600; margin-left: 1rem; text-decoration: none; color: black">RRMS</h1>
+  </a>
+  <!-- Email Body -->
+  {{if eq .UpdateData.Status "APPROVED"}}
+  <h2 style="font-size: 1.5rem; font-weight: 400;">Xin chúc mừng, nhà cho thuê {{.Property.Name}} đã được xác minh.</h2>
+  {{else if eq .UpdateData.Status "REJECTED"}}
+  <h2 style="font-size: 1.5rem; font-weight: 400;">Chúng tôi đã xem xét và từ chối thông tin của nhà cho thuê {{.Property.Name}}.</h2>
+  <p>Lý do từ chối: {{.UpdateData.Feedback}}</p>
+  {{end}}
+  <a href="{{.FESite}}/manage/properties/property/{{.Property.ID}}">Xem chi tiết</a>
+  <!-- Email footer -->
+  <p style="font-size: small; color:grey;">Nếu có bất kì thắc mắc nào hãy <a href="{{.FESite}}">liên hệ</a> với chúng tôi
+  </p>
+</div>

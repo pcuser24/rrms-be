@@ -113,6 +113,30 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 	return i, err
 }
 
+const getAdminUsers = `-- name: GetAdminUsers :many
+SELECT id FROM "User" WHERE role = 'ADMIN'
+`
+
+func (q *Queries) GetAdminUsers(ctx context.Context) ([]uuid.UUID, error) {
+	rows, err := q.db.Query(ctx, getAdminUsers)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []uuid.UUID
+	for rows.Next() {
+		var id uuid.UUID
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		items = append(items, id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getSessionById = `-- name: GetSessionById :one
 SELECT id, "sessionToken", "userId", expires, user_agent, client_ip, is_blocked, created_at FROM "Session" WHERE id = $1 LIMIT 1
 `

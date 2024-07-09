@@ -87,6 +87,7 @@ type Querier interface {
 	DeleteUnit(ctx context.Context, id uuid.UUID) error
 	DeleteUnitAmenity(ctx context.Context, arg DeleteUnitAmenityParams) error
 	DeleteUnitMedia(ctx context.Context, arg DeleteUnitMediaParams) error
+	GetAdminUsers(ctx context.Context) ([]uuid.UUID, error)
 	GetAllPropertyFeatures(ctx context.Context) ([]PFeature, error)
 	GetAllRentalPolicies(ctx context.Context) ([]LPolicy, error)
 	GetAllUnitAmenities(ctx context.Context) ([]UAmenity, error)

@@ -40,6 +40,9 @@ func (c *serverCommand) setupInternalServices() {
 		domainRepo,
 		c.s3Client, c.config.AWSS3ImageBucket,
 		c.elasticsearch,
+		c.asyncTaskDistributor,
+		c.internalServices.MiscService,
+		c.config.FESite,
 	)
 	c.internalServices.UnitService = unit_service.NewService(domainRepo, c.s3Client, c.config.AWSS3ImageBucket)
 	c.internalServices.ListingService = listing_service.NewService(

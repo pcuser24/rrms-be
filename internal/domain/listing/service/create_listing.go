@@ -41,7 +41,7 @@ type AggregatedIndex struct {
 	Property          map[string]interface{}   `json:"property"`
 }
 
-func buildAggregatedIndex(listing *listing_model.ListingModel, property *property_model.PropertyModel, units []unit_model.UnitModel) AggregatedIndex {
+func buildAggregatedIndex(listing *listing_model.ListingModel, property *property_model.PropertyModel, propertyVStatus any, units []unit_model.UnitModel) AggregatedIndex {
 	return AggregatedIndex{
 		ID:                listing.ID.String(),
 		CreatorID:         listing.CreatorID.String(),
@@ -64,7 +64,7 @@ func buildAggregatedIndex(listing *listing_model.ListingModel, property *propert
 		ExpiredAt:         listing.ExpiredAt,
 		Tags:              convertTags(listing.Tags),
 		ListingUnits:      convertListingUnits(units, listing.Units),
-		Property:          convertProperty(property),
+		Property:          convertProperty(property, propertyVStatus),
 	}
 }
 
@@ -117,32 +117,33 @@ func convertAmenities(amenities []unit_model.UnitAmenityModel) []map[string]inte
 	return result
 }
 
-func convertProperty(property *property_model.PropertyModel) map[string]interface{} {
+func convertProperty(property *property_model.PropertyModel, pv any) map[string]interface{} {
 	return map[string]interface{}{
-		"id":               property.ID.String(),
-		"creator_id":       property.CreatorID.String(),
-		"name":             property.Name,
-		"building":         property.Building,
-		"project":          property.Project,
-		"area":             property.Area,
-		"number_of_floors": property.NumberOfFloors,
-		"year_built":       property.YearBuilt,
-		"orientation":      property.Orientation,
-		"entrance_width":   property.EntranceWidth,
-		"facade":           property.Facade,
-		"full_address":     property.FullAddress,
-		"city":             property.City,
-		"district":         property.District,
-		"ward":             property.Ward,
-		"lat":              property.Lat,
-		"lng":              property.Lng,
-		"primary_image":    property.PrimaryImage,
-		"description":      property.Description,
-		"type":             property.Type,
-		"is_public":        property.IsPublic,
-		"created_at":       property.CreatedAt,
-		"updated_at":       property.UpdatedAt,
-		"features":         convertFeatures(property.Features),
+		"id":                  property.ID.String(),
+		"creator_id":          property.CreatorID.String(),
+		"name":                property.Name,
+		"building":            property.Building,
+		"project":             property.Project,
+		"area":                property.Area,
+		"number_of_floors":    property.NumberOfFloors,
+		"year_built":          property.YearBuilt,
+		"orientation":         property.Orientation,
+		"entrance_width":      property.EntranceWidth,
+		"facade":              property.Facade,
+		"full_address":        property.FullAddress,
+		"city":                property.City,
+		"district":            property.District,
+		"ward":                property.Ward,
+		"lat":                 property.Lat,
+		"lng":                 property.Lng,
+		"primary_image":       property.PrimaryImage,
+		"description":         property.Description,
+		"type":                property.Type,
+		"is_public":           property.IsPublic,
+		"verification_status": pv,
+		"created_at":          property.CreatedAt,
+		"updated_at":          property.UpdatedAt,
+		"features":            convertFeatures(property.Features),
 	}
 }
 
@@ -170,7 +171,7 @@ func (s *service) CreateListing(data *dto.CreateListing) (*dto.CreateListingResp
 
 	// create payment info
 	params := payment_dto.CreatePayment{UserId: data.CreatorID}
-	amount, discount, err := listing_utils.CalculateListingPrice(int(data.Priority), data.PostDuration)
+	amount, price, discount, err := listing_utils.CalculateListingPrice(int(data.Priority), data.PostDuration)
 	if err != nil {
 		return nil, err
 	}
@@ -179,8 +180,8 @@ func (s *service) CreateListing(data *dto.CreateListing) (*dto.CreateListingResp
 	params.Items = []payment_dto.CreatePaymentItem{
 		{
 			Name:     "Phi dang tin",
-			Price:    amount,
-			Quantity: 1,
+			Price:    float32(price),
+			Quantity: int32(data.PostDuration),
 			Discount: int32(discount),
 		},
 	}
@@ -197,6 +198,14 @@ func (s *service) CreateListing(data *dto.CreateListing) (*dto.CreateListingResp
 	if err != nil {
 		return res, err
 	}
+	var pv any = nil
+	pvs, err := s.domainRepo.PropertyRepo.GetPropertiesVerificationStatus(context.Background(), []uuid.UUID{property.ID})
+	if err != nil {
+		return res, err
+	}
+	if len(pvs) > 0 {
+		pv = pvs[0].Status
+	}
 	units := make([]unit_model.UnitModel, 0, len(res.Listing.Units))
 	for _, u := range res.Listing.Units {
 		unit, err := s.domainRepo.UnitRepo.GetUnitById(context.Background(), u.UnitID)
@@ -205,7 +214,7 @@ func (s *service) CreateListing(data *dto.CreateListing) (*dto.CreateListingResp
 		}
 		units = append(units, *unit)
 	}
-	doc := buildAggregatedIndex(res.Listing, property, units)
+	doc := buildAggregatedIndex(res.Listing, property, pv, units)
 	_, err = esClient.Index(string(es.LISTINGINDEX)).Request(doc).Id(res.Listing.ID.String()).Do(context.Background())
 
 	return res, err

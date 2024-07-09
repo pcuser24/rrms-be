@@ -10,6 +10,7 @@ import (
 	repos "github.com/user2410/rrms-backend/internal/domain/_repos"
 	application_dto "github.com/user2410/rrms-backend/internal/domain/application/dto"
 	application_model "github.com/user2410/rrms-backend/internal/domain/application/model"
+	"github.com/user2410/rrms-backend/internal/infrastructure/asynctask"
 	"github.com/user2410/rrms-backend/internal/infrastructure/aws/s3"
 	"github.com/user2410/rrms-backend/internal/infrastructure/database"
 	"github.com/user2410/rrms-backend/internal/infrastructure/es"
@@ -18,6 +19,7 @@ import (
 	"github.com/google/uuid"
 	listing_dto "github.com/user2410/rrms-backend/internal/domain/listing/dto"
 	listing_model "github.com/user2410/rrms-backend/internal/domain/listing/model"
+	misc_service "github.com/user2410/rrms-backend/internal/domain/misc/service"
 	"github.com/user2410/rrms-backend/internal/domain/property/dto"
 	property_dto "github.com/user2410/rrms-backend/internal/domain/property/dto"
 	property_model "github.com/user2410/rrms-backend/internal/domain/property/model"
@@ -62,6 +64,12 @@ type Service interface {
 	GetPropertyVerificationRequestsOfProperty(pid uuid.UUID, limit, offset int32) ([]property_model.PropertyVerificationRequest, error)
 	GetPropertiesVerificationStatus(ids []uuid.UUID) ([]property_dto.GetPropertyVerificationStatus, error)
 	UpdatePropertyVerificationRequestStatus(id int64, data *property_dto.UpdatePropertyVerificationRequestStatus) error
+
+	NotifyCreatePropertyVerificationRequestStatus(r *property_model.PropertyVerificationRequest) error
+	NotifyUpdatePropertyVerificationRequestStatus(
+		request *property_model.PropertyVerificationRequest,
+		data *property_dto.UpdatePropertyVerificationRequestStatus,
+	) error
 }
 
 type service struct {
@@ -71,12 +79,20 @@ type service struct {
 	imageBucketName string
 
 	esClient *es.ElasticSearchClient
+
+	miscService          misc_service.Service
+	asynctaskDistributor asynctask.Distributor
+
+	feSite string
 }
 
 func NewService(
 	domainRepo repos.DomainRepo,
 	s3Client s3.S3Client, imageBucketName string,
 	esClient *es.ElasticSearchClient,
+	asynctaskDistributor asynctask.Distributor,
+	miscService misc_service.Service,
+	feSite string,
 ) Service {
 	return &service{
 		domainRepo: domainRepo,
@@ -85,6 +101,11 @@ func NewService(
 		imageBucketName: imageBucketName,
 
 		esClient: esClient,
+
+		asynctaskDistributor: asynctaskDistributor,
+		miscService:          miscService,
+
+		feSite: feSite,
 	}
 }
 
