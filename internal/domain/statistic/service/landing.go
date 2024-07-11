@@ -203,7 +203,7 @@ func (s *service) SuggestSimilarListings(query *statistic_dto.ListingSuggestionQ
 					},
 				},
 			},
-			Weight: types.Ptr[estypes.Float64](5),
+			Weight: types.Ptr[estypes.Float64](10),
 		})
 	}
 	if len(query.PDistrict) > 0 {
@@ -215,7 +215,7 @@ func (s *service) SuggestSimilarListings(query *statistic_dto.ListingSuggestionQ
 					},
 				},
 			},
-			Weight: types.Ptr[estypes.Float64](5),
+			Weight: types.Ptr[estypes.Float64](15),
 		})
 	}
 	if len(query.PWard) > 0 {
@@ -227,7 +227,7 @@ func (s *service) SuggestSimilarListings(query *statistic_dto.ListingSuggestionQ
 					},
 				},
 			},
-			Weight: types.Ptr[estypes.Float64](5),
+			Weight: types.Ptr[estypes.Float64](20),
 		})
 	}
 	if query.LMaxPrice != nil {

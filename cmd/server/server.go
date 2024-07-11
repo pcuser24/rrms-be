@@ -255,7 +255,14 @@ func (c *serverCommand) setup() {
 		},
 		cors.Config{
 			AllowOrigins: c.config.AllowOrigins,
-			AllowHeaders: "Origin, Content-Type, Accept, Authorization",
+			AllowMethods: strings.Join([]string{
+				fiber.MethodGet,
+				fiber.MethodPost,
+				fiber.MethodHead,
+				fiber.MethodPut,
+				fiber.MethodDelete,
+				fiber.MethodPatch,
+			}, ","),
 		},
 	)
 

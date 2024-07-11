@@ -61,25 +61,25 @@ func (a *adapter) vnpReturn() fiber.Handler {
 	return func(ctx *fiber.Ctx) error {
 		paymentService, ok := a.paymentService.(*vnpay.VnPayService)
 		if !ok {
-			return ctx.Status(fiber.StatusMethodNotAllowed).JSON(fiber.Map{"message": "Method not allowed"})
+			return ctx.Status(fiber.StatusMethodNotAllowed).SendString("Method not allowed")
 		}
 
 		payload := new(dto.VNPReturnQuery)
 		if err := ctx.QueryParser(payload); err != nil {
-			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": err.Error()})
+			return ctx.Status(fiber.StatusBadRequest).SendString(err.Error())
 		}
 		if errs := validation.ValidateStruct(nil, payload); len(errs) > 0 {
-			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": validation.GetValidationError(errs)})
+			return ctx.Status(fiber.StatusBadRequest).SendString(validation.GetValidationError(errs))
 		}
 
 		queries := maps.Clone(ctx.Queries())
 		err := paymentService.Return(queries)
 		if err != nil {
 			if errors.Is(err, vnpay.ErrInvalidHash) {
-				return ctx.Status(fiber.StatusOK).SendString(fmt.Sprintf("Thanh toán thất bại: mã lỗi 97, %s", err.Error()))
+				return ctx.Status(fiber.StatusBadGateway).SendString(fmt.Sprintf("Thanh toán thất bại: mã lỗi 97, %s", err.Error()))
 			}
 			if dbErr, ok := err.(*pgconn.PgError); ok {
-				return ctx.Status(fiber.StatusOK).SendString(fmt.Sprintf("Thanh toán thất bại: lỗi hệ thống, %s", dbErr.Error()))
+				return ctx.Status(fiber.StatusInternalServerError).SendString(fmt.Sprintf("Thanh toán thất bại: lỗi hệ thống, %s", dbErr.Error()))
 			}
 			return ctx.SendStatus(fiber.StatusInternalServerError)
 		}

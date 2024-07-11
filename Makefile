@@ -42,15 +42,12 @@ build:
 serve: ./rrmsd
 	./rrmsd serve
 
-payment:
-	go run main.go payment
-
 dev:
 	air serve
 
-# Tunnel for local development, use localtunnel (`npm install -g localtunnel`)
+# Tunnel for local development
 tunnel:
-	lt --port 8000 --subdomain rrms
+	ngrok http --domain=useful-likely-vervet.ngrok-free.app 8080
 
 # Mocking:
 mock_repo:

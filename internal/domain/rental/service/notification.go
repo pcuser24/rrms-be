@@ -138,6 +138,9 @@ func (s *service) NotifyCreatePreRental(
 		Targets: func() []misc_dto.CreateNotificationTarget {
 			var ts []misc_dto.CreateNotificationTarget
 			for _, t := range targets {
+				if t.UserId == r.CreatorID {
+					continue
+				}
 				ts = append(ts, misc_dto.CreateNotificationTarget{
 					UserId: t.UserId,
 					Emails: t.Emails,
@@ -155,6 +158,9 @@ func (s *service) NotifyCreatePreRental(
 	cn.Targets = func() []misc_dto.CreateNotificationTarget {
 		var ts []misc_dto.CreateNotificationTarget
 		for _, t := range targets {
+			if t.UserId == r.CreatorID {
+				continue
+			}
 			ts = append(ts, misc_dto.CreateNotificationTarget{
 				UserId: t.UserId,
 				Emails: []string{},

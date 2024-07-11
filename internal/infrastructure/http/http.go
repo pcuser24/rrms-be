@@ -49,6 +49,7 @@ func (s *server) init(corsConf cors.Config) Server {
 		ZeroEmpty: true,
 	})
 
+	s.fib.Use(cors.New(corsConf))
 	s.fib.Use(rcv.New(rcv.Config{
 		StackTraceHandler: func(c *fiber.Ctx, e interface{}) {
 			debug.PrintStack()
@@ -57,7 +58,6 @@ func (s *server) init(corsConf cors.Config) Server {
 			})
 		},
 	}))
-	s.fib.Use(cors.New(corsConf))
 	s.fib.Use(logger.New())
 
 	apiRoute := s.fib.Group("/api")
